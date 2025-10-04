@@ -28,7 +28,7 @@
 
         <GridView Grid.Row="1"
                   x:Name="GameGridView"
-                  Margin="10,0,10,10"
+                  Margin="20,10,0,0"
                   ItemsSource="{x:Bind Games, Mode=OneWay}"
                   IsItemClickEnabled="False"
                   CanReorderItems="False">
@@ -57,15 +57,15 @@
                             <Border Grid.Row="0"
                                     VerticalAlignment="Top"
                                     HorizontalAlignment="Center"
-                                    Background="{ThemeResource SystemControlAcrylicElementBrush}"
+                                    Background="#2A2A2A"
                                     Margin="8"
                                     Padding="8,4"
                                     CornerRadius="4"
                                     Visibility="{x:Bind HasBeenPlayed, Mode=OneWay}">
                                 <TextBlock Text="{x:Bind LastPlayedText, Mode=OneWay}"
-                                           FontSize="12"
+                                           FontSize="14"
                                            FontWeight="SemiBold"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                           Foreground="White" />
                             </Border>
 
                             <Grid Grid.Row="1" Padding="12,0">
