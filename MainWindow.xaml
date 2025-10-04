@@ -19,13 +19,14 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Button Grid.Row="0"
-                x:Name="AddGameButton"
-                Margin="20"
-                HorizontalAlignment="Left"
-                Click="AddGame_Click"
-                Content="+ Add Game"
-                Style="{StaticResource AccentButtonStyle}"/>
+        <Grid Grid.Row="0" x:Name="AppTitleBar" Height="48">
+            <TextBlock Text="Codec"
+                       FontFamily="/Assets/Sansation-Bold.ttf#Sansation"
+                       FontSize="20"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Left"
+                       Margin="20,0"/>
+        </Grid>
 
         <GridView Grid.Row="1"
                   x:Name="GameGridView"
@@ -62,6 +63,15 @@
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
+
+        <Button Grid.Row="1"
+                x:Name="AddGameButton"
+                Content="Add Game"
+                Click="AddGame_Click"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="20"
+                Style="{StaticResource AccentButtonStyle}"/>
     </Grid>
 </Window>
 

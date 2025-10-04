@@ -27,6 +27,7 @@ namespace Codec
             this.InitializeComponent();
             this.Title = "Codec Game Library";
             Games = new ObservableCollection<Game>();
+            ExtendsContentIntoTitleBar = true;
             LoadGamesAsync();
         }
 
@@ -43,8 +44,8 @@ namespace Codec
             string? scriptPath = null;
             var dialog = new ContentDialog
             {
-                Title = "Optional Start-Script. (No will start the game through the selected executable)",
-                Content = "Start the Game through a Script? (.bat or .ps1)",
+                Title = "Add a Launch Script?",
+                Content = "Some games may require a Launch Script (.bat or .ps1)",
                 PrimaryButtonText = "Yes",
                 CloseButtonText = "No",
                 XamlRoot = this.Content.XamlRoot
