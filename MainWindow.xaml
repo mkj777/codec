@@ -7,12 +7,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!-- window backdrop effect for Win11 -->
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <!-- main layout grid -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -22,7 +20,7 @@
         <Grid Grid.Row="0" x:Name="AppTitleBar" Height="48">
             <TextBlock Text="Codec"
                        FontFamily="/Assets/Sansation-Bold.ttf#Sansation"
-                       FontSize="20"
+                       FontSize="18"
                        VerticalAlignment="Center"
                        HorizontalAlignment="Left"
                        Margin="20,0"/>
@@ -34,31 +32,56 @@
                   ItemsSource="{x:Bind Games, Mode=OneWay}"
                   IsItemClickEnabled="False"
                   CanReorderItems="False">
+
+            <!-- This style targets the container of each card and disables the focus border -->
+            <GridView.ItemContainerStyle>
+                <Style TargetType="GridViewItem">
+                    <Setter Property="UseSystemFocusVisuals" Value="False"/>
+                </Style>
+            </GridView.ItemContainerStyle>
+
             <GridView.ItemTemplate>
-                <DataTemplate x:DataType="local:Game">
-                    <Grid Width="180" Height="270" Margin="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="200" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+                <DataTemplate x:DataType="local:Game" >
+                    <Grid x:Name="CardContainer"
+                          Width="250" Height="300"
+                          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                          CornerRadius="8" >
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="250" />
+                                <RowDefinition Height="50" />
+                            </Grid.RowDefinitions>
 
-                        <Image Grid.Row="0" Source="{x:Bind Cover, Mode=OneWay}" Stretch="UniformToFill" />
-                        <Rectangle Grid.Row="0" Fill="{ThemeResource CardBackgroundFillColorSecondaryBrush}" Opacity="0.1" />
+                            <Image Grid.Row="0" Source="{x:Bind Cover, Mode=OneWay}" Stretch="UniformToFill" />
 
-                        <TextBlock Grid.Row="1"
-                                   Text="{x:Bind Name, Mode=OneWay}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Margin="8,4"
-                                   FontSize="14"
-                                   TextTrimming="CharacterEllipsis"
-                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                            <Grid Grid.Row="1" Padding="12,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                            <Button Content="Play" Click="PlayGame_Click" Style="{StaticResource AccentButtonStyle}" DataContext="{x:Bind}"/>
-                            <Button Content="Remove" Click="RemoveGame_Click" DataContext="{x:Bind}"/>
-                        </StackPanel>
+                                <TextBlock Grid.Column="0"
+                                           Text="{x:Bind Name, Mode=OneWay}"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+
+                                <Button Grid.Column="1"
+                                        Content="Play"
+                                        Margin="8,0,4,0"
+                                        Click="PlayGame_Click"
+                                        DataContext="{x:Bind}"
+                                        UseSystemFocusVisuals="False"/>
+
+                                <Button Grid.Column="2"
+                                        Content="Remove"
+                                        Click="RemoveGame_Click"
+                                        DataContext="{x:Bind}"
+                                        UseSystemFocusVisuals="False"/>
+                            </Grid>
+                        </Grid>
                     </Grid>
                 </DataTemplate>
             </GridView.ItemTemplate>
@@ -71,7 +94,9 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
                 Margin="20"
-                Style="{StaticResource AccentButtonStyle}"/>
+                FontWeight="SemiBold"
+                Style="{StaticResource DefaultButtonStyle}"
+                UseSystemFocusVisuals="False"/>
     </Grid>
 </Window>
 
