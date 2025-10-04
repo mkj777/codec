@@ -1,21 +1,67 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="Codec.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:Codec"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Codec"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Title="Codec">
+    mc:Ignorable="d">
 
+    <!-- window backdrop effect for Win11 -->
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
+    <!-- main layout grid -->
     <Grid>
-        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Button x:Name="TestButton" Content="Test Button" Click="TestButton_Click"/>
-        </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Button Grid.Row="0"
+                x:Name="AddGameButton"
+                Margin="20"
+                HorizontalAlignment="Left"
+                Click="AddGame_Click"
+                Content="+ Add Game"
+                Style="{StaticResource AccentButtonStyle}"/>
+
+        <GridView Grid.Row="1"
+                  x:Name="GameGridView"
+                  Margin="10,0,10,10"
+                  ItemsSource="{x:Bind Games, Mode=OneWay}"
+                  IsItemClickEnabled="False"
+                  CanReorderItems="False">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="local:Game">
+                    <Grid Width="180" Height="270" Margin="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="200" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Image Grid.Row="0" Source="{x:Bind Cover, Mode=OneWay}" Stretch="UniformToFill" />
+                        <Rectangle Grid.Row="0" Fill="{ThemeResource CardBackgroundFillColorSecondaryBrush}" Opacity="0.1" />
+
+                        <TextBlock Grid.Row="1"
+                                   Text="{x:Bind Name, Mode=OneWay}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Margin="8,4"
+                                   FontSize="14"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                            <Button Content="Play" Click="PlayGame_Click" Style="{StaticResource AccentButtonStyle}" DataContext="{x:Bind}"/>
+                            <Button Content="Remove" Click="RemoveGame_Click" DataContext="{x:Bind}"/>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
     </Grid>
 </Window>
+

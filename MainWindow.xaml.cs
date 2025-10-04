@@ -1,44 +1,237 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace Codec
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
+        // ObservableCollection to hold the list of games, automatically updates the UI when modified
+        public ObservableCollection<Game> Games { get; set; }
+
+        // defines the path to the JSON file where the game library is saved
+        private readonly string _savePath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "codec_library.json");
+
+        // MainWindow constructor
         public MainWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
+            this.Title = "Codec Game Library";
+            Games = new ObservableCollection<Game>();
+            LoadGamesAsync();
         }
 
-        private async void TestButton_Click(object sender, RoutedEventArgs e)
+        private async void AddGame_Click(object sender, RoutedEventArgs e)
         {
-            ContentDialog testDialog = new ContentDialog
+            var exePicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
+            exePicker.FileTypeFilter.Add(".exe");
+            InitializeWithWindow.Initialize(exePicker, WindowNative.GetWindowHandle(this));
+
+            StorageFile exeFile = await exePicker.PickSingleFileAsync();
+            if (exeFile == null) return; // User cancelled the picker
+
+            // optional Start Script Prompt
+            string? scriptPath = null;
+            var dialog = new ContentDialog
             {
-                Title = "Test",
-                Content = "The test button was clicked.",
-                CloseButtonText = "OK",
+                Title = "Optional Start-Script. (No will start the game through the selected executable)",
+                Content = "Start the Game through a Script? (.bat or .ps1)",
+                PrimaryButtonText = "Yes",
+                CloseButtonText = "No",
                 XamlRoot = this.Content.XamlRoot
             };
 
-            await testDialog.ShowAsync();
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var scriptPicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
+                scriptPicker.FileTypeFilter.Add(".bat");
+                scriptPicker.FileTypeFilter.Add(".ps1");
+                InitializeWithWindow.Initialize(scriptPicker, WindowNative.GetWindowHandle(this));
+                StorageFile scriptFile = await scriptPicker.PickSingleFileAsync();
+                if (scriptFile != null)
+                {
+                    scriptPath = scriptFile.Path;
+                }
+            }
+
+            // creates a Game-Object
+            string gameName = Path.GetFileNameWithoutExtension(exeFile.Name);
+            string coverPath = await ExtractAndSaveIconAsync(exeFile.Path, gameName);
+
+            var newGame = new Game
+            {
+                Name = gameName,
+                Executable = exeFile.Path,
+                Cover = coverPath,
+                LaunchScript = scriptPath
+            };
+
+            Games.Add(newGame);
+            await SaveGamesAsync();
+        }
+
+
+        // triggered when play button is clicked
+        private void PlayGame_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is Game gameToPlay)
+            {
+                try
+                {
+                    // start the game via LaunchScript or directly via the Executable
+                    if (!string.IsNullOrEmpty(gameToPlay.LaunchScript))
+                    {
+                        string extension = Path.GetExtension(gameToPlay.LaunchScript).ToLower();
+                        string scriptDirectory = Path.GetDirectoryName(gameToPlay.LaunchScript);
+
+                        if (extension == ".ps1")
+                        {
+                            // execute PowerShell script
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "powershell.exe",
+                                Arguments = $"-ExecutionPolicy Bypass -File \"{gameToPlay.LaunchScript}\"",
+                                UseShellExecute = true,
+                                WorkingDirectory = scriptDirectory
+                            });
+                        }
+                        else // .bat or other script types
+                        {
+                            Process.Start(new ProcessStartInfo(gameToPlay.LaunchScript)
+                            {
+                                UseShellExecute = true,
+                                WorkingDirectory = scriptDirectory
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // .exe directly if no LaunchScript was provided
+                        Process.Start(new ProcessStartInfo(gameToPlay.Executable)
+                        {
+                            UseShellExecute = true,
+                            WorkingDirectory = Path.GetDirectoryName(gameToPlay.Executable)
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    string path = !string.IsNullOrEmpty(gameToPlay.LaunchScript) ? gameToPlay.LaunchScript : gameToPlay.Executable;
+                    ShowErrorDialog("Error while trying to run the Game", $"The Path '{path}' could not be resolved\n\nError Message: {ex.Message}");
+                }
+            }
+        }
+
+        // triggered when the remove button is clicked
+        private async void RemoveGame_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.DataContext is Game gameToRemove)
+            {
+                Games.Remove(gameToRemove);
+                await SaveGamesAsync(); // save the library after removing a game
+            }
+        }
+
+
+        // Data Logic
+        // saves the entire 'Games' collection to the JSON file.
+        private async Task SaveGamesAsync()
+        {
+            try
+            {
+                var jsonString = JsonSerializer.Serialize(Games);
+                await File.WriteAllTextAsync(_savePath, jsonString);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error while saving your Library {ex.Message}");
+            }
+        }
+
+        // loads the game library from the JSON file.
+        private async void LoadGamesAsync()
+        {
+            if (File.Exists(_savePath))
+            {
+                try
+                {
+                    var jsonString = await File.ReadAllTextAsync(_savePath);
+                    var loadedGames = JsonSerializer.Deserialize<ObservableCollection<Game>>(jsonString);
+                    if (loadedGames != null)
+                    {
+                        // Clear the existing list and add the loaded games.
+                        Games.Clear();
+                        foreach (var game in loadedGames)
+                        {
+                            Games.Add(game);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error while loading your Library {ex.Message}");
+                    // optional: show an error dialog to the user if the library is corrupt.
+                }
+            }
+        }
+
+        // Utility Methods
+        // extracts the icon from the executable and saves it as a PNG in the local app data folder
+        private async Task<string> ExtractAndSaveIconAsync(string exePath, string gameName)
+        {
+            // creates a "Covers" folder in the local app data directory
+            var coversFolder = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Covers", CreationCollisionOption.OpenIfExists);
+            string iconPath = Path.Combine(coversFolder.Path, $"{gameName}.png");
+
+            try
+            {
+                // uses System.Drawing to extract the icon from the executable
+                using (Icon? ico = Icon.ExtractAssociatedIcon(exePath))
+                {
+                    if (ico != null)
+                    {
+                        // converts the icon to a Bitmap and saves it as PNG
+                        using (var bmp = ico.ToBitmap())
+                        {
+                            bmp.Save(iconPath, System.Drawing.Imaging.ImageFormat.Png);
+                            return iconPath;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Couldnt extract Icon {exePath}. Error Message: {ex.Message}");
+            }
+
+            // fallback to a placeholder image if icon extraction fails
+            return "https://placehold.co/180x240/1c1c1c/ffffff?text=Kein+Cover";
+        }
+
+
+        // helper method to show error dialogs
+        private async void ShowErrorDialog(string title, string content)
+        {
+            var errorDialog = new ContentDialog
+            {
+                Title = title,
+                Content = content,
+                CloseButtonText = "Ok",
+                XamlRoot = this.Content.XamlRoot // ensures the dialog is properly parented
+            };
+            await errorDialog.ShowAsync();
         }
     }
 }
+
