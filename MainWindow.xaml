@@ -54,6 +54,20 @@
 
                             <Image Grid.Row="0" Source="{x:Bind Cover, Mode=OneWay}" Stretch="UniformToFill" />
 
+                            <Border Grid.Row="0"
+                                    VerticalAlignment="Top"
+                                    HorizontalAlignment="Center"
+                                    Background="{ThemeResource SystemControlAcrylicElementBrush}"
+                                    Margin="8"
+                                    Padding="8,4"
+                                    CornerRadius="4"
+                                    Visibility="{x:Bind HasBeenPlayed, Mode=OneWay}">
+                                <TextBlock Text="{x:Bind LastPlayedText, Mode=OneWay}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Border>
+
                             <Grid Grid.Row="1" Padding="12,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -72,13 +86,11 @@
                                         Content="Play"
                                         Margin="8,0,4,0"
                                         Click="PlayGame_Click"
-                                        DataContext="{x:Bind}"
                                         UseSystemFocusVisuals="False"/>
 
                                 <Button Grid.Column="2"
                                         Content="Remove"
                                         Click="RemoveGame_Click"
-                                        DataContext="{x:Bind}"
                                         UseSystemFocusVisuals="False"/>
                             </Grid>
                         </Grid>

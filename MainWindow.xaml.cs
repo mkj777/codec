@@ -84,10 +84,13 @@ namespace Codec
 
 
         // triggered when play button is clicked
-        private void PlayGame_Click(object sender, RoutedEventArgs e)
+        private async void PlayGame_Click(object sender, RoutedEventArgs e)
         {
             if ((sender as Button)?.DataContext is Game gameToPlay)
             {
+                gameToPlay.LastPlayed = DateTime.Now;
+                await SaveGamesAsync();
+
                 try
                 {
                     // start the game via LaunchScript or directly via the Executable

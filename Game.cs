@@ -1,9 +1,13 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Codec
 {
-    public class Game
+    public class Game : INotifyPropertyChanged
     {
+        private DateTime? _lastPlayed;
+
         // the display name of the game
         public string Name { get; set; }
 
@@ -17,6 +21,31 @@ namespace Codec
         public string? LaunchScript { get; set; }
 
         // to save when the game was last played
-        public DateTime? LastPlayed { get; set; }
+        public DateTime? LastPlayed
+        {
+            get => _lastPlayed;
+            set
+            {
+                _lastPlayed = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(LastPlayedText));
+                OnPropertyChanged(nameof(HasBeenPlayed));
+            }
+        }
+
+        // Computed property for display text
+        public string LastPlayedText => LastPlayed.HasValue
+            ? $"{LastPlayed.Value:MMM dd, yyyy}"
+            : string.Empty;
+
+        // Computed property for visibility
+        public bool HasBeenPlayed => LastPlayed.HasValue;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }
