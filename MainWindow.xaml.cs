@@ -40,6 +40,31 @@ namespace Codec
             StorageFile exeFile = await exePicker.PickSingleFileAsync();
             if (exeFile == null) return; // User cancelled the picker
 
+            // TEST: Call GameNameService
+            Debug.WriteLine($"Starting ID lookup for: {exeFile.Path}");
+            var (steamId, rawgId) = await GameNameService.FindGameIdsAsync(exeFile.Path);
+
+            // Show test popup with results
+            string steamIdText = steamId.HasValue ? steamId.Value.ToString() : "Not found";
+            string rawgIdText = rawgId.HasValue ? rawgId.Value.ToString() : "Not found";
+            string bestName = GameNameService.GetBestName(exeFile.Path);
+
+            var testDialog = new ContentDialog
+            {
+                Title = "Game ID Lookup Results",
+                Content = $"Best Name: {bestName}\n\n" +
+                          $"Steam ID: {steamIdText}\n" +
+                          $"RAWG ID: {rawgIdText}",
+                CloseButtonText = "Ok",
+                XamlRoot = this.Content.XamlRoot
+            };
+
+            await testDialog.ShowAsync();
+
+            // REMOVED: Script prompt and adding to grid for testing
+            // The code below is commented out for now
+
+            /*
             // optional Start Script Prompt
             string? scriptPath = null;
             var dialog = new ContentDialog
@@ -75,11 +100,14 @@ namespace Codec
                 Name = gameName,
                 Executable = exeFile.Path,
                 Cover = coverPath,
-                LaunchScript = scriptPath
+                LaunchScript = scriptPath,
+                SteamID = steamId,
+                RawgID = rawgId
             };
 
             Games.Add(newGame);
             await SaveGamesAsync();
+            */
         }
 
 
