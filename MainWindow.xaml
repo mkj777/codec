@@ -60,12 +60,7 @@
                                     Background="#2A2A2A"
                                     Margin="8"
                                     Padding="8,4"
-                                    CornerRadius="4"
-                                    Visibility="{x:Bind HasBeenPlayed, Mode=OneWay}">
-                                <TextBlock Text="{x:Bind LastPlayedText, Mode=OneWay}"
-                                           FontSize="14"
-                                           FontWeight="SemiBold"
-                                           Foreground="White" />
+                                    CornerRadius="4">
                             </Border>
 
                             <Grid Grid.Row="1" Padding="12,0">

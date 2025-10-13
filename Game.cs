@@ -1,10 +1,6 @@
-﻿using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-
-namespace Codec
+﻿namespace Codec
 {
-    public class Game : INotifyPropertyChanged
+    public class Game
     {
         // the display name of the game
         public string Name { get; set; }
@@ -23,32 +19,5 @@ namespace Codec
 
         // optional: Path to .bat- or .ps1 Script to launch the game
         public string? LaunchScript { get; set; }
-
-        // to save when the game was last played
-        private DateTime? _lastPlayed;
-        public DateTime? LastPlayed
-        {
-            get => _lastPlayed;
-            set
-            {
-                _lastPlayed = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(LastPlayedText));
-                OnPropertyChanged(nameof(HasBeenPlayed));
-            }
-        }
-
-        public string LastPlayedText => LastPlayed.HasValue
-            ? $"{LastPlayed.Value:MMM dd, yyyy}"
-            : string.Empty;
-
-        public bool HasBeenPlayed => LastPlayed.HasValue;
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 }

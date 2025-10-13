@@ -116,7 +116,7 @@ namespace Codec
         {
             if ((sender as Button)?.DataContext is Game gameToPlay)
             {
-                gameToPlay.LastPlayed = DateTime.Now;
+
                 await SaveGamesAsync();
 
                 try
