@@ -17,7 +17,7 @@ namespace Codec
         private static readonly HttpClient _httpClient = new();
         private const string SteamApiUrl = "https://api.steampowered.com/ISteamApps/GetAppList/v2/";
         private const string SteamDetailsUrl = "https://store.steampowered.com/api/appdetails?appids=";
-        private const string RawgApiUrl = "https://codec-api-proxy.vercel.app/api/search";
+        private const string RawgApiUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
 
         private static List<SteamApp>? _cachedSteamApps;
         private static DateTime _cacheTimestamp = DateTime.MinValue;
@@ -43,7 +43,7 @@ namespace Codec
 
         private static string? GetVersionInfoValue(string path, string valueKey)
         {
-            if (!File.Exists(path)) return null;
+            if (!System.IO.File.Exists(path)) return null;
 
             int handle = 0;
             int size = NativeMethods.GetFileVersionInfoSize(path, out handle);
@@ -218,12 +218,12 @@ namespace Codec
             var culture = System.Globalization.CultureInfo.CurrentUICulture;
 
             string specificCulturePath = Path.Combine(dir, culture.Name, $"{baseName}.mui");
-            if (File.Exists(specificCulturePath)) return specificCulturePath;
+            if (System.IO.File.Exists(specificCulturePath)) return specificCulturePath;
 
             if (culture.Parent != null && !string.IsNullOrEmpty(culture.Parent.Name))
             {
                 string parentCulturePath = Path.Combine(dir, culture.Parent.Name, $"{baseName}.mui");
-                if (File.Exists(parentCulturePath)) return parentCulturePath;
+                if (System.IO.File.Exists(parentCulturePath)) return parentCulturePath;
             }
 
             return null;
@@ -331,9 +331,9 @@ namespace Codec
                 string? gameDir = Path.GetDirectoryName(exePath);
                 if (gameDir == null) return null;
                 string filePath = Path.Combine(gameDir, "steam_appid.txt");
-                if (File.Exists(filePath))
+                if (System.IO.File.Exists(filePath))
                 {
-                    if (int.TryParse(File.ReadAllText(filePath).Trim(), out int id))
+                    if (int.TryParse(System.IO.File.ReadAllText(filePath).Trim(), out int id))
                     {
                         return id;
                     }
