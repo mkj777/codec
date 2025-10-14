@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:Codec"
+    xmlns:local="using:Codec.Models"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
@@ -52,7 +52,7 @@
                                 <RowDefinition Height="50" />
                             </Grid.RowDefinitions>
 
-                            <Image Grid.Row="0" Source="{x:Bind Cover, Mode=OneWay}" Stretch="UniformToFill" />
+                            <Image Grid.Row="0" Source="{x:Bind LibCapsule, Mode=OneWay}" Stretch="UniformToFill" />
 
                             <Border Grid.Row="0"
                                     VerticalAlignment="Top"

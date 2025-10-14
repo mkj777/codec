@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Codec
+namespace Codec.Services
 {
     public static class GameNameService
     {
