@@ -1,10 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Codec.Models
 {
     public class Game
     {
+        [SetsRequiredMembers]
+        public Game()
+        {
+            Name = string.Empty;
+            Executable = string.Empty;
+            FolderLocation = string.Empty;
+            ImportedFrom = string.Empty;
+        }
         // basic information
         public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime DateAdded { get; set; } = DateTime.Now;
