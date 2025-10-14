@@ -12,9 +12,6 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <None Remove="Assets\Sansation-Bold.ttf" />
-  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -70,18 +67,7 @@
     <HoursBetweenUpdateChecks>168</HoursBetweenUpdateChecks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="C:\Users\maxik\.nuget\packages\microsoft.windowsappsdk.foundation\1.8.250906002\buildTransitive\..\include\DeploymentManagerAutoInitializer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="C:\Users\maxik\.nuget\packages\microsoft.windowsappsdk.foundation\1.8.250906002\buildTransitive\..\include\DeploymentManagerAutoInitializer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="C:\Users\maxik\.nuget\packages\microsoft.windowsappsdk.foundation\1.8.250906002\buildTransitive\..\include\DeploymentManagerAutoInitializer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="C:\Users\maxik\.nuget\packages\microsoft.windowsappsdk.foundation\1.8.250906002\buildTransitive\..\include\DeploymentManagerAutoInitializer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="C:\Users\maxik\.nuget\packages\microsoft.windowsappsdk.runtime\1.8.250916003\buildTransitive\..\include\WindowsAppSDK-VersionInfo.cs" />
+    <Folder Include="ViewModels\" />
+    <Folder Include="Views\" />
   </ItemGroup>
 </Project>
