@@ -12,7 +12,7 @@ namespace Codec.Services
 {
     public static class GameNameService
     {
-        private record SteamApp(int AppId, string Name);
+        public record SteamApp(int AppId, string Name);
 
         private static readonly HttpClient _httpClient = new();
         private const string SteamApiUrl = "https://api.steampowered.com/ISteamApps/GetAppList/v2/";
@@ -26,7 +26,7 @@ namespace Codec.Services
         private static readonly HashSet<string> DeprioritizedTerms = new(StringComparer.OrdinalIgnoreCase)
         {
             "win64", "win32", "x64", "x86", "bin", "binaries", "game", "data", "content",
-            "win64-shipping", "win32-shipping", "shipping", "launcher", "bootstrap", "UE4", "UE5"
+            "win64-shipping", "win32-shipping", "shipping", "launcher", "bootstrap", "UE4", "UE5", "Unreal Engine", "Engine"
         };
 
         private static class NativeMethods
@@ -152,13 +152,54 @@ namespace Codec.Services
             return null;
         }
 
+        private static readonly HashSet<string> CommonWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "the", "a", "an", "of", "and", "or", "in", "on", "at", "to", "for", "with",
+            "edition", "game", "deluxe", "ultimate", "remastered", "goty", "complete",
+            "definitive", "enhanced", "special", "digital", "steam"
+        };
+
         private static (int id, string name, double score)? FindBestMatchForName(string gameName, List<SteamApp> apps)
         {
-            var searchWords = gameName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            // Phase 1: Try exact match first
+            var exactMatch = apps.FirstOrDefault(app =>
+                app.Name.Equals(gameName, StringComparison.OrdinalIgnoreCase));
+
+            if (exactMatch != null)
+            {
+                Debug.WriteLine($"Exact match found: {exactMatch.Name}");
+                return (exactMatch.AppId, exactMatch.Name, 1.0);
+            }
+
+            // Phase 2: Strict word matching (ALL significant words must be present)
+            var searchWords = gameName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(w => w.Length >= 3 && !CommonWords.Contains(w))
+                .ToList();
+
+            if (searchWords.Count == 0)
+            {
+                Debug.WriteLine($"No significant words in '{gameName}'");
+                return null;
+            }
+
+            Debug.WriteLine($"Searching with significant words: {string.Join(", ", searchWords)}");
+
+            // ALL words must be in the app name
             var potentialMatches = apps.Where(app =>
-                app.Name.Equals(gameName, StringComparison.OrdinalIgnoreCase) ||
-                searchWords.Any(word => app.Name.Contains(word, StringComparison.OrdinalIgnoreCase))
+                searchWords.All(word => app.Name.Contains(word, StringComparison.OrdinalIgnoreCase))
             ).ToList();
+
+            Debug.WriteLine($"Found {potentialMatches.Count} candidates requiring all words");
+
+            if (!potentialMatches.Any())
+            {
+                // Phase 3: Fallback to ANY word match but with higher similarity threshold
+                potentialMatches = apps.Where(app =>
+                    searchWords.Any(word => app.Name.Contains(word, StringComparison.OrdinalIgnoreCase))
+                ).ToList();
+
+                Debug.WriteLine($"Fallback: Found {potentialMatches.Count} candidates with any word match");
+            }
 
             if (!potentialMatches.Any()) return null;
 
@@ -166,11 +207,15 @@ namespace Codec.Services
                 id: app.AppId,
                 name: app.Name,
                 score: CalculateSimilarity(gameName, app.Name)
-            )).Where(m => m.score >= 0.7).ToList();
+            )).Where(m => m.score >= 0.75)
+              .OrderByDescending(m => m.score)
+              .ToList();
 
             if (!scoredMatches.Any()) return null;
 
-            return scoredMatches.OrderByDescending(m => m.score).First();
+            var best = scoredMatches.First();
+            Debug.WriteLine($"Best match: {best.name} (score: {best.score:P})");
+            return best;
         }
 
         private static List<string> GetPrioritizedNames(string exePath)
@@ -232,6 +277,11 @@ namespace Codec.Services
         public static string? GetBestName(string exePath)
         {
             return GetPrioritizedNames(exePath).FirstOrDefault() ?? Path.GetFileNameWithoutExtension(exePath);
+        }
+
+        public static async Task<List<SteamApp>?> GetSteamAppsListAsync()
+        {
+            return await GetSteamAppsAsync();
         }
 
         private static async ValueTask<List<SteamApp>?> GetSteamAppsAsync()
@@ -300,7 +350,7 @@ namespace Codec.Services
             return await FindRawgIdByNameAsync(bestName);
         }
 
-        private static async Task<int?> FindRawgIdByNameAsync(string gameName)
+        public static async Task<int?> FindRawgIdByNameAsync(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName)) return null;
             try
