@@ -20,8 +20,21 @@ namespace Codec.Models
         public required string Executable { get; set; }
         public required string FolderLocation { get; set; }
         public required string Name { get; set; }
-        public required string ImportedFrom { get; set; } // e.g., "Steam", "Manual", "Scanned", etc.
+        public required string ImportedFrom { get; set; } // e.g., "Steam (C:\...\Steam)", "Manual", "Scanned", etc.
         public long FolderSize { get; set; } // doesnt need required, will be 0 if not calculated yet
+
+        // Display-only property that shows just the platform name without the path
+        public string ImportedFromDisplay
+        {
+            get
+            {
+                if (ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "Steam";
+                }
+                return ImportedFrom;
+            }
+        }
 
         // external IDs for fetching metadata from online databases
         public int? SteamID { get; set; }
