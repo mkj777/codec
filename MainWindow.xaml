@@ -14,8 +14,8 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" x:Name="AppTitleBar" Height="48">
@@ -27,29 +27,7 @@
                        Margin="20,0"/>
         </Grid>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
-            <Button x:Name="AddGameButton"
-                    Content="Add Game"
-                    Click="AddGame_Click"
-                    Margin="0,0,10,0"
-                    FontWeight="SemiBold"
-                    UseSystemFocusVisuals="False"/>
-            
-            <Button x:Name="ScanGamesButton"
-                    Content="Scan Games"
-                    Click="ScanGames_Click"
-                    Margin="0,0,10,0"
-                    FontWeight="SemiBold"
-                    UseSystemFocusVisuals="False"/>
-
-            <Button x:Name="ScanFolderButton"
-                    Content="Scan Folder"
-                    Click="ScanFolder_Click"
-                    FontWeight="SemiBold"
-                    UseSystemFocusVisuals="False"/>
-        </StackPanel>
-
-        <ScrollViewer Grid.Row="2" Margin="20">
+        <ScrollViewer Grid.Row="1" Margin="20">
             <ItemsControl ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="local:Game">
@@ -72,6 +50,8 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
@@ -222,6 +202,18 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+
+        <!-- Bottom Bar with "Add Games" Button -->
+        <Grid Grid.Row="2" Height="70" Padding="20">
+            <Button x:Name="AddGamesButton"
+                    Content="Add Games"
+                    Click="AddGames_Click"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    UseSystemFocusVisuals="False"
+                    FontSize="14"/>
+        </Grid>
     </Grid>
 </Window>
 

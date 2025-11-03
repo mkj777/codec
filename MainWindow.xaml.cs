@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -25,12 +26,18 @@ namespace Codec
 
         private async void AddGame_Click(object sender, RoutedEventArgs e)
         {
+            await AddGameAsync();
+        }
+
+        private async Task AddGameAsync()
+        {
             var exePicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
             exePicker.FileTypeFilter.Add(".exe");
             InitializeWithWindow.Initialize(exePicker, WindowNative.GetWindowHandle(this));
 
             var exeFile = await exePicker.PickSingleFileAsync();
-            if (exeFile == null) return; // User cancelled the picker
+            if (exeFile == null)
+                return; // User cancelled the picker
 
             // Call GameNameService
             Debug.WriteLine($"Starting ID lookup for: {exeFile.Path}");
@@ -45,8 +52,8 @@ namespace Codec
             {
                 Title = "Game ID Lookup Results",
                 Content = $"Best Name: {bestName}\n\n" +
-                          $"Steam ID: {steamIdText}\n" +
-                          $"RAWG ID: {rawgIdText}",
+         $"Steam ID: {steamIdText}\n" +
+              $"RAWG ID: {rawgIdText}",
                 CloseButtonText = "Ok",
                 XamlRoot = this.Content.XamlRoot
             };
@@ -56,8 +63,14 @@ namespace Codec
 
         private async void ScanGames_Click(object sender, RoutedEventArgs e)
         {
-            // Disable button during scan
-            var button = sender as Button;
+            await ScanGamesAsync(sender as Button);
+        }
+
+        private async Task ScanGamesAsync(Button? button = null)
+        {
+            // Clear previous results
+            ViewModel.Games.Clear();
+
             if (button != null)
             {
                 button.IsEnabled = false;
@@ -68,30 +81,28 @@ namespace Codec
             {
                 // Progress handler for UI updates
                 var progress = new Progress<string>(status =>
-                {
-                    Debug.WriteLine(status);
-                    if (button != null)
-                    {
-                        button.Content = status;
-                    }
-                });
+                   {
+                       Debug.WriteLine(status);
+                       if (button != null)
+                       {
+                           button.Content = status;
+                       }
+                   });
 
-                // Clear previous results
-                ViewModel.Games.Clear();
-
-                // Start Steam library scan
-                var scanResults = await GameScanner.ScanSteamLibraryAsync(progress);
+                // Start comprehensive game scan using new 3-phase architecture
+                var scanner = new GameScanner();
+                var scanResults = await scanner.ScanAllGamesAsync(progress);
 
                 Debug.WriteLine($"Scan complete. Processing {scanResults.Count} games...");
 
                 // Games to exclude from display (but still scan)
                 var excludedGameNames = new[]
-                {
-                    "Steamworks Common Redistributables",
-                    "Steam Linux Runtime",
-                    "Proton",
-                    "Steam Audio",
-                    "Steam VR"
+         {
+     "Steamworks Common Redistributables",
+          "Steam Linux Runtime",
+            "Proton",
+    "Steam Audio",
+  "Steam VR"
                 };
 
                 // Process each found game
@@ -104,7 +115,7 @@ namespace Codec
                     try
                     {
                         totalScanned++;
-                        
+
                         // Check if this game should be excluded from display
                         if (excludedGameNames.Any(excl => gameName.Contains(excl, StringComparison.OrdinalIgnoreCase)))
                         {
@@ -119,7 +130,7 @@ namespace Codec
                         }
 
                         Debug.WriteLine($"Adding: {gameName}");
-                        Debug.WriteLine($"  Steam ID: {steamAppId}");
+                        Debug.WriteLine($"  Steam ID: {steamAppId?.ToString() ?? "N/A"}");
                         Debug.WriteLine($"  RAWG ID: {rawgId?.ToString() ?? "N/A"}");
                         Debug.WriteLine($"  Executable: {executablePath}");
                         Debug.WriteLine($"  Folder: {folderLocation}");
@@ -146,15 +157,16 @@ namespace Codec
 
                 // Show completion dialog
                 var gamesWithRawg = ViewModel.Games.Count(g => g.RawgID.HasValue);
+                var gamesWithSteam = ViewModel.Games.Count(g => g.SteamID.HasValue);
                 var completionDialog = new ContentDialog
                 {
-                    Title = "Steam Library Scan Complete",
+                    Title = "Game Library Scan Complete",
                     Content = $"Scanned: {totalScanned} items\n" +
-                              $"Excluded: {excluded} (technical packages)\n" +
-                              $"Displayed: {ViewModel.Games.Count} games\n\n" +
-                              $"Games with Steam ID: {ViewModel.Games.Count}\n" +
-                              $"Games with RAWG ID: {gamesWithRawg}\n" +
-                              $"Games with Executable: {gamesWithExecutable}",
+             $"Excluded: {excluded} (technical packages)\n" +
+                  $"Displayed: {ViewModel.Games.Count} games\n\n" +
+                  $"Games with Steam ID: {gamesWithSteam}\n" +
+                $"Games with RAWG ID: {gamesWithRawg}\n" +
+                 $"Games with Executable: {gamesWithExecutable}",
                     CloseButtonText = "Ok",
                     XamlRoot = this.Content.XamlRoot
                 };
@@ -186,19 +198,35 @@ namespace Codec
             }
         }
 
-        private async void ScanFolder_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Shows popup menu with game adding options
+        /// </summary>
+        private async void AddGames_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: Will be reimplemented later
-            var dialog = new ContentDialog
+            var menuDialog = new ContentDialog
             {
-                Title = "Coming Soon",
-                Content = "Folder scanning will be reimplemented soon!",
-                CloseButtonText = "Ok",
+                Title = null,
+                Content = null,
+                PrimaryButtonText = "Scan PC for Games",
+                SecondaryButtonText = "Add Executable",
+                CloseButtonText = "Cancel",
                 XamlRoot = this.Content.XamlRoot
             };
 
-            await dialog.ShowAsync();
+            var result = await menuDialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                // Scan PC for Games
+                await ScanGamesAsync();
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                // Add Executable
+                await AddGameAsync();
+            }
         }
+
     }
 }
 

@@ -17,7 +17,6 @@ namespace Codec.Services
         private static readonly HttpClient _httpClient = new();
         private const string SteamApiUrl = "https://api.steampowered.com/ISteamApps/GetAppList/v2/";
         private const string SteamDetailsUrl = "https://store.steampowered.com/api/appdetails?appids=";
-        private const string RawgApiUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
 
         private static List<SteamApp>? _cachedSteamApps;
         private static DateTime _cacheTimestamp = DateTime.MinValue;
@@ -350,28 +349,15 @@ namespace Codec.Services
             return await FindRawgIdByNameAsync(bestName);
         }
 
+        /// <summary>
+        /// Finds and validates RAWG ID for a game name
+        /// </summary>
         public static async Task<int?> FindRawgIdByNameAsync(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName)) return null;
-            try
-            {
-                string url = $"{RawgApiUrl}?term={Uri.EscapeDataString(gameName)}";
-                var response = await _httpClient.GetStringAsync(url);
-                using var jsonDoc = JsonDocument.Parse(response);
-                if (jsonDoc.RootElement.TryGetProperty("results", out var results))
-                {
-                    var firstResult = results.EnumerateArray().FirstOrDefault();
-                    if (firstResult.ValueKind != JsonValueKind.Undefined && firstResult.TryGetProperty("id", out var idProperty))
-                    {
-                        return idProperty.GetInt32();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"RAWG API error: {ex.Message}");
-            }
-            return null;
+
+            // Use GameDetailsService for validation
+            return await GameDetailsService.ValidateGameAsync(gameName);
         }
 
         private static int? GetSteamAppIdFromFile(string exePath)
