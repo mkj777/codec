@@ -27,185 +27,28 @@
                        Margin="20,0"/>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" Margin="20">
-            <ItemsControl ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="local:Game">
-                        <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                BorderThickness="1"
-                                CornerRadius="4"
-                                Padding="16"
-                                Margin="0,0,0,12">
-                            <StackPanel Spacing="4">
-                                <!-- Name -->
-                                <TextBlock Text="{x:Bind Name, Mode=OneWay}" 
-                                           FontSize="16" 
-                                           FontWeight="SemiBold"
-                                           Margin="0,0,0,8"/>
-                                
-                                <!-- All Properties -->
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="200"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <!-- Row 0: ID -->
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="ID" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{x:Bind Id, Mode=OneWay}"/>
-
-                                    <!-- Row 1: Date Added -->
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Date Added" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{x:Bind DateAdded, Mode=OneWay}"/>
-
-                                    <!-- Row 2: Import Source -->
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Import Source" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{x:Bind ImportedFrom, Mode=OneWay}"/>
-
-                                    <!-- Row 3: Steam ID -->
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Steam ID" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{x:Bind SteamID, Mode=OneWay}"/>
-
-                                    <!-- Row 4: RAWG ID -->
-                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="RAWG ID" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{x:Bind RawgID, Mode=OneWay}"/>
-
-                                    <!-- Row 5: Executable -->
-                                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Executable" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{x:Bind Executable, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 6: Folder Location -->
-                                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Folder Location" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{x:Bind FolderLocation, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 7: Folder Size -->
-                                    <TextBlock Grid.Row="7" Grid.Column="0" Text="Folder Size" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{x:Bind FolderSize, Mode=OneWay}"/>
-
-                                    <!-- Row 8: Publisher -->
-                                    <TextBlock Grid.Row="8" Grid.Column="0" Text="Publisher" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="8" Grid.Column="1" Text="{x:Bind Publisher, Mode=OneWay}"/>
-
-                                    <!-- Row 9: Developer -->
-                                    <TextBlock Grid.Row="9" Grid.Column="0" Text="Developer" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="9" Grid.Column="1" Text="{x:Bind Developer, Mode=OneWay}"/>
-
-                                    <!-- Row 10: Release Date -->
-                                    <TextBlock Grid.Row="10" Grid.Column="0" Text="Release Date" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="10" Grid.Column="1" Text="{x:Bind ReleaseDate, Mode=OneWay}"/>
-
-                                    <!-- Row 11: Steam Rating -->
-                                    <TextBlock Grid.Row="11" Grid.Column="0" Text="Steam Rating" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="11" Grid.Column="1" Text="{x:Bind SteamRating, Mode=OneWay}"/>
-
-                                    <!-- Row 12: Age Rating -->
-                                    <TextBlock Grid.Row="12" Grid.Column="0" Text="Age Rating" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="12" Grid.Column="1" Text="{x:Bind AgeRating, Mode=OneWay}"/>
-
-                                    <!-- Row 13: Main Story -->
-                                    <TextBlock Grid.Row="13" Grid.Column="0" Text="Main Story (sec)" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="13" Grid.Column="1" Text="{x:Bind TimeToCompleteMainStory, Mode=OneWay}"/>
-
-                                    <!-- Row 14: Completionist -->
-                                    <TextBlock Grid.Row="14" Grid.Column="0" Text="Completionist (sec)" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="14" Grid.Column="1" Text="{x:Bind TimeToCompleteCompletionist, Mode=OneWay}"/>
-
-                                    <!-- Row 15: Capsule -->
-                                    <TextBlock Grid.Row="15" Grid.Column="0" Text="Capsule" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="15" Grid.Column="1" Text="{x:Bind LibCapsule, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 16: Hero -->
-                                    <TextBlock Grid.Row="16" Grid.Column="0" Text="Hero" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="16" Grid.Column="1" Text="{x:Bind LibHero, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 17: Logo -->
-                                    <TextBlock Grid.Row="17" Grid.Column="0" Text="Logo" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="17" Grid.Column="1" Text="{x:Bind LibLogo, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 18: Icon -->
-                                    <TextBlock Grid.Row="18" Grid.Column="0" Text="Icon" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="18" Grid.Column="1" Text="{x:Bind LibIcon, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 19: Client Icon -->
-                                    <TextBlock Grid.Row="19" Grid.Column="0" Text="Client Icon" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="19" Grid.Column="1" Text="{x:Bind LibClientIcon, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 20: Launch Script -->
-                                    <TextBlock Grid.Row="20" Grid.Column="0" Text="Launch Script" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="20" Grid.Column="1" Text="{x:Bind LaunchScript, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 21: Last Updated -->
-                                    <TextBlock Grid.Row="21" Grid.Column="0" Text="Last Updated" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="21" Grid.Column="1" Text="{x:Bind LastUpdated, Mode=OneWay}"/>
-
-                                    <!-- Row 22: Last Launched -->
-                                    <TextBlock Grid.Row="22" Grid.Column="0" Text="Last Launched" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="22" Grid.Column="1" Text="{x:Bind LastLaunched, Mode=OneWay}"/>
-
-                                    <!-- Row 23: Play Time -->
-                                    <TextBlock Grid.Row="23" Grid.Column="0" Text="Play Time (sec)" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="23" Grid.Column="1" Text="{x:Bind PlayTime, Mode=OneWay}"/>
-
-                                    <!-- Row 24: Description -->
-                                    <TextBlock Grid.Row="24" Grid.Column="0" Text="Description" Opacity="0.6" VerticalAlignment="Top"/>
-                                    <TextBlock Grid.Row="24" Grid.Column="1" Text="{x:Bind Description, Mode=OneWay}" TextWrapping="Wrap"/>
-
-                                    <!-- Row 25: Genres -->
-                                    <TextBlock Grid.Row="25" Grid.Column="0" Text="Genres" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="25" Grid.Column="1" Text="[List]"/>
-
-                                    <!-- Row 26: Platforms -->
-                                    <TextBlock Grid.Row="26" Grid.Column="0" Text="Platforms" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="26" Grid.Column="1" Text="[List]"/>
-
-                                    <!-- Row 27: Screenshots -->
-                                    <TextBlock Grid.Row="27" Grid.Column="0" Text="Screenshots" Opacity="0.6"/>
-                                    <TextBlock Grid.Row="27" Grid.Column="1" Text="[List]"/>
-                                </Grid>
-                            </StackPanel>
+        <!-- Library grid of cover images -->
+        <GridView Grid.Row="1" Margin="20"
+                  ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
+                  IsItemClickEnabled="False"
+                  SelectionMode="None">
+            <GridView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsWrapGrid Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </GridView.ItemsPanel>
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="local:Game">
+                    <Grid Width="200" Height="300">
+                        <Border CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                        <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
+                        <Border Background="#80000000" VerticalAlignment="Bottom">
+                            <TextBlock Text="{x:Bind Name}" Foreground="White" Margin="6" TextTrimming="CharacterEllipsis"/>
                         </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                    </Grid>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
 
         <!-- Global app-level spinner overlay -->
         <Grid Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
@@ -218,19 +61,31 @@
                           VerticalAlignment="Center"/>
         </Grid>
 
-        <!-- Bottom Bar with "Add Games" Button -->
+        <!-- Bottom Bar with "Add Games" and "Debug" Buttons -->
         <Grid Grid.Row="2" Height="70" Padding="20">
-            <Button x:Name="AddGamesButton"
-                    Content="Add Games"
-                    Click="AddGames_Click"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    FontWeight="SemiBold"
-                    UseSystemFocusVisuals="False"
-                    FontSize="14"/>
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button x:Name="AddGamesButton"
+                        Content="Add Games"
+                        Click="AddGames_Click"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        UseSystemFocusVisuals="False"
+                        FontSize="14"/>
+                <Button x:Name="DebugButton"
+                        Content="Debug"
+                        Click="Debug_Click"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        UseSystemFocusVisuals="False"
+                        FontSize="14"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>
+
+
 
 
 

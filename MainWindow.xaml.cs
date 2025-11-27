@@ -23,6 +23,18 @@ namespace Codec
             this.Title = "Codec Game Library";
             ViewModel = new MainViewModel();
             ExtendsContentIntoTitleBar = true;
+
+            // Load persisted library
+            _ = LoadLibraryAsync();
+        }
+
+        private async Task LoadLibraryAsync()
+        {
+            var saved = await LibraryStorageService.LoadAsync();
+            foreach (var g in saved)
+            {
+                ViewModel.Games.Add(g);
+            }
         }
 
         private async void AddGame_Click(object sender, RoutedEventArgs e)
@@ -69,44 +81,30 @@ namespace Codec
 
         private async Task ScanGamesAsync(Button? button = null)
         {
-            // Clear previous results
-            ViewModel.Games.Clear();
-
+            // Do not clear existing; we'll replace with new results after scan
             if (button != null)
             {
                 button.IsEnabled = false;
                 button.Content = "Scanning...";
             }
 
+            AppSpinner.Visibility = Visibility.Visible;
+            AppSpinner.IsActive = true;
+            AddGamesButton.IsEnabled = false;
+
             try
             {
-                // Progress handler for UI updates
-                var progress = new Progress<string>(status =>
-                   {
-                       Debug.WriteLine(status);
-                       if (button != null)
-                       {
-                           button.Content = status;
-                       }
-                   });
+                var progress = new Progress<string>(_ => { /* suppress per-item status on button */ });
 
-                // Start comprehensive game scan using new 3-phase architecture
                 var scanner = new GameScanner();
                 var scanResults = await scanner.ScanAllGamesAsync(progress);
 
-                Debug.WriteLine($"Scan complete. Processing {scanResults.Count} games...");
+                // Prepare new list
+                var newGames = new System.Collections.Generic.List<Game>();
 
                 // Games to exclude from display (but still scan)
-                var excludedGameNames = new[]
-         {
-     "Steamworks Common Redistributables",
-          "Steam Linux Runtime",
-            "Proton",
-    "Steam Audio",
-  "Steam VR"
-                };
+                var excludedGameNames = new[] { "Steamworks Common Redistributables", "Steam Linux Runtime", "Proton", "Steam Audio", "Steam VR" };
 
-                // Process each found game
                 int totalScanned = 0;
                 int excluded = 0;
                 int gamesWithExecutable = 0;
@@ -116,27 +114,13 @@ namespace Codec
                     try
                     {
                         totalScanned++;
-
-                        // Check if this game should be excluded from display
                         if (excludedGameNames.Any(excl => gameName.Contains(excl, StringComparison.OrdinalIgnoreCase)))
                         {
                             excluded++;
-                            Debug.WriteLine($"Excluding from display: {gameName} (Steam ID: {steamAppId})");
-                            continue; // Skip adding to UI
+                            continue;
                         }
+                        if (!string.IsNullOrEmpty(executablePath)) gamesWithExecutable++;
 
-                        if (!string.IsNullOrEmpty(executablePath))
-                        {
-                            gamesWithExecutable++;
-                        }
-
-                        Debug.WriteLine($"Adding: {gameName}");
-                        Debug.WriteLine($"  Steam ID: {steamAppId?.ToString() ?? "N/A"}");
-                        Debug.WriteLine($"  RAWG ID: {rawgId?.ToString() ?? "N/A"}");
-                        Debug.WriteLine($"  Executable: {executablePath}");
-                        Debug.WriteLine($"  Folder: {folderLocation}");
-
-                        // Create Game object
                         var game = new Game
                         {
                             Name = gameName,
@@ -147,8 +131,16 @@ namespace Codec
                             RawgID = rawgId
                         };
 
-                        // Add to collection
-                        ViewModel.Games.Add(game);
+                        if (steamAppId.HasValue)
+                        {
+                            var coverUri = await GameAssetService.DownloadSteamLibraryCoverAsync(steamAppId.Value);
+                            if (!string.IsNullOrEmpty(coverUri))
+                            {
+                                game.LibCapsule = coverUri;
+                            }
+                        }
+
+                        newGames.Add(game);
                     }
                     catch (Exception ex)
                     {
@@ -156,28 +148,19 @@ namespace Codec
                     }
                 }
 
-                // Show completion dialog
-                var gamesWithRawg = ViewModel.Games.Count(g => g.RawgID.HasValue);
-                var gamesWithSteam = ViewModel.Games.Count(g => g.SteamID.HasValue);
-                var completionDialog = new ContentDialog
-                {
-                    Title = "Game Library Scan Complete",
-                    Content = $"Scanned: {totalScanned} items\n" +
-             $"Excluded: {excluded} (technical packages)\n" +
-                  $"Displayed: {ViewModel.Games.Count} games\n\n" +
-                  $"Games with Steam ID: {gamesWithSteam}\n" +
-                $"Games with RAWG ID: {gamesWithRawg}\n" +
-                 $"Games with Executable: {gamesWithExecutable}",
-                    CloseButtonText = "Ok",
-                    XamlRoot = this.Content.XamlRoot
-                };
+                // Replace current library with new results
+                ViewModel.Games.Clear();
+                foreach (var g in newGames)
+                    ViewModel.Games.Add(g);
 
-                await completionDialog.ShowAsync();
+                // Persist to disk
+                await LibraryStorageService.SaveAsync(ViewModel.Games);
+
+                // Optional: show minimal completion toast/dialog can be added if desired
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error during scan: {ex.Message}");
-
                 var errorDialog = new ContentDialog
                 {
                     Title = "Scan Error",
@@ -185,12 +168,14 @@ namespace Codec
                     CloseButtonText = "Ok",
                     XamlRoot = this.Content.XamlRoot
                 };
-
                 await errorDialog.ShowAsync();
             }
             finally
             {
-                // Re-enable button
+                AppSpinner.IsActive = false;
+                AppSpinner.Visibility = Visibility.Collapsed;
+                AddGamesButton.IsEnabled = true;
+
                 if (button != null)
                 {
                     button.IsEnabled = true;
@@ -326,6 +311,99 @@ namespace Codec
             await menuDialog.ShowAsync();
         }
 
+        private async void Debug_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Build a compact, readable view of current games
+                var panel = new StackPanel { Spacing = 8, MinWidth = 360 };
+
+                foreach (var g in ViewModel.Games)
+                {
+                    var expander = new Expander
+                    {
+                        Header = $"{g.Name} (Steam: {g.SteamID?.ToString() ?? "N/A"}, RAWG: {g.RawgID?.ToString() ?? "N/A"})",
+                        IsExpanded = false
+                    };
+
+                    var grid = new Grid { ColumnDefinitions = { new ColumnDefinition { Width = new GridLength(180) }, new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) } } };
+
+                    int row = 0;
+                    void AddRow(string key, string? value)
+                    {
+                        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                        var k = new TextBlock { Text = key, Opacity = 0.6 };
+                        var v = new TextBlock { Text = value ?? "", TextWrapping = TextWrapping.Wrap };
+                        Grid.SetRow(k, row); Grid.SetColumn(k, 0);
+                        Grid.SetRow(v, row); Grid.SetColumn(v, 1);
+                        grid.Children.Add(k); grid.Children.Add(v);
+                        row++;
+                    }
+
+                    AddRow("ID", g.Id.ToString());
+                    AddRow("Date Added", g.DateAdded.ToString());
+                    AddRow("Import Source", g.ImportedFrom);
+                    AddRow("Steam ID", g.SteamID?.ToString());
+                    AddRow("RAWG ID", g.RawgID?.ToString());
+                    AddRow("Executable", g.Executable);
+                    AddRow("Folder Location", g.FolderLocation);
+                    AddRow("Folder Size", g.FolderSize.ToString());
+                    AddRow("Publisher", g.Publisher);
+                    AddRow("Developer", g.Developer);
+                    AddRow("Release Date", g.ReleaseDate?.ToString());
+                    AddRow("Steam Rating", g.SteamRating?.ToString());
+                    AddRow("Age Rating", g.AgeRating);
+                    AddRow("Main Story (sec)", g.TimeToCompleteMainStory?.ToString());
+                    AddRow("Completionist (sec)", g.TimeToCompleteCompletionist?.ToString());
+                    AddRow("Capsule", g.LibCapsule);
+                    AddRow("Hero", g.LibHero);
+                    AddRow("Logo", g.LibLogo);
+                    AddRow("Icon", g.LibIcon);
+                    AddRow("Client Icon", g.LibClientIcon);
+                    AddRow("Screenshots", g.Screenshots != null && g.Screenshots.Count > 0 ? string.Join(", ", g.Screenshots) : "");
+                    AddRow("Last Updated", g.LastUpdated?.ToString());
+                    AddRow("Last Launched", g.LastLaunched?.ToString());
+
+                    expander.Content = grid;
+                    panel.Children.Add(expander);
+                }
+
+                var scroller = new ScrollViewer
+                {
+                    Content = panel,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+                };
+
+                var container = new Grid
+                {
+                    MaxWidth = 800,
+                    MaxHeight = 540
+                };
+                container.Children.Add(scroller);
+
+                var dialog = new ContentDialog
+                {
+                    Title = "Debug: Scanned Games Data",
+                    Content = container,
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+
+                await dialog.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                var error = new ContentDialog
+                {
+                    Title = "Debug Error",
+                    Content = ex.Message,
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await error.ShowAsync();
+            }
+        }
     }
 }
 
