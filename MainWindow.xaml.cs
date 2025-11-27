@@ -3,6 +3,7 @@ using Codec.Services;
 using Codec.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Text;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -199,32 +200,130 @@ namespace Codec
         }
 
         /// <summary>
-        /// Shows popup menu with game adding options
+        /// Shows popup menu with game adding options (custom minimal UI)
         /// </summary>
         private async void AddGames_Click(object sender, RoutedEventArgs e)
         {
+            // Build a minimal popup with only 3 buttons and a loading spinner
+            var spinner = new ProgressRing
+            {
+                IsActive = false,
+                Width = 24,
+                Height = 24,
+                Margin = new Thickness(0, 0, 8, 0),
+                Visibility = Visibility.Collapsed
+            };
+
+            var scanButton = new Button
+            {
+                Content = "Scan PC for Games",
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+
+            var addExeButton = new Button
+            {
+                Content = "Add Executable",
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+
+            var cancelButton = new Button
+            {
+                Content = "Cancel",
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            var header = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            header.Children.Add(spinner);
+            header.Children.Add(new TextBlock { Text = string.Empty, VerticalAlignment = VerticalAlignment.Center });
+
+            var content = new StackPanel
+            {
+                Spacing = 8,
+                MinWidth = 320
+            };
+            content.Children.Add(header);
+            content.Children.Add(scanButton);
+            content.Children.Add(addExeButton);
+            content.Children.Add(cancelButton);
+
             var menuDialog = new ContentDialog
             {
                 Title = null,
-                Content = null,
-                PrimaryButtonText = "Scan PC for Games",
-                SecondaryButtonText = "Add Executable",
-                CloseButtonText = "Cancel",
+                Content = content,
+                // Hide default dialog buttons; we use our own
+                PrimaryButtonText = string.Empty,
+                SecondaryButtonText = string.Empty,
+                CloseButtonText = string.Empty,
                 XamlRoot = this.Content.XamlRoot
             };
 
-            var result = await menuDialog.ShowAsync();
+            scanButton.Click += async (_, __) =>
+            {
+                try
+                {
+                    // Close popup and show app-level spinner
+                    menuDialog.Hide();
+                    AppSpinner.Visibility = Visibility.Visible;
+                    AppSpinner.IsActive = true;
 
-            if (result == ContentDialogResult.Primary)
+                    // Disable global Add Games button while scanning
+                    AddGamesButton.IsEnabled = false;
+
+                    await ScanGamesAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in scan button click: {ex.Message}");
+                }
+                finally
+                {
+                    AppSpinner.IsActive = false;
+                    AppSpinner.Visibility = Visibility.Collapsed;
+                    AddGamesButton.IsEnabled = true;
+                }
+            };
+
+            addExeButton.Click += async (_, __) =>
             {
-                // Scan PC for Games
-                await ScanGamesAsync();
-            }
-            else if (result == ContentDialogResult.Secondary)
+                try
+                {
+                    // Close popup and show app-level spinner
+                    menuDialog.Hide();
+                    AppSpinner.Visibility = Visibility.Visible;
+                    AppSpinner.IsActive = true;
+
+                    // Disable global Add Games button during operation
+                    AddGamesButton.IsEnabled = false;
+
+                    await AddGameAsync();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in add executable button click: {ex.Message}");
+                }
+                finally
+                {
+                    AppSpinner.IsActive = false;
+                    AppSpinner.Visibility = Visibility.Collapsed;
+                    AddGamesButton.IsEnabled = true;
+                }
+            };
+
+            cancelButton.Click += (_, __) =>
             {
-                // Add Executable
-                await AddGameAsync();
-            }
+                menuDialog.Hide();
+            };
+
+            await menuDialog.ShowAsync();
         }
 
     }

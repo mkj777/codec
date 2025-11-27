@@ -82,6 +82,10 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
                                     <!-- Row 0: ID -->
@@ -202,6 +206,17 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+
+        <!-- Global app-level spinner overlay -->
+        <Grid Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+            <ProgressRing x:Name="AppSpinner"
+                          IsActive="False"
+                          Visibility="Collapsed"
+                          Width="48"
+                          Height="48"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+        </Grid>
 
         <!-- Bottom Bar with "Add Games" Button -->
         <Grid Grid.Row="2" Height="70" Padding="20">
