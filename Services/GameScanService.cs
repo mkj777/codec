@@ -62,43 +62,43 @@ namespace Codec.Services
         /// Execute complete 3-phase scan
         /// </summary>
         public async Task<List<(int? SteamAppId, string GameName, int? RawgId, string ImportSource, string ExecutablePath, string FolderLocation)>> ScanAllGamesAsync(IProgress<string>? progress = null)
-         {
-     var allCandidates = new List<GameCandidate>();
-             var scanCache = await ScanCache.LoadAsync();
+        {
+            var allCandidates = new List<GameCandidate>();
+            var scanCache = await ScanCache.LoadAsync();
 
-        Debug.WriteLine("=== STARTING COMPLETE GAME LIBRARY SCAN ===");
+            Debug.WriteLine("=== STARTING COMPLETE GAME LIBRARY SCAN ===");
             progress?.Report("Starting comprehensive game scan...");
 
-         // PHASE 1: High-Reliability Launcher Integration
+            // PHASE 1: High-Reliability Launcher Integration
             Debug.WriteLine("\n=== PHASE 1: LAUNCHER INTEGRATION ===");
-        foreach (var scanner in _platformScanners)
-     {
-  try
-       {
-         progress?.Report($"Scanning {scanner.PlatformName}...");
-          var candidates = await scanner.ScanAsync(progress);
-        allCandidates.AddRange(candidates);
-          Debug.WriteLine($"✓ {scanner.PlatformName}: Found {candidates.Count} games");
-    }
-  catch (Exception ex)
-      {
-        Debug.WriteLine($"✗ {scanner.PlatformName} scan failed: {ex.Message}");
- progress?.Report($"Warning: {scanner.PlatformName} scan failed");
+            foreach (var scanner in _platformScanners)
+            {
+                try
+                {
+                    progress?.Report($"Scanning {scanner.PlatformName}...");
+                    var candidates = await scanner.ScanAsync(progress);
+                    allCandidates.AddRange(candidates);
+                    Debug.WriteLine($"✓ {scanner.PlatformName}: Found {candidates.Count} games");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"✗ {scanner.PlatformName} scan failed: {ex.Message}");
+                    progress?.Report($"Warning: {scanner.PlatformName} scan failed");
                 }
             }
 
-    // PHASE 2: Heuristic Environmental Scanning
+            // PHASE 2: Heuristic Environmental Scanning
             Debug.WriteLine("\n=== PHASE 2: HEURISTIC SCANNING ===");
             try
             {
-  progress?.Report("Scanning standard installation directories...");
-    var heuristicCandidates = await _heuristicScanner.ScanAsync(progress);
-  allCandidates.AddRange(heuristicCandidates);
-         Debug.WriteLine($"✓ Heuristic scan: Found {heuristicCandidates.Count} potential games");
+                progress?.Report("Scanning standard installation directories...");
+                var heuristicCandidates = await _heuristicScanner.ScanAsync(progress);
+                allCandidates.AddRange(heuristicCandidates);
+                Debug.WriteLine($"✓ Heuristic scan: Found {heuristicCandidates.Count} potential games");
             }
             catch (Exception ex)
-{
-         Debug.WriteLine($"✗ Heuristic scan failed: {ex.Message}");
+            {
+                Debug.WriteLine($"✗ Heuristic scan failed: {ex.Message}");
             }
 
             // Remove duplicates based on folder path
@@ -120,17 +120,17 @@ namespace Codec.Services
 
             Debug.WriteLine($"\n✓ Total unique candidates: {allCandidates.Count}");
 
-        // PHASE 3: External Validation & Enrichment + EXE Detection
- Debug.WriteLine("\n=== PHASE 3: VALIDATION & EXE DETECTION ===");
-       progress?.Report($"Validating and analyzing {allCandidates.Count} candidates...");
+            // PHASE 3: External Validation & Enrichment + EXE Detection
+            Debug.WriteLine("\n=== PHASE 3: VALIDATION & EXE DETECTION ===");
+            progress?.Report($"Validating and analyzing {allCandidates.Count} candidates...");
 
             var validatedGames = new List<(int?, string, int?, string, string, string)>();
-      int processedCount = 0;
+            int processedCount = 0;
 
-       foreach (var candidate in allCandidates)
+            foreach (var candidate in allCandidates)
             {
-        processedCount++;
-  progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
+                processedCount++;
+                progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
 
                 if (GameContentHeuristics.ShouldIgnoreCandidate(candidate.Name, candidate.FolderPath, candidate.Source, candidate.SteamAppId.HasValue))
                 {
@@ -145,68 +145,68 @@ namespace Codec.Services
                     continue;
                 }
 
-   // Execute EXE detection funnel first
-      string executablePath = ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
+                // Execute EXE detection funnel first
+                string executablePath = ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
 
-        if (string.IsNullOrEmpty(executablePath))
+                if (string.IsNullOrEmpty(executablePath))
                 {
-          Debug.WriteLine($"  ✗ REJECTED: '{candidate.Name}' - No valid executable found");
-    continue;
-       }
+                    Debug.WriteLine($"  ✗ REJECTED: '{candidate.Name}' - No valid executable found");
+                    continue;
+                }
 
-    // Determine Steam ID: use existing if available, otherwise search for it
-   int? steamId = candidate.SteamAppId;
-      
-         if (!steamId.HasValue)
-         {
-        // No Steam ID yet - try to find one via GameNameService (works for ANY source)
-             Debug.WriteLine($"  [STEAM LOOKUP] Searching Steam for: '{candidate.Name}'");
-     try
- {
-              (int? foundSteamId, int? _) = await GameNameService.FindGameIdsAsync(executablePath);
-             if (foundSteamId.HasValue)
-     {
-        steamId = foundSteamId;
- Debug.WriteLine($"  ✓ Steam ID found: {steamId} for '{candidate.Name}'");
-    }
-        else
- {
-     Debug.WriteLine($"  ℹ No Steam ID found for '{candidate.Name}'");
-       }
-          }
-   catch (Exception ex)
-         {
-       Debug.WriteLine($"  ✗ Steam lookup failed for '{candidate.Name}': {ex.Message}");
-        }
-         }
-        else
+                // Determine Steam ID: use existing if available, otherwise search for it
+                int? steamId = candidate.SteamAppId;
+
+                if (!steamId.HasValue)
                 {
-    Debug.WriteLine($"  ✓ Using existing Steam ID: {steamId} for '{candidate.Name}'");
-    }
+                    // No Steam ID yet - try to find one via GameNameService (works for ANY source)
+                    Debug.WriteLine($"  [STEAM LOOKUP] Searching Steam for: '{candidate.Name}'");
+                    try
+                    {
+                        (int? foundSteamId, int? _) = await GameNameService.FindGameIdsAsync(executablePath);
+                        if (foundSteamId.HasValue)
+                        {
+                            steamId = foundSteamId;
+                            Debug.WriteLine($"  ✓ Steam ID found: {steamId} for '{candidate.Name}'");
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"  ℹ No Steam ID found for '{candidate.Name}'");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"  ✗ Steam lookup failed for '{candidate.Name}': {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine($"  ✓ Using existing Steam ID: {steamId} for '{candidate.Name}'");
+                }
 
-          // External validation via RAWG API
-    int? rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, steamId.HasValue);
+                // External validation via RAWG API
+                int? rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, steamId.HasValue);
 
                 // Apply strict validation: discard if not found in RAWG (unless from Phase 1)
                 bool isFromLauncher = !candidate.Source.Equals("Heuristic Scan", StringComparison.OrdinalIgnoreCase);
-         if (!rawgId.HasValue && !isFromLauncher)
-    {
-         Debug.WriteLine($"  ✗ REJECTED: '{candidate.Name}' - Not found in RAWG database (likely not a game)");
-      continue;
-          }
+                if (!rawgId.HasValue && !isFromLauncher)
+                {
+                    Debug.WriteLine($"  ✗ REJECTED: '{candidate.Name}' - Not found in RAWG database (likely not a game)");
+                    continue;
+                }
 
                 Debug.WriteLine($"  ✓ VALIDATED: '{candidate.Name}' (Steam ID: {steamId?.ToString() ?? "N/A"}, RAWG ID: {rawgId?.ToString() ?? "N/A"})");
-   validatedGames.Add((steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath));
+                validatedGames.Add((steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath));
 
                 scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId);
-        }
+            }
 
             Debug.WriteLine($"\n=== SCAN COMPLETE: {validatedGames.Count} validated games ===");
-      progress?.Report($"Scan complete! Found {validatedGames.Count} valid games");
+            progress?.Report($"Scan complete! Found {validatedGames.Count} valid games");
 
             await scanCache.SaveAsync();
 
-   return validatedGames;
+            return validatedGames;
         }
 
         /// <summary>

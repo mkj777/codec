@@ -1,9 +1,9 @@
 using Codec.Models;
 using Codec.Services;
 using Codec.ViewModels;
+using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -486,7 +486,7 @@ namespace Codec
                 if (refreshBtn != null) refreshBtn.IsEnabled = true;
             }
         }
-        
+
         private async void ResetApp_Click(object sender, RoutedEventArgs e)
         {
             var confirmationDialog = new ContentDialog
