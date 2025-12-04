@@ -47,8 +47,28 @@
             </GridView.ItemTemplate>
         </GridView>
 
-        <!-- Global app-level spinner overlay -->
+        <!-- Global app-level overlay -->
         <Grid Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+            <StackPanel x:Name="ScanProgressPanel"
+                        Visibility="Collapsed"
+                        Background="#BF1C1C1C"
+                        Padding="24"
+                        CornerRadius="8"
+                        Spacing="12"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <TextBlock x:Name="ScanProgressText"
+                           Text="Durchsuche Bibliotheken..."
+                           Foreground="White"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <ProgressBar x:Name="ScanProgressBar"
+                             Width="320"
+                             Height="8"
+                             IsIndeterminate="True"/>
+            </StackPanel>
+
             <ProgressRing x:Name="AppSpinner"
                           IsActive="False"
                           Visibility="Collapsed"

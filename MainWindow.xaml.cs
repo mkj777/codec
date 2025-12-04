@@ -124,16 +124,14 @@ namespace Codec
 
         private async Task ScanGamesAsync(Button? button = null)
         {
-            // Do not clear existing; we'll replace with new results after scan
             if (button != null)
             {
                 button.IsEnabled = false;
                 button.Content = "Scanning...";
             }
 
-            AppSpinner.Visibility = Visibility.Visible;
-            AppSpinner.IsActive = true;
             AddGamesButton.IsEnabled = false;
+            ShowScanProgress("Durchsuche Bibliotheken...", isIndeterminate: true);
 
             try
             {
@@ -175,14 +173,17 @@ namespace Codec
                     }
                 }
 
-                // Resolve library covers before updating UI
-                await EnsureCoversAsync(newGames);
+                int totalGames = newGames.Count;
+                PrepareCoverProgress(totalGames);
 
-                // Replace current library with new results
                 ViewModel.Games.Clear();
+                int processed = 0;
                 foreach (var g in newGames)
                 {
+                    await EnsureCoverForGameAsync(g);
                     ViewModel.Games.Add(g);
+                    processed++;
+                    UpdateCoverProgress(processed, totalGames);
                 }
 
                 // Persist to disk after covers are set
@@ -202,8 +203,7 @@ namespace Codec
             }
             finally
             {
-                AppSpinner.IsActive = false;
-                AppSpinner.Visibility = Visibility.Collapsed;
+                HideScanProgress();
                 AddGamesButton.IsEnabled = true;
 
                 if (button != null)
@@ -285,25 +285,12 @@ namespace Codec
             {
                 try
                 {
-                    // Close popup and show app-level spinner
                     menuDialog.Hide();
-                    AppSpinner.Visibility = Visibility.Visible;
-                    AppSpinner.IsActive = true;
-
-                    // Disable global Add Games button while scanning
-                    AddGamesButton.IsEnabled = false;
-
                     await ScanGamesAsync();
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Error in scan button click: {ex.Message}");
-                }
-                finally
-                {
-                    AppSpinner.IsActive = false;
-                    AppSpinner.Visibility = Visibility.Collapsed;
-                    AddGamesButton.IsEnabled = true;
                 }
             };
 
@@ -440,13 +427,14 @@ namespace Codec
             var refreshBtn = sender as Button;
             try
             {
-                AppSpinner.Visibility = Visibility.Visible;
-                AppSpinner.IsActive = true;
                 AddGamesButton.IsEnabled = false;
                 DebugButton.IsEnabled = false;
                 if (refreshBtn != null) refreshBtn.IsEnabled = false;
 
-                // Force re-download of covers for all games with SteamID
+                ShowScanProgress("Aktualisiere Cover...", ViewModel.Games.Count == 0);
+                PrepareCoverProgress(ViewModel.Games.Count, "Aktualisiere Cover", "Keine Spiele zum Aktualisieren.");
+
+                int processed = 0;
                 foreach (var g in ViewModel.Games)
                 {
                     if (g.SteamID.HasValue)
@@ -458,6 +446,9 @@ namespace Codec
                         }
                         await Task.Delay(75);
                     }
+
+                    processed++;
+                    UpdateCoverProgress(processed, ViewModel.Games.Count, "Aktualisiere Cover");
                 }
 
                 await LibraryStorageService.SaveAsync(ViewModel.Games);
@@ -475,8 +466,7 @@ namespace Codec
             }
             finally
             {
-                AppSpinner.IsActive = false;
-                AppSpinner.Visibility = Visibility.Collapsed;
+                HideScanProgress();
                 AddGamesButton.IsEnabled = true;
                 DebugButton.IsEnabled = true;
                 if (refreshBtn != null) refreshBtn.IsEnabled = true;
@@ -548,6 +538,56 @@ namespace Codec
                 };
                 await successDialog.ShowAsync();
             }
+        }
+
+        private void ShowScanProgress(string message, bool isIndeterminate)
+        {
+            ScanProgressPanel.Visibility = Visibility.Visible;
+            ScanProgressText.Text = message;
+            ScanProgressBar.IsIndeterminate = isIndeterminate;
+            ScanProgressBar.Value = 0;
+            ScanProgressBar.Maximum = 1;
+        }
+
+        private void PrepareCoverProgress(int totalGames, string? labelPrefix = null, string? emptyMessage = null)
+        {
+            if (totalGames <= 0)
+            {
+                ScanProgressBar.IsIndeterminate = true;
+                ScanProgressText.Text = emptyMessage ?? "Keine neuen Spiele gefunden.";
+                return;
+            }
+
+            ScanProgressBar.IsIndeterminate = false;
+            ScanProgressBar.Minimum = 0;
+            ScanProgressBar.Maximum = totalGames;
+            ScanProgressBar.Value = 0;
+            var prefix = labelPrefix ?? "Lade Cover";
+            ScanProgressText.Text = $"{prefix} (0/{totalGames})";
+        }
+
+        private void UpdateCoverProgress(int processed, int total, string? labelPrefix = null)
+        {
+            if (total <= 0)
+            {
+                ScanProgressText.Text = labelPrefix ?? "Lade Cover";
+                return;
+            }
+
+            ScanProgressBar.IsIndeterminate = false;
+            ScanProgressBar.Value = Math.Min(processed, total);
+            var prefix = labelPrefix ?? "Lade Cover";
+            ScanProgressText.Text = $"{prefix} ({Math.Min(processed, total)}/{total})";
+        }
+
+        private void HideScanProgress()
+        {
+            ScanProgressPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private Task EnsureCoverForGameAsync(Game game)
+        {
+            return EnsureCoversAsync(new[] { game });
         }
     }
 }
