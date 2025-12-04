@@ -44,6 +44,7 @@ namespace Codec.Models
         // external IDs for fetching metadata from online databases
         public int? SteamID { get; set; }
         public int? RawgID { get; set; }
+        public int? GridDbId { get; set; }
 
         // game details, fetched from various sources
         public string? Publisher { get; set; }

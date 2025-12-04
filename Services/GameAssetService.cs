@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Codec.Services
@@ -13,6 +14,13 @@ namespace Codec.Services
         private static string GetCapsulesDir()
         {
             string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec", "Images", "Capsules");
+            Directory.CreateDirectory(baseDir);
+            return baseDir;
+        }
+
+        private static string GetGridDbDir()
+        {
+            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec", "Images", "GridDb");
             Directory.CreateDirectory(baseDir);
             return baseDir;
         }
@@ -69,6 +77,75 @@ namespace Codec.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"Cover download failed for {steamId}: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Downloads the first available SteamGridDB grid for the given entry.
+        /// </summary>
+        public static async Task<string?> DownloadGridDbCoverAsync(int gridDbId, bool force = false)
+        {
+            try
+            {
+                string gridsUrl = $"https://codec-api-proxy.vercel.app/api/griddb/grids?id={gridDbId}";
+                var response = await _httpClient.GetStringAsync(gridsUrl);
+                using var doc = JsonDocument.Parse(response);
+
+                if (!doc.RootElement.TryGetProperty("data", out var dataArray) || dataArray.GetArrayLength() == 0)
+                {
+                    return null;
+                }
+
+                var first = dataArray[0];
+                if (!first.TryGetProperty("url", out var urlProp))
+                {
+                    return null;
+                }
+
+                string? gridUrl = urlProp.GetString();
+                if (string.IsNullOrEmpty(gridUrl))
+                {
+                    return null;
+                }
+
+                int gridImageId = first.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
+
+                string extension = ".jpg";
+                if (Uri.TryCreate(gridUrl, UriKind.Absolute, out var parsedUri))
+                {
+                    string pathExt = Path.GetExtension(parsedUri.AbsolutePath);
+                    if (!string.IsNullOrEmpty(pathExt))
+                    {
+                        extension = pathExt;
+                    }
+                }
+
+                string dir = GetGridDbDir();
+                string fileName = gridImageId > 0 ? $"griddb_{gridDbId}_{gridImageId}{extension}" : $"griddb_{gridDbId}{extension}";
+                string filePath = Path.Combine(dir, fileName);
+
+                if (File.Exists(filePath) && !force)
+                {
+                    return new Uri(filePath).AbsoluteUri;
+                }
+
+                using var downloadResponse = await _httpClient.GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead);
+                if (!downloadResponse.IsSuccessStatusCode)
+                {
+                    Debug.WriteLine($"GridDB cover variant not available for {gridDbId}: {gridUrl} -> {(int)downloadResponse.StatusCode}");
+                    return null;
+                }
+
+                await using var remoteStream = await downloadResponse.Content.ReadAsStreamAsync();
+                await using var localStream = File.Create(filePath);
+                await remoteStream.CopyToAsync(localStream);
+
+                return new Uri(filePath).AbsoluteUri;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"GridDB cover download failed for {gridDbId}: {ex.Message}");
                 return null;
             }
         }

@@ -60,7 +60,9 @@ namespace Codec
         {
             foreach (var g in games)
             {
-                if (g.SteamID.HasValue && (IsPlaceholder(g.LibCapsule) || LocalFileMissing(g.LibCapsule)))
+                bool needsCover = IsPlaceholder(g.LibCapsule) || LocalFileMissing(g.LibCapsule);
+
+                if (g.SteamID.HasValue && needsCover)
                 {
                     try
                     {
@@ -75,7 +77,12 @@ namespace Codec
                     {
                         Debug.WriteLine($"Cover fetch failed for {g.Name} ({g.SteamID}): {ex.Message}");
                     }
-                    await Task.Delay(75); // small delay to avoid CDN throttling
+                    await Task.Delay(75);
+                }
+                else if (!g.SteamID.HasValue && needsCover)
+                {
+                    await GridDbService.TryPopulateGridAssetsAsync(g);
+                    await Task.Delay(75);
                 }
             }
         }
@@ -172,6 +179,8 @@ namespace Codec
                         Debug.WriteLine($"Error processing {gameName}: {ex.Message}");
                     }
                 }
+
+                await PopulateGridDbDataAsync(newGames);
 
                 int totalGames = newGames.Count;
                 PrepareCoverProgress(totalGames);
@@ -446,6 +455,11 @@ namespace Codec
                         }
                         await Task.Delay(75);
                     }
+                    else
+                    {
+                        await GridDbService.TryPopulateGridAssetsAsync(g, forceCoverDownload: true);
+                        await Task.Delay(75);
+                    }
 
                     processed++;
                     UpdateCoverProgress(processed, ViewModel.Games.Count, "Aktualisiere Cover");
@@ -588,6 +602,20 @@ namespace Codec
         private Task EnsureCoverForGameAsync(Game game)
         {
             return EnsureCoversAsync(new[] { game });
+        }
+
+        private static async Task PopulateGridDbDataAsync(IEnumerable<Game> games)
+        {
+            foreach (var game in games)
+            {
+                if (game.SteamID.HasValue)
+                {
+                    continue;
+                }
+
+                await GridDbService.TryPopulateGridAssetsAsync(game);
+                await Task.Delay(75);
+            }
         }
     }
 }

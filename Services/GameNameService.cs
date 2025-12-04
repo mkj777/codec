@@ -180,7 +180,7 @@ namespace Codec.Services
             if (steamMatch != null)
             {
                 Debug.WriteLine($"Using Steam name for RAWG search: {steamMatch.SteamName}");
-                rawgId = await FindRawgIdByNameAsync(steamMatch.SteamName);
+                rawgId = await FindRawgIdByNameAsync(steamMatch.SteamName, RawgValidationMode.SteamBacked);
             }
 
             if (!rawgId.HasValue)
@@ -826,15 +826,24 @@ namespace Codec.Services
 
         private static async Task<int?> FindRawgIdAsync(string exePath)
         {
+            if (GameContentHeuristics.PathMatchesUtility(exePath))
+            {
+                return null;
+            }
+
             string? bestName = GetBestName(exePath);
-            if (string.IsNullOrWhiteSpace(bestName)) return null;
-            return await FindRawgIdByNameAsync(bestName);
+            if (string.IsNullOrWhiteSpace(bestName) || GameContentHeuristics.NameMatchesUtility(bestName))
+            {
+                return null;
+            }
+
+            return await FindRawgIdByNameAsync(bestName, RawgValidationMode.Strict);
         }
 
-        public static async Task<int?> FindRawgIdByNameAsync(string gameName)
+        public static async Task<int?> FindRawgIdByNameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
         {
             if (string.IsNullOrWhiteSpace(gameName)) return null;
-            return await GameDetailsService.ValidateGameAsync(gameName);
+            return await GameDetailsService.ValidateGameAsync(gameName, mode);
         }
 
         private static bool TryParseRoman(string token, out int value)
