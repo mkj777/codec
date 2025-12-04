@@ -68,7 +68,4 @@
     <HoursBetweenUpdateChecks>168</HoursBetweenUpdateChecks>
     <AppxPackageDir>C:\Users\maxik\Desktop\codec relase\</AppxPackageDir>
   </PropertyGroup>
-  <ItemGroup>
-    <Folder Include="Views\" />
-  </ItemGroup>
 </Project>
