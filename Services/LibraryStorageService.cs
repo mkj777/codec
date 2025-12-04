@@ -16,12 +16,25 @@ namespace Codec.Services
             PropertyNameCaseInsensitive = true
         };
 
+        private static string GetBaseDirectory()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec");
+        }
+
         private static string GetLibraryPath()
         {
-            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec");
-            Directory.CreateDirectory(dir);
+            string dir = EnsureStorageInitialized();
             return Path.Combine(dir, "library.json");
         }
+
+        public static string EnsureStorageInitialized()
+        {
+            string dir = GetBaseDirectory();
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        public static string GetLibraryPathForDiagnostics() => GetLibraryPath();
 
         public static async Task SaveAsync(IEnumerable<Game> games)
         {
@@ -43,6 +56,7 @@ namespace Codec.Services
             try
             {
                 string path = GetLibraryPath();
+                Debug.WriteLine($"Library load path: {path}");
                 if (!File.Exists(path))
                     return new List<Game>();
 
@@ -54,6 +68,24 @@ namespace Codec.Services
             {
                 Debug.WriteLine($"Failed to load library: {ex.Message}");
                 return new List<Game>();
+            }
+        }
+
+        public static async Task ResetAsync()
+        {
+            try
+            {
+                string dir = GetBaseDirectory();
+                if (Directory.Exists(dir))
+                {
+                    await Task.Run(() => Directory.Delete(dir, recursive: true));
+                }
+                Directory.CreateDirectory(dir);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to reset library: {ex.Message}");
+                throw;
             }
         }
     }

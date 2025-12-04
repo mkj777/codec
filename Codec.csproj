@@ -54,10 +54,10 @@
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">False</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
-    <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
+    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <PackageCertificateThumbprint>DC668992C2B1E8431ED8B5B22606F85E933B3F91</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
@@ -66,6 +66,7 @@
     <AppxBundle>Never</AppxBundle>
     <AppInstallerUri>C:\Users\maxik\Desktop</AppInstallerUri>
     <HoursBetweenUpdateChecks>168</HoursBetweenUpdateChecks>
+    <AppxPackageDir>C:\Users\maxik\Desktop\codec relase\</AppxPackageDir>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Views\" />

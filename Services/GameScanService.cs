@@ -62,8 +62,9 @@ namespace Codec.Services
         /// Execute complete 3-phase scan
         /// </summary>
         public async Task<List<(int? SteamAppId, string GameName, int? RawgId, string ImportSource, string ExecutablePath, string FolderLocation)>> ScanAllGamesAsync(IProgress<string>? progress = null)
-        {
- var allCandidates = new List<GameCandidate>();
+         {
+     var allCandidates = new List<GameCandidate>();
+             var scanCache = await ScanCache.LoadAsync();
 
         Debug.WriteLine("=== STARTING COMPLETE GAME LIBRARY SCAN ===");
             progress?.Report("Starting comprehensive game scan...");
@@ -100,11 +101,22 @@ namespace Codec.Services
          Debug.WriteLine($"✗ Heuristic scan failed: {ex.Message}");
             }
 
-  // Remove duplicates based on folder path
-          allCandidates = allCandidates
-           .GroupBy(c => c.FolderPath, StringComparer.OrdinalIgnoreCase)
-         .Select(g => g.First())
-         .ToList();
+            // Remove duplicates based on folder path
+            allCandidates = allCandidates
+                .GroupBy(c => c.FolderPath, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            // Drop known non-game software early to avoid expensive heuristics
+            int beforeCatalogFilter = allCandidates.Count;
+            allCandidates = allCandidates
+                .Where(candidate => !NonGameSoftwareCatalog.IsNonGameCandidate(candidate))
+                .ToList();
+
+            if (beforeCatalogFilter != allCandidates.Count)
+            {
+                Debug.WriteLine($"\n- Non-game exclusions: Filtered {beforeCatalogFilter - allCandidates.Count} utility entries");
+            }
 
             Debug.WriteLine($"\n✓ Total unique candidates: {allCandidates.Count}");
 
@@ -119,6 +131,13 @@ namespace Codec.Services
             {
         processedCount++;
   progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
+
+                if (scanCache.TryGetValid(candidate, out var cachedResult))
+                {
+                    Debug.WriteLine($"  ✓ Cache hit: '{candidate.Name}' (last scanned {cachedResult.CachedAtUtc:u})");
+                    validatedGames.Add((cachedResult.SteamAppId, cachedResult.GameName, cachedResult.RawgId, cachedResult.ImportSource, cachedResult.ExecutablePath, cachedResult.FolderPath));
+                    continue;
+                }
 
    // Execute EXE detection funnel first
       string executablePath = ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
@@ -172,10 +191,14 @@ namespace Codec.Services
 
                 Debug.WriteLine($"  ✓ VALIDATED: '{candidate.Name}' (Steam ID: {steamId?.ToString() ?? "N/A"}, RAWG ID: {rawgId?.ToString() ?? "N/A"})");
    validatedGames.Add((steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath));
+
+                scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId);
         }
 
             Debug.WriteLine($"\n=== SCAN COMPLETE: {validatedGames.Count} validated games ===");
       progress?.Report($"Scan complete! Found {validatedGames.Count} valid games");
+
+            await scanCache.SaveAsync();
 
    return validatedGames;
         }
@@ -878,6 +901,12 @@ namespace Codec.Services
                     {
                         string dirName = new DirectoryInfo(dir).Name;
 
+                        if (NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
+                        {
+                            Debug.WriteLine($"  [CATALOG REJECT] Utility directory: {dirName}");
+                            continue;
+                        }
+
                         // STAGE 1: Apply name-based blacklist
                         if (DirectoryBlacklist.Contains(dirName))
                         {
@@ -900,8 +929,8 @@ namespace Codec.Services
                         }
 
                         // STAGE 4: Must contain .exe files
-                        var exeFiles = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories);
-                        if (exeFiles.Length == 0)
+                        bool hasExecutable = SafeEnumerateFiles(dir, "*.exe").Any();
+                        if (!hasExecutable)
                         {
                             Debug.WriteLine($"  [STAGE 4 REJECT] No .exe files found: {dirName}");
                             continue;
@@ -997,27 +1026,35 @@ namespace Codec.Services
         {
             try
             {
-                var allFiles = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories);
-                if (allFiles.Length == 0)
+                int totalFiles = 0;
+                int docFiles = 0;
+                int mediaFiles = 0;
+                int exeFiles = 0;
+
+                foreach (var file in SafeEnumerateFiles(directory, "*.*"))
+                {
+                    totalFiles++;
+                    var ext = Path.GetExtension(file).ToLowerInvariant();
+
+                    switch (ext)
+                    {
+                        case ".pdf" or ".txt" or ".docx" or ".md":
+                            docFiles++;
+                            break;
+                        case ".mp3" or ".mp4" or ".avi" or ".mkv" or ".jpg" or ".png":
+                            mediaFiles++;
+                            break;
+                        case ".exe":
+                            exeFiles++;
+                            break;
+                    }
+                }
+
+                if (totalFiles == 0)
                     return false;
 
-                // Count file types
-                int docFiles = allFiles.Count(f =>
-                   {
-                       var ext = Path.GetExtension(f).ToLowerInvariant();
-                       return ext == ".pdf" || ext == ".txt" || ext == ".docx" || ext == ".md";
-                   });
-
-                int mediaFiles = allFiles.Count(f =>
-                    {
-                        var ext = Path.GetExtension(f).ToLowerInvariant();
-                        return ext == ".mp3" || ext == ".mp4" || ext == ".avi" || ext == ".mkv" || ext == ".jpg" || ext == ".png";
-                    });
-
-                int exeFiles = allFiles.Count(f => Path.GetExtension(f).ToLowerInvariant() == ".exe");
-
                 // If >70% docs/media and <3 exe files, likely not a game
-                double nonGameRatio = (double)(docFiles + mediaFiles) / allFiles.Length;
+                double nonGameRatio = (double)(docFiles + mediaFiles) / totalFiles;
                 return nonGameRatio > 0.7 && exeFiles < 3;
             }
             catch
@@ -1025,6 +1062,51 @@ namespace Codec.Services
                 return false;
             }
         }
+
+        private static IEnumerable<string> SafeEnumerateFiles(string rootPath, string searchPattern)
+        {
+            var stack = new Stack<string>();
+            stack.Push(rootPath);
+
+            while (stack.Count > 0)
+            {
+                string current = stack.Pop();
+
+                string[] files = Array.Empty<string>();
+                try
+                {
+                    files = Directory.GetFiles(current, searchPattern, SearchOption.TopDirectoryOnly);
+                }
+                catch (Exception ex) when (IsExpectedFileSystemException(ex))
+                {
+                    Debug.WriteLine($"  [ACCESS] Skipping files in '{current}': {ex.Message}");
+                }
+
+                foreach (var file in files)
+                {
+                    yield return file;
+                }
+
+                string[] subDirs = Array.Empty<string>();
+                try
+                {
+                    subDirs = Directory.GetDirectories(current);
+                }
+                catch (Exception ex) when (IsExpectedFileSystemException(ex))
+                {
+                    Debug.WriteLine($"  [ACCESS] Skipping subdirectories of '{current}': {ex.Message}");
+                    continue;
+                }
+
+                foreach (var subDir in subDirs)
+                {
+                    stack.Push(subDir);
+                }
+            }
+        }
+
+        private static bool IsExpectedFileSystemException(Exception ex) =>
+            ex is UnauthorizedAccessException or PathTooLongException or IOException;
     }
 
     #endregion

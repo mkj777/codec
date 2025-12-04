@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Codec.Models
 {
-    public class Game
+    public class Game : INotifyPropertyChanged
     {
         [SetsRequiredMembers]
         public Game()
@@ -14,6 +16,9 @@ namespace Codec.Models
             FolderLocation = string.Empty;
             ImportedFrom = string.Empty;
         }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         // basic information
         public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime DateAdded { get; set; } = DateTime.Now;
@@ -53,11 +58,40 @@ namespace Codec.Models
         public int? TimeToCompleteCompletionist { get; set; } // in seconds
 
         // game assets via local paths. default are placeholder images
-        public string LibCapsule { get; set; } = "https://placehold.co/600x900/1c1c1c/ffffff?text=Capsule";
-        public string LibHero { get; set; } = "https://placehold.co/1920x620/1c1c1c/ffffff?text=Hero";
-        public string LibLogo { get; set; } = "https://placehold.co/1280x260/1c1c1c/ffffff?text=Logo";
-        public string LibIcon { get; set; } = "https://placehold.co/32x32/1c1c1c/ffffff?text=Icon";
-        public string LibClientIcon { get; set; } = "https://placehold.co/256x256/1c1c1c/ffffff?text=Client+Icon";
+        private string _libCapsule = "https://placehold.co/600x900/1c1c1c/ffffff?text=Capsule";
+        public string LibCapsule
+        {
+            get => _libCapsule;
+            set => SetProperty(ref _libCapsule, value);
+        }
+
+        private string _libHero = "https://placehold.co/1920x620/1c1c1c/ffffff?text=Hero";
+        public string LibHero
+        {
+            get => _libHero;
+            set => SetProperty(ref _libHero, value);
+        }
+
+        private string _libLogo = "https://placehold.co/1280x260/1c1c1c/ffffff?text=Logo";
+        public string LibLogo
+        {
+            get => _libLogo;
+            set => SetProperty(ref _libLogo, value);
+        }
+
+        private string _libIcon = "https://placehold.co/32x32/1c1c1c/ffffff?text=Icon";
+        public string LibIcon
+        {
+            get => _libIcon;
+            set => SetProperty(ref _libIcon, value);
+        }
+
+        private string _libClientIcon = "https://placehold.co/256x256/1c1c1c/ffffff?text=Client+Icon";
+        public string LibClientIcon
+        {
+            get => _libClientIcon;
+            set => SetProperty(ref _libClientIcon, value);
+        }
         public List<string> Screenshots { get; set; } = new();
 
         // optional: local path to .bat Script to launch the game
@@ -67,5 +101,16 @@ namespace Codec.Models
         public DateTime? LastUpdated { get; set; }
         public DateTime? LastLaunched { get; set; }
         public double? PlayTime { get; set; } // in seconds
+
+        private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(storage, value))
+            {
+                return false;
+            }
+            storage = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            return true;
+        }
     }
 }

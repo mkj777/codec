@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Text;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,6 +25,8 @@ namespace Codec
             ViewModel = new MainViewModel();
             ExtendsContentIntoTitleBar = true;
 
+            LibraryStorageService.EnsureStorageInitialized();
+
             // Load persisted library
             _ = LoadLibraryAsync();
         }
@@ -31,9 +34,49 @@ namespace Codec
         private async Task LoadLibraryAsync()
         {
             var saved = await LibraryStorageService.LoadAsync();
+            await EnsureCoversAsync(saved);
+
+            ViewModel.Games.Clear();
             foreach (var g in saved)
             {
                 ViewModel.Games.Add(g);
+            }
+            await LibraryStorageService.SaveAsync(ViewModel.Games);
+        }
+
+        private static bool IsPlaceholder(string? uri) => string.IsNullOrWhiteSpace(uri) || uri.StartsWith("https://placehold.co/", StringComparison.OrdinalIgnoreCase);
+        private static bool LocalFileMissing(string? uri)
+        {
+            if (string.IsNullOrWhiteSpace(uri)) return true;
+            if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed)) return true;
+            if (parsed.IsFile)
+            {
+                try { return !System.IO.File.Exists(parsed.LocalPath); } catch { return true; }
+            }
+            return false; // non-file URIs are considered present
+        }
+
+        private async Task EnsureCoversAsync(IEnumerable<Game> games)
+        {
+            foreach (var g in games)
+            {
+                if (g.SteamID.HasValue && (IsPlaceholder(g.LibCapsule) || LocalFileMissing(g.LibCapsule)))
+                {
+                    try
+                    {
+                        Debug.WriteLine($"Fetching cover for {g.Name} (SteamID {g.SteamID})");
+                        var cover = await GameAssetService.DownloadSteamLibraryCoverAsync(g.SteamID.Value);
+                        if (!string.IsNullOrEmpty(cover))
+                        {
+                            g.LibCapsule = cover;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Cover fetch failed for {g.Name} ({g.SteamID}): {ex.Message}");
+                    }
+                    await Task.Delay(75); // small delay to avoid CDN throttling
+                }
             }
         }
 
@@ -100,26 +143,19 @@ namespace Codec
                 var scanResults = await scanner.ScanAllGamesAsync(progress);
 
                 // Prepare new list
-                var newGames = new System.Collections.Generic.List<Game>();
+                var newGames = new List<Game>();
 
                 // Games to exclude from display (but still scan)
                 var excludedGameNames = new[] { "Steamworks Common Redistributables", "Steam Linux Runtime", "Proton", "Steam Audio", "Steam VR" };
-
-                int totalScanned = 0;
-                int excluded = 0;
-                int gamesWithExecutable = 0;
 
                 foreach (var (steamAppId, gameName, rawgId, importSource, executablePath, folderLocation) in scanResults)
                 {
                     try
                     {
-                        totalScanned++;
                         if (excludedGameNames.Any(excl => gameName.Contains(excl, StringComparison.OrdinalIgnoreCase)))
                         {
-                            excluded++;
                             continue;
                         }
-                        if (!string.IsNullOrEmpty(executablePath)) gamesWithExecutable++;
 
                         var game = new Game
                         {
@@ -131,15 +167,6 @@ namespace Codec
                             RawgID = rawgId
                         };
 
-                        if (steamAppId.HasValue)
-                        {
-                            var coverUri = await GameAssetService.DownloadSteamLibraryCoverAsync(steamAppId.Value);
-                            if (!string.IsNullOrEmpty(coverUri))
-                            {
-                                game.LibCapsule = coverUri;
-                            }
-                        }
-
                         newGames.Add(game);
                     }
                     catch (Exception ex)
@@ -148,15 +175,18 @@ namespace Codec
                     }
                 }
 
+                // Resolve library covers before updating UI
+                await EnsureCoversAsync(newGames);
+
                 // Replace current library with new results
                 ViewModel.Games.Clear();
                 foreach (var g in newGames)
+                {
                     ViewModel.Games.Add(g);
+                }
 
-                // Persist to disk
+                // Persist to disk after covers are set
                 await LibraryStorageService.SaveAsync(ViewModel.Games);
-
-                // Optional: show minimal completion toast/dialog can be added if desired
             }
             catch (Exception ex)
             {
@@ -402,6 +432,121 @@ namespace Codec
                     XamlRoot = this.Content.XamlRoot
                 };
                 await error.ShowAsync();
+            }
+        }
+
+        private async void RefreshCovers_Click(object sender, RoutedEventArgs e)
+        {
+            var refreshBtn = sender as Button;
+            try
+            {
+                AppSpinner.Visibility = Visibility.Visible;
+                AppSpinner.IsActive = true;
+                AddGamesButton.IsEnabled = false;
+                DebugButton.IsEnabled = false;
+                if (refreshBtn != null) refreshBtn.IsEnabled = false;
+
+                // Force re-download of covers for all games with SteamID
+                foreach (var g in ViewModel.Games)
+                {
+                    if (g.SteamID.HasValue)
+                    {
+                        var cover = await GameAssetService.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
+                        if (!string.IsNullOrEmpty(cover))
+                        {
+                            g.LibCapsule = cover;
+                        }
+                        await Task.Delay(75);
+                    }
+                }
+
+                await LibraryStorageService.SaveAsync(ViewModel.Games);
+            }
+            catch (Exception ex)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "Refresh Covers Error",
+                    Content = ex.Message,
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await errorDialog.ShowAsync();
+            }
+            finally
+            {
+                AppSpinner.IsActive = false;
+                AppSpinner.Visibility = Visibility.Collapsed;
+                AddGamesButton.IsEnabled = true;
+                DebugButton.IsEnabled = true;
+                if (refreshBtn != null) refreshBtn.IsEnabled = true;
+            }
+        }
+        
+        private async void ResetApp_Click(object sender, RoutedEventArgs e)
+        {
+            var confirmationDialog = new ContentDialog
+            {
+                Title = "Reset Codec",
+                Content = "This will delete the entire saved library and all downloaded assets from this device. Continue?",
+                PrimaryButtonText = "Delete Data",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.Content.XamlRoot
+            };
+
+            var result = await confirmationDialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            bool resetSuccessful = false;
+            try
+            {
+                AppSpinner.Visibility = Visibility.Visible;
+                AppSpinner.IsActive = true;
+
+                AddGamesButton.IsEnabled = false;
+                DebugButton.IsEnabled = false;
+                RefreshCoversButton.IsEnabled = false;
+                ResetAppButton.IsEnabled = false;
+
+                await LibraryStorageService.ResetAsync();
+                ViewModel.Games.Clear();
+                resetSuccessful = true;
+            }
+            catch (Exception ex)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "Reset Error",
+                    Content = ex.Message,
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await errorDialog.ShowAsync();
+            }
+            finally
+            {
+                AppSpinner.IsActive = false;
+                AppSpinner.Visibility = Visibility.Collapsed;
+                AddGamesButton.IsEnabled = true;
+                DebugButton.IsEnabled = true;
+                RefreshCoversButton.IsEnabled = true;
+                ResetAppButton.IsEnabled = true;
+            }
+
+            if (resetSuccessful)
+            {
+                var successDialog = new ContentDialog
+                {
+                    Title = "Codec Reset",
+                    Content = "All stored data has been deleted. You can now start fresh.",
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await successDialog.ShowAsync();
             }
         }
     }

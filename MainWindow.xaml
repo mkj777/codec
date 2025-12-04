@@ -28,7 +28,7 @@
         </Grid>
 
         <!-- Library grid of cover images -->
-        <GridView Grid.Row="1" Margin="20"
+        <GridView Grid.Row="1" Margin="30,5,30,5"
                   ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
                   IsItemClickEnabled="False"
                   SelectionMode="None">
@@ -39,12 +39,9 @@
             </GridView.ItemsPanel>
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="local:Game">
-                    <Grid Width="200" Height="300">
-                        <Border CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                    <Grid Width="300" Height="450">
+                        <Border CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
                         <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
-                        <Border Background="#80000000" VerticalAlignment="Bottom">
-                            <TextBlock Text="{x:Bind Name}" Foreground="White" Margin="6" TextTrimming="CharacterEllipsis"/>
-                        </Border>
                     </Grid>
                 </DataTemplate>
             </GridView.ItemTemplate>
@@ -80,10 +77,30 @@
                         FontWeight="SemiBold"
                         UseSystemFocusVisuals="False"
                         FontSize="14"/>
+                <Button x:Name="RefreshCoversButton"
+                        Content="Refresh Covers"
+                        Click="RefreshCovers_Click"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        UseSystemFocusVisuals="False"
+                        FontSize="14"/>
+                <Button x:Name="ResetAppButton"
+                        Content="Reset App"
+                        Click="ResetApp_Click"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        UseSystemFocusVisuals="False"
+                        FontSize="14"/>
             </StackPanel>
         </Grid>
     </Grid>
 </Window>
+
+
+
+
 
 
 
