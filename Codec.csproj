@@ -59,13 +59,15 @@
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">False</PublishTrimmed>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-    <PackageCertificateThumbprint>DC668992C2B1E8431ED8B5B22606F85E933B3F91</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>26B32762C7531255922C2CBDB22C2614178F3FB0</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Never</AppxBundle>
+    <AppxBundle>Auto</AppxBundle>
     <AppInstallerUri>C:\Users\maxik\Desktop</AppInstallerUri>
     <HoursBetweenUpdateChecks>168</HoursBetweenUpdateChecks>
-    <AppxPackageDir>C:\Users\maxik\Desktop\codec relase\</AppxPackageDir>
+    <AppxPackageDir>C:\Users\maxik\Desktop\codec release\</AppxPackageDir>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
   </PropertyGroup>
 </Project>
