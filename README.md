@@ -1,5 +1,5 @@
 ## Codec
-Codec is a Lightweight Game Library Client. Hopefully a Place for everything you need.
+Codec is a Lightweight Game Library Client. Hopefully a Place for everything you could need.
 
 ### Features
 Scanning your PC for games and creating a library  
@@ -10,14 +10,12 @@ adding Launch Scripts
 Tracking Playtime  
 Customizable Themes  
 
-
-
 ### Installation
-Download the latest release from the Releases section on GitHub.
+Download the latest release from the Releases section on GitHub  
 
 ### Requirements
-- Windows 10 or later
+Windows 10 or later  
 
 ### Development
-Codec is a C# WinUI 3 Project in .NET 9.0.  
-using Inno Setup for creating the installer.
+Codec is a C# WinUI 3 Project using .NET 9.0  
+using Inno Setup for creating the installer  
