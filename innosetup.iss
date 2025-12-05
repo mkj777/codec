@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "Codec"
-#define MyAppVersion "0.3.1"
+#define MyAppVersion "0.3.2"
 #define MyAppPublisher "mkj777"
 #define MyAppExeName "Codec.exe"
 

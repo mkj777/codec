@@ -1,7 +1,6 @@
 using Codec.Models;
 using Codec.Services;
 using Codec.ViewModels;
-using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -89,7 +88,7 @@ namespace Codec
 
         private async void AddGame_Click(object sender, RoutedEventArgs e)
         {
-            await AddGameAsync();
+            await RunWithFooterLockAsync(AddGameAsync);
         }
 
         private async Task AddGameAsync()
@@ -113,8 +112,8 @@ namespace Codec
 
             var testDialog = new ContentDialog
             {
-                Title = "Game ID Lookup Results",
-                Content = $"Best Name: {bestName}\n\n" +
+                Title = "GameName and ID Service",
+                Content = $"Name: {bestName}\n" +
          $"Steam ID: {steamIdText}\n" +
               $"RAWG ID: {rawgIdText}",
                 CloseButtonText = "Ok",
@@ -134,11 +133,10 @@ namespace Codec
             if (button != null)
             {
                 button.IsEnabled = false;
-                button.Content = "Scanning...";
             }
 
-            AddGamesButton.IsEnabled = false;
-            ShowScanProgress("Durchsuche Bibliotheken...", isIndeterminate: true);
+            SetFooterButtonsEnabled(false);
+            ShowScanProgress("Looking for Games (this might take a few minutes)...", isIndeterminate: true);
 
             try
             {
@@ -213,134 +211,21 @@ namespace Codec
             finally
             {
                 HideScanProgress();
-                AddGamesButton.IsEnabled = true;
+                SetFooterButtonsEnabled(true);
 
                 if (button != null)
                 {
                     button.IsEnabled = true;
-                    button.Content = "Scan Games";
+                    button.Content = "Scan for Games";
                 }
             }
-        }
-
-        /// <summary>
-        /// Shows popup menu with game adding options (custom minimal UI)
-        /// </summary>
-        private async void AddGames_Click(object sender, RoutedEventArgs e)
-        {
-            // Build a minimal popup with only 3 buttons and a loading spinner
-            var spinner = new ProgressRing
-            {
-                IsActive = false,
-                Width = 24,
-                Height = 24,
-                Margin = new Thickness(0, 0, 8, 0),
-                Visibility = Visibility.Collapsed
-            };
-
-            var scanButton = new Button
-            {
-                Content = "Scan PC for Games",
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 8)
-            };
-
-            var addExeButton = new Button
-            {
-                Content = "Add Executable",
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 0, 0, 8)
-            };
-
-            var cancelButton = new Button
-            {
-                Content = "Cancel",
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-
-            var header = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Margin = new Thickness(0, 0, 0, 12)
-            };
-            header.Children.Add(spinner);
-            header.Children.Add(new TextBlock { Text = string.Empty, VerticalAlignment = VerticalAlignment.Center });
-
-            var content = new StackPanel
-            {
-                Spacing = 8,
-                MinWidth = 320
-            };
-            content.Children.Add(header);
-            content.Children.Add(scanButton);
-            content.Children.Add(addExeButton);
-            content.Children.Add(cancelButton);
-
-            var menuDialog = new ContentDialog
-            {
-                Title = null,
-                Content = content,
-                // Hide default dialog buttons; we use our own
-                PrimaryButtonText = string.Empty,
-                SecondaryButtonText = string.Empty,
-                CloseButtonText = string.Empty,
-                XamlRoot = this.Content.XamlRoot
-            };
-
-            scanButton.Click += async (_, __) =>
-            {
-                try
-                {
-                    menuDialog.Hide();
-                    await ScanGamesAsync();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error in scan button click: {ex.Message}");
-                }
-            };
-
-            addExeButton.Click += async (_, __) =>
-            {
-                try
-                {
-                    // Close popup and show app-level spinner
-                    menuDialog.Hide();
-                    AppSpinner.Visibility = Visibility.Visible;
-                    AppSpinner.IsActive = true;
-
-                    // Disable global Add Games button during operation
-                    AddGamesButton.IsEnabled = false;
-
-                    await AddGameAsync();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error in add executable button click: {ex.Message}");
-                }
-                finally
-                {
-                    AppSpinner.IsActive = false;
-                    AppSpinner.Visibility = Visibility.Collapsed;
-                    AddGamesButton.IsEnabled = true;
-                }
-            };
-
-            cancelButton.Click += (_, __) =>
-            {
-                menuDialog.Hide();
-            };
-
-            await menuDialog.ShowAsync();
         }
 
         private async void Debug_Click(object sender, RoutedEventArgs e)
         {
             try
             {
+                SetFooterButtonsEnabled(false);
                 // Build a compact, readable view of current games
                 var panel = new StackPanel { Spacing = 8, MinWidth = 360 };
 
@@ -410,7 +295,7 @@ namespace Codec
 
                 var dialog = new ContentDialog
                 {
-                    Title = "Debug: Scanned Games Data",
+                    Title = "Scanned Games Data",
                     Content = container,
                     CloseButtonText = "Close",
                     XamlRoot = this.Content.XamlRoot
@@ -429,6 +314,10 @@ namespace Codec
                 };
                 await error.ShowAsync();
             }
+            finally
+            {
+                SetFooterButtonsEnabled(true);
+            }
         }
 
         private async void RefreshCovers_Click(object sender, RoutedEventArgs e)
@@ -436,12 +325,11 @@ namespace Codec
             var refreshBtn = sender as Button;
             try
             {
-                AddGamesButton.IsEnabled = false;
-                DebugButton.IsEnabled = false;
+                SetFooterButtonsEnabled(false);
                 if (refreshBtn != null) refreshBtn.IsEnabled = false;
 
-                ShowScanProgress("Aktualisiere Cover...", ViewModel.Games.Count == 0);
-                PrepareCoverProgress(ViewModel.Games.Count, "Aktualisiere Cover", "Keine Spiele zum Aktualisieren.");
+                ShowScanProgress("Fetching Covers...", ViewModel.Games.Count == 0);
+                PrepareCoverProgress(ViewModel.Games.Count, "Update Cover", "No Games to update.");
 
                 int processed = 0;
                 foreach (var g in ViewModel.Games)
@@ -481,8 +369,7 @@ namespace Codec
             finally
             {
                 HideScanProgress();
-                AddGamesButton.IsEnabled = true;
-                DebugButton.IsEnabled = true;
+                SetFooterButtonsEnabled(true);
                 if (refreshBtn != null) refreshBtn.IsEnabled = true;
             }
         }
@@ -492,7 +379,7 @@ namespace Codec
             var confirmationDialog = new ContentDialog
             {
                 Title = "Reset Codec",
-                Content = "This will delete the entire saved library and all downloaded assets from this device. Continue?",
+                Content = "This will delete all saved Data. Continue?",
                 PrimaryButtonText = "Delete Data",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
@@ -511,10 +398,7 @@ namespace Codec
                 AppSpinner.Visibility = Visibility.Visible;
                 AppSpinner.IsActive = true;
 
-                AddGamesButton.IsEnabled = false;
-                DebugButton.IsEnabled = false;
-                RefreshCoversButton.IsEnabled = false;
-                ResetAppButton.IsEnabled = false;
+                SetFooterButtonsEnabled(false);
 
                 await LibraryStorageService.ResetAsync();
                 ViewModel.Games.Clear();
@@ -535,10 +419,7 @@ namespace Codec
             {
                 AppSpinner.IsActive = false;
                 AppSpinner.Visibility = Visibility.Collapsed;
-                AddGamesButton.IsEnabled = true;
-                DebugButton.IsEnabled = true;
-                RefreshCoversButton.IsEnabled = true;
-                ResetAppButton.IsEnabled = true;
+                SetFooterButtonsEnabled(true);
             }
 
             if (resetSuccessful)
@@ -546,7 +427,7 @@ namespace Codec
                 var successDialog = new ContentDialog
                 {
                     Title = "Codec Reset",
-                    Content = "All stored data has been deleted. You can now start fresh.",
+                    Content = "All Data has been successfully deleted.",
                     CloseButtonText = "Close",
                     XamlRoot = this.Content.XamlRoot
                 };
@@ -615,6 +496,28 @@ namespace Codec
 
                 await GridDbService.TryPopulateGridAssetsAsync(game);
                 await Task.Delay(75);
+            }
+        }
+
+        private void SetFooterButtonsEnabled(bool isEnabled)
+        {
+            ScanGamesButton.IsEnabled = isEnabled;
+            TestExecutableButton.IsEnabled = isEnabled;
+            DebugButton.IsEnabled = isEnabled;
+            RefreshCoversButton.IsEnabled = isEnabled;
+            ResetAppButton.IsEnabled = isEnabled;
+        }
+
+        private async Task RunWithFooterLockAsync(Func<Task> action)
+        {
+            SetFooterButtonsEnabled(false);
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                SetFooterButtonsEnabled(true);
             }
         }
     }

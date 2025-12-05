@@ -78,12 +78,20 @@
                           VerticalAlignment="Center"/>
         </Grid>
 
-        <!-- Bottom Bar with "Add Games" and "Debug" Buttons -->
+        <!-- Bottom Bar with primary actions -->
         <Grid Grid.Row="2" Height="70" Padding="20">
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <Button x:Name="AddGamesButton"
-                        Content="Add Games"
-                        Click="AddGames_Click"
+                <Button x:Name="ScanGamesButton"
+                        Content="Scan for Games"
+                        Click="ScanGames_Click"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        UseSystemFocusVisuals="False"
+                        FontSize="14"/>
+                <Button x:Name="TestExecutableButton"
+                        Content="Test Executable"
+                        Click="AddGame_Click"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         FontWeight="SemiBold"
