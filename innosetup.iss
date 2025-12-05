@@ -13,7 +13,7 @@
 AppId={{C4B13D19-7B82-4F56-86F1-D82068F52D6E}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-;AppVerName={#MyAppName} {#MyAppVersion}
+AppVerName={#MyAppName}
 SetupIconFile="assets\icon.ico"
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
