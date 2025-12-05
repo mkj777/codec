@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Inno Setup Output
+Output/
+
 # User-specific files
 *.rsuser
 *.suo
