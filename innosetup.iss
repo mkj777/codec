@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "Codec"
-#define MyAppVersion "0.3.3"
+#define MyAppVersion "0.4.1"
 #define MyAppPublisher "mkj777"
 #define MyAppExeName "Codec.exe"
 
@@ -30,7 +30,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputBaseFilename=CodecInstaller
+OutputBaseFilename=CodecInstaller-{#MyAppVersion}
 SolidCompression=yes
 WizardStyle=modern dark
 
