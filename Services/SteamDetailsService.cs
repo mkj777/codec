@@ -12,6 +12,58 @@ namespace Codec.Services
     {
         private static readonly HttpClient Http = new HttpClient();
 
+        private static async Task<string?> ResolveAssetUrlAsync(string primaryUrl, string fallbackUrl)
+        {
+            async Task<bool> IsReachableAsync(string url)
+            {
+                try
+                {
+                    using var request = new HttpRequestMessage(HttpMethod.Head, url);
+                    using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+
+                    // Some CDN paths return a 404 HTML body with a 200 OK. Detect simple HTML 404 content.
+                    if ((int)response.StatusCode == 404)
+                    {
+                        return false;
+                    }
+
+                    // Fallback: try a lightweight GET to validate actual body is not an HTML 404.
+                    using var getResponse = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    if (!getResponse.IsSuccessStatusCode)
+                    {
+                        return false;
+                    }
+
+                    if (getResponse.Content.Headers.ContentType?.MediaType?.Contains("html", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            if (await IsReachableAsync(primaryUrl).ConfigureAwait(false))
+            {
+                return primaryUrl;
+            }
+
+            if (await IsReachableAsync(fallbackUrl).ConfigureAwait(false))
+            {
+                return fallbackUrl;
+            }
+
+            return null;
+        }
+
         public static async Task PopulateFromSteamAsync(Game game)
         {
             if (!game.SteamID.HasValue)
@@ -135,13 +187,15 @@ namespace Codec.Services
                     game.Media = media;
                 }
 
-                // Hero image
-                var heroUrl = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero_2x.jpg";
-                game.LibHero = heroUrl;
+                // Hero image with fallback to non-2x
+                var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero_2x.jpg";
+                var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero.jpg";
+                game.LibHero = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
 
-                // Logo
-                var logoUrl = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo_2x.png";
-                game.LibLogo = logoUrl;
+                // Logo with fallback to non-2x
+                var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo_2x.png";
+                var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo.png";
+                game.LibLogo = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
 
                 // Links
                 if (data.TryGetProperty("website", out var site) && site.ValueKind == JsonValueKind.String)
