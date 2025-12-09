@@ -20,6 +20,7 @@
             <conv:PercentageConverter x:Key="PercentageConverter" />
             <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter" />
             <conv:MultiplyConverter x:Key="MultiplyConverter" />
+            <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter" />
         </Grid.Resources>
 
         <Grid.RowDefinitions>
@@ -148,7 +149,7 @@
                                     <DataTemplate>
                                         <Grid>
                                             <MediaPlayerElement AreTransportControlsEnabled="True"
-                                                               Source="{Binding}"
+                                                               Source="{Binding Converter={StaticResource UriToMediaSourceConverter}}"
                                                                AutoPlay="False"
                                                                Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
                                             <Image Source="{Binding}"

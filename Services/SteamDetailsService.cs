@@ -176,6 +176,16 @@ namespace Codec.Services
                 {
                     foreach (var movie in moviesNode.EnumerateArray())
                     {
+                        // Prefer mp4 480p; fallback to dash_av1 if mp4 missing
+                        if (movie.TryGetProperty("mp4", out var mp4Obj) && mp4Obj.ValueKind == JsonValueKind.Object)
+                        {
+                            if (mp4Obj.TryGetProperty("480", out var mp4Url) && mp4Url.ValueKind == JsonValueKind.String)
+                            {
+                                media.Add(mp4Url.GetString()!);
+                                continue;
+                            }
+                        }
+
                         if (movie.TryGetProperty("dash_av1", out var dash) && dash.ValueKind == JsonValueKind.String)
                         {
                             media.Add(dash.GetString()!);
