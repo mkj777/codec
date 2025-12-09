@@ -17,6 +17,8 @@ namespace Codec
     {
         public MainViewModel ViewModel { get; }
 
+        private double _mediaMaxHeight;
+
         public MainWindow()
         {
             this.InitializeComponent();
@@ -41,6 +43,13 @@ namespace Codec
                 ViewModel.Games.Add(g);
             }
             await LibraryStorageService.SaveAsync(ViewModel.Games);
+        }
+
+        private void DetailsLowerGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Track available height to avoid cutting media
+            _mediaMaxHeight = Math.Max(0, e.NewSize.Height);
+            UpdateMediaHeight();
         }
 
         private void HeroOverlay_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -102,9 +111,37 @@ namespace Codec
 
         private void MediaContainer_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            // Keep media FlipView locked to 16:9 based on available width
-            var targetHeight = e.NewSize.Width * 0.5625;
-            MediaFlipView.Height = targetHeight > 0 ? targetHeight : 0;
+            UpdateMediaHeight(e.NewSize.Width, null);
+        }
+
+        private void UpdateMediaHeight(double? widthOverride = null, double? heightOverride = null)
+        {
+            if (MediaContainer == null || MediaFlipView == null)
+            {
+                return;
+            }
+
+            var width = widthOverride ?? MediaContainer.ActualWidth;
+            var availableHeight = heightOverride ?? (_mediaMaxHeight > 0 ? _mediaMaxHeight : MediaContainer.ActualHeight);
+
+            if (width <= 0 || availableHeight <= 0)
+            {
+                return;
+            }
+
+            // Ideal 16:9 based on width
+            double targetWidth = width;
+            double targetHeight = targetWidth * 0.5625;
+
+            // If height is insufficient, reduce width to fit height while keeping 16:9
+            if (targetHeight > availableHeight)
+            {
+                targetHeight = availableHeight;
+                targetWidth = Math.Min(width, availableHeight / 0.5625);
+            }
+
+            MediaFlipView.Width = targetWidth;
+            MediaFlipView.Height = targetHeight;
         }
 
         private async void AddGame_Click(object sender, RoutedEventArgs e)

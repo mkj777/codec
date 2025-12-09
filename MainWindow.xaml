@@ -124,25 +124,24 @@
             </Grid>
 
             <!-- Lower Half -->
-            <ScrollViewer Grid.Row="1"
-              VerticalScrollBarVisibility="Auto">
-                <Grid Margin="20"
-          ColumnSpacing="24">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*" MinWidth="420"/>
-                        <!-- Screenshots -->
-                        <ColumnDefinition Width="3*"/>
-                        <!-- Daten + Description -->
-                        <ColumnDefinition Width="Auto"/>
-                        <!-- Links -->
-                    </Grid.ColumnDefinitions>
+                        <Grid x:Name="DetailsLowerGrid" Grid.Row="1" Margin="20"
+                    ColumnSpacing="24" SizeChanged="DetailsLowerGrid_SizeChanged">
+                                <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" MinWidth="420"/>
+                                        <!-- Screenshots -->
+                                        <ColumnDefinition Width="3*"/>
+                                        <!-- Daten + Description -->
+                                        <ColumnDefinition Width="Auto"/>
+                                        <!-- Links -->
+                                </Grid.ColumnDefinitions>
 
                     <!-- Media carousel links -->
-                    <StackPanel Grid.Column="0" Spacing="12">
-                        <Grid x:Name="MediaContainer" HorizontalAlignment="Stretch" SizeChanged="MediaContainer_SizeChanged">
+                    <StackPanel Grid.Column="0" Spacing="0">
+                        <Grid x:Name="MediaContainer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SizeChanged="MediaContainer_SizeChanged">
                             <FlipView x:Name="MediaFlipView"
                                       ItemsSource="{Binding Media}"
-                                      HorizontalAlignment="Stretch"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Top"
                                       HorizontalContentAlignment="Stretch"
                                       VerticalContentAlignment="Stretch">
                                 <FlipView.ItemTemplate>
@@ -163,8 +162,10 @@
                     </StackPanel>
 
                     <!-- Mitte: Game Info + Beschreibung -->
-                    <StackPanel Grid.Column="1"
-                    Spacing="16">
+                    <ScrollViewer Grid.Column="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="16">
                         <!-- Game Info Block wie bisher -->
                         <StackPanel Spacing="11">
                             <Grid RowSpacing="6"
@@ -221,7 +222,8 @@
                                 <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Path=Description, FallbackValue='N/A'}"/>
                             </Grid>
                         </StackPanel>
-                    </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
 
                     <!-- Rechts: Links -->
                     <StackPanel Grid.Column="2"
@@ -246,7 +248,6 @@
                             Visibility="{Binding HltbUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                     </StackPanel>
                 </Grid>
-            </ScrollViewer>
         </Grid>
 
         <!-- Global app-level overlay -->
