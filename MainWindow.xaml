@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Codec.Models"
+    xmlns:conv="using:Codec.Converters"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
@@ -12,6 +13,15 @@
     </Window.SystemBackdrop>
 
     <Grid>
+        <Grid.Resources>
+            <conv:ListToCommaConverter x:Key="ListToCommaConverter" />
+            <conv:SecondsToTimeConverter x:Key="SecondsToTimeConverter" />
+            <conv:DateToStringConverter x:Key="DateToStringConverter" />
+            <conv:PercentageConverter x:Key="PercentageConverter" />
+            <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter" />
+            <conv:MultiplyConverter x:Key="MultiplyConverter" />
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -28,10 +38,12 @@
         </Grid>
 
         <!-- Library grid of cover images -->
-        <GridView Grid.Row="1" Margin="30,5,30,5"
-                  ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
-                  IsItemClickEnabled="False"
-                  SelectionMode="None">
+        <GridView x:Name="LibraryGrid"
+              Grid.Row="1" Margin="30,5,30,5"
+              ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
+              IsItemClickEnabled="True"
+              ItemClick="GameItem_Click"
+              SelectionMode="None">
             <GridView.ItemsPanel>
                 <ItemsPanelTemplate>
                     <ItemsWrapGrid Orientation="Horizontal"/>
@@ -46,6 +58,196 @@
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
+
+        <!-- Game details full page -->
+        <Grid x:Name="DetailsView"
+              Grid.RowSpan="3"
+              Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="3*"/>
+                <RowDefinition Height="2*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Hero covers upper half -->
+            <Grid Grid.Row="0">
+                <Image Source="{Binding LibHero}" Stretch="UniformToFill"/>
+                <Grid Background="#4C000000" />
+                <Grid x:Name="HeroOverlay" Margin="20" VerticalAlignment="Stretch" SizeChanged="HeroOverlay_SizeChanged">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Top controls and logo overlay -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Back stays top-left -->
+                        <Button x:Name="BackButton"
+                                Click="BackButton_Click"
+                                Content="← Back"
+                                VerticalAlignment="Top"
+                                HorizontalAlignment="Left"
+                                FontWeight="SemiBold"/>
+
+                        <!-- Settings on the right -->
+                        <Button x:Name="DetailsSettingsButton"
+                                Grid.Column="1"
+                                Content="Settings"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right"
+                                FontWeight="SemiBold"/>
+
+                        <!-- Logo overlayed with dynamic padding -->
+                           <Grid>
+                            <Image x:Name="HeroLogo"
+                                Source="{Binding LibLogo}"
+                                Height="170"
+                                MaxWidth="480"
+                                Stretch="Uniform"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                IsHitTestVisible="False"
+                                Margin="24,24,0,0"/>
+                           </Grid>
+                    </Grid>
+
+                    <StackPanel Grid.Row="2" Spacing="6" VerticalAlignment="Bottom">
+                        <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding ImportedFromDisplay}" Opacity="0.8"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <!-- Lower Half -->
+            <ScrollViewer Grid.Row="1"
+              VerticalScrollBarVisibility="Auto">
+                <Grid Margin="20"
+          ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" MinWidth="420"/>
+                        <!-- Screenshots -->
+                        <ColumnDefinition Width="3*"/>
+                        <!-- Daten + Description -->
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- Links -->
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Media carousel links -->
+                    <StackPanel Grid.Column="0" Spacing="12">
+                        <Grid x:Name="MediaContainer" HorizontalAlignment="Stretch" SizeChanged="MediaContainer_SizeChanged">
+                            <FlipView x:Name="MediaFlipView"
+                                      ItemsSource="{Binding Media}"
+                                      HorizontalAlignment="Stretch"
+                                      HorizontalContentAlignment="Stretch"
+                                      VerticalContentAlignment="Stretch">
+                                <FlipView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <MediaPlayerElement AreTransportControlsEnabled="True"
+                                                               Source="{Binding}"
+                                                               AutoPlay="False"
+                                                               Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
+                                            <Image Source="{Binding}"
+                                                   Stretch="UniformToFill"
+                                                   Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=image}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </FlipView.ItemTemplate>
+                            </FlipView>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Mitte: Game Info + Beschreibung -->
+                    <StackPanel Grid.Column="1"
+                    Spacing="16">
+                        <!-- Game Info Block wie bisher -->
+                        <StackPanel Spacing="11">
+                            <Grid RowSpacing="6"
+                      ColumnSpacing="6">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="Publisher" Opacity="0.7"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Path=Publisher, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+
+                                <TextBlock Grid.Row="1" Text="Developer" Opacity="0.7"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Path=Developer, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+
+                                <TextBlock Grid.Row="2" Text="Genre" Opacity="0.7"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Path=Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+
+                                <TextBlock Grid.Row="3" Text="Age Rating" Opacity="0.7"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Path=AgeRating, FallbackValue='N/A'}"/>
+
+                                <TextBlock Grid.Row="4" Text="Release Date" Opacity="0.7"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Path=ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"/>
+
+                                <TextBlock Grid.Row="5" Text="Price" Opacity="0.7"/>
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Path=Price, FallbackValue='N/A'}"/>
+
+                                <TextBlock Grid.Row="6" Text="Steam Reviews" Opacity="0.7"/>
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Path=SteamRating, Converter={StaticResource PercentageConverter}, FallbackValue='N/A'}"/>
+
+                                <TextBlock Grid.Row="7" Text="Categories" Opacity="0.7"/>
+                                <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding Path=Categories, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+
+                                <TextBlock Grid.Row="8" Text="Main Story" Opacity="0.7"/>
+                                <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding Path=TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
+
+                                <TextBlock Grid.Row="9" Text="Completionist" Opacity="0.7"/>
+                                <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding Path=TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
+
+                                <TextBlock Grid.Row="10" Text="Description" Opacity="0.7"/>
+                                <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Path=Description, FallbackValue='N/A'}"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Rechts: Links -->
+                    <StackPanel Grid.Column="2"
+                    Spacing="8"
+                    VerticalAlignment="Top"
+                    HorizontalAlignment="Right">
+                        <HyperlinkButton Content="Official Website"
+                            HorizontalAlignment="Right"
+                            NavigateUri="{Binding OfficialWebsiteUrl}"
+                            Visibility="{Binding OfficialWebsiteUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                        <HyperlinkButton Content="Steam"
+                            HorizontalAlignment="Right"
+                            NavigateUri="{Binding SteamPageUrl}"
+                            Visibility="{Binding SteamPageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                        <HyperlinkButton Content="RAWG.io"
+                            HorizontalAlignment="Right"
+                            NavigateUri="{Binding RawgUrl}"
+                            Visibility="{Binding RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                        <HyperlinkButton Content="HowLongToBeat"
+                            HorizontalAlignment="Right"
+                            NavigateUri="{Binding HltbUrl}"
+                            Visibility="{Binding HltbUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
 
         <!-- Global app-level overlay -->
         <Grid Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
@@ -79,7 +281,7 @@
         </Grid>
 
         <!-- Bottom Bar with primary actions -->
-        <Grid Grid.Row="2" Height="70" Padding="20">
+        <Grid x:Name="BottomBar" Grid.Row="2" Height="70" Padding="20">
             <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                 <Button x:Name="ScanGamesButton"
                         Content="Scan for Games"

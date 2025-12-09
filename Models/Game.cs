@@ -50,6 +50,8 @@ namespace Codec.Models
         public string? Publisher { get; set; }
         public string? Developer { get; set; }
         public List<string>? Genres { get; set; }
+        public List<string>? Categories { get; set; }
+        public string? Price { get; set; }
         public string? Description { get; set; }
         public List<string>? Platforms { get; set; }
         public DateTime? ReleaseDate { get; set; }
@@ -93,7 +95,12 @@ namespace Codec.Models
             get => _libClientIcon;
             set => SetProperty(ref _libClientIcon, value);
         }
-        public List<string> Screenshots { get; set; } = new();
+        public List<string> Media { get; set; } = new()
+        {
+            "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+1",
+            "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+2",
+            "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+3"
+        };
 
         // optional: local path to .bat Script to launch the game
         public string? LaunchScript { get; set; }
@@ -102,6 +109,12 @@ namespace Codec.Models
         public DateTime? LastUpdated { get; set; }
         public DateTime? LastLaunched { get; set; }
         public double? PlayTime { get; set; } // in seconds
+
+        // external links
+        public string? OfficialWebsiteUrl { get; set; }
+        public string? SteamPageUrl { get; set; }
+        public string? RawgUrl { get; set; } = "https://rawg.io";
+        public string? HltbUrl { get; set; } = "https://howlongtobeat.com";
 
         private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
         {

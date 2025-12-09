@@ -43,6 +43,20 @@ namespace Codec
             await LibraryStorageService.SaveAsync(ViewModel.Games);
         }
 
+        private void HeroOverlay_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Scale logo padding with window size (clamped for usability)
+            double padding = Math.Clamp(e.NewSize.Width * 0.03, 20, 64);
+            if (HeroLogo != null)
+            {
+                HeroLogo.Margin = new Thickness(padding, padding, 0, 0);
+                // Scale logo size with window width, within reasonable bounds
+                double targetHeight = Math.Clamp(e.NewSize.Width * 0.18, 170, 320);
+                HeroLogo.Height = targetHeight;
+                HeroLogo.MaxWidth = Math.Clamp(targetHeight * 2.2, 360, 640);
+            }
+        }
+
         private static bool IsPlaceholder(string? uri) => string.IsNullOrWhiteSpace(uri) || uri.StartsWith("https://placehold.co/", StringComparison.OrdinalIgnoreCase);
         private static bool LocalFileMissing(string? uri)
         {
@@ -86,6 +100,13 @@ namespace Codec
             }
         }
 
+        private void MediaContainer_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // Keep media FlipView locked to 16:9 based on available width
+            var targetHeight = e.NewSize.Width * 0.5625;
+            MediaFlipView.Height = targetHeight > 0 ? targetHeight : 0;
+        }
+
         private async void AddGame_Click(object sender, RoutedEventArgs e)
         {
             await RunWithFooterLockAsync(AddGameAsync);
@@ -108,7 +129,7 @@ namespace Codec
             // Show test popup with results
             string steamIdText = steamId.HasValue ? steamId.Value.ToString() : "Not found";
             string rawgIdText = rawgId.HasValue ? rawgId.Value.ToString() : "Not found";
-            string bestName = GameNameService.GetBestName(exeFile.Path);
+            string bestName = GameNameService.GetBestName(exeFile.Path) ?? "Unknown";
 
             var testDialog = new ContentDialog
             {
@@ -261,9 +282,12 @@ namespace Codec
                     AddRow("Folder Size", g.FolderSize.ToString());
                     AddRow("Publisher", g.Publisher);
                     AddRow("Developer", g.Developer);
+                    AddRow("Genres", g.Genres != null && g.Genres.Count > 0 ? string.Join(", ", g.Genres) : null);
+                    AddRow("Price", g.Price);
+                    AddRow("Age Rating", g.AgeRating);
+                    AddRow("Description", g.Description);
                     AddRow("Release Date", g.ReleaseDate?.ToString());
                     AddRow("Steam Rating", g.SteamRating?.ToString());
-                    AddRow("Age Rating", g.AgeRating);
                     AddRow("Main Story (sec)", g.TimeToCompleteMainStory?.ToString());
                     AddRow("Completionist (sec)", g.TimeToCompleteCompletionist?.ToString());
                     AddRow("Capsule", g.LibCapsule);
@@ -271,7 +295,7 @@ namespace Codec
                     AddRow("Logo", g.LibLogo);
                     AddRow("Icon", g.LibIcon);
                     AddRow("Client Icon", g.LibClientIcon);
-                    AddRow("Screenshots", g.Screenshots != null && g.Screenshots.Count > 0 ? string.Join(", ", g.Screenshots) : "");
+                    AddRow("Media", g.Media != null && g.Media.Count > 0 ? string.Join(", ", g.Media) : "");
                     AddRow("Last Updated", g.LastUpdated?.ToString());
                     AddRow("Last Launched", g.LastLaunched?.ToString());
 
@@ -497,6 +521,49 @@ namespace Codec
                 await GridDbService.TryPopulateGridAssetsAsync(game);
                 await Task.Delay(75);
             }
+        }
+
+        private void GameItem_Click(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is Game game)
+            {
+                _ = FetchAndShowDetailsAsync(game);
+            }
+        }
+
+        private async Task FetchAndShowDetailsAsync(Game game)
+        {
+            if (game.SteamID.HasValue)
+            {
+                await SteamDetailsService.PopulateFromSteamAsync(game);
+            }
+
+            // Ensure placeholder links are present for visibility
+            if (string.IsNullOrWhiteSpace(game.RawgUrl))
+            {
+                game.RawgUrl = "https://rawg.io";
+            }
+            if (string.IsNullOrWhiteSpace(game.HltbUrl))
+            {
+                game.HltbUrl = "https://howlongtobeat.com";
+            }
+
+            ViewModel.SelectedGame = game;
+            DetailsView.DataContext = game;
+            DetailsView.Visibility = Visibility.Visible;
+            LibraryGrid.Visibility = Visibility.Collapsed;
+            BottomBar.Visibility = Visibility.Collapsed;
+            AppTitleBar.Visibility = Visibility.Collapsed;
+        }
+
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            DetailsView.Visibility = Visibility.Collapsed;
+            DetailsView.DataContext = null;
+            LibraryGrid.Visibility = Visibility.Visible;
+            BottomBar.Visibility = Visibility.Visible;
+            AppTitleBar.Visibility = Visibility.Visible;
+            ViewModel.SelectedGame = null;
         }
 
         private void SetFooterButtonsEnabled(bool isEnabled)

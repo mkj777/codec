@@ -9,6 +9,20 @@ namespace Codec.ViewModels
     {
         public ObservableCollection<Game> Games { get; set; } = new();
 
+        private Game? _selectedGame;
+        public Game? SelectedGame
+        {
+            get => _selectedGame;
+            set
+            {
+                if (_selectedGame != value)
+                {
+                    _selectedGame = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
