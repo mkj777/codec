@@ -21,6 +21,7 @@
             <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter" />
             <conv:MultiplyConverter x:Key="MultiplyConverter" />
             <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter" />
+            <conv:NullOrEmptyToFallbackConverter x:Key="NullOrEmptyToFallbackConverter" />
             <Style TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="FontWeight" Value="SemiBold" />
@@ -204,7 +205,7 @@
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Price" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Price, FallbackValue='N/A'}"/>
+                                    <TextBlock Text="{Binding Path=Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
                                 </StackPanel>
                             </StackPanel>
 

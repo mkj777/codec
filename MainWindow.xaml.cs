@@ -302,7 +302,8 @@ namespace Codec
                     {
                         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                         var k = new TextBlock { Text = key, Opacity = 0.6 };
-                        var v = new TextBlock { Text = value ?? "", TextWrapping = TextWrapping.Wrap };
+                        var displayValue = string.IsNullOrWhiteSpace(value) ? "N/A" : value;
+                        var v = new TextBlock { Text = displayValue, TextWrapping = TextWrapping.Wrap };
                         Grid.SetRow(k, row); Grid.SetColumn(k, 0);
                         Grid.SetRow(v, row); Grid.SetColumn(v, 1);
                         grid.Children.Add(k); grid.Children.Add(v);
