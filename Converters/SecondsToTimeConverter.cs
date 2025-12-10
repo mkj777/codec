@@ -27,13 +27,28 @@ namespace Codec.Converters
                 return "N/A";
             }
 
-            var timeSpan = TimeSpan.FromSeconds(seconds);
-            if (timeSpan.TotalHours >= 1)
+            double hours = seconds / 3600d;
+            double rounded = Math.Round(hours * 2, MidpointRounding.AwayFromZero) / 2d; // nearest half hour
+
+            if (rounded <= 0)
             {
-                return $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m";
+                return "N/A";
             }
 
-            return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+            bool isHalfHour = Math.Abs(rounded - Math.Round(rounded)) > 0.001;
+            if (!isHalfHour)
+            {
+                int whole = (int)Math.Round(rounded);
+                return whole == 1 ? "1 Hour" : $"{whole} Hours";
+            }
+
+            int wholePart = (int)Math.Floor(rounded);
+            if (wholePart <= 0)
+            {
+                return "½ Hour";
+            }
+
+            return $"{wholePart}½ Hours";
         }
     }
 }

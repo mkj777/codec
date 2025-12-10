@@ -576,6 +576,8 @@ namespace Codec
                 await SteamDetailsService.PopulateFromSteamAsync(game);
             }
 
+            await HltbService.PopulateAsync(game);
+
             // Ensure placeholder links are present for visibility
             if (string.IsNullOrWhiteSpace(game.RawgUrl))
             {
