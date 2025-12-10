@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using System;
 using Windows.Media.Core;
@@ -16,11 +17,11 @@ namespace Codec.Converters
                 }
                 catch
                 {
-                    return null;
+                    return DependencyProperty.UnsetValue;
                 }
             }
 
-            return null;
+            return DependencyProperty.UnsetValue;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
