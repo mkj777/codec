@@ -136,14 +136,7 @@ namespace Codec.Services
 
                 // Categories (disabled per request)
 
-                // Price
-                if (data.TryGetProperty("price_overview", out var priceNode) && priceNode.ValueKind == JsonValueKind.Object)
-                {
-                    if (priceNode.TryGetProperty("final_formatted", out var finalFmt) && finalFmt.ValueKind == JsonValueKind.String)
-                    {
-                        game.Price = finalFmt.GetString();
-                    }
-                }
+                // Price (disabled for now)
 
                 // Release date (disabled per request)
 

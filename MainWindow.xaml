@@ -95,13 +95,7 @@
                                 HorizontalAlignment="Left"
                                 FontWeight="SemiBold"/>
 
-                        <!-- Settings on the right -->
-                        <Button x:Name="DetailsSettingsButton"
-                                Grid.Column="1"
-                                Content="Settings"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Right"
-                                FontWeight="SemiBold"/>
+                        <!-- Settings button relocated below; reserved spot left empty here -->
 
                         <!-- Logo overlayed with dynamic padding -->
                            <Grid>
@@ -121,6 +115,16 @@
                         <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="Bold"/>
                         <TextBlock Text="{Binding ImportedFromDisplay}" Opacity="0.8"/>
                     </StackPanel>
+
+                    <!-- Settings button bottom-right of hero half -->
+                    <Grid Grid.Row="1">
+                        <Button x:Name="DetailsSettingsButton"
+                                Content="Settings"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,8,8"
+                                FontWeight="SemiBold"/>
+                    </Grid>
                 </Grid>
             </Grid>
 
@@ -220,7 +224,7 @@
                                 <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding Path=TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
 
                                 <TextBlock Grid.Row="10" Text="Description" Opacity="0.7"/>
-                                <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Path=Description, FallbackValue='N/A'}"/>
+                                <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding Path=Description, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                             </Grid>
                         </StackPanel>
                         </StackPanel>
