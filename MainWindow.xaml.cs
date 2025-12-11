@@ -442,7 +442,7 @@ namespace Codec
             var confirmationDialog = new ContentDialog
             {
                 Title = "Reset Codec",
-                Content = "This will delete all saved Data. Continue?",
+                Content = "This will delete all saved data and cached files. Continue?",
                 PrimaryButtonText = "Delete Data",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
@@ -463,8 +463,18 @@ namespace Codec
 
                 SetFooterButtonsEnabled(false);
 
-                await LibraryStorageService.ResetAsync();
+                // Release bindings and clear UI to drop any file handles before deletion
+                DetailsView.Visibility = Visibility.Collapsed;
+                DetailsView.DataContext = null;
+                LibraryGrid.Visibility = Visibility.Visible;
+                BottomBar.Visibility = Visibility.Visible;
+                AppTitleBar.Visibility = Visibility.Visible;
+                ViewModel.SelectedGame = null;
+
                 ViewModel.Games.Clear();
+
+                DataCacheService.Clear();
+                await LibraryStorageService.ResetAsync();
                 resetSuccessful = true;
             }
             catch (Exception ex)
@@ -490,7 +500,7 @@ namespace Codec
                 var successDialog = new ContentDialog
                 {
                     Title = "Codec Reset",
-                    Content = "All Data has been successfully deleted.",
+                    Content = "All saved data and cached content have been deleted.",
                     CloseButtonText = "Close",
                     XamlRoot = this.Content.XamlRoot
                 };
