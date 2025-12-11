@@ -219,7 +219,8 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Spacing="16">
-                                <StackPanel Spacing="2">
+                                <StackPanel Spacing="2"
+                                            Visibility="{Binding SteamID, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Steam Reviews" Opacity="0.7"/>
                                     <TextBlock>
                                         <Run Text="{Binding Path=SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
