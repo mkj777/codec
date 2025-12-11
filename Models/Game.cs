@@ -53,6 +53,7 @@ namespace Codec.Models
         public List<string>? Genres { get; set; }
         public List<string>? Categories { get; set; }
         public string? Price { get; set; }
+        public string? PriceDiscount { get; set; }
         public string? Description { get; set; }
         public List<string>? Platforms { get; set; }
         public DateTime? ReleaseDate { get; set; }

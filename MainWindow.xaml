@@ -211,7 +211,10 @@
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Price" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
+                                    <TextBlock>
+                                        <Run Text="{Binding Path=Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" />
+                                        <Run Text="{Binding Path=PriceDiscount, FallbackValue=''}" FontSize="12" Foreground="#B3FFFFFF" />
+                                    </TextBlock>
                                 </StackPanel>
                             </StackPanel>
 

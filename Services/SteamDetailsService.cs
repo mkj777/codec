@@ -143,7 +143,7 @@ namespace Codec.Services
 
                 // Categories (disabled per request)
 
-                // Price (disabled for now)
+                await PopulatePriceAsync(game).ConfigureAwait(false);
 
                 // Release date (disabled per request)
 
@@ -280,6 +280,102 @@ namespace Codec.Services
             {
                 // ignore review fetch errors
             }
+        }
+
+        private static async Task PopulatePriceAsync(Game game)
+        {
+            try
+            {
+                var url = $"https://steamspy.com/api.php?request=appdetails&appid={game.SteamID}";
+                var json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                int priceCents = TryGetInt(root, "price");
+                int initialCents = TryGetInt(root, "initialprice");
+                int apiDiscount = TryGetInt(root, "discount");
+
+                if (priceCents <= 0 && initialCents <= 0)
+                {
+                    return;
+                }
+
+                if (initialCents <= 0)
+                {
+                    initialCents = priceCents;
+                }
+
+                string priceDisplay = FormatPrice(priceCents);
+                game.Price = priceDisplay;
+
+                if (initialCents == priceCents)
+                {
+                    game.PriceDiscount = null;
+                    return;
+                }
+
+                string initialDisplay = FormatPrice(initialCents);
+
+                int percent = apiDiscount >= 0 ? apiDiscount : ComputeDiscountPercent(initialCents, priceCents);
+                percent = Math.Clamp(percent, 0, 100);
+
+                game.PriceDiscount = $" ({percent}% off {initialDisplay})";
+            }
+            catch
+            {
+                // ignore price fetch errors
+            }
+        }
+
+        private static int TryGetInt(JsonElement root, string property)
+        {
+            try
+            {
+                if (root.TryGetProperty(property, out var node))
+                {
+                    if (node.ValueKind == JsonValueKind.Number && node.TryGetInt32(out int intVal))
+                    {
+                        return intVal;
+                    }
+
+                    if (node.ValueKind == JsonValueKind.String && int.TryParse(node.GetString(), out int parsed))
+                    {
+                        return parsed;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore parse issues
+            }
+
+            return -1;
+        }
+
+        private static int ComputeDiscountPercent(int initialCents, int priceCents)
+        {
+            if (initialCents <= 0 || priceCents < 0)
+            {
+                return 0;
+            }
+
+            double pct = 1.0 - ((double)priceCents / initialCents);
+            return (int)Math.Round(pct * 100, MidpointRounding.AwayFromZero);
+        }
+
+        private static string FormatPrice(int cents)
+        {
+            if (cents < 0)
+            {
+                return string.Empty;
+            }
+
+            return $"${cents / 100.0:0.00}";
         }
     }
 }
