@@ -80,7 +80,14 @@ namespace Codec.Services
                         var val = ratingVal.GetString();
                         if (!string.IsNullOrWhiteSpace(val))
                         {
-                            ratingList.Add($"{label} {val}");
+                            if (label.Equals("ESRB", StringComparison.OrdinalIgnoreCase))
+                            {
+                                ratingList.Add(MapEsrbRating(val));
+                            }
+                            else
+                            {
+                                ratingList.Add($"{label} {val}");
+                            }
                         }
                     }
                 }
@@ -139,6 +146,9 @@ namespace Codec.Services
                 // Price (disabled for now)
 
                 // Release date (disabled per request)
+
+                // Reviews summary
+                await PopulateReviewsAsync(game).ConfigureAwait(false);
 
                 // Age rating
                 var ratings = new List<string>();
@@ -214,6 +224,62 @@ namespace Codec.Services
                 // Ignore fetch errors; leave existing data
             }
 
+        }
+
+        private static string MapEsrbRating(string rating)
+        {
+            string normalized = rating.Trim();
+            string upper = normalized.ToUpperInvariant();
+
+            return normalized switch
+            {
+                "Teen" => "ESRB 13+",
+                "Mature" => "ESRB 17+",
+                "M" => "ESRB 17+",
+                "m" => "ESRB 17+",
+                "Mature 17+" => "ESRB 17+",
+                "Adults Only" => "ESRB 18+",
+                "Everyone" => "ESRB Everyone",
+                "E" => "ESRB Everyone",
+                "e" => "ESRB Everyone",
+                "Everyone 10+" => "ESRB 10+",
+                "E10+" => "ESRB 10+",
+                "e10+" => "ESRB 10+",
+                "T" => "ESRB 13+",
+                "t" => "ESRB 13+",
+                _ => string.IsNullOrWhiteSpace(normalized) ? "Not Rated" : $"ESRB {normalized}"
+            };
+        }
+
+        private static async Task PopulateReviewsAsync(Game game)
+        {
+            try
+            {
+                var url = $"https://store.steampowered.com/appreviews/{game.SteamID}/?json=1&language=all&filter=all&num_per_page=0";
+                var json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+
+                if (!doc.RootElement.TryGetProperty("query_summary", out var summary) || summary.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                int totalPositive = summary.TryGetProperty("total_positive", out var posProp) && posProp.TryGetInt32(out var posVal) ? posVal : 0;
+                int totalReviews = summary.TryGetProperty("total_reviews", out var totProp) && totProp.TryGetInt32(out var totVal) ? totVal : 0;
+                string? desc = summary.TryGetProperty("review_score_desc", out var descProp) && descProp.ValueKind == JsonValueKind.String ? descProp.GetString() : null;
+
+                if (totalReviews > 0)
+                {
+                    double pct = (double)totalPositive / totalReviews * 100.0;
+                    game.SteamRating = pct;
+                    game.SteamReviewSummary = $"{pct:0}% {desc ?? ""}".Trim();
+                    game.SteamReviewTotal = totalReviews;
+                }
+            }
+            catch
+            {
+                // ignore review fetch errors
+            }
         }
     }
 }

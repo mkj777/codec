@@ -218,7 +218,12 @@
                             <StackPanel Grid.Column="1" Spacing="16">
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Steam Reviews" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=SteamRating, Converter={StaticResource PercentageConverter}, FallbackValue='N/A'}"/>
+                                    <TextBlock>
+                                        <Run Text="{Binding Path=SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
+                                        <Run Text=" (" FontSize="12" Foreground="Gray"/>
+                                        <Run Text="{Binding Path=SteamReviewTotal, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue=''}" FontSize="12" Foreground="Gray"/>
+                                        <Run Text=")" FontSize="12" Foreground="Gray"/>
+                                    </TextBlock>
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Categories" Opacity="0.7"/>

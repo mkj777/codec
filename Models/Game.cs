@@ -57,6 +57,8 @@ namespace Codec.Models
         public List<string>? Platforms { get; set; }
         public DateTime? ReleaseDate { get; set; }
         public double? SteamRating { get; set; }
+        public string? SteamReviewSummary { get; set; }
+        public int? SteamReviewTotal { get; set; }
         public string? AgeRating { get; set; }
         public int? TimeToCompleteMainStory { get; set; } // in seconds
         public int? TimeToCompleteCompletionist { get; set; } // in seconds
