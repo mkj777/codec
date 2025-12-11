@@ -203,7 +203,7 @@
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Age Rating" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='Not Rated'}"/>
+                                    <TextBlock Text="{Binding Path=AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Release Date" Opacity="0.7"/>
@@ -229,15 +229,13 @@
                                         <Run Text=")" FontSize="12" Foreground="Gray"/>
                                     </TextBlock>
                                 </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Categories" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Categories, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <StackPanel Spacing="2">
+                                <StackPanel Spacing="2"
+                                            Visibility="{Binding TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Main Story" Opacity="0.7"/>
                                     <TextBlock Text="{Binding Path=TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
                                 </StackPanel>
-                                <StackPanel Spacing="2">
+                                <StackPanel Spacing="2"
+                                            Visibility="{Binding TimeToCompleteCompletionist, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Completionist" Opacity="0.7"/>
                                     <TextBlock Text="{Binding Path=TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
                                 </StackPanel>

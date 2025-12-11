@@ -16,6 +16,15 @@ namespace Codec.Converters
                 return string.IsNullOrWhiteSpace(s) ? fallback : s;
             }
 
+            if (value is System.Collections.IEnumerable enumerable && value is not string)
+            {
+                foreach (var _ in enumerable)
+                {
+                    return value; // collection has at least one item
+                }
+                return fallback;
+            }
+
             return value ?? fallback;
         }
 

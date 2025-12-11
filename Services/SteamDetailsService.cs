@@ -231,22 +231,26 @@ namespace Codec.Services
             string normalized = rating.Trim();
             string upper = normalized.ToUpperInvariant();
 
-            return normalized switch
+            return upper switch
             {
-                "Teen" => "ESRB 13+",
-                "Mature" => "ESRB 17+",
-                "M" => "ESRB 17+",
-                "m" => "ESRB 17+",
-                "Mature 17+" => "ESRB 17+",
-                "Adults Only" => "ESRB 18+",
-                "Everyone" => "ESRB Everyone",
-                "E" => "ESRB Everyone",
-                "e" => "ESRB Everyone",
-                "Everyone 10+" => "ESRB 10+",
-                "E10+" => "ESRB 10+",
-                "e10+" => "ESRB 10+",
+                "TEEN" => "ESRB 13+",
                 "T" => "ESRB 13+",
-                "t" => "ESRB 13+",
+
+                "MATURE" => "ESRB 17+",
+                "M" => "ESRB 17+",
+                "MATURE 17+" => "ESRB 17+",
+
+                "ADULTS ONLY" => "ESRB 18+",
+                "AO" => "ESRB 18+",
+
+                "EVERYONE" => "ESRB Everyone",
+                "E" => "ESRB Everyone",
+
+                "EVERYONE 10+" => "ESRB 10+",
+                "E10+" => "ESRB 10+",
+                "E10" => "ESRB 10+",
+                "E 10+" => "ESRB 10+",
+
                 _ => string.IsNullOrWhiteSpace(normalized) ? "Not Rated" : $"ESRB {normalized}"
             };
         }
@@ -302,6 +306,8 @@ namespace Codec.Services
 
                 if (priceCents <= 0 && initialCents <= 0)
                 {
+                    game.Price = "Free";
+                    game.PriceDiscount = null;
                     return;
                 }
 
@@ -310,7 +316,7 @@ namespace Codec.Services
                     initialCents = priceCents;
                 }
 
-                string priceDisplay = FormatPrice(priceCents);
+                string priceDisplay = priceCents <= 0 ? "Free" : FormatPrice(priceCents);
                 game.Price = priceDisplay;
 
                 if (initialCents == priceCents)
