@@ -237,6 +237,12 @@ namespace Codec
                     }
                 }
 
+                // Fallback RAWG ID population for games still missing one
+                var fallbackTasks = newGames
+                    .Where(g => !g.RawgID.HasValue)
+                    .Select(g => RawgDetailsService.TryPopulateRawgFromSearchAsync(g));
+                await Task.WhenAll(fallbackTasks);
+
                 await PopulateGridDbDataAsync(newGames);
 
                 int totalGames = newGames.Count;
@@ -292,7 +298,7 @@ namespace Codec
                 {
                     var expander = new Expander
                     {
-                        Header = $"{g.Name} (Steam: {g.SteamID?.ToString() ?? "N/A"}, RAWG: {g.RawgID?.ToString() ?? "N/A"})",
+                        Header = g.Name,
                         IsExpanded = false
                     };
 
@@ -592,17 +598,30 @@ namespace Codec
                 var steamTask = game.SteamID.HasValue ? SteamDetailsService.PopulateFromSteamAsync(game) : Task.CompletedTask;
                 var hltbTask = HltbService.PopulateAsync(game, DispatcherQueue); // do not block spinner on HLTB
 
-                // Ensure placeholder links are present for visibility
+                await Task.WhenAll(rawgTask, steamTask);
+
+                // Link hydration: only surface links once data fetch completed
                 if (string.IsNullOrWhiteSpace(game.RawgUrl))
                 {
-                    game.RawgUrl = "https://rawg.io";
+                    string? rawgUrl = null;
+
+                    if (!string.IsNullOrWhiteSpace(game.RawgSlug))
+                    {
+                        rawgUrl = $"https://rawg.io/games/{game.RawgSlug}";
+                    }
+                    else if (game.RawgID.HasValue)
+                    {
+                        rawgUrl = $"https://rawg.io/games/{game.RawgID.Value}";
+                    }
+
+                    game.RawgUrl = rawgUrl ?? "https://rawg.io";
+                    game.NotifyPropertyChanged(nameof(Game.RawgUrl));
                 }
                 if (string.IsNullOrWhiteSpace(game.HltbUrl))
                 {
                     game.HltbUrl = "https://howlongtobeat.com";
+                    game.NotifyPropertyChanged(nameof(Game.HltbUrl));
                 }
-
-                await Task.WhenAll(rawgTask, steamTask);
 
                 ViewModel.SelectedGame = game;
                 DetailsView.DataContext = game;

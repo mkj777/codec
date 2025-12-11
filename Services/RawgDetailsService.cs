@@ -14,7 +14,64 @@ namespace Codec.Services
     public static class RawgDetailsService
     {
         private const string DetailsEndpoint = "https://codec-api-proxy.vercel.app/api/rawg/details?id=";
+        private const string SearchEndpoint = "https://codec-api-proxy.vercel.app/api/rawg/search?term=";
         private static readonly HttpClient Http = new();
+
+        public static async Task TryPopulateRawgFromSearchAsync(Game game)
+        {
+            if (game == null || game.RawgID.HasValue || string.IsNullOrWhiteSpace(game.Name))
+            {
+                return;
+            }
+
+            try
+            {
+                string url = SearchEndpoint + Uri.EscapeDataString(game.Name);
+                string json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
+                {
+                    return;
+                }
+
+                var first = results.EnumerateArray().FirstOrDefault();
+                if (first.ValueKind != JsonValueKind.Object)
+                {
+                    return;
+                }
+
+                int? id = TryGetInt(first, "id");
+                string? slug = GetString(first, "slug");
+
+                if (!id.HasValue || id.Value <= 0)
+                {
+                    return;
+                }
+
+                game.RawgID = id.Value;
+
+                if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    game.RawgSlug = slug;
+                }
+
+                string? link = !string.IsNullOrWhiteSpace(game.RawgSlug)
+                    ? $"https://rawg.io/games/{game.RawgSlug}"
+                    : $"https://rawg.io/games/{game.RawgID}";
+
+                if (!string.IsNullOrWhiteSpace(link))
+                {
+                    game.RawgUrl = link;
+                    game.NotifyPropertyChanged(nameof(Game.RawgUrl));
+                }
+            }
+            catch
+            {
+                // best-effort; ignore failures
+            }
+        }
 
         public static async Task PopulateAsync(Game game)
         {
@@ -40,7 +97,24 @@ namespace Codec.Services
                 if (!string.IsNullOrWhiteSpace(slug))
                 {
                     game.RawgSlug = slug;
-                    game.RawgUrl = $"https://rawg.io/games/{slug}";
+                }
+
+                // Always rebuild RAWG link from latest slug (preferred) or RawgID fallback
+                string? rawgLink = null;
+
+                if (!string.IsNullOrWhiteSpace(game.RawgSlug))
+                {
+                    rawgLink = $"https://rawg.io/games/{game.RawgSlug}";
+                }
+                else if (game.RawgID.HasValue)
+                {
+                    rawgLink = $"https://rawg.io/games/{game.RawgID.Value}";
+                }
+
+                if (!string.IsNullOrWhiteSpace(rawgLink) && !string.Equals(game.RawgUrl, rawgLink, StringComparison.OrdinalIgnoreCase))
+                {
+                    game.RawgUrl = rawgLink;
+                    game.NotifyPropertyChanged(nameof(Game.RawgUrl));
                 }
 
                 // Release date (required for all games)
@@ -140,6 +214,23 @@ namespace Codec.Services
                     return prop.GetString();
                 }
             }
+            return null;
+        }
+
+        private static int? TryGetInt(JsonElement element, string property)
+        {
+            if (element.TryGetProperty(property, out var prop))
+            {
+                if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out var val))
+                {
+                    return val;
+                }
+                if (prop.ValueKind == JsonValueKind.String && int.TryParse(prop.GetString(), out var parsed))
+                {
+                    return parsed;
+                }
+            }
+
             return null;
         }
 

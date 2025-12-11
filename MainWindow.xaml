@@ -268,7 +268,7 @@
                         <HyperlinkButton Content="HowLongToBeat"
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding HltbUrl}"
-                            Visibility="{Binding HltbUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
+                            Visibility="{Binding TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}"/>
                     </StackPanel>
                 </Grid>
         </Grid>

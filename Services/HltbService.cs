@@ -20,8 +20,8 @@ namespace Codec.Services
                 return;
             }
 
-            // Skip if we already have both values
-            if (game.TimeToCompleteMainStory.HasValue && game.TimeToCompleteCompletionist.HasValue)
+            // Skip only if we already have times AND a link; allow rerun to backfill missing link
+            if (game.TimeToCompleteMainStory.HasValue && game.TimeToCompleteCompletionist.HasValue && !string.IsNullOrWhiteSpace(game.HltbUrl))
             {
                 return;
             }
@@ -111,6 +111,7 @@ namespace Codec.Services
                     if (!string.IsNullOrWhiteSpace(hltbUrl))
                     {
                         game.HltbUrl = hltbUrl;
+                        game.NotifyPropertyChanged(nameof(Game.HltbUrl));
                     }
 
                     game.LastUpdated = DateTime.Now;

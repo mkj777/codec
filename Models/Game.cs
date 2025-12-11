@@ -117,8 +117,8 @@ namespace Codec.Models
         // external links
         public string? OfficialWebsiteUrl { get; set; }
         public string? SteamPageUrl { get; set; }
-        public string? RawgUrl { get; set; } = "https://rawg.io";
-        public string? HltbUrl { get; set; } = "https://howlongtobeat.com";
+        public string? RawgUrl { get; set; }
+        public string? HltbUrl { get; set; }
 
         private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
         {
