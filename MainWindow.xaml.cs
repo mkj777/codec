@@ -584,6 +584,8 @@ namespace Codec
         {
             ShowDetailLoading(true);
 
+            var folderSizeTask = FolderSizeService.CalculateAsync(game.FolderLocation);
+
             try
             {
                 var rawgTask = game.RawgID.HasValue ? RawgDetailsService.PopulateAsync(game) : Task.CompletedTask;
@@ -604,6 +606,26 @@ namespace Codec
 
                 ViewModel.SelectedGame = game;
                 DetailsView.DataContext = game;
+
+                _ = folderSizeTask.ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        Debug.WriteLine($"Folder size fetch failed for {game.Name}: {t.Exception?.GetBaseException().Message}");
+                        return;
+                    }
+
+                    var size = t.Result;
+                    _ = DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (game.FolderSize != size)
+                        {
+                            game.FolderSize = size;
+                            game.NotifyPropertyChanged(nameof(Game.FolderSize));
+                            _ = LibraryStorageService.SaveAsync(ViewModel.Games);
+                        }
+                    });
+                }, TaskScheduler.Default);
 
                 await AwaitHeroAndLogoAsync(game);
 
