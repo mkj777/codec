@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -145,7 +146,19 @@ namespace Codec.Services
 
                 await PopulatePriceAsync(game).ConfigureAwait(false);
 
-                // Release date (disabled per request)
+                // Release date fallback: only set when missing (RAWG preferred)
+                if (!game.ReleaseDate.HasValue && data.TryGetProperty("release_date", out var releaseNode) && releaseNode.ValueKind == JsonValueKind.Object)
+                {
+                    bool comingSoon = releaseNode.TryGetProperty("coming_soon", out var soonNode) && soonNode.ValueKind == JsonValueKind.True;
+                    if (!comingSoon && releaseNode.TryGetProperty("date", out var dateNode) && dateNode.ValueKind == JsonValueKind.String)
+                    {
+                        var dateText = dateNode.GetString();
+                        if (!string.IsNullOrWhiteSpace(dateText) && DateTime.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var parsed))
+                        {
+                            game.ReleaseDate = parsed;
+                        }
+                    }
+                }
 
                 // Reviews summary
                 await PopulateReviewsAsync(game).ConfigureAwait(false);
