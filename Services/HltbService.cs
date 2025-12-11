@@ -13,7 +13,7 @@ namespace Codec.Services
         private const string SearchEndpoint = "https://codec-api-proxy.vercel.app/api/hltb/search?term=";
         private static readonly HttpClient Http = new();
 
-        public static async Task PopulateAsync(Game game)
+        public static async Task PopulateAsync(Game game, Microsoft.UI.Dispatching.DispatcherQueue? dispatcher = null)
         {
             if (game == null)
             {
@@ -35,7 +35,7 @@ namespace Codec.Services
             try
             {
                 var url = SearchEndpoint + Uri.EscapeDataString(term);
-                var json = await Http.GetStringAsync(url).ConfigureAwait(false);
+                var json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
 
                 if (!doc.RootElement.TryGetProperty("success", out var successProp) || !successProp.GetBoolean())
@@ -82,28 +82,48 @@ namespace Codec.Services
 
                 int? mainTime = GetInt(chosen, "mainTime");
                 int? completionist = GetInt(chosen, "completionistTime");
-
-                if (mainTime.HasValue)
-                {
-                    game.TimeToCompleteMainStory = mainTime.Value;
-                }
-
-                if (completionist.HasValue)
-                {
-                    game.TimeToCompleteCompletionist = completionist.Value;
-                }
+                string? hltbUrl = null;
 
                 if (chosen.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out int id))
                 {
-                    game.HltbUrl = $"https://howlongtobeat.com/game/{id}";
+                    hltbUrl = $"https://howlongtobeat.com/game/{id}";
                 }
                 else if (chosen.TryGetProperty("imageUrl", out var imgProp) && imgProp.ValueKind == JsonValueKind.String)
                 {
                     // fallback: derive base site
-                    game.HltbUrl = "https://howlongtobeat.com";
+                    hltbUrl = "https://howlongtobeat.com";
                 }
 
-                game.LastUpdated = DateTime.Now;
+                void ApplyUpdates()
+                {
+                    if (mainTime.HasValue)
+                    {
+                        game.TimeToCompleteMainStory = mainTime.Value;
+                        game.NotifyPropertyChanged(nameof(game.TimeToCompleteMainStory));
+                    }
+
+                    if (completionist.HasValue)
+                    {
+                        game.TimeToCompleteCompletionist = completionist.Value;
+                        game.NotifyPropertyChanged(nameof(game.TimeToCompleteCompletionist));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(hltbUrl))
+                    {
+                        game.HltbUrl = hltbUrl;
+                    }
+
+                    game.LastUpdated = DateTime.Now;
+                }
+
+                if (dispatcher != null)
+                {
+                    dispatcher.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, ApplyUpdates);
+                }
+                else
+                {
+                    ApplyUpdates();
+                }
             }
             catch
             {

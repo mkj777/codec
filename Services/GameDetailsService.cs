@@ -44,7 +44,7 @@ namespace Codec.Services
             try
             {
                 string url = BuildSearchUrl(searchName, settings.PageSize);
-                var response = await _httpClient.GetStringAsync(url);
+                var response = await DataCacheService.GetStringAsync(url);
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("results", out var resultsElement) || resultsElement.ValueKind != JsonValueKind.Array)

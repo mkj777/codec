@@ -1,6 +1,7 @@
 using Codec.Models;
 using Codec.Services;
 using Codec.ViewModels;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -571,29 +572,48 @@ namespace Codec
 
         private async Task FetchAndShowDetailsAsync(Game game)
         {
-            if (game.SteamID.HasValue)
-            {
-                await SteamDetailsService.PopulateFromSteamAsync(game);
-            }
+            ShowDetailLoading(true);
 
-            await HltbService.PopulateAsync(game);
-
-            // Ensure placeholder links are present for visibility
-            if (string.IsNullOrWhiteSpace(game.RawgUrl))
+            try
             {
-                game.RawgUrl = "https://rawg.io";
-            }
-            if (string.IsNullOrWhiteSpace(game.HltbUrl))
-            {
-                game.HltbUrl = "https://howlongtobeat.com";
-            }
+                var rawgTask = game.RawgID.HasValue ? RawgDetailsService.PopulateAsync(game) : Task.CompletedTask;
+                var steamTask = game.SteamID.HasValue ? SteamDetailsService.PopulateFromSteamAsync(game) : Task.CompletedTask;
+                var hltbTask = HltbService.PopulateAsync(game, DispatcherQueue); // do not block spinner on HLTB
 
-            ViewModel.SelectedGame = game;
-            DetailsView.DataContext = game;
-            DetailsView.Visibility = Visibility.Visible;
-            LibraryGrid.Visibility = Visibility.Collapsed;
-            BottomBar.Visibility = Visibility.Collapsed;
-            AppTitleBar.Visibility = Visibility.Collapsed;
+                // Ensure placeholder links are present for visibility
+                if (string.IsNullOrWhiteSpace(game.RawgUrl))
+                {
+                    game.RawgUrl = "https://rawg.io";
+                }
+                if (string.IsNullOrWhiteSpace(game.HltbUrl))
+                {
+                    game.HltbUrl = "https://howlongtobeat.com";
+                }
+
+                await Task.WhenAll(rawgTask, steamTask);
+
+                ViewModel.SelectedGame = game;
+                DetailsView.DataContext = game;
+
+                await AwaitHeroAndLogoAsync(game);
+
+                DetailsView.Visibility = Visibility.Visible;
+                LibraryGrid.Visibility = Visibility.Collapsed;
+                BottomBar.Visibility = Visibility.Collapsed;
+                AppTitleBar.Visibility = Visibility.Collapsed;
+
+                    _ = hltbTask.ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            Debug.WriteLine($"HLTB fetch failed: {t.Exception?.GetBaseException().Message}");
+                        }
+                    }, TaskContinuationOptions.ExecuteSynchronously);
+            }
+            finally
+            {
+                ShowDetailLoading(false);
+            }
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -613,6 +633,33 @@ namespace Codec
             DebugButton.IsEnabled = isEnabled;
             RefreshCoversButton.IsEnabled = isEnabled;
             ResetAppButton.IsEnabled = isEnabled;
+        }
+
+        private async Task AwaitHeroAndLogoAsync(Game game)
+        {
+            bool NeedsLogo() => game.SteamID.HasValue;
+            bool HasHero() => !IsPlaceholder(game.LibHero);
+            bool HasLogo() => !IsPlaceholder(game.LibLogo);
+
+            const int maxWaitMs = 6000;
+            const int stepMs = 100;
+            int waited = 0;
+
+            while (waited < maxWaitMs)
+            {
+                if (HasHero() && (!NeedsLogo() || HasLogo()))
+                {
+                    return;
+                }
+
+                await Task.Delay(stepMs);
+                waited += stepMs;
+            }
+        }
+
+        private void ShowDetailLoading(bool show)
+        {
+            DetailLoadingOverlay.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private async Task RunWithFooterLockAsync(Func<Task> action)

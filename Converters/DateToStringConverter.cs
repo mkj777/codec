@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml.Data;
 using System;
+using System.Globalization;
 
 namespace Codec.Converters
 {
@@ -9,7 +10,7 @@ namespace Codec.Converters
         {
             if (value is DateTime dt)
             {
-                return dt.ToString("yyyy-MM-dd");
+                return dt.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture);
             }
 
             return "N/A";

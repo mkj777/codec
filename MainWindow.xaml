@@ -22,6 +22,12 @@
             <conv:MultiplyConverter x:Key="MultiplyConverter" />
             <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter" />
             <conv:NullOrEmptyToFallbackConverter x:Key="NullOrEmptyToFallbackConverter" />
+            <!-- Softer default blur overlay -->
+            <AcrylicBrush x:Key="BlurOverlayBrush"
+                          TintColor="#66000000"
+                          TintOpacity="0.25"
+                          TintLuminosityOpacity="0.8"
+                          FallbackColor="#66000000" />
             <Style TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="FontWeight" Value="SemiBold" />
@@ -185,11 +191,11 @@
                             <StackPanel Grid.Column="0" Spacing="12">
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Publisher" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Publisher, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Path=Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Developer" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Developer, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Path=Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Genre" Opacity="0.7"/>
@@ -197,7 +203,7 @@
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Age Rating" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=AgeRating, FallbackValue='N/A'}"/>
+                                    <TextBlock Text="{Binding Path=AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='Not Rated'}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Release Date" Opacity="0.7"/>
@@ -228,7 +234,7 @@
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Description" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Description, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Path=Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
@@ -261,7 +267,7 @@
         </Grid>
 
         <!-- Global app-level overlay -->
-        <Grid Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+        <Grid Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True">
             <StackPanel x:Name="ScanProgressPanel"
                         Visibility="Collapsed"
                         Background="#BF1C1C1C"
@@ -289,6 +295,17 @@
                           Height="48"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"/>
+
+            <Grid x:Name="DetailLoadingOverlay"
+                  Visibility="Collapsed"
+                  Background="{StaticResource BlurOverlayBrush}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <ProgressRing Width="64" Height="64" IsActive="True"/>
+                    <TextBlock Text="Loading game assets..." FontSize="16" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
         </Grid>
 
         <!-- Bottom Bar with primary actions -->

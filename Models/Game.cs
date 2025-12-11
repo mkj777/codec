@@ -44,6 +44,7 @@ namespace Codec.Models
         // external IDs for fetching metadata from online databases
         public int? SteamID { get; set; }
         public int? RawgID { get; set; }
+        public string? RawgSlug { get; set; }
         public int? GridDbId { get; set; }
 
         // game details, fetched from various sources
@@ -125,6 +126,11 @@ namespace Codec.Models
             storage = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             return true;
+        }
+
+        public void NotifyPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
