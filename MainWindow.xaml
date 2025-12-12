@@ -74,7 +74,7 @@
                                     VerticalAlignment="Stretch"
                                     UseSystemFocusVisuals="False">
                                 <Grid Width="300" Height="450">
-                                    <Border CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                                    <Border CornerRadius="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
                                     <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
                                 </Grid>
                             </Button>
@@ -135,10 +135,6 @@
                            </Grid>
                     </Grid>
 
-                    <StackPanel Grid.Row="2" Spacing="6" VerticalAlignment="Bottom">
-                        <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="Bold"/>
-                    </StackPanel>
-
                         <!-- Settings button bottom-right of the hero (top half) with tighter inset -->
                         <Button x:Name="DetailsSettingsButton"
                             Grid.RowSpan="3"
@@ -194,6 +190,8 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   HorizontalAlignment="Left">
                         <StackPanel Spacing="16">
+                            <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="Bold"/>
+                            
                         <!-- Game Info Block split into two columns -->
                         <Grid ColumnSpacing="24" MaxWidth="900" HorizontalAlignment="Left">
                             <Grid.ColumnDefinitions>
