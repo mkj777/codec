@@ -22,6 +22,16 @@
             <conv:MultiplyConverter x:Key="MultiplyConverter" />
             <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter" />
             <conv:NullOrEmptyToFallbackConverter x:Key="NullOrEmptyToFallbackConverter" />
+            <Style x:Key="UnderlinedHyperlinkButton" TargetType="HyperlinkButton">
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="ContentTemplate">
+                    <Setter.Value>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" TextDecorations="Underline" FontWeight="SemiBold" />
+                        </DataTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <!-- Softer default blur overlay -->
             <AcrylicBrush x:Key="BlurOverlayBrush"
                           TintColor="#66000000"
@@ -64,7 +74,7 @@
                     </ItemsRepeater.Layout>
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="local:Game">
-                                <Button Click="LibraryItem_Click"
+                            <Button Click="LibraryItem_Click"
                                     ClickMode="Press"
                                     Background="Transparent"
                                     BorderThickness="0"
@@ -122,7 +132,7 @@
                         <!-- Settings button relocated below; reserved spot left empty here -->
 
                         <!-- Logo overlayed with dynamic padding -->
-                           <Grid>
+                        <Grid>
                             <Image x:Name="HeroLogo"
                                 Source="{Binding LibLogo}"
                                 Height="300"
@@ -132,11 +142,11 @@
                                 VerticalAlignment="Top"
                                 IsHitTestVisible="False"
                                 Margin="24,50,0,0"/>
-                           </Grid>
+                        </Grid>
                     </Grid>
 
-                        <!-- Settings button bottom-right of the hero (top half) with tighter inset -->
-                        <Button x:Name="DetailsSettingsButton"
+                    <!-- Settings button bottom-right of the hero (top half) with tighter inset -->
+                    <Button x:Name="DetailsSettingsButton"
                             Grid.RowSpan="3"
                             Content="Settings"
                             HorizontalAlignment="Right"
@@ -144,8 +154,8 @@
                             Margin="0,0,0,0"
                             FontWeight="SemiBold"/>
 
-                        <!-- Play placeholder button anchored to the hero's lower-left corner -->
-                        <Button x:Name="DetailsPlayButton"
+                    <!-- Play placeholder button anchored to the hero's lower-left corner -->
+                    <Button x:Name="DetailsPlayButton"
                             Grid.Row="2"
                             Content="Play"
                             Padding="24,8"
@@ -157,51 +167,78 @@
             </Grid>
 
             <!-- Lower Half -->
-                        <Grid x:Name="DetailsLowerGrid" Grid.Row="1" Margin="20"
+            <Grid x:Name="DetailsLowerGrid" Grid.Row="1" Margin="20,20,0,20"
                     ColumnSpacing="24" SizeChanged="DetailsLowerGrid_SizeChanged">
-                                <Grid.ColumnDefinitions>
-                                    <!-- Media carousel -->
-                                    <ColumnDefinition Width="2*" MinWidth="420"/>
-                                    <!-- Data + Description -->
-                                    <ColumnDefinition Width="3*" />
-                                    <!-- Links -->
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions>
+                    <!-- Media carousel -->
+                    <ColumnDefinition Width="2*" MinWidth="420"/>
+                    <!-- Data + Description -->
+                    <ColumnDefinition Width="3*" />
+                    <!-- Links -->
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                    <!-- Media carousel links -->
-                    <StackPanel Grid.Column="0" Spacing="0">
-                        <Grid x:Name="MediaContainer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SizeChanged="MediaContainer_SizeChanged">
-                            <FlipView x:Name="MediaFlipView"
+                <!-- Media carousel links -->
+                <StackPanel Grid.Column="0" Spacing="0">
+                    <Grid x:Name="MediaContainer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SizeChanged="MediaContainer_SizeChanged">
+                        <FlipView x:Name="MediaFlipView"
                                       ItemsSource="{Binding Media}"
                                       HorizontalAlignment="Left"
                                       VerticalAlignment="Top"
                                       HorizontalContentAlignment="Stretch"
                                       VerticalContentAlignment="Stretch">
-                                <FlipView.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid>
-                                            <MediaPlayerElement AreTransportControlsEnabled="True"
+                            <FlipView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <MediaPlayerElement AreTransportControlsEnabled="True"
                                                                Source="{Binding Converter={StaticResource UriToMediaSourceConverter}}"
                                                                AutoPlay="False"
                                                                Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
-                                            <Image Source="{Binding}"
+                                        <Image Source="{Binding}"
                                                    Stretch="UniformToFill"
                                                    Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=image}"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </FlipView.ItemTemplate>
-                            </FlipView>
-                        </Grid>
-                    </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </FlipView.ItemTemplate>
+                        </FlipView>
+                    </Grid>
+                </StackPanel>
 
-                    <!-- Mitte: Game Info + Beschreibung -->
-                    <ScrollViewer Grid.Column="1"
+                <!-- Mitte: Game Info + Beschreibung -->
+                <ScrollViewer Grid.Column="1"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
                                   HorizontalAlignment="Stretch">
-                        <StackPanel Spacing="8" HorizontalAlignment="Stretch">
-                            <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" TextWrapping="WrapWholeWords"/>
-                            
+                    <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                           Text="{Binding Name}"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           TextWrapping="WrapWholeWords"
+                                           VerticalAlignment="Center" />
+                            <ItemsControl Grid.Column="1"
+                                              ItemsSource="{Binding PlatformLogoUris, Mode=OneWay}"
+                                              HorizontalAlignment="Right"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="10" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Image Source="{Binding}" Height="20" Stretch="Uniform" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+
                         <!-- Game Info Block split into two columns -->
                         <Grid ColumnSpacing="24" HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
@@ -266,33 +303,41 @@
                                 </StackPanel>
                             </StackPanel>
                         </Grid>
-                        </StackPanel>
-                    </ScrollViewer>
+                    </StackPanel>
+                </ScrollViewer>
 
-                    <!-- Rechts: Links -->
-                    <StackPanel Grid.Column="1"
+                <!-- Rechts: Links -->
+                <StackPanel Grid.Column="1"
                     Spacing="2"
-                    Margin="0,28,0,0"
+                    Margin="0,38,0,0"
                     VerticalAlignment="Top"
                     HorizontalAlignment="Right">
                         <HyperlinkButton Content="Official Website"
+                            Foreground="White"
+                            Style="{StaticResource UnderlinedHyperlinkButton}"
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding OfficialWebsiteUrl}"
                             Visibility="{Binding OfficialWebsiteUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                         <HyperlinkButton Content="Steam"
+                            Foreground="White"
+                            Style="{StaticResource UnderlinedHyperlinkButton}"
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding SteamPageUrl}"
                             Visibility="{Binding SteamPageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                         <HyperlinkButton Content="RAWG"
+                            Foreground="White"
+                            Style="{StaticResource UnderlinedHyperlinkButton}"
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding RawgUrl}"
                             Visibility="{Binding RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                         <HyperlinkButton Content="HowLongToBeat"
+                            Foreground="White"
+                            Style="{StaticResource UnderlinedHyperlinkButton}"
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding HltbUrl}"
                             Visibility="{Binding TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}"/>
-                    </StackPanel>
-                </Grid>
+                </StackPanel>
+            </Grid>
         </Grid>
 
         <!-- Global app-level overlay -->
@@ -384,19 +429,3 @@
         </Grid>
     </Grid>
 </Window>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

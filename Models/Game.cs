@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Codec.Models
@@ -56,6 +57,12 @@ namespace Codec.Models
         public string? PriceDiscount { get; set; }
         public string? Description { get; set; }
         public List<string>? Platforms { get; set; }
+
+        public IEnumerable<string> PlatformLogoUris => (Platforms ?? Enumerable.Empty<string>())
+            .Select(MapPlatformToLogoUri)
+            .Where(uri => !string.IsNullOrWhiteSpace(uri))
+            .Select(uri => uri!)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
         public DateTime? ReleaseDate { get; set; }
         public double? SteamRating { get; set; }
         public string? SteamReviewSummary { get; set; }
@@ -119,6 +126,58 @@ namespace Codec.Models
         public string? SteamPageUrl { get; set; }
         public string? RawgUrl { get; set; }
         public string? HltbUrl { get; set; }
+
+        private static string? MapPlatformToLogoUri(string? platform)
+        {
+            if (string.IsNullOrWhiteSpace(platform))
+            {
+                return null;
+            }
+
+            var normalized = platform.Trim().ToLowerInvariant();
+
+            if (normalized.Contains("playstation"))
+            {
+                return "ms-appx:///Assets/playstation_logo.png";
+            }
+
+            if (normalized.Contains("xbox"))
+            {
+                return "ms-appx:///Assets/xbox_logo.png";
+            }
+
+            if (normalized.Contains("nintendo") || normalized.Contains("switch"))
+            {
+                return "ms-appx:///Assets/NintendoSwitch_logo.png";
+            }
+
+            if (normalized.Contains("ios"))
+            {
+                return "ms-appx:///Assets/iOS_logo.png";
+            }
+
+            if (normalized.Contains("android"))
+            {
+                return "ms-appx:///Assets/android_logo.png";
+            }
+
+            if (normalized.Contains("mac"))
+            {
+                return "ms-appx:///Assets/MacOS_logo.png";
+            }
+
+            if (normalized.Contains("linux"))
+            {
+                return "ms-appx:///Assets/linux_logo.png";
+            }
+
+            if (normalized.Contains("pc") || normalized.Contains("windows"))
+            {
+                return "ms-appx:///Assets/windows_logo.png";
+            }
+
+            return null;
+        }
 
         private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
         {
