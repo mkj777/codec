@@ -48,47 +48,42 @@ namespace Codec.Services
                     return;
                 }
 
-                JsonElement? best = null;
-                double bestScore = double.MinValue;
-
-                foreach (var candidate in results.EnumerateArray())
-                {
-                    if (!candidate.TryGetProperty("name", out var nameProp) || nameProp.ValueKind != JsonValueKind.String)
+                var candidates = results.EnumerateArray()
+                    .Where(c => c.ValueKind == JsonValueKind.Object)
+                    .Select(c => new
                     {
-                        continue;
-                    }
+                        Element = c,
+                        Name = c.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() ?? string.Empty : string.Empty,
+                        Similarity = GetSimilarity(c, term),
+                        ReleaseYear = GetInt(c, "releaseYear")
+                    })
+                    .ToList();
 
-                    string candidateName = nameProp.GetString() ?? string.Empty;
-                    double similarity = CalculateNameSimilarity(term, candidateName);
-
-                    if (candidate.TryGetProperty("similarity", out var apiScore) && apiScore.TryGetDouble(out double s))
-                    {
-                        similarity = Math.Max(similarity, s);
-                    }
-
-                    if (similarity > bestScore)
-                    {
-                        bestScore = similarity;
-                        best = candidate;
-                    }
-                }
-
-                if (best == null)
+                if (candidates.Count == 0)
                 {
                     return;
                 }
 
-                var chosen = best.Value;
+                var exact = candidates.FirstOrDefault(c => Math.Abs(c.Similarity - 1.0) < 0.0001);
+                var targetYear = game.ReleaseDate?.Year;
+                var yearMatch = targetYear.HasValue
+                    ? candidates.Where(c => c.ReleaseYear.HasValue && c.ReleaseYear.Value == targetYear.Value)
+                                 .OrderByDescending(c => c.Similarity)
+                                 .FirstOrDefault()
+                    : null;
+                var best = candidates.OrderByDescending(c => c.Similarity).First();
 
-                int? mainTime = GetInt(chosen, "mainTime");
-                int? completionist = GetInt(chosen, "completionistTime");
+                var chosen = (exact ?? yearMatch ?? best);
+
+                int? mainTime = GetInt(chosen.Element, "mainTime");
+                int? completionist = GetInt(chosen.Element, "completionistTime");
                 string? hltbUrl = null;
 
-                if (chosen.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out int id))
+                if (chosen.Element.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out int id))
                 {
                     hltbUrl = $"https://howlongtobeat.com/game/{id}";
                 }
-                else if (chosen.TryGetProperty("imageUrl", out var imgProp) && imgProp.ValueKind == JsonValueKind.String)
+                else if (chosen.Element.TryGetProperty("imageUrl", out var imgProp) && imgProp.ValueKind == JsonValueKind.String)
                 {
                     // fallback: derive base site
                     hltbUrl = "https://howlongtobeat.com";
@@ -148,6 +143,23 @@ namespace Codec.Services
             }
 
             return null;
+        }
+
+        private static double GetSimilarity(JsonElement candidate, string referenceName)
+        {
+            double similarity = 0;
+
+            if (candidate.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == JsonValueKind.String)
+            {
+                similarity = CalculateNameSimilarity(referenceName, nameProp.GetString() ?? string.Empty);
+            }
+
+            if (candidate.TryGetProperty("similarity", out var apiScore) && apiScore.TryGetDouble(out double s))
+            {
+                similarity = Math.Max(similarity, s);
+            }
+
+            return similarity;
         }
 
         private static double CalculateNameSimilarity(string reference, string candidate)
