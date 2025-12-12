@@ -383,7 +383,7 @@
         </Grid>
 
         <!-- Bottom Bar with primary actions -->
-        <Grid x:Name="BottomBar" Grid.Row="2" Height="45" Padding="30,0,0,4">
+        <Grid x:Name="BottomBar" Grid.Row="2" Height="50" Padding="30,0,0,16">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button x:Name="ScanGamesButton"
                         Content="Scan for Games"
