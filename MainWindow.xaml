@@ -114,7 +114,7 @@
                         <!-- Back stays top-left -->
                         <Button x:Name="BackButton"
                                 Click="BackButton_Click"
-                                Content="← Back"
+                                Content="←"
                                 VerticalAlignment="Top"
                                 HorizontalAlignment="Left"
                                 FontWeight="SemiBold"/>
@@ -131,7 +131,7 @@
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Top"
                                 IsHitTestVisible="False"
-                                Margin="24,24,0,0"/>
+                                Margin="24,32,0,0"/>
                            </Grid>
                     </Grid>
 
@@ -160,12 +160,12 @@
                         <Grid x:Name="DetailsLowerGrid" Grid.Row="1" Margin="20"
                     ColumnSpacing="24" SizeChanged="DetailsLowerGrid_SizeChanged">
                                 <Grid.ColumnDefinitions>
+                                    <!-- Media carousel -->
                                     <ColumnDefinition Width="2*" MinWidth="420"/>
-                                    <!-- Screenshots -->
-                                    <ColumnDefinition Width="2*" />
-                                    <!-- Daten + Description -->
-                                    <ColumnDefinition Width="*"/>
+                                    <!-- Data + Description -->
+                                    <ColumnDefinition Width="3*" />
                                     <!-- Links -->
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
                     <!-- Media carousel links -->
@@ -198,51 +198,21 @@
                     <ScrollViewer Grid.Column="1"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
-                                  HorizontalAlignment="Left">
-                        <StackPanel Spacing="16">
-                            <TextBlock Text="{Binding Name}" FontSize="28" FontWeight="Bold"/>
+                                  HorizontalAlignment="Stretch">
+                        <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+                            <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" TextWrapping="WrapWholeWords"/>
                             
                         <!-- Game Info Block split into two columns -->
-                        <Grid ColumnSpacing="24" MaxWidth="900" HorizontalAlignment="Left">
+                        <Grid ColumnSpacing="24" HorizontalAlignment="Stretch">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="12">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Publisher" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Developer" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Genre" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Age Rating" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"/>
-                                </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Release Date" Opacity="0.7"/>
-                                    <TextBlock Text="{Binding Path=ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"/>
-                                </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Price" Opacity="0.7"/>
-                                    <TextBlock>
-                                        <Run Text="{Binding Path=Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" />
-                                        <Run Text="{Binding Path=PriceDiscount, FallbackValue=''}" FontSize="12" Foreground="#B3FFFFFF" />
-                                    </TextBlock>
-                                </StackPanel>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1" Spacing="16">
-                                <StackPanel Spacing="2"
+                                <StackPanel Spacing="0"
                                             Visibility="{Binding SteamID, Converter={StaticResource NullToVisibilityConverter}}">
-                                    <TextBlock Text="Steam Reviews" Opacity="0.7"/>
+                                    <TextBlock Text="Steam Reviews" Opacity="0.4"/>
                                     <TextBlock>
                                         <Run Text="{Binding Path=SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
                                         <Run Text=" (" FontSize="12" Foreground="Gray"/>
@@ -250,20 +220,52 @@
                                         <Run Text=")" FontSize="12" Foreground="Gray"/>
                                     </TextBlock>
                                 </StackPanel>
-                                <StackPanel Spacing="2"
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Genre" Opacity="0.4"/>
+                                    <TextBlock Text="{Binding Path=Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="1"
                                             Visibility="{Binding TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}">
-                                    <TextBlock Text="Main Story" Opacity="0.7"/>
+                                    <TextBlock Text="Main Story" Opacity="0.4"/>
                                     <TextBlock Text="{Binding Path=TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
                                 </StackPanel>
-                                <StackPanel Spacing="2"
+                                <StackPanel Spacing="1"
                                             Visibility="{Binding TimeToCompleteCompletionist, Converter={StaticResource NullToVisibilityConverter}}">
-                                    <TextBlock Text="Completionist" Opacity="0.7"/>
+                                    <TextBlock Text="Completionist" Opacity="0.4"/>
                                     <TextBlock Text="{Binding Path=TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
                                 </StackPanel>
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="Description" Opacity="0.7"/>
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Description" Opacity="0.4"/>
                                     <TextBlock Text="{Binding Path=Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                 </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="12">
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Publisher" Opacity="0.4"/>
+                                    <TextBlock Text="{Binding Path=Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Developer" Opacity="0.4"/>
+                                    <TextBlock Text="{Binding Path=Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Release Date" Opacity="0.4"/>
+                                    <TextBlock Text="{Binding Path=ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Age Rating" Opacity="0.4"/>
+                                    <TextBlock Text="{Binding Path=AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="Price" Opacity="0.4"/>
+                                    <TextBlock>
+                                        <Run Text="{Binding Path=Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" />
+                                        <Run Text="{Binding Path=PriceDiscount, FallbackValue=''}" FontSize="12" Foreground="#B3FFFFFF" />
+                                    </TextBlock>
+                                </StackPanel>
+
                             </StackPanel>
                         </Grid>
                         </StackPanel>
