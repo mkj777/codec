@@ -4,6 +4,7 @@ using Codec.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -578,11 +579,15 @@ namespace Codec
             }
         }
 
-        private void GameItem_Click(object sender, ItemClickEventArgs e)
+        private void LibraryItem_Click(object sender, RoutedEventArgs e)
         {
-            if (e.ClickedItem is Game game)
+            if (sender is FrameworkElement fe)
             {
-                _ = FetchAndShowDetailsAsync(game);
+                var game = fe.Tag as Game ?? fe.DataContext as Game;
+                if (game != null)
+                {
+                    _ = FetchAndShowDetailsAsync(game);
+                }
             }
         }
 

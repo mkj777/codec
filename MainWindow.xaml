@@ -12,7 +12,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid>
+    <Grid MinWidth="420" MinHeight="520">
         <Grid.Resources>
             <conv:ListToCommaConverter x:Key="ListToCommaConverter" />
             <conv:SecondsToTimeConverter x:Key="SecondsToTimeConverter" />
@@ -50,26 +50,39 @@
         </Grid>
 
         <!-- Library grid of cover images -->
-        <GridView x:Name="LibraryGrid"
-              Grid.Row="1" Margin="30,5,30,5"
-              ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
-              IsItemClickEnabled="True"
-              ItemClick="GameItem_Click"
-              SelectionMode="None">
-            <GridView.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <ItemsWrapGrid Orientation="Horizontal"/>
-                </ItemsPanelTemplate>
-            </GridView.ItemsPanel>
-            <GridView.ItemTemplate>
-                <DataTemplate x:DataType="local:Game">
-                    <Grid Width="300" Height="450">
-                        <Border CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
-                        <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
-                    </Grid>
-                </DataTemplate>
-            </GridView.ItemTemplate>
-        </GridView>
+        <Grid x:Name="LibraryGrid" Grid.Row="1" Margin="30,5,30,5">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <ItemsRepeater ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
+                               HorizontalAlignment="Stretch">
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout MinItemWidth="300"
+                                           MinItemHeight="450"
+                                           MinColumnSpacing="12"
+                                           MinRowSpacing="12"
+                                           ItemsJustification="SpaceBetween"/>
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="local:Game">
+                                <Button Click="LibraryItem_Click"
+                                    ClickMode="Press"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="0"
+                                    Tag="{x:Bind}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    UseSystemFocusVisuals="False">
+                                <Grid Width="300" Height="450">
+                                    <Border CornerRadius="10" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                                    <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </ScrollViewer>
+        </Grid>
 
         <!-- Game details full page -->
         <Grid x:Name="DetailsView"
