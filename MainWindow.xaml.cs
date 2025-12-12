@@ -295,6 +295,8 @@ namespace Codec
                 // Build a compact, readable view of current games
                 var panel = new StackPanel { Spacing = 8, MinWidth = 360 };
 
+                static string? FormatList(IEnumerable<string>? values) => values != null && values.Any() ? string.Join(", ", values) : null;
+
                 foreach (var g in ViewModel.Games)
                 {
                     var expander = new Expander
@@ -319,29 +321,44 @@ namespace Codec
                     }
 
                     AddRow("ID", g.Id.ToString());
+                    AddRow("Name", g.Name);
                     AddRow("Date Added", g.DateAdded.ToString());
                     AddRow("Import Source", g.ImportedFrom);
-                    AddRow("Steam ID", g.SteamID?.ToString());
-                    AddRow("RAWG ID", g.RawgID?.ToString());
+                    AddRow("Import Source Display", g.ImportedFromDisplay);
                     AddRow("Executable", g.Executable);
                     AddRow("Folder Location", g.FolderLocation);
-                    AddRow("Folder Size", g.FolderSize.ToString());
+                    AddRow("Folder Size (bytes)", g.FolderSize.ToString());
+                    AddRow("Steam ID", g.SteamID?.ToString());
+                    AddRow("RAWG ID", g.RawgID?.ToString());
+                    AddRow("RAWG Slug", g.RawgSlug);
+                    AddRow("GridDB ID", g.GridDbId?.ToString());
                     AddRow("Publisher", g.Publisher);
                     AddRow("Developer", g.Developer);
-                    AddRow("Genres", g.Genres != null && g.Genres.Count > 0 ? string.Join(", ", g.Genres) : null);
+                    AddRow("Genres", FormatList(g.Genres));
+                    AddRow("Categories", FormatList(g.Categories));
+                    AddRow("Platforms", FormatList(g.Platforms));
                     AddRow("Price", g.Price);
-                    AddRow("Age Rating", g.AgeRating);
+                    AddRow("Price Discount", g.PriceDiscount);
                     AddRow("Description", g.Description);
                     AddRow("Release Date", g.ReleaseDate?.ToString());
                     AddRow("Steam Rating", g.SteamRating?.ToString());
+                    AddRow("Steam Review Summary", g.SteamReviewSummary);
+                    AddRow("Steam Review Total", g.SteamReviewTotal?.ToString());
+                    AddRow("Age Rating", g.AgeRating);
                     AddRow("Main Story (sec)", g.TimeToCompleteMainStory?.ToString());
                     AddRow("Completionist (sec)", g.TimeToCompleteCompletionist?.ToString());
+                    AddRow("Play Time (sec)", g.PlayTime?.ToString());
+                    AddRow("Launch Script", g.LaunchScript);
                     AddRow("Capsule", g.LibCapsule);
                     AddRow("Hero", g.LibHero);
                     AddRow("Logo", g.LibLogo);
                     AddRow("Icon", g.LibIcon);
                     AddRow("Client Icon", g.LibClientIcon);
-                    AddRow("Media", g.Media != null && g.Media.Count > 0 ? string.Join(", ", g.Media) : "");
+                    AddRow("Media", FormatList(g.Media));
+                    AddRow("Official Website", g.OfficialWebsiteUrl);
+                    AddRow("Steam Page", g.SteamPageUrl);
+                    AddRow("RAWG Page", g.RawgUrl);
+                    AddRow("HowLongToBeat", g.HltbUrl);
                     AddRow("Last Updated", g.LastUpdated?.ToString());
                     AddRow("Last Launched", g.LastLaunched?.ToString());
 

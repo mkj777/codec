@@ -210,21 +210,10 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="12">
-                                <StackPanel Spacing="0"
-                                            Visibility="{Binding SteamID, Converter={StaticResource NullToVisibilityConverter}}">
-                                    <TextBlock Text="Steam Reviews" Opacity="0.4"/>
-                                    <TextBlock>
-                                        <Run Text="{Binding Path=SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
-                                        <Run Text=" (" FontSize="12" Foreground="Gray"/>
-                                        <Run Text="{Binding Path=SteamReviewTotal, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue=''}" FontSize="12" Foreground="Gray"/>
-                                        <Run Text=")" FontSize="12" Foreground="Gray"/>
-                                    </TextBlock>
-                                </StackPanel>
                                 <StackPanel Spacing="1">
                                     <TextBlock Text="Genre" Opacity="0.4"/>
                                     <TextBlock Text="{Binding Path=Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                 </StackPanel>
-
                                 <StackPanel Spacing="1"
                                             Visibility="{Binding TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Main Story" Opacity="0.4"/>
@@ -242,6 +231,16 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Spacing="12">
+                                <StackPanel Spacing="0"
+                                            Visibility="{Binding SteamID, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <TextBlock Text="Steam Reviews" Opacity="0.4"/>
+                                    <TextBlock>
+                                        <Run Text="{Binding Path=SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
+                                        <Run Text="(" FontSize="12" Foreground="Gray"/>
+                                        <Run Text="{Binding Path=SteamReviewTotal, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" FontSize="12" Foreground="Gray"/>
+                                        <Run Text=")" FontSize="12" Foreground="Gray"/>
+                                    </TextBlock>
+                                </StackPanel>
                                 <StackPanel Spacing="1">
                                     <TextBlock Text="Publisher" Opacity="0.4"/>
                                     <TextBlock Text="{Binding Path=Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
@@ -265,15 +264,15 @@
                                         <Run Text="{Binding Path=PriceDiscount, FallbackValue=''}" FontSize="12" Foreground="#B3FFFFFF" />
                                     </TextBlock>
                                 </StackPanel>
-
                             </StackPanel>
                         </Grid>
                         </StackPanel>
                     </ScrollViewer>
 
                     <!-- Rechts: Links -->
-                    <StackPanel Grid.Column="2"
-                    Spacing="8"
+                    <StackPanel Grid.Column="1"
+                    Spacing="2"
+                    Margin="0,28,0,0"
                     VerticalAlignment="Top"
                     HorizontalAlignment="Right">
                         <HyperlinkButton Content="Official Website"
@@ -284,7 +283,7 @@
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding SteamPageUrl}"
                             Visibility="{Binding SteamPageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
-                        <HyperlinkButton Content="RAWG.io"
+                        <HyperlinkButton Content="RAWG"
                             HorizontalAlignment="Right"
                             NavigateUri="{Binding RawgUrl}"
                             Visibility="{Binding RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
