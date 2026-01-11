@@ -26,9 +26,11 @@ namespace Codec
             this.InitializeComponent();
             this.Title = "Codec Game Library";
             ViewModel = new MainViewModel();
+            RootGrid.DataContext = ViewModel;
             ExtendsContentIntoTitleBar = true;
 
             LibraryStorageService.EnsureStorageInitialized();
+            ViewModel.SetLoadingState(true, "Loading your library...", "Preparing Codec");
 
             // Load persisted library
             _ = LoadLibraryAsync();
@@ -45,6 +47,10 @@ namespace Codec
                 ViewModel.Games.Add(g);
             }
             await LibraryStorageService.SaveAsync(ViewModel.Games);
+
+            ViewModel.SetLoadingState(false);
+            ViewModel.IsInitialLoading = false;
+            ViewModel.IsOnboardingVisible = ViewModel.Games.Count == 0;
         }
 
         private void DetailsLowerGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -188,7 +194,7 @@ namespace Codec
             await ScanGamesAsync(sender as Button);
         }
 
-        private async Task ScanGamesAsync(Button? button = null)
+        private async Task ScanGamesAsync(Button? button = null, bool showFullScreenLoading = false)
         {
             if (button != null)
             {
@@ -196,7 +202,15 @@ namespace Codec
             }
 
             SetFooterButtonsEnabled(false);
-            ShowScanProgress("Looking for Games (this might take a few minutes)...", isIndeterminate: true);
+
+            if (showFullScreenLoading)
+            {
+                ViewModel.SetLoadingState(true, "Finding your games...", "This will take a few minutes, depending on system size.");
+            }
+            else
+            {
+                ShowScanProgress("Looking for Games (this might take a few minutes)...", isIndeterminate: true);
+            }
 
             try
             {
@@ -247,7 +261,10 @@ namespace Codec
                 await PopulateGridDbDataAsync(newGames);
 
                 int totalGames = newGames.Count;
-                PrepareCoverProgress(totalGames);
+                if (!showFullScreenLoading)
+                {
+                    PrepareCoverProgress(totalGames);
+                }
 
                 ViewModel.Games.Clear();
                 int processed = 0;
@@ -256,7 +273,10 @@ namespace Codec
                     await EnsureCoverForGameAsync(g);
                     ViewModel.Games.Add(g);
                     processed++;
-                    UpdateCoverProgress(processed, totalGames);
+                    if (!showFullScreenLoading)
+                    {
+                        UpdateCoverProgress(processed, totalGames);
+                    }
                 }
 
                 // Persist to disk after covers are set
@@ -276,7 +296,16 @@ namespace Codec
             }
             finally
             {
-                HideScanProgress();
+                if (showFullScreenLoading)
+                {
+                    ViewModel.SetLoadingState(false);
+                    ViewModel.IsOnboardingVisible = ViewModel.Games.Count == 0;
+                }
+                else
+                {
+                    HideScanProgress();
+                }
+
                 SetFooterButtonsEnabled(true);
 
                 if (button != null)
@@ -529,6 +558,8 @@ namespace Codec
                     XamlRoot = this.Content.XamlRoot
                 };
                 await successDialog.ShowAsync();
+                ViewModel.IsOnboardingVisible = true;
+                ViewModel.SetLoadingState(false);
             }
         }
 
@@ -746,6 +777,17 @@ namespace Codec
             {
                 SetFooterButtonsEnabled(true);
             }
+        }
+
+        private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsOnboardingVisible = false;
+            await ScanGamesAsync(showFullScreenLoading: true);
+        }
+
+        private void OnboardingSkip_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsOnboardingVisible = false;
         }
     }
 }

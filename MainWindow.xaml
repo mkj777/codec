@@ -12,7 +12,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid MinWidth="420" MinHeight="520">
+    <Grid x:Name="RootGrid" MinWidth="420" MinHeight="520">
         <Grid.Resources>
             <conv:ListToCommaConverter x:Key="ListToCommaConverter" />
             <conv:SecondsToTimeConverter x:Key="SecondsToTimeConverter" />
@@ -22,6 +22,7 @@
             <conv:MultiplyConverter x:Key="MultiplyConverter" />
             <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter" />
             <conv:NullOrEmptyToFallbackConverter x:Key="NullOrEmptyToFallbackConverter" />
+            <conv:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
             <Style x:Key="UnderlinedHyperlinkButton" TargetType="HyperlinkButton">
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="ContentTemplate">
@@ -426,6 +427,66 @@
                         UseSystemFocusVisuals="False"
                         FontSize="14"/>
             </StackPanel>
+        </Grid>
+
+        <!-- Onboarding overlay for first launch / empty library -->
+        <Grid x:Name="OnboardingOverlay"
+               Grid.RowSpan="3"
+               Visibility="{Binding IsOnboardingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+               Background="#FF1C1C1C"
+               IsHitTestVisible="True">
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="1100" Margin="32,0,32,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Image Grid.Column="0"
+                       Source="Assets/shrimpStand.png"
+                       Height="360"
+                       Stretch="Uniform"/>
+
+                <StackPanel Grid.Column="2" Spacing="10" VerticalAlignment="Center" MaxWidth="520">
+                    <TextBlock Text="Welcome to Codec!" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock Text="I'm Shrimp, and I'd love to guide you through Codec."
+                               TextWrapping="WrapWholeWords"/>
+                    <TextBlock Text="I'll try to find all your games for you, but you can always add any that I miss later on. If you'd rather skip that for now, you're free to use the button below."
+                               TextWrapping="WrapWholeWords"/>
+                    <TextBlock Text="Thank you for giving Codec a try."
+                               TextWrapping="WrapWholeWords"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                        <Button Content="Start" Padding="20,8" Click="OnboardingStart_Click"/>
+                        <Button Content="Skip" Padding="20,8" Click="OnboardingSkip_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Loading overlay for initial load or scanning -->
+        <Grid x:Name="LoadingOverlay"
+              Grid.RowSpan="3"
+              Visibility="{Binding IsLoadingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+              Background="#FF1C1C1C"
+              IsHitTestVisible="True">
+                <StackPanel Orientation="Horizontal" Spacing="24" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="32">
+                    <Image Source="Assets/shrimpRun.png"
+                           Height="320"
+                           Stretch="Uniform"/>
+                    <StackPanel Spacing="10" VerticalAlignment="Center" MaxWidth="420">
+                        <TextBlock Text="{Binding LoadingTitle}"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding LoadingSubtitle}"
+                                   Opacity="0.75"
+                                   TextWrapping="WrapWholeWords"/>
+                        <ProgressBar Width="320"
+                                     Height="8"
+                                     IsIndeterminate="True"
+                                     Foreground="#FF5BDFFF"
+                                     Background="#FF2A2A2A"/>
+                    </StackPanel>
+                </StackPanel>
         </Grid>
     </Grid>
 </Window>
