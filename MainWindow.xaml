@@ -280,7 +280,7 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" 
-                                        Spacing="4" 
+                                        Spacing="6" 
                                         HorizontalAlignment="Stretch"
                                         Margin="0,8,0,0">
                                 <TextBlock Text="{Binding Name}"
