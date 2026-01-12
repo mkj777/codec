@@ -27,6 +27,7 @@ namespace Codec.Services
         private const double StrictScoreThreshold = 0.88;
         private const double SteamBackedScoreThreshold = 0.82;
         private const double MinimumScoreDelta = 0.08;
+        private const int MinimumRatingsCount = 5;
 
         /// <summary>
         /// Validates if a game name exists in RAWG database with strict filtering and scoring.
@@ -124,6 +125,16 @@ namespace Codec.Services
             string? name = nameProp.GetString();
             if (id <= 0 || string.IsNullOrWhiteSpace(name))
             {
+                return false;
+            }
+
+            int ratingsCount = element.TryGetProperty("ratings_count", out var ratingsProp) && ratingsProp.TryGetInt32(out var ratings)
+                ? ratings
+                : 0;
+
+            if (ratingsCount < MinimumRatingsCount)
+            {
+                Debug.WriteLine($"  ✗ RAWG reject: '{name}' insufficient ratings ({ratingsCount})");
                 return false;
             }
 
