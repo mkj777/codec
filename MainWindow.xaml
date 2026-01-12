@@ -56,23 +56,20 @@
         <!-- Main content with sidebar and library/details area -->
         <Grid Grid.Row="1" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="260" />
+                <ColumnDefinition Width="220" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
  
             <!-- Sidebar -->
-            <Border Grid.Column="0" Background="#1E1E1E" Padding="12" CornerRadius="12" Margin="12,6,0,12">
-                <Grid RowSpacing="12">
+            <Border Grid.Column="0" Background="#191919">
+                <Grid RowSpacing="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <StackPanel Orientation="Vertical" Spacing="4">
-                        <TextBlock Text="Codec Library" FontSize="18" FontWeight="Bold" />
-                        <TextBlock Text="Your games" Opacity="0.6" FontSize="12" />
-                    </StackPanel>
- 
+                    <TextBlock Text="Codec Library" FontSize="18" FontWeight="Bold" Margin="0,12,0,10" HorizontalAlignment="Center"/>
+
                     <ListView x:Name="SidebarGameList"
                               Grid.Row="1"
                               ItemsSource="{Binding Games}"
@@ -87,39 +84,43 @@
                         </ListView.ItemTemplate>
                     </ListView>
  
-                    <StackPanel Grid.Row="2" Spacing="8">
+                    <StackPanel Grid.Row="2" Spacing="6" Margin="4,0,4,0">
                         <Button x:Name="SidebarDebugButton"
                                 Content="Debug"
                                 HorizontalAlignment="Stretch"
                                 FontWeight="SemiBold">
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem Text="Scan for Games" Click="SidebarScan_Click" />
-                                    <MenuFlyoutItem Text="Add Executable" Click="AddGame_Click" />
-                                    <MenuFlyoutItem Text="Data" Click="Debug_Click" />
+                                    <MenuFlyoutItem Text="Debug Data" Click="Debug_Click" />
                                     <MenuFlyoutItem Text="Refresh Covers" Click="RefreshCovers_Click" />
                                     <MenuFlyoutItem Text="Reset App" Click="ResetApp_Click" />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
  
-                        <Grid Height="120">
-                            <Image Source="Assets/shrimpSleep.png" Stretch="UniformToFill" Opacity="0.9" />
+                        <Grid Height="140" >
+                            <Image Source="Assets/shrimpSleep.png" Stretch="Uniform"/>
                             <Button x:Name="SidebarAddButton"
                                     Content="Add Games"
-                                    HorizontalAlignment="Left"
+                                    HorizontalAlignment="Center"
                                     VerticalAlignment="Bottom"
-                                    Margin="12"
+                                    Margin="0,0,0,12"
                                     Padding="16,8"
-                                    FontWeight="SemiBold"
-                                    Click="SidebarAddGames_Click" />
+                                    FontWeight="SemiBold">
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="Scan for Games" Click="SidebarAddGames_Click" />
+                                        <MenuFlyoutItem Text="Add by Executable" Click="AddGame_Click" />
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
                         </Grid>
                     </StackPanel>
                 </Grid>
             </Border>
  
             <!-- Library grid of cover images -->
-            <Grid x:Name="LibraryGrid" Grid.Column="1" Margin="12,6,12,12">
+            <Grid x:Name="LibraryGrid" Grid.Column="1" Margin="0,32,0,12">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <ItemsRepeater ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
@@ -224,8 +225,10 @@
                 </Grid>
  
                 <!-- Lower Half -->
-                <Grid x:Name="DetailsLowerGrid" Grid.Row="1" Margin="20,20,0,20"
-                        ColumnSpacing="24" SizeChanged="DetailsLowerGrid_SizeChanged">
+                <Grid x:Name="DetailsLowerGrid" 
+                      Grid.Row="1"
+                      ColumnSpacing="24" 
+                      SizeChanged="DetailsLowerGrid_SizeChanged">
                     <Grid.ColumnDefinitions>
                         <!-- Media carousel -->
                         <ColumnDefinition Width="2*" MinWidth="420"/>
@@ -266,7 +269,7 @@
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
                                   HorizontalAlignment="Stretch">
-                        <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -274,7 +277,7 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
                                            Text="{Binding Name}"
-                                           FontSize="20"
+                                           FontSize="22"
                                            FontWeight="Bold"
                                            TextWrapping="WrapWholeWords"
                                            VerticalAlignment="Center" />
@@ -297,7 +300,7 @@
                             </Grid>
  
                             <!-- Game Info Block split into two columns -->
-                            <Grid ColumnSpacing="24" HorizontalAlignment="Stretch">
+                            <Grid ColumnSpacing="12" HorizontalAlignment="Stretch">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="270"/>
                                     <ColumnDefinition Width="270"/>
@@ -507,8 +510,9 @@
                                TextWrapping="WrapWholeWords"
                                FontFamily="/Assets/Sansation-Bold.ttf#Sansation"
                                Foreground="#FF868686"/>
-                        <ProgressBar Width="450"
+                        <ProgressBar Width="445"
                                      Height="8"
+                                     CornerRadius="16"
                                      IsIndeterminate="True"
                                      Foreground="#FF5BDFFF"
                                      Background="#FF2A2A2A"/>
