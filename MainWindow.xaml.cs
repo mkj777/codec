@@ -4,10 +4,10 @@ using Codec.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -29,6 +29,9 @@ namespace Codec
             ViewModel = new MainViewModel();
             RootGrid.DataContext = ViewModel;
             ExtendsContentIntoTitleBar = true;
+
+            string iconPath = Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico");
+            this.AppWindow.SetIcon(iconPath);
 
             LibraryStorageService.EnsureStorageInitialized();
             ViewModel.SetLoadingState(true, "Loading your library...", "Preparing Codec");
@@ -710,13 +713,13 @@ namespace Codec
                 DetailsView.Visibility = Visibility.Visible;
                 LibraryGrid.Visibility = Visibility.Collapsed;
 
-                    _ = hltbTask.ContinueWith(t =>
+                _ = hltbTask.ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
                     {
-                        if (t.IsFaulted)
-                        {
-                            Debug.WriteLine($"HLTB fetch failed: {t.Exception?.GetBaseException().Message}");
-                        }
-                    }, TaskContinuationOptions.ExecuteSynchronously);
+                        Debug.WriteLine($"HLTB fetch failed: {t.Exception?.GetBaseException().Message}");
+                    }
+                }, TaskContinuationOptions.ExecuteSynchronously);
             }
             finally
             {
@@ -754,12 +757,12 @@ namespace Codec
                 _ = FetchAndShowDetailsAsync(game);
             }
         }
- 
+
         private async void SidebarAddGames_Click(object sender, RoutedEventArgs e)
         {
             await ScanGamesAsync(showFullScreenLoading: true);
         }
- 
+
         private async Task AwaitHeroAndLogoAsync(Game game)
         {
             bool NeedsLogo() => game.SteamID.HasValue;
