@@ -54,14 +54,15 @@
         <Grid Grid.Row="0" x:Name="AppTitleBar" Height="48" Visibility="Collapsed" />
  
         <!-- Main content with sidebar and library/details area -->
-        <Grid Grid.Row="1" ColumnSpacing="0">
-             <Grid.ColumnDefinitions>
-                 <ColumnDefinition Width="230" />
-                 <ColumnDefinition Width="*" />
-             </Grid.ColumnDefinitions>
+        <Grid Grid.Row="1">
+            <Grid ColumnSpacing="0">
+                 <Grid.ColumnDefinitions>
+                     <ColumnDefinition Width="230" />
+                     <ColumnDefinition Width="*" />
+                 </Grid.ColumnDefinitions>
  
              <!-- Sidebar -->
-            <Border Grid.Column="0" Background="#191919" CornerRadius="12">
+            <Border Grid.Column="0" Background="#191919" CornerRadius="12" Canvas.ZIndex="3">
                 <Grid RowSpacing="0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -123,7 +124,7 @@
             </Border>
  
             <!-- Library grid of cover images -->
-            <Grid x:Name="LibraryGrid" Grid.Column="1" Margin="12,32,12,0">
+            <Grid x:Name="LibraryGrid" Grid.Column="1" Margin="12,32,12,0" Canvas.ZIndex="0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <ItemsRepeater ItemsSource="{x:Bind ViewModel.Games, Mode=OneWay}"
@@ -160,7 +161,8 @@
             <!-- Game details full page -->
             <Grid x:Name="DetailsView"
                   Grid.Column="1"
-                  Visibility="Collapsed">
+                  Visibility="Collapsed"
+                  Canvas.ZIndex="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="3*"/>
                     <RowDefinition Height="2*"/>
@@ -168,8 +170,8 @@
  
                 <!-- Hero covers upper half -->
                 <Grid Grid.Row="0">
-                    <Image Source="{Binding LibHero}" Stretch="UniformToFill" Margin="0"/>
-                    <Grid Background="#4C000000" />
+                    <Image Source="{Binding LibHero}" Stretch="UniformToFill" Margin="-10,0,0,0"/>
+                        <Grid Background="#2C000000" Margin="-10,0,0,0"/>
                     <Grid x:Name="HeroOverlay" Margin="20" VerticalAlignment="Stretch" SizeChanged="HeroOverlay_SizeChanged">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -234,19 +236,19 @@
                       SizeChanged="DetailsLowerGrid_SizeChanged">
                     <Grid.ColumnDefinitions>
                         <!-- Media carousel -->
-                        <ColumnDefinition Width="2*" MinWidth="420"/>
+                        <ColumnDefinition Width="2*" MinWidth="350"/>
                         <!-- Data + Description + Links -->
                         <ColumnDefinition Width="3*" />
                     </Grid.ColumnDefinitions>
  
                     <!-- Media carousel links -->
-                    <StackPanel Grid.Column="0" Spacing="0">
+                        <StackPanel Grid.Column="0" Spacing="0" Padding="8,10,0,10">
                         <Grid x:Name="MediaContainer" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SizeChanged="MediaContainer_SizeChanged">
                             <FlipView x:Name="MediaFlipView"
                                       ItemsSource="{Binding Media}"
                                       HorizontalAlignment="Left"
                                       VerticalAlignment="Top"
-                                      HorizontalContentAlignment="Stretch"
+                                      HorizontalContentAlignment="Center"
                                       VerticalContentAlignment="Stretch">
                                 <FlipView.ItemTemplate>
                                     <DataTemplate>
@@ -269,14 +271,18 @@
                     <ScrollViewer Grid.Column="1"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
-                                  HorizontalAlignment="Stretch">
-                        <Grid ColumnSpacing="12">
+                                  HorizontalAlignment="Stretch"
+                                  Padding="-10,0,0,0">
+                        <Grid ColumnSpacing="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="0" Spacing="6" HorizontalAlignment="Stretch">
+                            <StackPanel Grid.Column="0" 
+                                        Spacing="4" 
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,8,0,0">
                                 <TextBlock Text="{Binding Name}"
                                            FontSize="22"
                                            FontWeight="Bold"
@@ -284,34 +290,34 @@
                                            VerticalAlignment="Center" />
 
                                 <!-- Game Info Block split into two columns -->
-                                <Grid ColumnSpacing="12" HorizontalAlignment="Stretch">
+                                <Grid ColumnSpacing="6" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="270"/>
-                                        <ColumnDefinition Width="270"/>
+                                        <ColumnDefinition MaxWidth="250"/>
+                                        <ColumnDefinition MaxWidth="350"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Column="0" Spacing="12">
-                                        <StackPanel Spacing="1">
+                                    <StackPanel Grid.Column="0" Spacing="6">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Publisher" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Developer" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Genre" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Age Rating" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Release Date" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Price" Opacity="0.4"/>
                                             <TextBlock>
                                                 <Run Text="{Binding Path=Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" />
@@ -320,7 +326,7 @@
                                         </StackPanel>
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="1" Spacing="12">
+                                    <StackPanel Grid.Column="1" Spacing="8">
                                         <StackPanel Spacing="0"
                                                 Visibility="{Binding SteamID, Converter={StaticResource NullToVisibilityConverter}}">
                                             <TextBlock Text="Steam Reviews" Opacity="0.4"/>
@@ -331,17 +337,17 @@
                                                 <Run Text=")" FontSize="12" Foreground="Gray"/>
                                             </TextBlock>
                                         </StackPanel>
-                                        <StackPanel Spacing="1"
+                                        <StackPanel Spacing="0"
                                                 Visibility="{Binding TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}">
                                             <TextBlock Text="Main Story" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1"
+                                        <StackPanel Spacing="0"
                                                 Visibility="{Binding TimeToCompleteCompletionist, Converter={StaticResource NullToVisibilityConverter}}">
                                             <TextBlock Text="Completionist" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
                                         </StackPanel>
-                                        <StackPanel Spacing="1">
+                                        <StackPanel Spacing="0">
                                             <TextBlock Text="Description" Opacity="0.4"/>
                                             <TextBlock Text="{Binding Path=Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" TextWrapping="Wrap"/>
                                         </StackPanel>
@@ -351,14 +357,14 @@
 
                             <!-- Rechts: Plattform-Icons und Links -->
                             <StackPanel Grid.Column="1"
-                                        Spacing="8"
-                                        Margin="12,0,0,0"
+                                        Spacing="0"
+                                        Margin="0,14,12,0"
                                         VerticalAlignment="Top"
                                         HorizontalAlignment="Right">
                                 <ItemsControl ItemsSource="{Binding PlatformLogoUris, Mode=OneWay}"
                                               HorizontalAlignment="Right"
                                               VerticalAlignment="Top"
-                                              Margin="0,6,0,12">
+                                              Margin="0,0,0,10">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <StackPanel Orientation="Horizontal" Spacing="10" />
@@ -371,10 +377,10 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <StackPanel Spacing="2"
+                                <StackPanel Spacing="0"
                                             VerticalAlignment="Top"
                                             HorizontalAlignment="Right">
-                                    <HyperlinkButton Content="Official Website"
+                                    <HyperlinkButton Content="Website"
                                         Foreground="White"
                                         Style="{StaticResource UnderlinedHyperlinkButton}"
                                         HorizontalAlignment="Right"
@@ -392,7 +398,7 @@
                                         HorizontalAlignment="Right"
                                         NavigateUri="{Binding RawgUrl}"
                                         Visibility="{Binding RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
-                                    <HyperlinkButton Content="HowLongToBeat"
+                                    <HyperlinkButton Content="HLTB"
                                         Foreground="White"
                                         Style="{StaticResource UnderlinedHyperlinkButton}"
                                         HorizontalAlignment="Right"
@@ -404,6 +410,7 @@
                     </ScrollViewer>
                 </Grid>
             </Grid>
+        </Grid>
         </Grid>
          <!-- Global app-level overlay -->
          <Grid Grid.RowSpan="2" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="True">
