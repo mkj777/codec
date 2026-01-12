@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -47,6 +48,7 @@ namespace Codec
                 ViewModel.Games.Add(g);
             }
             await LibraryStorageService.SaveAsync(ViewModel.Games);
+            QueueBackgroundPrefetch(ViewModel.Games);
 
             ViewModel.SetLoadingState(false);
             ViewModel.IsInitialLoading = false;
@@ -286,6 +288,7 @@ namespace Codec
 
                 // Persist to disk after covers are set
                 await LibraryStorageService.SaveAsync(ViewModel.Games);
+                QueueBackgroundPrefetch(ViewModel.Games);
             }
             catch (Exception ex)
             {
@@ -811,6 +814,65 @@ namespace Codec
         private T? FindElement<T>(string name) where T : class
         {
             return (Content as FrameworkElement)?.FindName(name) as T;
+        }
+
+        private void QueueBackgroundPrefetch(IEnumerable<Game> games)
+        {
+            foreach (var game in games)
+            {
+                QueueSteamWarmups(game);
+                QueueRawgWarmups(game);
+                QueueHltbWarmups(game);
+            }
+        }
+
+        private static void QueueSteamWarmups(Game game)
+        {
+            if (!game.SteamID.HasValue)
+            {
+                return;
+            }
+
+            int id = game.SteamID.Value;
+            DataCacheService.QueueWarmup($"https://store.steampowered.com/api/appdetails?appids={id}");
+            DataCacheService.QueueWarmup($"https://store.steampowered.com/appreviews/{id}/?json=1&language=all&filter=all&num_per_page=0");
+            DataCacheService.QueueWarmup($"https://steamspy.com/api.php?request=appdetails&appid={id}");
+        }
+
+        private static void QueueRawgWarmups(Game game)
+        {
+            if (game.RawgID.HasValue)
+            {
+                DataCacheService.QueueWarmup($"https://codec-api-proxy.vercel.app/api/rawg/details?id={game.RawgID.Value}");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(game.Name))
+            {
+                string term = Uri.EscapeDataString(game.Name);
+                DataCacheService.QueueWarmup($"https://codec-api-proxy.vercel.app/api/rawg/search?term={term}");
+            }
+        }
+
+        private static void QueueHltbWarmups(Game game)
+        {
+            if (string.IsNullOrWhiteSpace(game.Name))
+            {
+                return;
+            }
+
+            string normalized = NormalizeForHltb(game.Name);
+            if (!string.IsNullOrWhiteSpace(normalized))
+            {
+                DataCacheService.QueueWarmup($"https://codec-api-proxy.vercel.app/api/hltb/search?term={Uri.EscapeDataString(normalized)}");
+            }
+        }
+
+        private static string NormalizeForHltb(string value)
+        {
+            string cleaned = Regex.Replace(value, "[^a-zA-Z0-9 ]", " ");
+            cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
+            return cleaned;
         }
     }
 }
