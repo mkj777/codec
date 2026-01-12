@@ -194,6 +194,11 @@ namespace Codec
             await ScanGamesAsync(sender as Button);
         }
 
+        private async void SidebarScan_Click(object sender, RoutedEventArgs e)
+        {
+            await ScanGamesAsync(showFullScreenLoading: true);
+        }
+
         private async Task ScanGamesAsync(Button? button = null, bool showFullScreenLoading = false)
         {
             if (button != null)
@@ -520,8 +525,6 @@ namespace Codec
                 DetailsView.Visibility = Visibility.Collapsed;
                 DetailsView.DataContext = null;
                 LibraryGrid.Visibility = Visibility.Visible;
-                BottomBar.Visibility = Visibility.Visible;
-                AppTitleBar.Visibility = Visibility.Visible;
                 ViewModel.SelectedGame = null;
 
                 ViewModel.Games.Clear();
@@ -703,8 +706,6 @@ namespace Codec
 
                 DetailsView.Visibility = Visibility.Visible;
                 LibraryGrid.Visibility = Visibility.Collapsed;
-                BottomBar.Visibility = Visibility.Collapsed;
-                AppTitleBar.Visibility = Visibility.Collapsed;
 
                     _ = hltbTask.ContinueWith(t =>
                     {
@@ -725,20 +726,37 @@ namespace Codec
             DetailsView.Visibility = Visibility.Collapsed;
             DetailsView.DataContext = null;
             LibraryGrid.Visibility = Visibility.Visible;
-            BottomBar.Visibility = Visibility.Visible;
-            AppTitleBar.Visibility = Visibility.Visible;
-            ViewModel.SelectedGame = null;
+            var list = FindElement<ListView>("SidebarGameList");
+            if (list != null)
+            {
+                list.SelectedItem = null;
+            }
         }
 
         private void SetFooterButtonsEnabled(bool isEnabled)
         {
-            ScanGamesButton.IsEnabled = isEnabled;
-            TestExecutableButton.IsEnabled = isEnabled;
-            DebugButton.IsEnabled = isEnabled;
-            RefreshCoversButton.IsEnabled = isEnabled;
-            ResetAppButton.IsEnabled = isEnabled;
+            var debugButton = FindElement<Button>("SidebarDebugButton");
+            var addButton = FindElement<Button>("SidebarAddButton");
+            var list = FindElement<ListView>("SidebarGameList");
+
+            if (debugButton != null) debugButton.IsEnabled = isEnabled;
+            if (addButton != null) addButton.IsEnabled = isEnabled;
+            if (list != null) list.IsEnabled = isEnabled;
         }
 
+        private void SidebarGameList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView list && list.SelectedItem is Game game)
+            {
+                _ = FetchAndShowDetailsAsync(game);
+            }
+        }
+ 
+        private async void SidebarAddGames_Click(object sender, RoutedEventArgs e)
+        {
+            await ScanGamesAsync(showFullScreenLoading: true);
+        }
+ 
         private async Task AwaitHeroAndLogoAsync(Game game)
         {
             bool NeedsLogo() => game.SteamID.HasValue;
@@ -788,6 +806,11 @@ namespace Codec
         private void OnboardingSkip_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.IsOnboardingVisible = false;
+        }
+
+        private T? FindElement<T>(string name) where T : class
+        {
+            return (Content as FrameworkElement)?.FindName(name) as T;
         }
     }
 }
