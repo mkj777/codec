@@ -25,7 +25,7 @@ namespace Codec
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Codec Game Library";
+            this.Title = "Codec";
             ViewModel = new MainViewModel();
             RootGrid.DataContext = ViewModel;
             ExtendsContentIntoTitleBar = true;
