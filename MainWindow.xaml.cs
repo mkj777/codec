@@ -105,7 +105,7 @@ namespace Codec
                         var cover = await GameAssetService.DownloadSteamLibraryCoverAsync(g.SteamID.Value);
                         if (!string.IsNullOrEmpty(cover))
                         {
-                            g.LibCapsule = cover;
+                            g.LibCapsuleUrl = cover;
                         }
                     }
                     catch (Exception ex)
@@ -387,20 +387,14 @@ namespace Codec
                     AddRow("Age Rating", g.AgeRating);
                     AddRow("Main Story (sec)", g.TimeToCompleteMainStory?.ToString());
                     AddRow("Completionist (sec)", g.TimeToCompleteCompletionist?.ToString());
-                    AddRow("Play Time (sec)", g.PlayTime?.ToString());
-                    AddRow("Launch Script", g.LaunchScript);
                     AddRow("Capsule", g.LibCapsule);
                     AddRow("Hero", g.LibHero);
                     AddRow("Logo", g.LibLogo);
-                    AddRow("Icon", g.LibIcon);
-                    AddRow("Client Icon", g.LibClientIcon);
                     AddRow("Media", FormatList(g.Media));
                     AddRow("Official Website", g.OfficialWebsiteUrl);
                     AddRow("Steam Page", g.SteamPageUrl);
                     AddRow("RAWG Page", g.RawgUrl);
                     AddRow("HowLongToBeat", g.HltbUrl);
-                    AddRow("Last Updated", g.LastUpdated?.ToString());
-                    AddRow("Last Launched", g.LastLaunched?.ToString());
 
                     expander.Content = grid;
                     panel.Children.Add(expander);
@@ -466,7 +460,7 @@ namespace Codec
                         var cover = await GameAssetService.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
                         if (!string.IsNullOrEmpty(cover))
                         {
-                            g.LibCapsule = cover;
+                            g.LibCapsuleUrl = cover;
                         }
                         await Task.Delay(75);
                     }
@@ -677,12 +671,10 @@ namespace Codec
                     }
 
                     game.RawgUrl = rawgUrl ?? "https://rawg.io";
-                    game.NotifyPropertyChanged(nameof(Game.RawgUrl));
                 }
                 if (string.IsNullOrWhiteSpace(game.HltbUrl))
                 {
                     game.HltbUrl = "https://howlongtobeat.com";
-                    game.NotifyPropertyChanged(nameof(Game.HltbUrl));
                 }
 
                 ViewModel.SelectedGame = game;
@@ -702,7 +694,6 @@ namespace Codec
                         if (game.FolderSize != size)
                         {
                             game.FolderSize = size;
-                            game.NotifyPropertyChanged(nameof(Game.FolderSize));
                             _ = LibraryStorageService.SaveAsync(ViewModel.Games);
                         }
                     });
