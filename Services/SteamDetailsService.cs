@@ -216,12 +216,12 @@ namespace Codec.Services
                 // Hero image with fallback to non-2x
                 var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero.jpg";
                 var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero_2x.jpg";
-                game.LibHero = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
+                game.LibHeroUrl = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
 
                 // Logo with fallback to non-2x
                 var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo.png";
                 var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo_2x.png";
-                game.LibLogo = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
+                game.LibLogoUrl = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
 
                 // Links
                 if (data.TryGetProperty("website", out var site) && site.ValueKind == JsonValueKind.String)
@@ -229,8 +229,6 @@ namespace Codec.Services
                     game.OfficialWebsiteUrl = site.GetString();
                 }
                 game.SteamPageUrl = $"https://store.steampowered.com/app/{game.SteamID.Value}";
-
-                game.LastUpdated = DateTime.Now;
             }
             catch
             {

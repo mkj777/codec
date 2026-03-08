@@ -94,22 +94,17 @@ namespace Codec.Services
                     if (mainTime.HasValue)
                     {
                         game.TimeToCompleteMainStory = mainTime.Value;
-                        game.NotifyPropertyChanged(nameof(game.TimeToCompleteMainStory));
                     }
 
                     if (completionist.HasValue)
                     {
                         game.TimeToCompleteCompletionist = completionist.Value;
-                        game.NotifyPropertyChanged(nameof(game.TimeToCompleteCompletionist));
                     }
 
                     if (!string.IsNullOrWhiteSpace(hltbUrl))
                     {
                         game.HltbUrl = hltbUrl;
-                        game.NotifyPropertyChanged(nameof(Game.HltbUrl));
                     }
-
-                    game.LastUpdated = DateTime.Now;
                 }
 
                 if (dispatcher != null)

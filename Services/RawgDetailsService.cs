@@ -64,7 +64,6 @@ namespace Codec.Services
                 if (!string.IsNullOrWhiteSpace(link))
                 {
                     game.RawgUrl = link;
-                    game.NotifyPropertyChanged(nameof(Game.RawgUrl));
                 }
             }
             catch
@@ -114,7 +113,6 @@ namespace Codec.Services
                 if (!string.IsNullOrWhiteSpace(rawgLink) && !string.Equals(game.RawgUrl, rawgLink, StringComparison.OrdinalIgnoreCase))
                 {
                     game.RawgUrl = rawgLink;
-                    game.NotifyPropertyChanged(nameof(Game.RawgUrl));
                 }
 
                 // Release date (required for all games)
@@ -194,10 +192,8 @@ namespace Codec.Services
 
                 if (!string.IsNullOrWhiteSpace(hero) && (IsPlaceholder(game.LibHero) || !game.SteamID.HasValue))
                 {
-                    game.LibHero = hero;
+                    game.LibHeroUrl = hero;
                 }
-
-                game.LastUpdated = DateTime.Now;
             }
             catch (Exception ex)
             {

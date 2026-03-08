@@ -48,7 +48,7 @@ namespace Codec.Services
                 return false;
             }
 
-            game.LibCapsule = coverPath;
+            game.LibCapsuleUrl = coverPath;
             return true;
         }
 
