@@ -1,132 +1,119 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace Codec.Models
 {
-    public class Game : INotifyPropertyChanged
+    public partial class Game : ObservableObject
     {
         [SetsRequiredMembers]
         public Game()
         {
-            Name = string.Empty;
-            Executable = string.Empty;
-            FolderLocation = string.Empty;
-            ImportedFrom = string.Empty;
+            // Initialize “required” strings to non-null defaults
+            name = string.Empty;
+            executable = string.Empty;
+            folderLocation = string.Empty;
+            importedFrom = string.Empty;
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
 
         // basic information
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public DateTime DateAdded { get; set; } = DateTime.Now;
-        public required string Executable { get; set; }
-        public required string FolderLocation { get; set; }
-        public required string Name { get; set; }
-        public required string ImportedFrom { get; set; } // e.g., "Steam (C:\...\Steam)", "Manual", "Scanned", etc.
-        public long FolderSize { get; set; } // doesnt need required, will be 0 if not calculated yet
+        [ObservableProperty] private Guid id = Guid.NewGuid();
+        [ObservableProperty] private DateTime dateAdded = DateTime.Now;
+
+        [ObservableProperty] private string executable;
+        [ObservableProperty] private string folderLocation;
+        [ObservableProperty] private long folderSize;
+        [ObservableProperty] private string importedFrom;
 
         // Display-only property that shows just the platform name without the path
-        public string ImportedFromDisplay
-        {
-            get
-            {
-                if (ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "Steam";
-                }
-                return ImportedFrom;
-            }
-        }
+        public string ImportedFromDisplay =>
+            importedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase) ? "Steam" : importedFrom;
 
-        // external IDs for fetching metadata from online databases
-        public int? SteamID { get; set; }
-        public int? RawgID { get; set; }
-        public string? RawgSlug { get; set; }
-        public int? GridDbId { get; set; }
+        // external IDs
+        [ObservableProperty] private int? steamID;
+        [ObservableProperty] private int? rawgID;
+        [ObservableProperty] private string? rawgSlug;
+        [ObservableProperty] private int? gridDbId;
 
-        // game details, fetched from various sources
-        public string? Publisher { get; set; }
-        public string? Developer { get; set; }
-        public List<string>? Genres { get; set; }
-        public List<string>? Categories { get; set; }
-        public string? Price { get; set; }
-        public string? PriceDiscount { get; set; }
-        public string? Description { get; set; }
-        public List<string>? Platforms { get; set; }
+        // game details
+        [ObservableProperty] private string name;
+        [ObservableProperty] private string? publisher;
+        [ObservableProperty] private string? developer;
+        [ObservableProperty] private List<string>? genres;
+        [ObservableProperty] private List<string>? categories;
+        [ObservableProperty] private string? price;
+        [ObservableProperty] private string? priceDiscount;
+        [ObservableProperty] private string? description;
+        [ObservableProperty] private List<string>? platforms;
+
+        [ObservableProperty] private DateTime? releaseDate;
+        [ObservableProperty] private double? steamRating;
+        [ObservableProperty] private string? steamReviewSummary;
+        [ObservableProperty] private int? steamReviewTotal;
+        [ObservableProperty] private string? ageRating;
+        [ObservableProperty] private int? timeToCompleteMainStory;
+        [ObservableProperty] private int? timeToCompleteCompletionist;
 
         public IEnumerable<string> PlatformLogoUris => (Platforms ?? Enumerable.Empty<string>())
             .Select(MapPlatformToLogoUri)
             .Where(uri => !string.IsNullOrWhiteSpace(uri))
             .Select(uri => uri!)
             .Distinct(StringComparer.OrdinalIgnoreCase);
-        public DateTime? ReleaseDate { get; set; }
-        public double? SteamRating { get; set; }
-        public string? SteamReviewSummary { get; set; }
-        public int? SteamReviewTotal { get; set; }
-        public string? AgeRating { get; set; }
-        public int? TimeToCompleteMainStory { get; set; } // in seconds
-        public int? TimeToCompleteCompletionist { get; set; } // in seconds
 
-        // game assets via local paths. default are placeholder images
-        private string _libCapsule = "https://placehold.co/600x900/1c1c1c/ffffff?text=Capsule";
-        public string LibCapsule
+        // game assets with cache for offline first, effective path resolution
+        private static string GetEffectiveAssetPath(string? cachePath, string? url, string placeholder)
         {
-            get => _libCapsule;
-            set => SetProperty(ref _libCapsule, value);
-        }
+            if (!string.IsNullOrWhiteSpace(cachePath) && File.Exists(cachePath))
+            {
+                return cachePath;
+            }
 
-        private string _libHero = "https://placehold.co/1920x620/1c1c1c/ffffff?text=Hero";
-        public string LibHero
-        {
-            get => _libHero;
-            set => SetProperty(ref _libHero, value);
-        }
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                return url;
+            }
 
-        private string _libLogo = "https://placehold.co/1280x260/1c1c1c/ffffff?text=Logo";
-        public string LibLogo
-        {
-            get => _libLogo;
-            set => SetProperty(ref _libLogo, value);
+            return placeholder;
         }
+        // placeholders
+        private const string PlaceholderCapsule = "https://placehold.co/600x900/1c1c1c/ffffff?text=Capsule";
+        private const string PlaceholderHero = "https://placehold.co/1920x620/1c1c1c/ffffff?text=Hero";
+        private const string PlaceholderLogo = "https://placehold.co/1280x260/1c1c1c/ffffff?text=Logo";
 
-        private string _libIcon = "https://placehold.co/32x32/1c1c1c/ffffff?text=Icon";
-        public string LibIcon
-        {
-            get => _libIcon;
-            set => SetProperty(ref _libIcon, value);
-        }
+        // capsule
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibCapsule))] private string? libCapsuleUrl;
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibCapsule))] private string? libCapsuleCache;
+        public string LibCapsule => GetEffectiveAssetPath(libCapsuleCache, libCapsuleUrl, PlaceholderCapsule);
 
-        private string _libClientIcon = "https://placehold.co/256x256/1c1c1c/ffffff?text=Client+Icon";
-        public string LibClientIcon
-        {
-            get => _libClientIcon;
-            set => SetProperty(ref _libClientIcon, value);
-        }
-        public List<string> Media { get; set; } = new()
+        // hero
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibHero))] private string? libHeroUrl;
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibHero))] private string? libHeroCache;
+        public string LibHero => GetEffectiveAssetPath(libHeroCache, libHeroUrl, PlaceholderHero);
+
+        // logo
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibLogo))] private string? libLogoUrl;
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibLogo))] private string? libLogoCache;
+        public string LibLogo => GetEffectiveAssetPath(libLogoCache, libLogoUrl, PlaceholderLogo);
+
+        // media
+        [ObservableProperty]
+        private List<string> media = new()
         {
             "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+1",
             "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+2",
             "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+3"
         };
 
-        // optional: local path to .bat Script to launch the game
-        public string? LaunchScript { get; set; }
-
-        // tracking
-        public DateTime? LastUpdated { get; set; }
-        public DateTime? LastLaunched { get; set; }
-        public double? PlayTime { get; set; } // in seconds
-
         // external links
-        public string? OfficialWebsiteUrl { get; set; }
-        public string? SteamPageUrl { get; set; }
-        public string? RawgUrl { get; set; }
-        public string? HltbUrl { get; set; }
+        [ObservableProperty] private string? officialWebsiteUrl;
+        [ObservableProperty] private string? steamPageUrl;
+        [ObservableProperty] private string? rawgUrl;
+        [ObservableProperty] private string? hltbUrl;
 
+        // Helper method to map platform names to logo URIs
         private static string? MapPlatformToLogoUri(string? platform)
         {
             if (string.IsNullOrWhiteSpace(platform))
@@ -136,63 +123,16 @@ namespace Codec.Models
 
             var normalized = platform.Trim().ToLowerInvariant();
 
-            if (normalized.Contains("playstation"))
-            {
-                return "ms-appx:///Assets/playstation_logo.png";
-            }
-
-            if (normalized.Contains("xbox"))
-            {
-                return "ms-appx:///Assets/xbox_logo.png";
-            }
-
-            if (normalized.Contains("nintendo") || normalized.Contains("switch"))
-            {
-                return "ms-appx:///Assets/NintendoSwitch_logo.png";
-            }
-
-            if (normalized.Contains("ios"))
-            {
-                return "ms-appx:///Assets/iOS_logo.png";
-            }
-
-            if (normalized.Contains("android"))
-            {
-                return "ms-appx:///Assets/android_logo.png";
-            }
-
-            if (normalized.Contains("mac"))
-            {
-                return "ms-appx:///Assets/MacOS_logo.png";
-            }
-
-            if (normalized.Contains("linux"))
-            {
-                return "ms-appx:///Assets/linux_logo.png";
-            }
-
-            if (normalized.Contains("pc") || normalized.Contains("windows"))
-            {
-                return "ms-appx:///Assets/windows_logo.png";
-            }
+            if (normalized.Contains("playstation")) return "ms-appx:///Assets/playstation_logo.png";
+            if (normalized.Contains("xbox")) return "ms-appx:///Assets/xbox_logo.png";
+            if (normalized.Contains("nintendo") || normalized.Contains("switch")) return "ms-appx:///Assets/NintendoSwitch_logo.png";
+            if (normalized.Contains("ios")) return "ms-appx:///Assets/iOS_logo.png";
+            if (normalized.Contains("android")) return "ms-appx:///Assets/android_logo.png";
+            if (normalized.Contains("mac")) return "ms-appx:///Assets/MacOS_logo.png";
+            if (normalized.Contains("linux")) return "ms-appx:///Assets/linux_logo.png";
+            if (normalized.Contains("pc") || normalized.Contains("windows")) return "ms-appx:///Assets/windows_logo.png";
 
             return null;
-        }
-
-        private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(storage, value))
-            {
-                return false;
-            }
-            storage = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            return true;
-        }
-
-        public void NotifyPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
