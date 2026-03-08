@@ -13,14 +13,14 @@ namespace Codec.Services
 
         private static string GetCapsulesDir()
         {
-            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec", "Images", "Capsules");
+            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "Capsules");
             Directory.CreateDirectory(baseDir);
             return baseDir;
         }
 
         private static string GetGridDbDir()
         {
-            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec", "Images", "GridDb");
+            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "GridDb");
             Directory.CreateDirectory(baseDir);
             return baseDir;
         }

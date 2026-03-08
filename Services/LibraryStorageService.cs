@@ -10,6 +10,7 @@ namespace Codec.Services
 {
     public static class LibraryStorageService
     {
+        public const string AppDataFolderName = "Codec Game Library";
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
@@ -18,7 +19,7 @@ namespace Codec.Services
 
         private static string GetBaseDirectory()
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Codec");
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDataFolderName);
         }
 
         private static string GetLibraryPath()
