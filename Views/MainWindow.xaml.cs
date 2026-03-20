@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
-namespace Codec
+namespace Codec.Views
 {
     public sealed partial class MainWindow : Window
     {
