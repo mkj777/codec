@@ -15,6 +15,16 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove=".github\**" />
+    <Compile Remove="Output\**" />
+    <EmbeddedResource Remove=".github\**" />
+    <EmbeddedResource Remove="Output\**" />
+    <None Remove=".github\**" />
+    <None Remove="Output\**" />
+    <Page Remove=".github\**" />
+    <Page Remove="Output\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Remove="Assets\icon.png" />
     <Content Remove="Assets\shrimpRun.png" />
     <Content Remove="Assets\shrimpSleep.png" />
@@ -38,9 +48,6 @@
   -->
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <ProjectCapability Include="Msix" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include=".github\copilot-instructions.md" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
@@ -95,4 +102,17 @@
     </ItemGroup>
     <RemoveDir Directories="@(MuiFolders)" />
   </Target>
+
+  <ItemGroup>
+    <PRIResource Remove="Output\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PRIResource Remove=".github\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove=".gitattributes" />
+    <None Remove=".gitignore" />
+  </ItemGroup>
 </Project>
