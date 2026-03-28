@@ -1,4 +1,5 @@
-Codec is **_Work in Progress_**, some features are partly or completely unfinished/missing
+**Disclaimer:** Codec is **_Work in Progress_**, some features are partly or completely unfinished/missing
+Screenshots and Information are subject to change.
 
 ## Codec
 Codec is a Lightweight Game Library Client. Hopefully a Place for everything you could need.
