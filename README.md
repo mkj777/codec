@@ -1,4 +1,3 @@
-**Disclaimer:** codec is currently closed source. this repo is only for logging releases and publishing  
 Codec is **_Work in Progress_**, some features are partly or completely unfinished/missing
 
 ## Codec
