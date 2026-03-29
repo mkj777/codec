@@ -4,7 +4,8 @@ Screenshots and Information are subject to change.
 ## Codec
 Codec is a Lightweight Game Library Client. Hopefully a Place for everything you could need.
 
-<img width="1776" height="1054" alt="image" src="https://github.com/user-attachments/assets/c87af48a-e254-443e-bade-9651a7d26382" />
+<img width="1776" height="1054" alt="image" src="https://github.com/user-attachments/assets/28dbd2d7-5665-49ed-97b8-f2e7c59e6f21" />
+
 
 ### Features
 Scanning your PC for all your Games  
@@ -12,7 +13,8 @@ Viewing Details about your Games, and launching them through Codec
 Finding Game Folders and adding Launch Scripts  
 Launching Games directly through Codec  
 
-<img width="1776" height="1054" alt="image" src="https://github.com/user-attachments/assets/2493927a-8042-4dc4-be8e-80645f74226c" />
+<img width="1776" height="1054" alt="image" src="https://github.com/user-attachments/assets/ca22e7ec-bd22-44f3-9ef9-c4494baf1c12" />
+
 
 ### Installation
 Download the latest release "Codec_Installer_x.x.x.exe" from the [Releases](https://github.com/mkj777/codec-releases/releases) section on GitHub  
