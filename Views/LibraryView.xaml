@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Codec.Views.LibraryView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Codec.Models"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <ItemsRepeater ItemsSource="{Binding Games}"
+                       HorizontalAlignment="Stretch">
+            <ItemsRepeater.Layout>
+                <UniformGridLayout MinItemWidth="270"
+                                   MinItemHeight="405"
+                                   MinColumnSpacing="12"
+                                   MinRowSpacing="12"
+                                   ItemsJustification="SpaceBetween"/>
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="local:Game">
+                    <Button Click="LibraryItem_Click"
+                            ClickMode="Press"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            Tag="{x:Bind}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            UseSystemFocusVisuals="False">
+                        <Grid Width="270" Height="405">
+                            <Border CornerRadius="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                            <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
+                        </Grid>
+                    </Button>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+    </ScrollViewer>
+
+</UserControl>
