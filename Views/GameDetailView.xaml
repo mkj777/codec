@@ -310,13 +310,38 @@
                                 <!-- Play button anchored to the hero's lower-left corner -->
                                 <Button x:Name="DetailsPlayButton"
                                         Grid.Row="2"
-                                        Content="Play"
-                                        Padding="24,8"
+                                        Content="PLAY"
+                                        Padding="34,14"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Bottom"
                                         Margin="0,0,0,0"
-                                        FontWeight="SemiBold"
-                                        Command="{Binding PlayGameCommand}"/>
+                                        FontSize="18"
+                                        FontWeight="Bold"
+                                        Background="#33FF8A3D"
+                                        BorderBrush="#FFFF8A3D"
+                                        Foreground="#FFF8F6F1"
+                                        Command="{Binding PlayGameCommand}">
+                                        <Button.Resources>
+                                                <SolidColorBrush x:Key="ButtonBackground"
+                                                                 Color="#33FF8A3D"/>
+                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                 Color="#55FF8A3D"/>
+                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                 Color="#77FF8A3D"/>
+                                                <SolidColorBrush x:Key="ButtonBorderBrush"
+                                                                 Color="#FFFF8A3D"/>
+                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                 Color="#FFFFA766"/>
+                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                 Color="#FFFFB57C"/>
+                                                <SolidColorBrush x:Key="ButtonForeground"
+                                                                 Color="#FFF8F6F1"/>
+                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                 Color="#FFFFFFFF"/>
+                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                 Color="#FFFFFFFF"/>
+                                        </Button.Resources>
+                                </Button>
                         </Grid>
                 </Grid>
 
