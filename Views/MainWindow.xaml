@@ -137,7 +137,7 @@
                            FontSize="18"
                            FontWeight="SemiBold"
                            TextAlignment="Center"
-                           FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"/>
+                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                 <ProgressBar Width="320"
                              Height="8"
                              IsIndeterminate="{Binding ScanProgressIsIndeterminate}"
@@ -184,24 +184,24 @@
                        Stretch="Uniform"/>
 
                 <StackPanel Grid.Column="2" Spacing="12" VerticalAlignment="Center" MaxWidth="520">
-                    <TextBlock Text="Welcome to Codec!" FontSize="28" FontWeight="Bold" FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"/>
+                    <TextBlock Text="Welcome to Codec!" FontSize="28" FontWeight="Bold" FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <TextBlock Text="I'm Shrimp, and I'd love to guide you through Codec."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <TextBlock Text="I'll try to find all your games for you, but you can always add any that I miss later on. If you'd rather skip that for now, you're free to use the button below."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <TextBlock Text="My goal is to make collecting games as easy and fun as possible—no matter where they came from. If something doesn't work right or you need a hand, you can reach out to my creator on GitHub."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
                                Foreground="#FF868686"/>
                     <TextBlock Text="Thank you for giving Codec a try."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0,0,0">
                         <Button Content="Start" FontWeight="SemiBold" Padding="24,8" Click="OnboardingStart_Click"/>
                         <Button Content="Skip" FontWeight="SemiBold" Padding="24,8" Click="OnboardingSkip_Click"/>
@@ -225,11 +225,11 @@
                     <TextBlock Text="{Binding LoadingTitle}"
                            FontSize="28"
                            TextWrapping="WrapWholeWords"
-                           FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"/>
+                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <TextBlock Text="{Binding LoadingSubtitle}"
                            FontSize="18"
                            TextWrapping="WrapWholeWords"
-                           FontFamily="ms-appx:///Assets/Sansation-Bold.ttf#Sansation"
+                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
                            Foreground="#FF868686"/>
                     <ProgressBar Width="445"
                                  Height="8"
