@@ -9,10 +9,14 @@
     mc:Ignorable="d">
 
     <ScrollViewer x:Name="LibraryScroller"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  Padding="0"
                   VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  SizeChanged="LibraryScroller_SizeChanged">
-        <ItemsRepeater ItemsSource="{Binding Games}"
+                  HorizontalScrollBarVisibility="Disabled">
+        <ItemsRepeater x:Name="LibraryItemsRepeater"
+                       Width="{x:Bind LibraryScroller.ViewportWidth, Mode=OneWay}"
+                       ItemsSource="{Binding Games}"
                        HorizontalAlignment="Stretch">
             <ItemsRepeater.Layout>
                 <UniformGridLayout x:Name="LibraryItemsLayout"
@@ -20,8 +24,7 @@
                                    MinItemHeight="315"
                                    MinColumnSpacing="12"
                                    MinRowSpacing="12"
-                                   ItemsJustification="Start"
-                                   ItemsStretch="None"/>
+                                   ItemsStretch="Uniform"/>
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="local:Game">

@@ -150,6 +150,8 @@
                 <!-- Library grid UserControl -->
                 <views:LibraryView Grid.Column="1"
                                    Margin="22,32,22,0"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
                                    Visibility="{Binding IsLibraryGridVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                                    Canvas.ZIndex="0"/>
 
