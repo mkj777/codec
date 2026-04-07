@@ -329,43 +329,55 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled"
                                       HorizontalAlignment="Stretch"
-                                      Padding="10,-6,0,0">
-                                <Grid ColumnSpacing="0"
-                                      RowSpacing="16">
-                                        <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
+                                      Padding="10,-4,0,0">
+                                <Grid ColumnSpacing="20">
                                         <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Row 1: Game Name -->
-                                        <StackPanel Grid.Row="0"
-                                                    Grid.Column="0"
-                                                    Spacing="6"
-                                                    HorizontalAlignment="Stretch"
-                                                    Margin="0,8,0,0">
-                                                <TextBlock Text="{Binding SelectedGame.Name}"
-                                                           FontSize="22"
-                                                           FontWeight="Bold"
-                                                           TextWrapping="WrapWholeWords"
-                                                           VerticalAlignment="Center"/>
-                                        </StackPanel>
+                                        <Grid Grid.Column="0"
+                                              RowSpacing="16">
+                                                <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
 
-                                        <!-- Row 2: Game Info Block split into two columns -->
-                                        <Grid Grid.Row="1"
-                                              Grid.Column="0"
-                                              ColumnSpacing="6"
-                                              HorizontalAlignment="Stretch">
-                                                <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition MaxWidth="250"/>
-                                                        <ColumnDefinition MaxWidth="350"/>
-                                                </Grid.ColumnDefinitions>
+                                                <!-- Row 1: Game Name -->
+                                                <Grid Grid.Row="0"
+                                                      ColumnSpacing="12"
+                                                      HorizontalAlignment="Stretch"
+                                                      Margin="0,8,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
 
-                                                <StackPanel Grid.Column="0"
-                                                            Spacing="6">
+                                                        <Button Grid.Column="0"
+                                                                Content="View Media"
+                                                                Command="{Binding OpenMediaOverlayCommand}"
+                                                                VerticalAlignment="Center"
+                                                                FontWeight="SemiBold"/>
+
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding SelectedGame.Name}"
+                                                                   FontSize="22"
+                                                                   FontWeight="Bold"
+                                                                   TextWrapping="WrapWholeWords"
+                                                                   VerticalAlignment="Center"/>
+                                                </Grid>
+
+                                                <!-- Row 2: Game Info Block split into two columns -->
+                                                <Grid Grid.Row="1"
+                                                      ColumnSpacing="6"
+                                                      HorizontalAlignment="Stretch">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition MaxWidth="250"/>
+                                                                <ColumnDefinition MaxWidth="350"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0"
+                                                                    Spacing="6">
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Publisher"
                                                                            Opacity="0.4"/>
@@ -404,10 +416,10 @@
                                                                         Foreground="#B3FFFFFF"/>
                                                                 </TextBlock>
                                                         </StackPanel>
-                                                </StackPanel>
+                                                        </StackPanel>
 
-                                                <StackPanel Grid.Column="1"
-                                                            Spacing="8">
+                                                        <StackPanel Grid.Column="1"
+                                                                    Spacing="8">
                                                         <StackPanel Spacing="0"
                                                                     Visibility="{Binding SelectedGame.SteamID, Converter={StaticResource NullToVisibilityConverter}}">
                                                                 <TextBlock Text="Steam Reviews"
@@ -440,24 +452,19 @@
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Description"
                                                                            Opacity="0.4"/>
-                                                                <TextBlock Text="{Binding SelectedGame.Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                        <TextBlock Text="{Binding SelectedGame.Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
-                                                </StackPanel>
+                                                        </StackPanel>
+                                                </Grid>
                                         </Grid>
 
                                         <!-- Actions, platform icons, and links -->
-                                        <StackPanel Grid.Row="1"
-                                                    Grid.Column="1"
+                                        <StackPanel Grid.Column="1"
                                                     Spacing="0"
-                                                    Margin="20,14,12,0"
+                                                    Margin="0,14,12,0"
                                                     VerticalAlignment="Top"
                                                     HorizontalAlignment="Right">
-                                                <Button Content="View Media"
-                                                        Command="{Binding OpenMediaOverlayCommand}"
-                                                        HorizontalAlignment="Right"
-                                                        Margin="0,0,0,14"
-                                                        FontWeight="SemiBold"/>
                                                 <ItemsControl ItemsSource="{Binding SelectedGame.PlatformLogoUris, Mode=OneWay}"
                                                               HorizontalAlignment="Right"
                                                               VerticalAlignment="Top"
