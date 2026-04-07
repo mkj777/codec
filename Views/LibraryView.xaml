@@ -8,6 +8,184 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
+    <UserControl.Resources>
+        <Style x:Key="LibraryCoverButtonStyle"
+               TargetType="Button">
+            <Setter Property="Background"
+                    Value="Transparent"/>
+            <Setter Property="BorderThickness"
+                    Value="0"/>
+            <Setter Property="Padding"
+                    Value="0"/>
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment"
+                    Value="Stretch"/>
+            <Setter Property="UseSystemFocusVisuals"
+                    Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <Grid x:Name="CardHost"
+                                  Margin="4,4,4,10">
+                                <Border x:Name="ShadowLayer"
+                                        Margin="0,8,0,0"
+                                        Background="#24000000"
+                                        CornerRadius="12"
+                                        Opacity="0.42">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="ShadowTranslateTransform"/>
+                                    </Border.RenderTransform>
+                                </Border>
+
+                                <Grid x:Name="ContentLift">
+                                    <Grid.RenderTransform>
+                                        <TranslateTransform x:Name="ContentLiftTransform"/>
+                                    </Grid.RenderTransform>
+
+                                    <ContentPresenter x:Name="ContentPresenter"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+
+                                    <Border x:Name="HoverTint"
+                                            Background="#FFFFFF"
+                                            CornerRadius="8"
+                                            IsHitTestVisible="False"
+                                            Opacity="0"/>
+
+                                    <Border x:Name="HoverOutline"
+                                            Background="Transparent"
+                                            BorderBrush="#FFFFFF"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            IsHitTestVisible="False"
+                                            Opacity="0.08"/>
+                                </Grid>
+                            </Grid>
+
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ContentLiftTransform"
+                                                             Storyboard.TargetProperty="Y"
+                                                             To="0"
+                                                             Duration="0:0:0.24"
+                                                             EnableDependentAnimation="True">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ShadowTranslateTransform"
+                                                             Storyboard.TargetProperty="Y"
+                                                             To="0"
+                                                             Duration="0:0:0.24"
+                                                             EnableDependentAnimation="True">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ShadowLayer"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.42"
+                                                             Duration="0:0:0.24"/>
+                                            <DoubleAnimation Storyboard.TargetName="HoverTint"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0"
+                                                             Duration="0:0:0.22"/>
+                                            <DoubleAnimation Storyboard.TargetName="HoverOutline"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.08"
+                                                             Duration="0:0:0.22"/>
+                                        </Storyboard>
+                                    </VisualState>
+
+                                    <VisualState x:Name="PointerOver">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ContentLiftTransform"
+                                                             Storyboard.TargetProperty="Y"
+                                                             To="-4"
+                                                             Duration="0:0:0.28"
+                                                             EnableDependentAnimation="True">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ShadowTranslateTransform"
+                                                             Storyboard.TargetProperty="Y"
+                                                             To="4"
+                                                             Duration="0:0:0.28"
+                                                             EnableDependentAnimation="True">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ShadowLayer"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.7"
+                                                             Duration="0:0:0.28"/>
+                                            <DoubleAnimation Storyboard.TargetName="HoverTint"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.04"
+                                                             Duration="0:0:0.24"/>
+                                            <DoubleAnimation Storyboard.TargetName="HoverOutline"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.14"
+                                                             Duration="0:0:0.24"/>
+                                        </Storyboard>
+                                    </VisualState>
+
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ContentLiftTransform"
+                                                             Storyboard.TargetProperty="Y"
+                                                             To="-2"
+                                                             Duration="0:0:0.18"
+                                                             EnableDependentAnimation="True">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ShadowTranslateTransform"
+                                                             Storyboard.TargetProperty="Y"
+                                                             To="2"
+                                                             Duration="0:0:0.18"
+                                                             EnableDependentAnimation="True">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ShadowLayer"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.58"
+                                                             Duration="0:0:0.18"/>
+                                            <DoubleAnimation Storyboard.TargetName="HoverTint"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.07"
+                                                             Duration="0:0:0.18"/>
+                                            <DoubleAnimation Storyboard.TargetName="HoverOutline"
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.16"
+                                                             Duration="0:0:0.18"/>
+                                        </Storyboard>
+                                    </VisualState>
+
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="CardHost.Opacity"
+                                                    Value="0.6"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <ScrollViewer x:Name="LibraryScroller"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch"
@@ -29,16 +207,13 @@
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="local:Game">
                     <Button Click="LibraryItem_Click"
+                            Style="{StaticResource LibraryCoverButtonStyle}"
                             ClickMode="Press"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Padding="0"
                             Tag="{x:Bind}"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch"
                             HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Stretch"
-                            UseSystemFocusVisuals="False">
+                            VerticalContentAlignment="Stretch">
                         <Grid>
                             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                     CornerRadius="8">
