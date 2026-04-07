@@ -32,9 +32,11 @@
                             UseSystemFocusVisuals="False">
                         <Grid Width="210"
                               Height="315">
-                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
-                            <Image Source="{x:Bind LibCapsule}"
-                                   Stretch="UniformToFill"/>
+                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                    CornerRadius="8">
+                                <Image Source="{x:Bind LibCapsule}"
+                                       Stretch="UniformToFill"/>
+                            </Border>
                         </Grid>
                     </Button>
                 </DataTemplate>
