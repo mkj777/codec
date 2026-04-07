@@ -152,8 +152,6 @@
                                                         Click="Debug_Click"/>
                                         <MenuFlyoutItem Text="Refresh Covers"
                                                         Click="RefreshCovers_Click"/>
-                                        <MenuFlyoutItem Text="Reset App"
-                                                        Click="ResetApp_Click"/>
                                         <MenuFlyoutItem Text="Check IDs"
                                                         Click="DebugCheckIds_Click"/>
                                     </MenuFlyout>
@@ -181,6 +179,8 @@
                                                             Click="SidebarAddGames_Click"/>
                                             <MenuFlyoutItem Text="Add by Executable"
                                                             Click="AddGame_Click"/>
+                                            <MenuFlyoutItem Text="Reset App"
+                                                            Click="ResetApp_Click"/>
                                         </MenuFlyout>
                                     </Button.Flyout>
                                 </Button>
