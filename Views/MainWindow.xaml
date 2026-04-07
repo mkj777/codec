@@ -65,7 +65,7 @@
                         <TextBlock Text="Codec Library"
                                 FontSize="18"
                                 FontWeight="Bold"
-                                Margin="0,12,0,10"
+                                Margin="0,12,0,8"
                                 HorizontalAlignment="Center"/>
 
                         <ListView x:Name="SidebarGameList"
@@ -79,8 +79,9 @@
                                   Background="Transparent">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:Game">
-                                    <TextBlock Text="{x:Bind Name}"
-                                            TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock 
+                                        Text="{x:Bind Name}"
+                                        TextTrimming="CharacterEllipsis"/>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

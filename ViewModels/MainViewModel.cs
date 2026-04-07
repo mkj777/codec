@@ -60,6 +60,34 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand]
+        private async Task DeleteSelectedGameAsync()
+        {
+            if (SelectedGame == null)
+                return;
+
+            var gameToDelete = SelectedGame;
+            var removed = Games.Remove(gameToDelete);
+
+            if (!removed)
+            {
+                var matchingGame = Games.FirstOrDefault(game => game.Id == gameToDelete.Id);
+                if (matchingGame != null)
+                    removed = Games.Remove(matchingGame);
+            }
+
+            if (!removed)
+                return;
+
+            IsGameSettingsOpen = false;
+            IsDetailsVisible = false;
+            SelectedGame = null;
+            SidebarSelectedItem = null;
+            IsOnboardingVisible = Games.Count == 0;
+
+            await LibraryStorageService.SaveAsync(Games);
+        }
+
+        [RelayCommand]
         private void PlayGame()
         {
             if (SelectedGame == null)

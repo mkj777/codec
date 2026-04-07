@@ -55,6 +55,8 @@ namespace Codec.Views
         public GameDetailView()
         {
             InitializeComponent();
+            Loaded += GameDetailView_Loaded;
+            SizeChanged += GameDetailView_SizeChanged;
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -115,6 +117,57 @@ namespace Codec.Views
             {
                 Marshal.FreeHGlobal(fileBufferPtr);
             }
+        }
+
+        private async void DeleteSelectedGameButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.SelectedGame == null)
+                return;
+
+            var dialog = new ContentDialog
+            {
+                Title = "Delete Game",
+                Content = $"Remove '{ViewModel.SelectedGame.Name}' from your library? This won't delete any files from disk.",
+                PrimaryButtonText = "Delete",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            if (ViewModel.DeleteSelectedGameCommand.CanExecute(null))
+                await ViewModel.DeleteSelectedGameCommand.ExecuteAsync(null);
+        }
+
+        private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
+            => UpdateSettingsLayoutState();
+
+        private void GameDetailView_SizeChanged(object sender, SizeChangedEventArgs e)
+            => UpdateSettingsLayoutState();
+
+        private void UpdateSettingsLayoutState()
+        {
+            if (RootLayout == null)
+                return;
+
+            double width = ActualWidth;
+            double height = ActualHeight;
+
+            string stateName = "SettingsComfortableState";
+
+            if (width <= 1100 || height <= 690)
+            {
+                stateName = "SettingsTightState";
+            }
+            else if (width <= 1320 || height <= 820)
+            {
+                stateName = "SettingsCompactState";
+            }
+
+            _ = VisualStateManager.GoToState(this, stateName, useTransitions: true);
         }
 
         private void HeroOverlay_SizeChanged(object sender, SizeChangedEventArgs e)

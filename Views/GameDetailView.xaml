@@ -30,7 +30,122 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid x:Name="RootLayout">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="SettingsLayoutStates">
+                <VisualState x:Name="SettingsComfortableState">
+                    <VisualState.Setters>
+                        <Setter Target="SettingsPanelBorder.Width" Value="380" />
+                        <Setter Target="SettingsPanelBorder.Margin" Value="0,64,0,64" />
+                        <Setter Target="SettingsPanelBorder.Padding" Value="22,16,12,16" />
+                        <Setter Target="SettingsRootGrid.RowSpacing" Value="24" />
+                        <Setter Target="SettingsContentGrid.RowSpacing" Value="20" />
+                        <Setter Target="SettingsContentGrid.ColumnSpacing" Value="0" />
+                        <Setter Target="SettingsPrimaryColumn.Width" Value="*" />
+                        <Setter Target="SettingsSecondaryColumn.Width" Value="0" />
+                        <Setter Target="SettingsHeaderText.FontSize" Value="22" />
+                        <Setter Target="FolderLocationLabel.FontSize" Value="12" />
+                        <Setter Target="FolderSizeLabel.FontSize" Value="12" />
+                        <Setter Target="LaunchScriptLabel.FontSize" Value="12" />
+                        <Setter Target="DeleteSectionLabel.FontSize" Value="12" />
+                        <Setter Target="FolderLocationValue.FontSize" Value="13" />
+                        <Setter Target="FolderLocationValue.MaxLines" Value="4" />
+                        <Setter Target="FolderSizeValue.FontSize" Value="16" />
+                        <Setter Target="LaunchScriptValue.FontSize" Value="14" />
+                        <Setter Target="LaunchScriptValue.MaxLines" Value="3" />
+                        <Setter Target="DeleteSectionHelperText.Visibility" Value="Visible" />
+                        <Setter Target="FolderLocationSection.Spacing" Value="8" />
+                        <Setter Target="FolderSizeSection.Spacing" Value="4" />
+                        <Setter Target="LaunchScriptSection.Spacing" Value="8" />
+                        <Setter Target="DeleteSection.Spacing" Value="8" />
+                        <Setter Target="FolderLocationSection.(Grid.Row)" Value="0" />
+                        <Setter Target="FolderLocationSection.(Grid.Column)" Value="0" />
+                        <Setter Target="FolderLocationSection.(Grid.ColumnSpan)" Value="1" />
+                        <Setter Target="FolderSizeSection.(Grid.Row)" Value="1" />
+                        <Setter Target="FolderSizeSection.(Grid.Column)" Value="0" />
+                        <Setter Target="FolderSizeSection.(Grid.ColumnSpan)" Value="1" />
+                        <Setter Target="LaunchScriptSection.(Grid.Row)" Value="2" />
+                        <Setter Target="LaunchScriptSection.(Grid.Column)" Value="0" />
+                        <Setter Target="LaunchScriptSection.(Grid.ColumnSpan)" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+
+                <VisualState x:Name="SettingsCompactState">
+                    <VisualState.Setters>
+                        <Setter Target="SettingsPanelBorder.Width" Value="352" />
+                        <Setter Target="SettingsPanelBorder.Margin" Value="0,36,0,36" />
+                        <Setter Target="SettingsPanelBorder.Padding" Value="20,14,10,14" />
+                        <Setter Target="SettingsRootGrid.RowSpacing" Value="18" />
+                        <Setter Target="SettingsContentGrid.RowSpacing" Value="16" />
+                        <Setter Target="SettingsContentGrid.ColumnSpacing" Value="14" />
+                        <Setter Target="SettingsPrimaryColumn.Width" Value="2*" />
+                        <Setter Target="SettingsSecondaryColumn.Width" Value="*" />
+                        <Setter Target="SettingsHeaderText.FontSize" Value="21" />
+                        <Setter Target="FolderLocationLabel.FontSize" Value="11" />
+                        <Setter Target="FolderSizeLabel.FontSize" Value="11" />
+                        <Setter Target="LaunchScriptLabel.FontSize" Value="11" />
+                        <Setter Target="DeleteSectionLabel.FontSize" Value="11" />
+                        <Setter Target="FolderLocationValue.FontSize" Value="12" />
+                        <Setter Target="FolderLocationValue.MaxLines" Value="3" />
+                        <Setter Target="FolderSizeValue.FontSize" Value="15" />
+                        <Setter Target="LaunchScriptValue.FontSize" Value="13" />
+                        <Setter Target="LaunchScriptValue.MaxLines" Value="2" />
+                        <Setter Target="DeleteSectionHelperText.Visibility" Value="Visible" />
+                        <Setter Target="FolderLocationSection.Spacing" Value="6" />
+                        <Setter Target="FolderSizeSection.Spacing" Value="4" />
+                        <Setter Target="LaunchScriptSection.Spacing" Value="6" />
+                        <Setter Target="DeleteSection.Spacing" Value="6" />
+                        <Setter Target="FolderLocationSection.(Grid.Row)" Value="0" />
+                        <Setter Target="FolderLocationSection.(Grid.Column)" Value="0" />
+                        <Setter Target="FolderLocationSection.(Grid.ColumnSpan)" Value="1" />
+                        <Setter Target="FolderSizeSection.(Grid.Row)" Value="0" />
+                        <Setter Target="FolderSizeSection.(Grid.Column)" Value="1" />
+                        <Setter Target="FolderSizeSection.(Grid.ColumnSpan)" Value="1" />
+                        <Setter Target="LaunchScriptSection.(Grid.Row)" Value="1" />
+                        <Setter Target="LaunchScriptSection.(Grid.Column)" Value="0" />
+                        <Setter Target="LaunchScriptSection.(Grid.ColumnSpan)" Value="2" />
+                    </VisualState.Setters>
+                </VisualState>
+
+                <VisualState x:Name="SettingsTightState">
+                    <VisualState.Setters>
+                        <Setter Target="SettingsPanelBorder.Width" Value="320" />
+                        <Setter Target="SettingsPanelBorder.Margin" Value="0,20,0,20" />
+                        <Setter Target="SettingsPanelBorder.Padding" Value="16,12,8,12" />
+                        <Setter Target="SettingsRootGrid.RowSpacing" Value="14" />
+                        <Setter Target="SettingsContentGrid.RowSpacing" Value="12" />
+                        <Setter Target="SettingsContentGrid.ColumnSpacing" Value="10" />
+                        <Setter Target="SettingsPrimaryColumn.Width" Value="2*" />
+                        <Setter Target="SettingsSecondaryColumn.Width" Value="*" />
+                        <Setter Target="SettingsHeaderText.FontSize" Value="19" />
+                        <Setter Target="FolderLocationLabel.FontSize" Value="11" />
+                        <Setter Target="FolderSizeLabel.FontSize" Value="11" />
+                        <Setter Target="LaunchScriptLabel.FontSize" Value="11" />
+                        <Setter Target="DeleteSectionLabel.FontSize" Value="11" />
+                        <Setter Target="FolderLocationValue.FontSize" Value="12" />
+                        <Setter Target="FolderLocationValue.MaxLines" Value="2" />
+                        <Setter Target="FolderSizeValue.FontSize" Value="14" />
+                        <Setter Target="LaunchScriptValue.FontSize" Value="12" />
+                        <Setter Target="LaunchScriptValue.MaxLines" Value="1" />
+                        <Setter Target="DeleteSectionHelperText.Visibility" Value="Collapsed" />
+                        <Setter Target="FolderLocationSection.Spacing" Value="4" />
+                        <Setter Target="FolderSizeSection.Spacing" Value="2" />
+                        <Setter Target="LaunchScriptSection.Spacing" Value="4" />
+                        <Setter Target="DeleteSection.Spacing" Value="4" />
+                        <Setter Target="FolderLocationSection.(Grid.Row)" Value="0" />
+                        <Setter Target="FolderLocationSection.(Grid.Column)" Value="0" />
+                        <Setter Target="FolderLocationSection.(Grid.ColumnSpan)" Value="1" />
+                        <Setter Target="FolderSizeSection.(Grid.Row)" Value="0" />
+                        <Setter Target="FolderSizeSection.(Grid.Column)" Value="1" />
+                        <Setter Target="FolderSizeSection.(Grid.ColumnSpan)" Value="1" />
+                        <Setter Target="LaunchScriptSection.(Grid.Row)" Value="1" />
+                        <Setter Target="LaunchScriptSection.(Grid.Column)" Value="0" />
+                        <Setter Target="LaunchScriptSection.(Grid.ColumnSpan)" Value="2" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="3*"/>
             <RowDefinition Height="2*"/>
@@ -284,19 +399,29 @@
 
             <Grid Background="#80000000" Tapped="Scrim_Tapped" />
 
-            <Border Width="380"
+            <Border x:Name="SettingsPanelBorder"
+                    Width="380"
+                    MinWidth="320"
                     HorizontalAlignment="Right"
                     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
                     BorderBrush="#33FFFFFF"
                     BorderThickness="1,0,0,0"
-                    Padding="22 16 12 0"
                     Margin="0 64 0 64"
                     CornerRadius="14 0 0 14">
 
-                <StackPanel Spacing="24">
+                <Grid x:Name="SettingsRootGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                    <Grid>
-                        <TextBlock Text="Game Settings" FontSize="22" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <Grid Grid.Row="0">
+                        <TextBlock x:Name="SettingsHeaderText"
+                                   Text="Game Settings"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"/>
                         <Button Content="✕"
                                 Command="{Binding CloseGameSettingsCommand}"
                                 HorizontalAlignment="Right"
@@ -305,45 +430,89 @@
                                 FontSize="18"/>
                     </Grid>
 
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="FOLDER LOCATION" Opacity="0.5" FontSize="12"/>
-                        
-                        <TextBlock Text="{Binding SelectedGame.FolderLocation, FallbackValue='Unknown'}"
-                                   TextWrapping="Wrap"
-                                   Foreground="#A0A0A0"
-                                   FontSize="13"
-                                   Margin="0,0,0,8"/>
-                        
-                        <Button Content="Open Folder" 
-                                Command="{Binding OpenGameFolderCommand}"
-                                HorizontalAlignment="Left"/>
-                    </StackPanel>
+                    <Grid x:Name="SettingsContentGrid"
+                          Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="SettingsPrimaryColumn" Width="*" />
+                            <ColumnDefinition x:Name="SettingsSecondaryColumn" Width="0" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="FOLDER SIZE" Opacity="0.5" FontSize="12"/>
-                        <TextBlock Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Calculating...'}" 
-                                   FontWeight="SemiBold" 
-                                   FontSize="16"/>
-                    </StackPanel>
+                        <StackPanel x:Name="FolderLocationSection"
+                                    Grid.Row="0"
+                                    Grid.Column="0"
+                                    Spacing="8">
+                            <TextBlock x:Name="FolderLocationLabel" Text="FOLDER LOCATION" Opacity="0.5" FontSize="12"/>
 
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="CUSTOM LAUNCH SCRIPT" Opacity="0.5" FontSize="12"/>
+                            <TextBlock x:Name="FolderLocationValue"
+                                       Text="{Binding SelectedGame.FolderLocation, FallbackValue='Unknown'}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="4"
+                                       Foreground="#A0A0A0"
+                                       FontSize="13"/>
 
-                        <TextBlock Text="{Binding SelectedGame.LaunchScript, TargetNullValue='No script selected', FallbackValue='No script selected'}"
-                                   TextWrapping="Wrap"
-                                   Foreground="#A0A0A0"
-                                   FontSize="14"/>
-
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Content="Browse..." Click="SelectScriptButton_Click" />
-
-                            <Button Content="Clear"
-                                    Command="{Binding ClearLaunchScriptCommand}"
-                                    Visibility="{Binding SelectedGame.LaunchScript, Converter={StaticResource NullToVisibilityConverter}}" />
+                            <Button Content="Open Folder"
+                                    Command="{Binding OpenGameFolderCommand}"
+                                    HorizontalAlignment="Left"/>
                         </StackPanel>
-                    </StackPanel>
 
-                </StackPanel>
+                        <StackPanel x:Name="FolderSizeSection"
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    Spacing="4">
+                            <TextBlock x:Name="FolderSizeLabel" Text="FOLDER SIZE" Opacity="0.5" FontSize="12"/>
+                            <TextBlock x:Name="FolderSizeValue"
+                                       Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Calculating...'}"
+                                       FontWeight="SemiBold"
+                                       FontSize="16"/>
+                        </StackPanel>
+
+                        <StackPanel x:Name="LaunchScriptSection"
+                                    Grid.Row="2"
+                                    Grid.Column="0"
+                                    Spacing="8">
+                            <TextBlock x:Name="LaunchScriptLabel" Text="CUSTOM LAUNCH SCRIPT" Opacity="0.5" FontSize="12"/>
+
+                            <TextBlock x:Name="LaunchScriptValue"
+                                       Text="{Binding SelectedGame.LaunchScript, TargetNullValue='No script selected', FallbackValue='No script selected'}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="3"
+                                       Foreground="#A0A0A0"
+                                       FontSize="14"/>
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Browse..." Click="SelectScriptButton_Click" />
+
+                                <Button Content="Clear"
+                                        Command="{Binding ClearLaunchScriptCommand}"
+                                        Visibility="{Binding SelectedGame.LaunchScript, Converter={StaticResource NullToVisibilityConverter}}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel x:Name="DeleteSection"
+                                Grid.Row="2"
+                                Spacing="8">
+                        <TextBlock x:Name="DeleteSectionLabel" Text="LIBRARY" Opacity="0.5" FontSize="12"/>
+                        <Button Content="Delete from Library"
+                                Click="DeleteSelectedGameButton_Click"
+                                HorizontalAlignment="Stretch"
+                                Foreground="#FFFFC7C7"
+                                BorderBrush="#99FF7A7A"
+                                Background="#66A11F1F"/>
+                        <TextBlock x:Name="DeleteSectionHelperText"
+                                   Text="Removes this game from Codec only. Files stay on disk."
+                                   TextWrapping="Wrap"
+                                   Foreground="#A0A0A0"
+                                   FontSize="12"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Grid>
