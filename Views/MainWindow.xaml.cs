@@ -2,6 +2,7 @@ using Codec.Models;
 using Codec.Services;
 using Codec.ViewModels;
 using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -10,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Graphics;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -17,6 +19,9 @@ namespace Codec.Views
 {
     public sealed partial class MainWindow : Window
     {
+        private const int MinWindowWidth = 900;
+        private const int MinWindowHeight = 560;
+
         private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(Colors.White);
         private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9A, 0x9A, 0x9A));
 
@@ -30,7 +35,24 @@ namespace Codec.Views
             RootGrid.DataContext = ViewModel;
             ExtendsContentIntoTitleBar = true;
             AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"));
+            ConfigureWindowConstraints();
             _ = ViewModel.LoadLibraryAsync();
+        }
+
+        private void ConfigureWindowConstraints()
+        {
+            if (AppWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.PreferredMinimumWidth = MinWindowWidth;
+                presenter.PreferredMinimumHeight = MinWindowHeight;
+            }
+
+            if (AppWindow.ClientSize.Width < MinWindowWidth || AppWindow.ClientSize.Height < MinWindowHeight)
+            {
+                AppWindow.ResizeClient(new SizeInt32(
+                    Math.Max(AppWindow.ClientSize.Width, MinWindowWidth),
+                    Math.Max(AppWindow.ClientSize.Height, MinWindowHeight)));
+            }
         }
 
         private void SidebarGameList_SelectionChanged(object sender, SelectionChangedEventArgs e)
