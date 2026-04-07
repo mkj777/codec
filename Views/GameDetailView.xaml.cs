@@ -3,9 +3,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
-using Windows.Storage;
-using Windows.Storage.Pickers;
+using System.Threading.Tasks;
 
 namespace Codec.Views
 {
@@ -14,6 +14,40 @@ namespace Codec.Views
         [DllImport("user32.dll")]
         private static extern IntPtr GetActiveWindow();
 
+        [DllImport("comdlg32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool GetOpenFileName(ref OPENFILENAME lpofn);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct OPENFILENAME
+        {
+            public int lStructSize;
+            public IntPtr hwndOwner;
+            public IntPtr hInstance;
+            public string lpstrFilter;
+            public string lpstrCustomFilter;
+            public int nMaxCustFilter;
+            public int nFilterIndex;
+            public IntPtr lpstrFile;
+            public int nMaxFile;
+            public string lpstrFileTitle;
+            public int nMaxFileTitle;
+            public string lpstrInitialDir;
+            public string lpstrTitle;
+            public int Flags;
+            public short nFileOffset;
+            public short nFileExtension;
+            public string lpstrDefExt;
+            public IntPtr lCustData;
+            public IntPtr lpfnHook;
+            public string lpTemplateName;
+            public IntPtr pvReserved;
+            public int dwReserved;
+            public int FlagsEx;
+        }
+
+        private const int OFN_FILEMUSTEXIST = 0x00001000;
+        private const int OFN_PATHMUSTEXIST = 0x00000800;
+        private const int OFN_NOCHANGEDIR = 0x00000008;
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
         private double _mediaMaxHeight;
@@ -37,44 +71,50 @@ namespace Codec.Views
             if (ViewModel?.SelectedGame == null)
                 return;
 
-            var picker = new FileOpenPicker
+            string? gameFolderPath = ViewModel.SelectedGame.FolderLocation;
+            string? selectedFilePath = OpenFileDialog(gameFolderPath);
+
+            if (!string.IsNullOrWhiteSpace(selectedFilePath))
             {
-                ViewMode = PickerViewMode.List,
-                SuggestedStartLocation = PickerLocationId.ComputerFolder
-            };
-            picker.FileTypeFilter.Add(".bat");
-
-            var hwnd = GetActiveWindow();
-            if (hwnd == IntPtr.Zero)
-                return;
-
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-
-            // Use game-specific settings identifier so picker remembers folder for this game
-            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedGame.FolderLocation))
-            {
-                try
-                {
-                    var gameFolder = await StorageFolder.GetFolderFromPathAsync(ViewModel.SelectedGame.FolderLocation);
-                    if (gameFolder != null)
-                    {
-                        // Use game name as part of settings ID so each game remembers its browse location
-                        string gameId = ViewModel.SelectedGame.Name?.Replace(" ", "_") ?? "game";
-                        picker.SettingsIdentifier = $"GameScript_{gameId}";
-                    }
-                }
-                catch
-                {
-                    // Fall back to default if folder access fails
-                }
+                if (ViewModel.SetLaunchScriptCommand.CanExecute(selectedFilePath))
+                    await ViewModel.SetLaunchScriptCommand.ExecuteAsync(selectedFilePath);
             }
+        }
 
-            StorageFile? file = await picker.PickSingleFileAsync();
-            if (file == null)
-                return;
+        private string? OpenFileDialog(string? initialDirectory)
+        {
+            var fileBuffer = new char[260];
+            var fileBufferPtr = Marshal.AllocHGlobal(260 * 2);
+            Marshal.Copy(fileBuffer, 0, fileBufferPtr, fileBuffer.Length);
 
-            if (ViewModel.SetLaunchScriptCommand.CanExecute(file.Path))
-                await ViewModel.SetLaunchScriptCommand.ExecuteAsync(file.Path);
+            try
+            {
+                var ofn = new OPENFILENAME
+                {
+                    lStructSize = Marshal.SizeOf<OPENFILENAME>(),
+                    hwndOwner = GetActiveWindow(),
+                    lpstrFilter = "Batch Files (*.bat)\0*.bat\0All Files (*.*)\0*.*\0\0",
+                    nFilterIndex = 1,
+                    lpstrFile = fileBufferPtr,
+                    nMaxFile = 260,
+                    lpstrInitialDir = !string.IsNullOrWhiteSpace(initialDirectory) && Directory.Exists(initialDirectory)
+                        ? initialDirectory
+                        : null,
+                    lpstrTitle = "Select Launch Script",
+                    Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR
+                };
+
+                if (GetOpenFileName(ref ofn))
+                {
+                    return Marshal.PtrToStringUni(fileBufferPtr);
+                }
+
+                return null;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(fileBufferPtr);
+            }
         }
 
         private void HeroOverlay_SizeChanged(object sender, SizeChangedEventArgs e)
