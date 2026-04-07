@@ -20,6 +20,7 @@ namespace Codec.ViewModels
     {
         public sealed record AddGameResult(bool IsAdded, string Message, Game? Game);
         private const int SidebarSearchDebounceDelayMs = 300;
+        private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
         // Settings Sidebar
         [RelayCommand]
@@ -386,6 +387,10 @@ namespace Codec.ViewModels
                 await Task.WhenAll(fallbackTasks);
 
                 await PopulateGridDbDataAsync(newGames);
+                newGames = newGames
+                    .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
+                    .ThenBy(game => game.Id)
+                    .ToList();
 
                 int totalGames = newGames.Count;
                 PrepareCoverProgress(totalGames);
@@ -521,7 +526,7 @@ namespace Codec.ViewModels
                 await HltbService.PopulateAsync(game, _dispatcherQueue);
                 await EnsureCoverForGameAsync(game);
 
-                Games.Add(game);
+                InsertGameAlphabetically(game);
                 await LibraryStorageService.SaveAsync(Games);
                 QueueBackgroundPrefetch(new[] { game });
 
@@ -543,9 +548,13 @@ namespace Codec.ViewModels
 
             var saved = await LibraryStorageService.LoadAsync();
             await EnsureCoversAsync(saved);
+            var sortedSavedGames = saved
+                .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
+                .ThenBy(game => game.Id)
+                .ToList();
 
             Games.Clear();
-            foreach (var g in saved)
+            foreach (var g in sortedSavedGames)
                 Games.Add(g);
 
             await LibraryStorageService.SaveAsync(Games);
@@ -796,7 +805,11 @@ namespace Codec.ViewModels
 
         private void RefreshSidebarFilteredGames()
         {
-            var filteredGames = Games.Where(MatchesSidebarSearch).ToList();
+            var filteredGames = Games
+                .Where(MatchesSidebarSearch)
+                .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
+                .ThenBy(game => game.Id)
+                .ToList();
 
             for (int targetIndex = 0; targetIndex < filteredGames.Count; targetIndex++)
             {
@@ -825,6 +838,25 @@ namespace Codec.ViewModels
                 return true;
 
             return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        private void InsertGameAlphabetically(Game game)
+        {
+            int insertIndex = 0;
+
+            while (insertIndex < Games.Count && CompareGamesByName(Games[insertIndex], game) <= 0)
+                insertIndex++;
+
+            Games.Insert(insertIndex, game);
+        }
+
+        private static int CompareGamesByName(Game left, Game right)
+        {
+            int nameComparison = GameNameComparer.Compare(left.Name ?? string.Empty, right.Name ?? string.Empty);
+            if (nameComparison != 0)
+                return nameComparison;
+
+            return left.Id.CompareTo(right.Id);
         }
 
         private static string NormalizeSearchText(string? value) => value?.Trim() ?? string.Empty;
