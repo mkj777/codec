@@ -8,16 +8,20 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer x:Name="LibraryScroller"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  SizeChanged="LibraryScroller_SizeChanged">
         <ItemsRepeater ItemsSource="{Binding Games}"
                        HorizontalAlignment="Stretch">
             <ItemsRepeater.Layout>
-                <UniformGridLayout MinItemWidth="210"
+                <UniformGridLayout x:Name="LibraryItemsLayout"
+                                   MinItemWidth="210"
                                    MinItemHeight="315"
-                                   MinColumnSpacing="10"
-                                   MinRowSpacing="10"
-                                   ItemsJustification="SpaceBetween"/>
+                                   MinColumnSpacing="12"
+                                   MinRowSpacing="12"
+                                   ItemsJustification="Start"
+                                   ItemsStretch="None"/>
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="local:Game">
@@ -29,9 +33,10 @@
                             Tag="{x:Bind}"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch"
                             UseSystemFocusVisuals="False">
-                        <Grid Width="210"
-                              Height="315">
+                        <Grid>
                             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                     CornerRadius="8">
                                 <Image Source="{x:Bind LibCapsule}"
