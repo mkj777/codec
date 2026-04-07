@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.UI.Xaml.Data;
 
-namespace Codec.Converters
+namespace Codec.Helpers
 {
     public sealed class ListToCommaConverter : IValueConverter
     {

@@ -16,6 +16,46 @@ namespace Codec.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
+        // Settings Sidebar
+        [RelayCommand]
+        private void OpenGameSettings()
+        {
+            IsGameSettingsOpen = true;
+        }
+
+        [RelayCommand]
+        private void CloseGameSettings()
+        {
+            IsGameSettingsOpen = false;
+        }
+
+        // Erhält den Pfad (z.B. der .bat Datei) von der View und speichert ihn
+        [RelayCommand]
+        private async Task SetLaunchScriptAsync(string batFilePath)
+        {
+            if (SelectedGame == null || string.IsNullOrWhiteSpace(batFilePath)) 
+                return;
+
+            SelectedGame.LaunchScript = batFilePath;
+            
+            // UI zwingen, den neuen Wert des SelectedGames neu zu laden
+            OnPropertyChanged(nameof(SelectedGame));
+
+            // Direkt persistent speichern, damit der Wert beim Neustart bleibt
+            await LibraryStorageService.SaveAsync(Games);
+        }
+
+        [RelayCommand]
+        private async Task ClearLaunchScriptAsync()
+        {
+            if (SelectedGame == null) 
+                return;
+
+            SelectedGame.LaunchScript = null;
+            OnPropertyChanged(nameof(SelectedGame));
+
+            await LibraryStorageService.SaveAsync(Games);
+        }
         private readonly DispatcherQueue _dispatcherQueue;
 
         public ObservableCollection<Game> Games { get; set; } = new();
@@ -76,6 +116,9 @@ namespace Codec.ViewModels
         // Other overlays
         [ObservableProperty] private bool _isDetailLoadingVisible;
         [ObservableProperty] private bool _isAppSpinnerActive;
+        
+        // Settings sidebar
+        [ObservableProperty] private bool _isGameSettingsOpen;
 
         // Sidebar lock
         [ObservableProperty] private bool _isUiEnabled = true;
@@ -100,6 +143,7 @@ namespace Codec.ViewModels
         private void Back()
         {
             IsDetailsVisible = false;
+            IsGameSettingsOpen = false;
             SelectedGame = null;
             SidebarSelectedItem = null;
         }

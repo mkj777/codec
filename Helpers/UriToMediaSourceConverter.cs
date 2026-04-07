@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 using System;
 using Windows.Media.Core;
 
-namespace Codec.Converters
+namespace Codec.Helpers
 {
     public sealed class UriToMediaSourceConverter : IValueConverter
     {

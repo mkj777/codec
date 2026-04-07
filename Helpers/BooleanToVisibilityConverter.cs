@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using System;
 
-namespace Codec.Converters
+namespace Codec.Helpers
 {
     public class BooleanToVisibilityConverter : IValueConverter
     {

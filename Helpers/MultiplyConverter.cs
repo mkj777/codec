@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 using System;
 using System.Globalization;
 
-namespace Codec.Converters
+namespace Codec.Helpers
 {
     public sealed class MultiplyConverter : IValueConverter
     {

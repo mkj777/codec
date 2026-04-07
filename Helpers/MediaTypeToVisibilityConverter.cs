@@ -2,7 +2,7 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace Codec.Converters
+namespace Codec.Helpers
 {
     public sealed class MediaTypeToVisibilityConverter : IValueConverter
     {

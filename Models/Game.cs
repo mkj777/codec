@@ -134,5 +134,7 @@ namespace Codec.Models
 
             return null;
         }
+
+        [ObservableProperty] private string? _launchScript;
     }
 }
