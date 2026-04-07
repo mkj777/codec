@@ -198,6 +198,14 @@ namespace Codec.ViewModels
         // Sidebar selection sync (BackCommand sets this to null to clear ListView)
         [ObservableProperty] private Game? _sidebarSelectedItem;
 
+        // Debug mode detection
+        [ObservableProperty] private bool _isDebugMode =
+#if DEBUG
+            true;
+#else
+            false;
+#endif
+
         public void SetLoadingState(bool isVisible, string? title = null, string? subtitle = null)
         {
             if (!string.IsNullOrWhiteSpace(title))
