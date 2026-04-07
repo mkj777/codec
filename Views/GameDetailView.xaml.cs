@@ -50,7 +50,6 @@ namespace Codec.Views
         private const int OFN_NOCHANGEDIR = 0x00000008;
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
-        private double _mediaMaxHeight;
 
         public GameDetailView()
         {
@@ -180,37 +179,6 @@ namespace Codec.Views
                 HeroLogo.Height = targetHeight;
                 HeroLogo.MaxWidth = Math.Clamp(targetHeight * 2.2, 360, 640);
             }
-        }
-
-        private void DetailsLowerGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            _mediaMaxHeight = Math.Max(0, e.NewSize.Height);
-            UpdateMediaHeight();
-        }
-
-        private void MediaContainer_SizeChanged(object sender, SizeChangedEventArgs e)
-            => UpdateMediaHeight(e.NewSize.Width, null);
-
-        private void UpdateMediaHeight(double? widthOverride = null, double? heightOverride = null)
-        {
-            if (MediaContainer == null || MediaFlipView == null)
-                return;
-
-            var width = widthOverride ?? MediaContainer.ActualWidth;
-            var availableHeight = heightOverride ?? (_mediaMaxHeight > 0 ? _mediaMaxHeight : MediaContainer.ActualHeight);
-
-            if (width <= 0 || availableHeight <= 0)
-                return;
-
-            double targetHeight = width * 0.5625;
-            if (targetHeight > availableHeight)
-            {
-                targetHeight = availableHeight;
-                width = Math.Min(width, availableHeight / 0.5625);
-            }
-
-            MediaFlipView.Width = width;
-            MediaFlipView.Height = targetHeight;
         }
     }
 }

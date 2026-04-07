@@ -72,6 +72,12 @@ namespace Codec.Views
                 ApplySidebarItemForeground(container, ReferenceEquals(args.Item, sender.SelectedItem));
         }
 
+        private void MediaScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (ViewModel.CloseMediaOverlayCommand.CanExecute(null))
+                ViewModel.CloseMediaOverlayCommand.Execute(null);
+        }
+
         private static void ApplySidebarItemForeground(ListViewItem container, bool isSelected)
         {
             var brush = isSelected ? SidebarSelectedForegroundBrush : SidebarUnselectedForegroundBrush;

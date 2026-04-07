@@ -31,6 +31,19 @@ namespace Codec.ViewModels
             IsGameSettingsOpen = false;
         }
 
+        // Media Overlay
+        [RelayCommand]
+        private void OpenMediaOverlay()
+        {
+            IsMediaOverlayOpen = true;
+        }
+
+        [RelayCommand]
+        private void CloseMediaOverlay()
+        {
+            IsMediaOverlayOpen = false;
+        }
+
         // Erhält den Pfad (z.B. der .bat Datei) von der View und speichert ihn
         [RelayCommand]
         private async Task SetLaunchScriptAsync(string batFilePath)
@@ -222,6 +235,9 @@ namespace Codec.ViewModels
         // Settings sidebar
         [ObservableProperty] private bool _isGameSettingsOpen;
 
+        // Media overlay
+        [ObservableProperty] private bool _isMediaOverlayOpen;
+
         // Sidebar lock
         [ObservableProperty] private bool _isUiEnabled = true;
 
@@ -255,6 +271,7 @@ namespace Codec.ViewModels
         {
             IsDetailsVisible = false;
             IsGameSettingsOpen = false;
+            IsMediaOverlayOpen = false;
             SelectedGame = null;
             SidebarSelectedItem = null;
         }

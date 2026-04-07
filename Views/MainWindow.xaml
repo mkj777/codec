@@ -19,6 +19,8 @@
         <Grid.Resources>
             <conv:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+            <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter"/>
+            <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter"/>
             <!-- Softer default blur overlay -->
             <AcrylicBrush x:Key="BlurOverlayBrush"
                           TintColor="#66000000"
@@ -210,6 +212,57 @@
                                FontSize="16"
                                HorizontalAlignment="Center"/>
                 </StackPanel>
+            </Grid>
+
+            <Grid x:Name="MediaOverlay"
+                  Visibility="{Binding IsMediaOverlayOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+                <Grid Background="#E0000000"
+                      Tapped="MediaScrim_Tapped"/>
+
+                <Grid HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Margin="64">
+                    <Grid MaxWidth="1200"
+                          MaxHeight="800"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Button Content="✕"
+                                Command="{Binding CloseMediaOverlayCommand}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="24"
+                                FontWeight="Bold"
+                                Margin="0,-48,0,0"
+                                Foreground="White"/>
+
+                        <FlipView x:Name="MediaOverlayFlipView"
+                                  ItemsSource="{Binding SelectedGame.Media}"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  HorizontalContentAlignment="Center"
+                                  VerticalContentAlignment="Center"
+                                  Background="Transparent">
+                            <FlipView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <MediaPlayerElement AreTransportControlsEnabled="True"
+                                                            Source="{Binding Converter={StaticResource UriToMediaSourceConverter}}"
+                                                            AutoPlay="False"
+                                                            Stretch="Uniform"
+                                                            Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
+                                        <Image Source="{Binding}"
+                                               Stretch="Uniform"
+                                               Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=image}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </FlipView.ItemTemplate>
+                        </FlipView>
+                    </Grid>
+                </Grid>
             </Grid>
         </Grid>
 
