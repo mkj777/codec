@@ -1,8 +1,10 @@
 using Codec.Models;
 using Codec.Services;
 using Codec.ViewModels;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -15,6 +17,9 @@ namespace Codec.Views
 {
     public sealed partial class MainWindow : Window
     {
+        private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(Colors.White);
+        private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9A, 0x9A, 0x9A));
+
         public MainViewModel ViewModel { get; }
 
         public MainWindow()
@@ -30,8 +35,37 @@ namespace Codec.Views
 
         private void SidebarGameList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView list && list.SelectedItem is Game game)
+            if (sender is not ListView list)
+                return;
+
+            UpdateSidebarGameListForegrounds(list);
+
+            if (list.SelectedItem is Game game)
                 ViewModel.SelectGameCommand.Execute(game);
+        }
+
+        private void SidebarGameList_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.ItemContainer is ListViewItem container)
+                ApplySidebarItemForeground(container, ReferenceEquals(args.Item, sender.SelectedItem));
+        }
+
+        private static void ApplySidebarItemForeground(ListViewItem container, bool isSelected)
+        {
+            var brush = isSelected ? SidebarSelectedForegroundBrush : SidebarUnselectedForegroundBrush;
+            container.Foreground = brush;
+
+            if (container.ContentTemplateRoot is TextBlock textBlock)
+                textBlock.Foreground = brush;
+        }
+
+        private static void UpdateSidebarGameListForegrounds(ListView list)
+        {
+            foreach (var item in list.Items)
+            {
+                if (list.ContainerFromItem(item) is ListViewItem container)
+                    ApplySidebarItemForeground(container, ReferenceEquals(item, list.SelectedItem));
+            }
         }
 
         private async void SidebarAddGames_Click(object sender, RoutedEventArgs e)

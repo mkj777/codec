@@ -13,10 +13,10 @@
         <ItemsRepeater ItemsSource="{Binding Games}"
                        HorizontalAlignment="Stretch">
             <ItemsRepeater.Layout>
-                <UniformGridLayout MinItemWidth="270"
-                                   MinItemHeight="405"
-                                   MinColumnSpacing="12"
-                                   MinRowSpacing="12"
+                <UniformGridLayout MinItemWidth="210"
+                                   MinItemHeight="315"
+                                   MinColumnSpacing="10"
+                                   MinRowSpacing="10"
                                    ItemsJustification="SpaceBetween"/>
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
@@ -30,9 +30,11 @@
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch"
                             UseSystemFocusVisuals="False">
-                        <Grid Width="270" Height="405">
-                            <Border CornerRadius="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
-                            <Image Source="{x:Bind LibCapsule}" Stretch="UniformToFill"/>
+                        <Grid Width="210"
+                              Height="315">
+                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                            <Image Source="{x:Bind LibCapsule}"
+                                   Stretch="UniformToFill"/>
                         </Grid>
                     </Button>
                 </DataTemplate>

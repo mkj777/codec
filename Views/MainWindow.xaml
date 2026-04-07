@@ -14,8 +14,8 @@
     </Window.SystemBackdrop>
 
     <Grid x:Name="RootGrid"
-            MinWidth="420"
-            MinHeight="520">
+          MinWidth="420"
+          MinHeight="520">
         <Grid.Resources>
             <conv:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
@@ -39,22 +39,22 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0"
-                x:Name="AppTitleBar"
-                Height="48"
-                Visibility="Collapsed"/>
+              x:Name="AppTitleBar"
+              Height="48"
+              Visibility="Collapsed"/>
 
         <!-- Main content with sidebar and library/details area -->
         <Grid Grid.Row="1">
             <Grid ColumnSpacing="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="230"/>
+                    <ColumnDefinition Width="240"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Sidebar -->
                 <Border Grid.Column="0"
                         Background="#191919"
-                        CornerRadius="12"
+                        CornerRadius="8,20,20,8"
                         Canvas.ZIndex="3">
                     <Grid RowSpacing="0">
                         <Grid.RowDefinitions>
@@ -63,10 +63,10 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <TextBlock Text="Codec Library"
-                                FontSize="18"
-                                FontWeight="Bold"
-                                Margin="0,12,0,8"
-                                HorizontalAlignment="Center"/>
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Margin="0,12,0,8"
+                                   HorizontalAlignment="Center"/>
 
                         <ListView x:Name="SidebarGameList"
                                   Grid.Row="1"
@@ -75,11 +75,20 @@
                                   IsEnabled="{Binding IsUiEnabled}"
                                   SelectionMode="Single"
                                   SelectionChanged="SidebarGameList_SelectionChanged"
+                                  ContainerContentChanging="SidebarGameList_ContainerContentChanging"
                                   BorderThickness="0"
                                   Background="Transparent">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="MinHeight"
+                                            Value="0"/>
+                                    <Setter Property="Padding"
+                                            Value="12,6,14,8"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:Game">
-                                    <TextBlock 
+                                    <TextBlock
                                         Text="{x:Bind Name}"
                                         TextTrimming="CharacterEllipsis"/>
                                 </DataTemplate>
@@ -87,8 +96,8 @@
                         </ListView>
 
                         <StackPanel Grid.Row="2"
-                                Spacing="6"
-                                Margin="4,0,4,0">
+                                    Spacing="6"
+                                    Margin="4,0,4,0">
                             <Button x:Name="SidebarDebugButton"
                                     Content="Debug"
                                     IsEnabled="{Binding IsUiEnabled}"
@@ -98,21 +107,21 @@
                                 <Button.Flyout>
                                     <MenuFlyout>
                                         <MenuFlyoutItem Text="Debug Data"
-                                                Click="Debug_Click"/>
+                                                        Click="Debug_Click"/>
                                         <MenuFlyoutItem Text="Refresh Covers"
-                                                Click="RefreshCovers_Click"/>
+                                                        Click="RefreshCovers_Click"/>
                                         <MenuFlyoutItem Text="Reset App"
-                                                Click="ResetApp_Click"/>
+                                                        Click="ResetApp_Click"/>
                                         <MenuFlyoutItem Text="Check IDs"
-                                                Click="DebugCheckIds_Click"/>
+                                                        Click="DebugCheckIds_Click"/>
                                     </MenuFlyout>
                                 </Button.Flyout>
                             </Button>
 
-                            <Grid Height="150"
-                                    Margin="0,0,0,8">
+                            <Grid Height="160"
+                                  Margin="0,0,0,8">
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
-                                        Stretch="Uniform"/>
+                                       Stretch="Uniform"/>
                                 <Button x:Name="SidebarAddButton"
                                         Content="Add Games"
                                         IsEnabled="{Binding IsUiEnabled}"
@@ -127,9 +136,9 @@
                                     <Button.Flyout>
                                         <MenuFlyout>
                                             <MenuFlyoutItem Text="Scan for Games"
-                                                    Click="SidebarAddGames_Click"/>
+                                                            Click="SidebarAddGames_Click"/>
                                             <MenuFlyoutItem Text="Add by Executable"
-                                                    Click="AddGame_Click"/>
+                                                            Click="AddGame_Click"/>
                                         </MenuFlyout>
                                     </Button.Flyout>
                                 </Button>
@@ -140,7 +149,7 @@
 
                 <!-- Library grid UserControl -->
                 <views:LibraryView Grid.Column="1"
-                                   Margin="12,32,12,0"
+                                   Margin="22,32,22,0"
                                    Visibility="{Binding IsLibraryGridVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                                    Canvas.ZIndex="0"/>
 
@@ -153,10 +162,10 @@
 
         <!-- Global app-level overlays -->
         <Grid Grid.RowSpan="2"
-                Grid.ColumnSpan="2"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                IsHitTestVisible="True">
+              Grid.ColumnSpan="2"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              IsHitTestVisible="True">
             <StackPanel Visibility="{Binding IsScanProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                         Background="#BF1C1C1C"
                         Padding="24"
@@ -190,14 +199,14 @@
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch">
                 <StackPanel HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="12">
+                            VerticalAlignment="Center"
+                            Spacing="12">
                     <ProgressRing Width="64"
-                            Height="64"
-                            IsActive="True"/>
+                                  Height="64"
+                                  IsActive="True"/>
                     <TextBlock Text="Loading game assets..."
-                            FontSize="16"
-                            HorizontalAlignment="Center"/>
+                               FontSize="16"
+                               HorizontalAlignment="Center"/>
                 </StackPanel>
             </Grid>
         </Grid>
@@ -210,9 +219,9 @@
               Background="#FF1C1C1C"
               IsHitTestVisible="True">
             <Grid HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    MaxWidth="1100"
-                    Margin="0,0,32,0">
+                  VerticalAlignment="Center"
+                  MaxWidth="1100"
+                  Margin="0,0,32,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="48"/>
@@ -225,13 +234,13 @@
                        Stretch="Uniform"/>
 
                 <StackPanel Grid.Column="2"
-                        Spacing="12"
-                        VerticalAlignment="Center"
-                        MaxWidth="520">
+                            Spacing="12"
+                            VerticalAlignment="Center"
+                            MaxWidth="520">
                     <TextBlock Text="Welcome to Codec!"
-                            FontSize="28"
-                            FontWeight="Bold"
-                            FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontSize="28"
+                               FontWeight="Bold"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <TextBlock Text="I'm Shrimp, and I'd love to guide you through Codec."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
@@ -250,8 +259,8 @@
                                TextWrapping="WrapWholeWords"
                                FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                     <StackPanel Orientation="Horizontal"
-                            Spacing="8"
-                            Margin="4,0,0,0">
+                                Spacing="8"
+                                Margin="4,0,0,0">
                         <Button Content="Start"
                                 FontWeight="SemiBold"
                                 Padding="24,8"
@@ -273,16 +282,16 @@
               Background="#FF1C1C1C"
               IsHitTestVisible="True">
             <StackPanel Orientation="Horizontal"
-                    Spacing="24"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Margin="0,0,32,0">
+                        Spacing="24"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="0,0,32,0">
                 <Image Source="ms-appx:///Assets/shrimpRun.png"
                        Height="320"
                        Stretch="Uniform"/>
                 <StackPanel Spacing="4"
-                        VerticalAlignment="Center"
-                        MaxWidth="460">
+                            VerticalAlignment="Center"
+                            MaxWidth="460">
                     <TextBlock Text="{Binding LoadingTitle}"
                                FontSize="28"
                                TextWrapping="WrapWholeWords"
