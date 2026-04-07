@@ -59,6 +59,64 @@ namespace Codec.Views
                 if (exeFile == null)
                     return;
 
+                var result = await ViewModel.AddGameCommand(exeFile.Path);
+
+                if (result.IsAdded && result.Game != null)
+                {
+                    string steamIdText = result.Game.SteamID.HasValue ? result.Game.SteamID.Value.ToString() : "Not found";
+                    string rawgIdText = result.Game.RawgID.HasValue ? result.Game.RawgID.Value.ToString() : "Not found";
+
+                    var successDialog = new ContentDialog
+                    {
+                        Title = "Game Added",
+                        Content = $"Added '{result.Game.Name}' to your library.\nSteam ID: {steamIdText}\nRAWG ID: {rawgIdText}",
+                        CloseButtonText = "Ok",
+                        XamlRoot = Content.XamlRoot
+                    };
+                    await successDialog.ShowAsync();
+                }
+                else
+                {
+                    var infoDialog = new ContentDialog
+                    {
+                        Title = "Add by Executable",
+                        Content = result.Message,
+                        CloseButtonText = "Close",
+                        XamlRoot = Content.XamlRoot
+                    };
+                    await infoDialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "Add by Executable Error",
+                    Content = ex.Message,
+                    CloseButtonText = "Close",
+                    XamlRoot = Content.XamlRoot
+                };
+                await errorDialog.ShowAsync();
+            }
+            finally
+            {
+                ViewModel.IsUiEnabled = true;
+            }
+        }
+
+        private async void DebugCheckIds_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsUiEnabled = false;
+            try
+            {
+                var exePicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
+                exePicker.FileTypeFilter.Add(".exe");
+                InitializeWithWindow.Initialize(exePicker, WindowNative.GetWindowHandle(this));
+
+                var exeFile = await exePicker.PickSingleFileAsync();
+                if (exeFile == null)
+                    return;
+
                 Debug.WriteLine($"Starting ID lookup for: {exeFile.Path}");
                 var (steamId, rawgId) = await GameNameService.FindGameIdsAsync(exeFile.Path);
 
@@ -74,6 +132,17 @@ namespace Codec.Views
                     XamlRoot = Content.XamlRoot
                 };
                 await testDialog.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "Check IDs Error",
+                    Content = ex.Message,
+                    CloseButtonText = "Close",
+                    XamlRoot = Content.XamlRoot
+                };
+                await errorDialog.ShowAsync();
             }
             finally
             {

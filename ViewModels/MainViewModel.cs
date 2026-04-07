@@ -16,6 +16,8 @@ namespace Codec.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
+        public sealed record AddGameResult(bool IsAdded, string Message, Game? Game);
+
         // Settings Sidebar
         [RelayCommand]
         private void OpenGameSettings()
@@ -33,11 +35,11 @@ namespace Codec.ViewModels
         [RelayCommand]
         private async Task SetLaunchScriptAsync(string batFilePath)
         {
-            if (SelectedGame == null || string.IsNullOrWhiteSpace(batFilePath)) 
+            if (SelectedGame == null || string.IsNullOrWhiteSpace(batFilePath))
                 return;
 
             SelectedGame.LaunchScript = batFilePath;
-            
+
             // UI zwingen, den neuen Wert des SelectedGames neu zu laden
             OnPropertyChanged(nameof(SelectedGame));
 
@@ -48,7 +50,7 @@ namespace Codec.ViewModels
         [RelayCommand]
         private async Task ClearLaunchScriptAsync()
         {
-            if (SelectedGame == null) 
+            if (SelectedGame == null)
                 return;
 
             SelectedGame.LaunchScript = null;
@@ -107,7 +109,7 @@ namespace Codec.ViewModels
             try
             {
                 string folderPath = SelectedGame.FolderLocation;
-                
+
                 if (!string.IsNullOrWhiteSpace(folderPath) && Directory.Exists(folderPath))
                 {
                     // Open the folder in Windows Explorer
@@ -188,7 +190,7 @@ namespace Codec.ViewModels
         // Other overlays
         [ObservableProperty] private bool _isDetailLoadingVisible;
         [ObservableProperty] private bool _isAppSpinnerActive;
-        
+
         // Settings sidebar
         [ObservableProperty] private bool _isGameSettingsOpen;
 
@@ -199,7 +201,8 @@ namespace Codec.ViewModels
         [ObservableProperty] private Game? _sidebarSelectedItem;
 
         // Debug mode detection
-        [ObservableProperty] private bool _isDebugMode =
+        [ObservableProperty]
+        private bool _isDebugMode =
 #if DEBUG
             true;
 #else
@@ -357,6 +360,131 @@ namespace Codec.ViewModels
                 HideScanProgress();
                 IsUiEnabled = true;
                 IsOnboardingVisible = Games.Count == 0;
+            }
+        }
+
+        public async Task<AddGameResult> AddGameCommand(string executablePath)
+        {
+            if (string.IsNullOrWhiteSpace(executablePath))
+            {
+                return new AddGameResult(false, "No executable was selected.", null);
+            }
+
+            string normalizedExePath;
+            try
+            {
+                normalizedExePath = Path.GetFullPath(executablePath);
+            }
+            catch
+            {
+                return new AddGameResult(false, "The selected executable path is invalid.", null);
+            }
+
+            if (!File.Exists(normalizedExePath))
+            {
+                return new AddGameResult(false, "The selected executable no longer exists.", null);
+            }
+
+            if (Games.Any(g => string.Equals(g.Executable, normalizedExePath, StringComparison.OrdinalIgnoreCase)))
+            {
+                return new AddGameResult(false, "This executable is already in your library.", null);
+            }
+
+            string folderLocation = Path.GetDirectoryName(normalizedExePath) ?? string.Empty;
+            string detectedName = GameNameService.GetBestName(normalizedExePath) ?? Path.GetFileNameWithoutExtension(normalizedExePath);
+
+            try
+            {
+                var (steamId, rawgId) = await GameNameService.FindGameIdsAsync(normalizedExePath);
+
+                if (!rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
+                {
+                    var mode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
+                    rawgId = await GameDetailsService.ValidateGameAsync(detectedName, mode);
+                }
+
+                if (steamId.HasValue && Games.Any(g => g.SteamID == steamId.Value))
+                {
+                    return new AddGameResult(false, $"A game with Steam ID {steamId.Value} already exists in your library.", null);
+                }
+
+                if (rawgId.HasValue && Games.Any(g => g.RawgID == rawgId.Value))
+                {
+                    return new AddGameResult(false, $"A game with RAWG ID {rawgId.Value} already exists in your library.", null);
+                }
+
+                var game = new Game
+                {
+                    Name = string.IsNullOrWhiteSpace(detectedName) ? Path.GetFileNameWithoutExtension(normalizedExePath) : detectedName,
+                    Executable = normalizedExePath,
+                    FolderLocation = folderLocation,
+                    ImportedFrom = "Manual Executable",
+                    SteamID = steamId,
+                    RawgID = rawgId
+                };
+
+                if (Directory.Exists(folderLocation))
+                {
+                    try
+                    {
+                        game.FolderSize = await FolderSizeService.CalculateAsync(folderLocation);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Folder size lookup failed for {game.Name}: {ex.Message}");
+                    }
+                }
+
+                if (game.SteamID.HasValue)
+                {
+                    await SteamDetailsService.PopulateFromSteamAsync(game);
+                }
+
+                if (game.RawgID.HasValue)
+                {
+                    await RawgDetailsService.PopulateAsync(game);
+                }
+                else
+                {
+                    await RawgDetailsService.TryPopulateRawgFromSearchAsync(game);
+                }
+
+                if (string.IsNullOrWhiteSpace(game.RawgUrl))
+                {
+                    if (!string.IsNullOrWhiteSpace(game.RawgSlug))
+                    {
+                        game.RawgUrl = $"https://rawg.io/games/{game.RawgSlug}";
+                    }
+                    else if (game.RawgID.HasValue)
+                    {
+                        game.RawgUrl = $"https://rawg.io/games/{game.RawgID.Value}";
+                    }
+                    else
+                    {
+                        game.RawgUrl = "https://rawg.io";
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(game.HltbUrl))
+                {
+                    game.HltbUrl = "https://howlongtobeat.com";
+                }
+
+                await HltbService.PopulateAsync(game, _dispatcherQueue);
+                await EnsureCoverForGameAsync(game);
+
+                Games.Add(game);
+                await LibraryStorageService.SaveAsync(Games);
+                QueueBackgroundPrefetch(new[] { game });
+
+                IsOnboardingVisible = false;
+
+                return new AddGameResult(true, $"{game.Name} was added to your library.", game);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Add by executable failed for '{normalizedExePath}': {ex.Message}");
+                return new AddGameResult(false, "Codec could not add this executable. Use Debug > Check IDs for diagnostics.", null);
             }
         }
 
