@@ -4,12 +4,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using System;
+using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.ViewModels
@@ -17,6 +19,7 @@ namespace Codec.ViewModels
     public partial class MainViewModel : ObservableObject
     {
         public sealed record AddGameResult(bool IsAdded, string Message, Game? Game);
+        private const int SidebarSearchDebounceDelayMs = 300;
 
         // Settings Sidebar
         [RelayCommand]
@@ -172,18 +175,17 @@ namespace Codec.ViewModels
             }
         }
         private readonly DispatcherQueue _dispatcherQueue;
+        private CancellationTokenSource? _sidebarSearchDebounceCts;
+        private string _appliedSearchText = string.Empty;
 
         public ObservableCollection<Game> Games { get; set; } = new();
+        public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
 
         public MainViewModel()
         {
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-            Games.CollectionChanged += (s, e) =>
-            {
-                OnPropertyChanged(nameof(HasGames));
-                OnPropertyChanged(nameof(IsEmptyLibrary));
-                OnPropertyChanged(nameof(IsLibraryVisible));
-            };
+            Games.CollectionChanged += Games_CollectionChanged;
+            RefreshSidebarFilteredGames();
         }
 
         public bool HasGames => Games.Count > 0;
@@ -243,6 +245,7 @@ namespace Codec.ViewModels
 
         // Sidebar selection sync (BackCommand sets this to null to clear ListView)
         [ObservableProperty] private Game? _sidebarSelectedItem;
+        [ObservableProperty] private string _searchText = string.Empty;
 
         // Debug mode detection
         [ObservableProperty]
@@ -742,5 +745,88 @@ namespace Codec.ViewModels
             cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
             return cleaned;
         }
+
+        partial void OnSearchTextChanged(string value)
+        {
+            string normalizedSearchText = NormalizeSearchText(value);
+
+            _sidebarSearchDebounceCts?.Cancel();
+            _sidebarSearchDebounceCts?.Dispose();
+
+            var debounceCts = new CancellationTokenSource();
+            _sidebarSearchDebounceCts = debounceCts;
+            _ = DebounceSidebarSearchAsync(normalizedSearchText, debounceCts);
+        }
+
+        private async Task DebounceSidebarSearchAsync(string searchText, CancellationTokenSource debounceCts)
+        {
+            try
+            {
+                await Task.Delay(SidebarSearchDebounceDelayMs, debounceCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            void ApplySearch()
+            {
+                if (!ReferenceEquals(_sidebarSearchDebounceCts, debounceCts))
+                    return;
+
+                _appliedSearchText = searchText;
+                _sidebarSearchDebounceCts = null;
+                debounceCts.Dispose();
+                RefreshSidebarFilteredGames();
+            }
+
+            if (_dispatcherQueue.HasThreadAccess)
+                ApplySearch();
+            else
+                _ = _dispatcherQueue.TryEnqueue(ApplySearch);
+        }
+
+        private void Games_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(HasGames));
+            OnPropertyChanged(nameof(IsEmptyLibrary));
+            OnPropertyChanged(nameof(IsLibraryVisible));
+            RefreshSidebarFilteredGames();
+        }
+
+        private void RefreshSidebarFilteredGames()
+        {
+            var filteredGames = Games.Where(MatchesSidebarSearch).ToList();
+
+            for (int targetIndex = 0; targetIndex < filteredGames.Count; targetIndex++)
+            {
+                var game = filteredGames[targetIndex];
+                int existingIndex = SidebarFilteredGames.IndexOf(game);
+
+                if (existingIndex == targetIndex)
+                    continue;
+
+                if (existingIndex >= 0)
+                    SidebarFilteredGames.Move(existingIndex, targetIndex);
+                else
+                    SidebarFilteredGames.Insert(targetIndex, game);
+            }
+
+            for (int index = SidebarFilteredGames.Count - 1; index >= filteredGames.Count; index--)
+                SidebarFilteredGames.RemoveAt(index);
+
+            if (SidebarSelectedItem != null && !filteredGames.Contains(SidebarSelectedItem))
+                SidebarSelectedItem = null;
+        }
+
+        private bool MatchesSidebarSearch(Game game)
+        {
+            if (string.IsNullOrWhiteSpace(_appliedSearchText))
+                return true;
+
+            return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        private static string NormalizeSearchText(string? value) => value?.Trim() ?? string.Empty;
     }
 }

@@ -17,6 +17,7 @@
           MinWidth="420"
           MinHeight="520">
         <Grid.Resources>
+            <x:Double x:Key="SidebarGameRowHeight">40</x:Double>
             <conv:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter"/>
@@ -61,6 +62,7 @@
                     <Grid RowSpacing="0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
@@ -69,10 +71,21 @@
                                    FontWeight="Bold"
                                    Margin="0,12,0,8"
                                    HorizontalAlignment="Center"/>
+                        <TextBox Grid.Row="1"
+                                 Margin="0,0,0,0"
+                                 Height="{StaticResource SidebarGameRowHeight}"
+                                 Padding="10,10,10,10"
+                                 BorderThickness="0"
+                                 BorderBrush="Transparent"
+                                 HorizontalAlignment="Stretch"
+                                 VerticalContentAlignment="Center"
+                                 PlaceholderText="Search games"
+                                 IsEnabled="{Binding IsUiEnabled}"
+                                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <ListView x:Name="SidebarGameList"
-                                  Grid.Row="1"
-                                  ItemsSource="{Binding Games}"
+                                  Grid.Row="2"
+                                  ItemsSource="{Binding SidebarFilteredGames}"
                                   SelectedItem="{Binding SidebarSelectedItem, Mode=TwoWay}"
                                   IsEnabled="{Binding IsUiEnabled}"
                                   SelectionMode="Single"
@@ -82,10 +95,12 @@
                                   Background="Transparent">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
-                                    <Setter Property="MinHeight"
-                                            Value="0"/>
+                                    <Setter Property="Height"
+                                            Value="{StaticResource SidebarGameRowHeight}"/>
                                     <Setter Property="Padding"
-                                            Value="12,6,14,8"/>
+                                            Value="12,0,14,0"/>
+                                    <Setter Property="VerticalContentAlignment"
+                                            Value="Center"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
@@ -97,7 +112,7 @@
                             </ListView.ItemTemplate>
                         </ListView>
 
-                        <StackPanel Grid.Row="2"
+                        <StackPanel Grid.Row="3"
                                     Spacing="6"
                                     Margin="4,0,4,0">
                             <Button x:Name="SidebarDebugButton"
