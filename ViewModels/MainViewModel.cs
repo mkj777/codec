@@ -56,6 +56,78 @@ namespace Codec.ViewModels
 
             await LibraryStorageService.SaveAsync(Games);
         }
+
+        [RelayCommand]
+        private void PlayGame()
+        {
+            if (SelectedGame == null)
+                return;
+
+            try
+            {
+                // Check if there's a custom launch script
+                if (!string.IsNullOrWhiteSpace(SelectedGame.LaunchScript) && File.Exists(SelectedGame.LaunchScript))
+                {
+                    // Launch using the custom script
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = SelectedGame.LaunchScript,
+                        UseShellExecute = true,
+                        WorkingDirectory = Path.GetDirectoryName(SelectedGame.LaunchScript)
+                    });
+                }
+                // Otherwise use the executable
+                else if (!string.IsNullOrWhiteSpace(SelectedGame.Executable) && File.Exists(SelectedGame.Executable))
+                {
+                    // Launch the game executable
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = SelectedGame.Executable,
+                        UseShellExecute = true,
+                        WorkingDirectory = Path.GetDirectoryName(SelectedGame.Executable)
+                    });
+                }
+                else
+                {
+                    Debug.WriteLine($"Cannot launch {SelectedGame.Name}: executable not found at {SelectedGame.Executable}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to launch {SelectedGame.Name}: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
+        private void OpenGameFolder()
+        {
+            if (SelectedGame == null)
+                return;
+
+            try
+            {
+                string folderPath = SelectedGame.FolderLocation;
+                
+                if (!string.IsNullOrWhiteSpace(folderPath) && Directory.Exists(folderPath))
+                {
+                    // Open the folder in Windows Explorer
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"\"{folderPath}\"",
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    Debug.WriteLine($"Cannot open folder for {SelectedGame.Name}: folder not found at {folderPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to open folder for {SelectedGame.Name}: {ex.Message}");
+            }
+        }
         private readonly DispatcherQueue _dispatcherQueue;
 
         public ObservableCollection<Game> Games { get; set; } = new();

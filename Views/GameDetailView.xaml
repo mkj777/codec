@@ -86,7 +86,7 @@
                         Margin="0,0,0,0"
                         FontWeight="SemiBold"/>
 
-                <!-- Play placeholder button anchored to the hero's lower-left corner -->
+                <!-- Play button anchored to the hero's lower-left corner -->
                 <Button x:Name="DetailsPlayButton"
                         Grid.Row="2"
                         Content="Play"
@@ -94,7 +94,8 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Bottom"
                         Margin="0,0,0,0"
-                        FontWeight="SemiBold"/>
+                        FontWeight="SemiBold"
+                        Command="{Binding PlayGameCommand}"/>
             </Grid>
         </Grid>
 
@@ -303,6 +304,20 @@
                                 BorderThickness="0"
                                 FontSize="18"/>
                     </Grid>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="FOLDER LOCATION" Opacity="0.5" FontSize="12"/>
+                        
+                        <TextBlock Text="{Binding SelectedGame.FolderLocation, FallbackValue='Unknown'}"
+                                   TextWrapping="Wrap"
+                                   Foreground="#A0A0A0"
+                                   FontSize="13"
+                                   Margin="0,0,0,8"/>
+                        
+                        <Button Content="Open Folder" 
+                                Command="{Binding OpenGameFolderCommand}"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
 
                     <StackPanel Spacing="4">
                         <TextBlock Text="FOLDER SIZE" Opacity="0.5" FontSize="12"/>
