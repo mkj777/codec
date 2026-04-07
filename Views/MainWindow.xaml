@@ -72,16 +72,39 @@
                                    Margin="0,12,0,8"
                                    HorizontalAlignment="Center"/>
                         <TextBox Grid.Row="1"
-                                 Margin="0,0,0,0"
-                                 Height="{StaticResource SidebarGameRowHeight}"
-                                 Padding="10,10,10,10"
-                                 BorderThickness="0"
-                                 BorderBrush="Transparent"
-                                 HorizontalAlignment="Stretch"
-                                 VerticalContentAlignment="Center"
-                                 PlaceholderText="Search games"
-                                 IsEnabled="{Binding IsUiEnabled}"
-                                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                  Margin="0,0,0,0"
+                                  Height="{StaticResource SidebarGameRowHeight}"
+                                  Padding="14,10,10,10"
+                                  Background="#222222"
+                                  BorderThickness="0"
+                                  BorderBrush="Transparent"
+                                  CornerRadius="0"
+                                  Foreground="White"
+                                  PlaceholderForeground="#FF9A9A9A"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalContentAlignment="Center"
+                                  PlaceholderText="Search games"
+                                  IsEnabled="{Binding IsUiEnabled}"
+                                  Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                            <TextBox.Resources>
+                                <SolidColorBrush x:Key="TextControlBackground">#222222</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBackgroundFocused">#222222</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver">#222222</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBackgroundDisabled">#222222</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlForeground">White</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlForegroundFocused">White</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlForegroundPointerOver">White</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlPlaceholderForeground">#FF9A9A9A</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused">#FF9A9A9A</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver">#FF9A9A9A</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBorderBrush">Transparent</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBorderBrushFocused">Transparent</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver">Transparent</SolidColorBrush>
+                                <SolidColorBrush x:Key="TextControlBorderBrushDisabled">Transparent</SolidColorBrush>
+                                <Thickness x:Key="TextControlBorderThemeThickness">0</Thickness>
+                                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                            </TextBox.Resources>
+                        </TextBox>
 
                         <ListView x:Name="SidebarGameList"
                                   Grid.Row="2"
@@ -99,6 +122,8 @@
                                             Value="{StaticResource SidebarGameRowHeight}"/>
                                     <Setter Property="Padding"
                                             Value="12,0,14,0"/>
+                                    <Setter Property="Margin"
+                                            Value="-4,-2,-4,-2"/>
                                     <Setter Property="VerticalContentAlignment"
                                             Value="Center"/>
                                 </Style>
