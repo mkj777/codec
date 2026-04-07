@@ -9,6 +9,18 @@ namespace Codec.Models
 {
     public partial class Game : ObservableObject
     {
+        private static readonly Dictionary<string, int> PlatformDisplayOrder = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["windows"] = 0,
+            ["playstation"] = 1,
+            ["xbox"] = 2,
+            ["nintendo-switch"] = 3,
+            ["macos"] = 4,
+            ["linux"] = 5,
+            ["ios"] = 6,
+            ["android"] = 7
+        };
+
         [SetsRequiredMembers]
         public Game()
         {
@@ -47,7 +59,9 @@ namespace Codec.Models
         [ObservableProperty] private string? price;
         [ObservableProperty] private string? priceDiscount;
         [ObservableProperty] private string? description;
-        [ObservableProperty] private List<string>? platforms;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(PlatformLogoUris))]
+        private List<string>? platforms;
 
         [ObservableProperty] private DateTime? releaseDate;
         [ObservableProperty] private double? steamRating;
@@ -58,10 +72,11 @@ namespace Codec.Models
         [ObservableProperty] private int? timeToCompleteCompletionist;
 
         public IEnumerable<string> PlatformLogoUris => (Platforms ?? Enumerable.Empty<string>())
-            .Select(MapPlatformToLogoUri)
-            .Where(uri => !string.IsNullOrWhiteSpace(uri))
-            .Select(uri => uri!)
-            .Distinct(StringComparer.OrdinalIgnoreCase);
+            .Select(GetPlatformLogo)
+            .Where(platform => platform is not null)
+            .DistinctBy(platform => platform!.Key, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(platform => platform!.Order)
+            .Select(platform => platform!.LogoUri);
 
         // game assets with cache for offline first, effective path resolution
         private static string GetEffectiveAssetPath(string? cachePath, string? url, string placeholder)
@@ -113,8 +128,8 @@ namespace Codec.Models
         [ObservableProperty] private string? rawgUrl;
         [ObservableProperty] private string? hltbUrl;
 
-        // Helper method to map platform names to logo URIs
-        private static string? MapPlatformToLogoUri(string? platform)
+        // Maps a raw platform string to a canonical key, asset, and fixed display order.
+        private static PlatformLogoInfo? GetPlatformLogo(string? platform)
         {
             if (string.IsNullOrWhiteSpace(platform))
             {
@@ -123,17 +138,53 @@ namespace Codec.Models
 
             var normalized = platform.Trim().ToLowerInvariant();
 
-            if (normalized.Contains("playstation")) return "ms-appx:///Assets/playstation_logo.png";
-            if (normalized.Contains("xbox")) return "ms-appx:///Assets/xbox_logo.png";
-            if (normalized.Contains("nintendo") || normalized.Contains("switch")) return "ms-appx:///Assets/NintendoSwitch_logo.png";
-            if (normalized.Contains("ios")) return "ms-appx:///Assets/iOS_logo.png";
-            if (normalized.Contains("android")) return "ms-appx:///Assets/android_logo.png";
-            if (normalized.Contains("mac")) return "ms-appx:///Assets/MacOS_logo.png";
-            if (normalized.Contains("linux")) return "ms-appx:///Assets/linux_logo.png";
-            if (normalized.Contains("pc") || normalized.Contains("windows")) return "ms-appx:///Assets/windows_logo.png";
+            if (normalized.Contains("pc") || normalized.Contains("windows"))
+            {
+                return CreatePlatformLogo("windows", "ms-appx:///Assets/windows_logo.png");
+            }
+
+            if (normalized.Contains("playstation"))
+            {
+                return CreatePlatformLogo("playstation", "ms-appx:///Assets/playstation_logo.png");
+            }
+
+            if (normalized.Contains("xbox"))
+            {
+                return CreatePlatformLogo("xbox", "ms-appx:///Assets/xbox_logo.png");
+            }
+
+            if (normalized.Contains("nintendo") || normalized.Contains("switch"))
+            {
+                return CreatePlatformLogo("nintendo-switch", "ms-appx:///Assets/NintendoSwitch_logo.png");
+            }
+
+            if (normalized.Contains("mac"))
+            {
+                return CreatePlatformLogo("macos", "ms-appx:///Assets/MacOS_logo.png");
+            }
+
+            if (normalized.Contains("linux"))
+            {
+                return CreatePlatformLogo("linux", "ms-appx:///Assets/linux_logo.png");
+            }
+
+            if (normalized.Contains("ios"))
+            {
+                return CreatePlatformLogo("ios", "ms-appx:///Assets/iOS_logo.png");
+            }
+
+            if (normalized.Contains("android"))
+            {
+                return CreatePlatformLogo("android", "ms-appx:///Assets/android_logo.png");
+            }
 
             return null;
         }
+
+        private static PlatformLogoInfo CreatePlatformLogo(string key, string logoUri)
+            => new(key, logoUri, PlatformDisplayOrder[key]);
+
+        private sealed record PlatformLogoInfo(string Key, string LogoUri, int Order);
 
         [ObservableProperty] private string? _launchScript;
     }
