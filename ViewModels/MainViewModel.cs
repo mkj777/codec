@@ -347,11 +347,17 @@ namespace Codec.ViewModels
         private async Task ScanGamesAsync()
         {
             IsUiEnabled = false;
-            ShowScanProgress("Looking for Games (this might take a few minutes)...", isIndeterminate: true);
+            IsOnboardingVisible = false;
+            HideScanProgress();
+            SetLoadingState(true, "Finding your games...", "This will take a few minutes...");
 
             try
             {
-                var progress = new Progress<string>(_ => { });
+                var progress = new Progress<string>(message =>
+                {
+                    if (!string.IsNullOrWhiteSpace(message))
+                        LoadingSubtitle = message;
+                });
                 var scanner = new GameScanner();
                 var scanResults = await scanner.ScanAllGamesAsync(progress);
 
@@ -393,7 +399,10 @@ namespace Codec.ViewModels
                     .ToList();
 
                 int totalGames = newGames.Count;
-                PrepareCoverProgress(totalGames);
+                LoadingTitle = totalGames > 0 ? "Loading covers..." : "Wrapping things up...";
+                LoadingSubtitle = totalGames > 0
+                    ? $"Preparing artwork for {totalGames} game{(totalGames == 1 ? string.Empty : "s")}..."
+                    : "No new games found.";
 
                 Games.Clear();
                 int processed = 0;
@@ -402,7 +411,8 @@ namespace Codec.ViewModels
                     await EnsureCoverForGameAsync(g);
                     Games.Add(g);
                     processed++;
-                    UpdateCoverProgress(processed, totalGames);
+                    if (totalGames > 0)
+                        LoadingSubtitle = $"Preparing artwork... ({processed}/{totalGames})";
                 }
 
                 await LibraryStorageService.SaveAsync(Games);
@@ -410,6 +420,7 @@ namespace Codec.ViewModels
             }
             finally
             {
+                SetLoadingState(false);
                 HideScanProgress();
                 IsUiEnabled = true;
                 IsOnboardingVisible = Games.Count == 0;
@@ -679,15 +690,18 @@ namespace Codec.ViewModels
             ScanProgressIsIndeterminate = isIndeterminate;
             ScanProgressValue = 0;
             ScanProgressMaximum = 1;
-            IsScanProgressVisible = true;
+            IsScanProgressVisible = false;
+            SetLoadingState(true, message, isIndeterminate ? "This will take a few minutes..." : string.Empty);
         }
 
         private void PrepareCoverProgress(int totalGames, string? labelPrefix = null, string? emptyMessage = null)
         {
+            LoadingTitle = labelPrefix ?? "Loading covers";
             if (totalGames <= 0)
             {
                 ScanProgressIsIndeterminate = true;
                 ScanProgressMessage = emptyMessage ?? "No new games found.";
+                LoadingSubtitle = emptyMessage ?? "No new games found.";
                 return;
             }
             ScanProgressIsIndeterminate = false;
@@ -695,6 +709,7 @@ namespace Codec.ViewModels
             ScanProgressMaximum = totalGames;
             ScanProgressValue = 0;
             ScanProgressMessage = $"{labelPrefix ?? "Loading covers"} (0/{totalGames})";
+            LoadingSubtitle = $"Preparing artwork... (0/{totalGames})";
         }
 
         private void UpdateCoverProgress(int processed, int total, string? labelPrefix = null)
@@ -703,9 +718,15 @@ namespace Codec.ViewModels
             ScanProgressIsIndeterminate = false;
             ScanProgressValue = Math.Min(processed, total);
             ScanProgressMessage = $"{labelPrefix ?? "Loading covers"} ({Math.Min(processed, total)}/{total})";
+            LoadingTitle = labelPrefix ?? "Loading covers";
+            LoadingSubtitle = $"Preparing artwork... ({Math.Min(processed, total)}/{total})";
         }
 
-        private void HideScanProgress() => IsScanProgressVisible = false;
+        private void HideScanProgress()
+        {
+            IsScanProgressVisible = false;
+            SetLoadingState(false);
+        }
 
         private void QueueBackgroundPrefetch(IEnumerable<Game> games)
         {

@@ -72,20 +72,20 @@
                                    Margin="0,12,0,8"
                                    HorizontalAlignment="Center"/>
                         <TextBox Grid.Row="1"
-                                  Margin="0,0,0,0"
-                                  Height="{StaticResource SidebarGameRowHeight}"
-                                  Padding="14,10,10,10"
-                                  Background="#222222"
-                                  BorderThickness="0"
-                                  BorderBrush="Transparent"
-                                  CornerRadius="0"
-                                  Foreground="White"
-                                  PlaceholderForeground="#FF9A9A9A"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalContentAlignment="Center"
-                                  PlaceholderText="Search games"
-                                  IsEnabled="{Binding IsUiEnabled}"
-                                  Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                 Margin="0,0,0,0"
+                                 Height="{StaticResource SidebarGameRowHeight}"
+                                 Padding="14,10,10,10"
+                                 Background="#222222"
+                                 BorderThickness="0"
+                                 BorderBrush="Transparent"
+                                 CornerRadius="0"
+                                 Foreground="White"
+                                 PlaceholderForeground="#FF9A9A9A"
+                                 HorizontalAlignment="Stretch"
+                                 VerticalContentAlignment="Center"
+                                 PlaceholderText="Search games"
+                                 IsEnabled="{Binding IsUiEnabled}"
+                                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                             <TextBox.Resources>
                                 <SolidColorBrush x:Key="TextControlBackground">#222222</SolidColorBrush>
                                 <SolidColorBrush x:Key="TextControlBackgroundFocused">#222222</SolidColorBrush>
@@ -165,7 +165,7 @@
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
                                        Stretch="Uniform"/>
                                 <Button x:Name="SidebarAddButton"
-                                        Content="Add Games"
+                                        Content="Edit Library"
                                         IsEnabled="{Binding IsUiEnabled}"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Bottom"
