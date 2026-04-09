@@ -24,18 +24,6 @@
     <Page Remove=".github\**" />
     <Page Remove="Output\**" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Remove="Assets\icon.png" />
-    <Content Remove="Assets\shrimpRun.png" />
-    <Content Remove="Assets\shrimpSleep.png" />
-    <Content Remove="Assets\shrimpStand.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Assets\shrimpRun.png" />
-    <Content Include="Assets\shrimpStand.png" />
-    <Content Include="Assets\shrimpSleep.png" />
-  </ItemGroup>
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
