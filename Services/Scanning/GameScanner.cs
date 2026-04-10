@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Scanning
@@ -14,6 +16,14 @@ namespace Codec.Services.Scanning
     /// Phase 2: Heuristic environmental scanning
     /// Phase 3: External validation and metadata enrichment
     /// </summary>
+    public sealed record ValidatedScanCandidate(
+        int? SteamAppId,
+        string GameName,
+        int? RawgId,
+        string ImportSource,
+        string ExecutablePath,
+        string FolderLocation);
+
     public class GameScanner
     {
         private readonly List<PlatformScanner> _platformScanners;
@@ -38,7 +48,9 @@ namespace Codec.Services.Scanning
         /// <summary>
         /// Execute complete 3-phase scan
         /// </summary>
-        public async Task<List<(int? SteamAppId, string GameName, int? RawgId, string ImportSource, string ExecutablePath, string FolderLocation)>> ScanAllGamesAsync(IProgress<string>? progress = null)
+        public async IAsyncEnumerable<ValidatedScanCandidate> ScanIncrementallyAsync(
+            [EnumeratorCancellation] CancellationToken cancellationToken = default,
+            IProgress<string>? progress = null)
         {
             var allCandidates = new List<GameCandidate>();
             var scanCache = await ScanCache.LoadAsync();
@@ -52,6 +64,7 @@ namespace Codec.Services.Scanning
             {
                 try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report($"Scanning {scanner.PlatformName}...");
                     var candidates = await scanner.ScanAsync(progress);
                     allCandidates.AddRange(candidates);
@@ -68,6 +81,7 @@ namespace Codec.Services.Scanning
             Debug.WriteLine("\n=== PHASE 2: HEURISTIC SCANNING ===");
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report("Scanning standard installation directories...");
                 var heuristicCandidates = await _heuristicScanner.ScanAsync(progress);
                 allCandidates.AddRange(heuristicCandidates);
@@ -101,11 +115,11 @@ namespace Codec.Services.Scanning
             Debug.WriteLine("\n=== PHASE 3: VALIDATION & EXE DETECTION ===");
             progress?.Report($"Validating and analyzing {allCandidates.Count} candidates...");
 
-            var validatedGames = new List<(int?, string, int?, string, string, string)>();
             int processedCount = 0;
 
             foreach (var candidate in allCandidates)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 processedCount++;
                 progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
 
@@ -118,7 +132,13 @@ namespace Codec.Services.Scanning
                 if (scanCache.TryGetValid(candidate, out var cachedResult))
                 {
                     Debug.WriteLine($"  ? Cache hit: '{candidate.Name}' (last scanned {cachedResult.CachedAtUtc:u})");
-                    validatedGames.Add((cachedResult.SteamAppId, cachedResult.GameName, cachedResult.RawgId, cachedResult.ImportSource, cachedResult.ExecutablePath, cachedResult.FolderPath));
+                    yield return new ValidatedScanCandidate(
+                        cachedResult.SteamAppId,
+                        cachedResult.GameName,
+                        cachedResult.RawgId,
+                        cachedResult.ImportSource,
+                        cachedResult.ExecutablePath,
+                        cachedResult.FolderPath);
                     continue;
                 }
 
@@ -172,17 +192,24 @@ namespace Codec.Services.Scanning
                 }
 
                 Debug.WriteLine($"  ? VALIDATED: '{candidate.Name}' (Steam ID: {steamId?.ToString() ?? "N/A"}, RAWG ID: {rawgId?.ToString() ?? "N/A"})");
-                validatedGames.Add((steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath));
-
                 scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId);
+                yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath);
             }
 
-            Debug.WriteLine($"\n=== SCAN COMPLETE: {validatedGames.Count} validated games ===");
-            progress?.Report($"Scan complete! Found {validatedGames.Count} valid games");
-
             await scanCache.SaveAsync();
+            progress?.Report("Scan complete.");
+        }
 
-            return validatedGames;
+        public async Task<List<ValidatedScanCandidate>> ScanAllGamesAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+        {
+            var results = new List<ValidatedScanCandidate>();
+            await foreach (var candidate in ScanIncrementallyAsync(cancellationToken, progress).ConfigureAwait(false))
+            {
+                results.Add(candidate);
+            }
+
+            Debug.WriteLine($"\n=== SCAN COMPLETE: {results.Count} validated games ===");
+            return results;
         }
 
         private async Task<int?> ValidateAndFetchRawgIdAsync(string gameName, bool hasSteamContext)

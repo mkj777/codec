@@ -25,10 +25,10 @@ namespace Codec.Models
         public Game()
         {
             // Initialize “required” strings to non-null defaults
-            name = string.Empty;
-            executable = string.Empty;
-            folderLocation = string.Empty;
-            importedFrom = string.Empty;
+            Name = string.Empty;
+            Executable = string.Empty;
+            FolderLocation = string.Empty;
+            ImportedFrom = string.Empty;
         }
 
         // basic information
@@ -42,7 +42,7 @@ namespace Codec.Models
 
         // Display-only property that shows just the platform name without the path
         public string ImportedFromDisplay =>
-            importedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase) ? "Steam" : importedFrom;
+            ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase) ? "Steam" : ImportedFrom;
 
         // external IDs
         [ObservableProperty] private int? steamID;
@@ -70,6 +70,13 @@ namespace Codec.Models
         [ObservableProperty] private string? ageRating;
         [ObservableProperty] private int? timeToCompleteMainStory;
         [ObservableProperty] private int? timeToCompleteCompletionist;
+        [ObservableProperty] private bool isFullyImported;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private bool hasHeroAssetSource;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private bool hasLogoAssetSource;
 
         public IEnumerable<string> PlatformLogoUris => (Platforms ?? Enumerable.Empty<string>())
             .Select(GetPlatformLogo)
@@ -81,9 +88,9 @@ namespace Codec.Models
         // game assets with cache for offline first, effective path resolution
         private static string GetEffectiveAssetPath(string? cachePath, string? url, string placeholder)
         {
-            if (!string.IsNullOrWhiteSpace(cachePath) && File.Exists(cachePath))
+            if (TryGetLocalAssetUri(cachePath, out var localAssetUri))
             {
-                return cachePath;
+                return localAssetUri;
             }
 
             if (!string.IsNullOrWhiteSpace(url))
@@ -93,6 +100,41 @@ namespace Codec.Models
 
             return placeholder;
         }
+
+        private static bool TryGetLocalAssetUri(string? cachePath, out string localAssetUri)
+        {
+            localAssetUri = string.Empty;
+            if (string.IsNullOrWhiteSpace(cachePath))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (Uri.TryCreate(cachePath, UriKind.Absolute, out var parsed) && parsed.IsFile)
+                {
+                    if (File.Exists(parsed.LocalPath))
+                    {
+                        localAssetUri = parsed.AbsoluteUri;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                if (File.Exists(cachePath))
+                {
+                    localAssetUri = new Uri(cachePath).AbsoluteUri;
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return false;
+        }
         // placeholders
         private const string PlaceholderCapsule = "https://placehold.co/600x900/1c1c1c/ffffff?text=Capsule";
         private const string PlaceholderHero = "https://placehold.co/1920x620/1c1c1c/ffffff?text=Hero";
@@ -100,18 +142,34 @@ namespace Codec.Models
 
         // capsule
         [ObservableProperty][NotifyPropertyChangedFor(nameof(LibCapsule))] private string? libCapsuleUrl;
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibCapsule))] private string? libCapsuleCache;
-        public string LibCapsule => GetEffectiveAssetPath(libCapsuleCache, libCapsuleUrl, PlaceholderCapsule);
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibCapsule))]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private string? libCapsuleCache;
+        public string LibCapsule => GetEffectiveAssetPath(LibCapsuleCache, LibCapsuleUrl, PlaceholderCapsule);
 
         // hero
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibHero))] private string? libHeroUrl;
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibHero))] private string? libHeroCache;
-        public string LibHero => GetEffectiveAssetPath(libHeroCache, libHeroUrl, PlaceholderHero);
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibHero))]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private string? libHeroUrl;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibHero))]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private string? libHeroCache;
+        public string LibHero => GetEffectiveAssetPath(LibHeroCache, LibHeroUrl, PlaceholderHero);
 
         // logo
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibLogo))] private string? libLogoUrl;
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibLogo))] private string? libLogoCache;
-        public string LibLogo => GetEffectiveAssetPath(libLogoCache, libLogoUrl, PlaceholderLogo);
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibLogo))]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private string? libLogoUrl;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibLogo))]
+        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        private string? libLogoCache;
+        public string LibLogo => GetEffectiveAssetPath(LibLogoCache, LibLogoUrl, PlaceholderLogo);
+        public bool DisplayedAssetsReady => HasRequiredDisplayedAssetsCached();
 
         // media
         [ObservableProperty]
@@ -187,5 +245,141 @@ namespace Codec.Models
         private sealed record PlatformLogoInfo(string Key, string LogoUri, int Order);
 
         [ObservableProperty] private string? _launchScript;
+
+        private bool HasRequiredDisplayedAssetsCached()
+        {
+            bool hasCover = HasLocalAsset(LibCapsuleCache);
+            bool hasHero = HasLocalAsset(LibHeroCache);
+            bool hasLogo = !HasLogoAssetSource || HasLocalAsset(LibLogoCache);
+            return hasCover && hasHero && hasLogo;
+        }
+
+        private static bool HasLocalAsset(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (Uri.TryCreate(path, UriKind.Absolute, out var parsed) && parsed.IsFile)
+                {
+                    return File.Exists(parsed.LocalPath);
+                }
+
+                return File.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public Game CreateHydrationSnapshot()
+        {
+            return new Game
+            {
+                Id = Id,
+                DateAdded = DateAdded,
+                Executable = Executable,
+                FolderLocation = FolderLocation,
+                FolderSize = FolderSize,
+                ImportedFrom = ImportedFrom,
+                SteamID = SteamID,
+                RawgID = RawgID,
+                RawgSlug = RawgSlug,
+                GridDbId = GridDbId,
+                Name = Name,
+                Publisher = Publisher,
+                Developer = Developer,
+                Genres = Genres == null ? null : new List<string>(Genres),
+                Categories = Categories == null ? null : new List<string>(Categories),
+                Price = Price,
+                PriceDiscount = PriceDiscount,
+                Description = Description,
+                Platforms = Platforms == null ? null : new List<string>(Platforms),
+                ReleaseDate = ReleaseDate,
+                SteamRating = SteamRating,
+                SteamReviewSummary = SteamReviewSummary,
+                SteamReviewTotal = SteamReviewTotal,
+                AgeRating = AgeRating,
+                TimeToCompleteMainStory = TimeToCompleteMainStory,
+                TimeToCompleteCompletionist = TimeToCompleteCompletionist,
+                IsFullyImported = IsFullyImported,
+                HasHeroAssetSource = HasHeroAssetSource,
+                HasLogoAssetSource = HasLogoAssetSource,
+                LibCapsuleUrl = LibCapsuleUrl,
+                LibCapsuleCache = LibCapsuleCache,
+                LibHeroUrl = LibHeroUrl,
+                LibHeroCache = LibHeroCache,
+                LibLogoUrl = LibLogoUrl,
+                LibLogoCache = LibLogoCache,
+                Media = new List<string>(Media),
+                OfficialWebsiteUrl = OfficialWebsiteUrl,
+                SteamPageUrl = SteamPageUrl,
+                RawgUrl = RawgUrl,
+                HltbUrl = HltbUrl,
+                LaunchScript = LaunchScript
+            };
+        }
+
+        public void ApplyHydrationSnapshot(Game source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            DateAdded = source.DateAdded;
+            Executable = source.Executable;
+            FolderLocation = source.FolderLocation;
+            FolderSize = source.FolderSize;
+            ImportedFrom = source.ImportedFrom;
+            SteamID = source.SteamID;
+            RawgID = source.RawgID;
+            RawgSlug = source.RawgSlug;
+            GridDbId = source.GridDbId;
+            Name = source.Name;
+            Publisher = source.Publisher;
+            Developer = source.Developer;
+            Genres = source.Genres == null ? null : new List<string>(source.Genres);
+            Categories = source.Categories == null ? null : new List<string>(source.Categories);
+            Price = source.Price;
+            PriceDiscount = source.PriceDiscount;
+            Description = source.Description;
+            Platforms = source.Platforms == null ? null : new List<string>(source.Platforms);
+            ReleaseDate = source.ReleaseDate;
+            SteamRating = source.SteamRating;
+            SteamReviewSummary = source.SteamReviewSummary;
+            SteamReviewTotal = source.SteamReviewTotal;
+            AgeRating = source.AgeRating;
+            TimeToCompleteMainStory = source.TimeToCompleteMainStory;
+            TimeToCompleteCompletionist = source.TimeToCompleteCompletionist;
+            HasHeroAssetSource = source.HasHeroAssetSource;
+            HasLogoAssetSource = source.HasLogoAssetSource;
+            LibCapsuleUrl = source.LibCapsuleUrl;
+            LibCapsuleCache = source.LibCapsuleCache;
+            LibHeroUrl = source.LibHeroUrl;
+            LibHeroCache = source.LibHeroCache;
+            LibLogoUrl = source.LibLogoUrl;
+            LibLogoCache = source.LibLogoCache;
+            Media = new List<string>(source.Media);
+            OfficialWebsiteUrl = source.OfficialWebsiteUrl;
+            SteamPageUrl = source.SteamPageUrl;
+            RawgUrl = source.RawgUrl;
+            HltbUrl = source.HltbUrl;
+            LaunchScript = source.LaunchScript;
+            IsFullyImported = source.IsFullyImported;
+            NotifyDisplayedAssetStateChanged();
+        }
+
+        public void NotifyDisplayedAssetStateChanged()
+        {
+            OnPropertyChanged(nameof(LibCapsule));
+            OnPropertyChanged(nameof(LibHero));
+            OnPropertyChanged(nameof(LibLogo));
+            OnPropertyChanged(nameof(DisplayedAssetsReady));
+        }
     }
 }

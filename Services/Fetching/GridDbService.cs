@@ -13,6 +13,8 @@ namespace Codec.Services.Fetching
     /// </summary>
     public class GridDbService
     {
+        public sealed record GridAssetResolutionResult(int? GridDbId, string? CoverCachePath);
+
         private const string GridDbSearchEndpoint = "https://codec-api-proxy.vercel.app/api/griddb/search";
         private readonly HttpClient _http = new();
         private readonly GameAssetService _gameAssets;
@@ -32,30 +34,37 @@ namespace Codec.Services.Fetching
                 return false;
             }
 
-            if (!game.GridDbId.HasValue)
+            var resolution = await ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibCapsuleCache, forceCoverDownload);
+            if (!resolution.GridDbId.HasValue || string.IsNullOrWhiteSpace(resolution.CoverCachePath))
             {
-                int? gridId = await FindGridDbIdAsync(game.Name);
-                if (!gridId.HasValue)
-                {
-                    return false;
-                }
-                game.GridDbId = gridId;
+                return false;
             }
 
-            bool needsCover = forceCoverDownload || NeedsCover(game.LibCapsule);
+            game.GridDbId = resolution.GridDbId;
+            game.LibCapsuleCache = resolution.CoverCachePath;
+            return true;
+        }
+
+        public async Task<GridAssetResolutionResult> ResolveGridAssetsAsync(string? gameName, int? existingGridDbId, string? currentCoverCachePath, bool forceCoverDownload = false)
+        {
+            int? gridDbId = existingGridDbId;
+            if (!gridDbId.HasValue)
+            {
+                gridDbId = await FindGridDbIdAsync(gameName ?? string.Empty);
+                if (!gridDbId.HasValue)
+                {
+                    return new GridAssetResolutionResult(null, currentCoverCachePath);
+                }
+            }
+
+            bool needsCover = forceCoverDownload || NeedsCover(currentCoverCachePath);
             if (!needsCover)
             {
-                return false;
+                return new GridAssetResolutionResult(gridDbId, currentCoverCachePath);
             }
 
-            var coverPath = await _gameAssets.DownloadGridDbCoverAsync(game.GridDbId.Value, forceCoverDownload);
-            if (string.IsNullOrEmpty(coverPath))
-            {
-                return false;
-            }
-
-            game.LibCapsuleUrl = coverPath;
-            return true;
+            var coverPath = await _gameAssets.DownloadGridDbCoverAsync(gridDbId.Value, forceCoverDownload);
+            return new GridAssetResolutionResult(gridDbId, coverPath ?? currentCoverCachePath);
         }
 
         /// <summary>

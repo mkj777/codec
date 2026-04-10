@@ -17,12 +17,16 @@
   <ItemGroup>
     <Compile Remove=".github\**" />
     <Compile Remove="Output\**" />
+    <Compile Remove="Codec.Tests\**" />
     <EmbeddedResource Remove=".github\**" />
     <EmbeddedResource Remove="Output\**" />
+    <EmbeddedResource Remove="Codec.Tests\**" />
     <None Remove=".github\**" />
     <None Remove="Output\**" />
+    <None Remove="Codec.Tests\**" />
     <Page Remove=".github\**" />
     <Page Remove="Output\**" />
+    <Page Remove="Codec.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -100,6 +104,7 @@
 
   <ItemGroup>
     <PRIResource Remove=".github\**" />
+    <PRIResource Remove="Codec.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>

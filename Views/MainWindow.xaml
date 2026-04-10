@@ -163,7 +163,7 @@
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
                                        Stretch="Uniform"/>
                                 <Button x:Name="SidebarAddButton"
-                                        Content="Edit Library"
+                                        Content="Manage"
                                         IsEnabled="{Binding IsUiEnabled}"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Bottom"
@@ -210,6 +210,29 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               IsHitTestVisible="True">
+            <StackPanel HorizontalAlignment="Right"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,16,16"
+                        CornerRadius="8"
+                        MaxWidth="420"
+                        Spacing="8">
+                <InfoBar IsOpen="{Binding IsImportNotificationVisible, Mode=OneWay}"
+                         IsClosable="False"
+                         CornerRadius="8"
+                         Background="#202020"
+                         Severity="{Binding ImportNotificationBarSeverity, Mode=OneWay}"
+                         Title="{Binding ImportNotificationTitle, Mode=OneWay}"
+                         Message="{Binding ImportNotificationMessage, Mode=OneWay}"/>
+
+                <InfoBar IsOpen="{Binding IsImportStatusVisible, Mode=OneWay}"
+                         IsClosable="False"
+                         Background="#202020"
+                         Severity="Informational"
+                         CornerRadius="8"
+                         Title="Adding Games in Progress"
+                         Message="{Binding ImportStatusMessage, Mode=OneWay}"/>
+            </StackPanel>
+
             <StackPanel Visibility="{Binding IsScanProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                         Background="#BF1C1C1C"
                         Padding="24"

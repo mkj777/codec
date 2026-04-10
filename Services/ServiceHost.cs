@@ -1,4 +1,5 @@
 using Codec.Services.Fetching;
+using Codec.Services.Importing;
 using Codec.Services.Resolving;
 using Codec.Services.Storage;
 
@@ -24,6 +25,8 @@ namespace Codec.Services
         public HltbService Hltb { get; }
         public GameAssetService GameAssets { get; }
         public GridDbService GridDb { get; }
+        public DisplayedAssetService DisplayedAssets { get; }
+        public GameImportPipeline GameImportPipeline { get; }
 
         public ServiceHost()
         {
@@ -38,6 +41,8 @@ namespace Codec.Services
             Hltb = new HltbService(Cache);
             GameAssets = new GameAssetService();
             GridDb = new GridDbService(GameAssets);
+            DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb);
+            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Hltb, DisplayedAssets);
         }
     }
 }

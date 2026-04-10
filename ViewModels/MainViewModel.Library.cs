@@ -28,7 +28,7 @@ namespace Codec.ViewModels
                         Debug.WriteLine($"Fetching cover for {g.Name} (SteamID {g.SteamID})");
                         var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value);
                         if (!string.IsNullOrEmpty(cover))
-                            g.LibCapsuleUrl = cover;
+                            g.LibCapsuleCache = cover;
                     }
                     catch (Exception ex)
                     {
@@ -58,7 +58,7 @@ namespace Codec.ViewModels
                 {
                     var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
                     if (!string.IsNullOrEmpty(cover))
-                        g.LibCapsuleUrl = cover;
+                        g.LibCapsuleCache = cover;
                     await Task.Delay(75);
                 }
                 else
@@ -71,7 +71,7 @@ namespace Codec.ViewModels
                 UpdateCoverProgress(processed, Games.Count, "Updating Cover");
             }
 
-            await _services.LibraryStorage.SaveAsync(Games);
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
             HideScanProgress();
         }
 
@@ -196,6 +196,7 @@ namespace Codec.ViewModels
         private static bool LocalFileMissing(string? uri)
         {
             if (string.IsNullOrWhiteSpace(uri)) return true;
+            if (File.Exists(uri)) return false;
             if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed)) return true;
             if (parsed.IsFile)
             {

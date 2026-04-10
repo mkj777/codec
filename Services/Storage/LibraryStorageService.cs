@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Storage
@@ -11,6 +13,7 @@ namespace Codec.Services.Storage
     public class LibraryStorageService
     {
         public const string AppDataFolderName = "Codec Game Library";
+        private readonly SemaphoreSlim _saveGate = new(1, 1);
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
@@ -39,16 +42,22 @@ namespace Codec.Services.Storage
 
         public async Task SaveAsync(IEnumerable<Game> games)
         {
+            var snapshot = games.ToList();
             try
             {
+                await _saveGate.WaitAsync();
                 string path = GetLibraryPath();
                 await using var fs = File.Create(path);
-                await JsonSerializer.SerializeAsync(fs, games, _jsonOptions);
+                await JsonSerializer.SerializeAsync(fs, snapshot, _jsonOptions);
                 Debug.WriteLine($"Library saved to {path}");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to save library: {ex.Message}");
+            }
+            finally
+            {
+                _saveGate.Release();
             }
         }
 
@@ -76,6 +85,7 @@ namespace Codec.Services.Storage
         {
             try
             {
+                await _saveGate.WaitAsync();
                 string dir = GetBaseDirectory();
                 if (Directory.Exists(dir))
                 {
@@ -87,6 +97,10 @@ namespace Codec.Services.Storage
             {
                 Debug.WriteLine($"Failed to reset library: {ex.Message}");
                 throw;
+            }
+            finally
+            {
+                _saveGate.Release();
             }
         }
     }

@@ -47,7 +47,7 @@ namespace Codec.ViewModels
 
             SelectedGame.LaunchScript = batFilePath;
             OnPropertyChanged(nameof(SelectedGame));
-            await _services.LibraryStorage.SaveAsync(Games);
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
 
         [RelayCommand]
@@ -58,7 +58,7 @@ namespace Codec.ViewModels
 
             SelectedGame.LaunchScript = null;
             OnPropertyChanged(nameof(SelectedGame));
-            await _services.LibraryStorage.SaveAsync(Games);
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
 
         [RelayCommand]
@@ -86,7 +86,7 @@ namespace Codec.ViewModels
             SidebarSelectedItem = null;
             IsOnboardingVisible = Games.Count == 0;
 
-            await _services.LibraryStorage.SaveAsync(Games);
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
 
         [RelayCommand]
@@ -170,36 +170,71 @@ namespace Codec.ViewModels
 
         private async Task RefreshGameMetadataAsync(Game game)
         {
+            if (game.IsFullyImported && game.DisplayedAssetsReady)
+            {
+                return;
+            }
+
             try
             {
-                var rawgTask = game.RawgID.HasValue ? _services.RawgDetails.PopulateAsync(game) : Task.CompletedTask;
-                var steamTask = game.SteamID.HasValue ? _services.SteamDetails.PopulateFromSteamAsync(game) : Task.CompletedTask;
-                var hltbTask = _services.Hltb.PopulateAsync(game, _dispatcherQueue);
-                var folderSizeTask = FolderSizeService.CalculateAsync(game.FolderLocation);
+                var snapshot = game.CreateHydrationSnapshot();
+                var rawgTask = snapshot.RawgID.HasValue ? _services.RawgDetails.PopulateAsync(snapshot) : Task.CompletedTask;
+                var steamTask = snapshot.SteamID.HasValue ? _services.SteamDetails.PopulateFromSteamAsync(snapshot) : Task.CompletedTask;
+                var hltbTask = _services.Hltb.PopulateAsync(snapshot);
+                var folderSizeTask = FolderSizeService.CalculateAsync(snapshot.FolderLocation);
 
                 await Task.WhenAll(rawgTask, steamTask, hltbTask, folderSizeTask);
+                var displayedAssets = await _services.DisplayedAssets.EnsureDisplayedAssetsAsync(snapshot);
+                ApplyDisplayedAssetHydration(snapshot, displayedAssets);
 
-                if (string.IsNullOrWhiteSpace(game.RawgUrl))
+                if (string.IsNullOrWhiteSpace(snapshot.RawgUrl))
                 {
-                    if (!string.IsNullOrWhiteSpace(game.RawgSlug))
-                        game.RawgUrl = $"https://rawg.io/games/{game.RawgSlug}";
-                    else if (game.RawgID.HasValue)
-                        game.RawgUrl = $"https://rawg.io/games/{game.RawgID.Value}";
+                    if (!string.IsNullOrWhiteSpace(snapshot.RawgSlug))
+                        snapshot.RawgUrl = $"https://rawg.io/games/{snapshot.RawgSlug}";
+                    else if (snapshot.RawgID.HasValue)
+                        snapshot.RawgUrl = $"https://rawg.io/games/{snapshot.RawgID.Value}";
                     else
-                        game.RawgUrl = "https://rawg.io";
+                        snapshot.RawgUrl = "https://rawg.io";
                 }
-                if (string.IsNullOrWhiteSpace(game.HltbUrl))
-                    game.HltbUrl = "https://howlongtobeat.com";
+                if (string.IsNullOrWhiteSpace(snapshot.HltbUrl))
+                    snapshot.HltbUrl = "https://howlongtobeat.com";
 
-                if (folderSizeTask.IsCompletedSuccessfully && game.FolderSize != folderSizeTask.Result)
-                    game.FolderSize = folderSizeTask.Result;
+                if (folderSizeTask.IsCompletedSuccessfully && snapshot.FolderSize != folderSizeTask.Result)
+                    snapshot.FolderSize = folderSizeTask.Result;
 
-                _ = _dispatcherQueue.TryEnqueue(() => _ = _services.LibraryStorage.SaveAsync(Games));
+                snapshot.IsFullyImported = displayedAssets.AreRequiredAssetsReady;
+
+                var persistedSnapshot = await RunOnUiThreadAsync(() =>
+                {
+                    game.ApplyHydrationSnapshot(snapshot);
+                    game.IsFullyImported = displayedAssets.AreRequiredAssetsReady;
+                    game.NotifyDisplayedAssetStateChanged();
+                    if (ReferenceEquals(SelectedGame, game))
+                    {
+                        OnPropertyChanged(nameof(SelectedGame));
+                    }
+                    return Games.ToList();
+                });
+
+                await _services.LibraryStorage.SaveAsync(persistedSnapshot);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Background metadata refresh failed for {game.Name}: {ex.Message}");
             }
+        }
+
+        private static void ApplyDisplayedAssetHydration(Game game, Services.Fetching.DisplayedAssetService.DisplayedAssetHydrationResult hydration)
+        {
+            game.GridDbId = hydration.GridDbId ?? game.GridDbId;
+            game.LibCapsuleCache = hydration.CapsuleCachePath;
+            game.HasHeroAssetSource = hydration.HasHeroSource;
+            game.LibHeroUrl = hydration.HeroUrl;
+            game.LibHeroCache = hydration.HeroCachePath;
+            game.HasLogoAssetSource = hydration.HasLogoSource;
+            game.LibLogoUrl = hydration.LogoUrl;
+            game.LibLogoCache = hydration.LogoCachePath;
+            game.NotifyDisplayedAssetStateChanged();
         }
     }
 }
