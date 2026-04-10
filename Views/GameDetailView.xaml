@@ -33,9 +33,9 @@
                         </Setter>
                 </Style>
                 <SolidColorBrush x:Key="HeroActionPlayFallbackFillBrush"
-                                 Color="#8E172033"/>
+                                 Color="#86161A1F"/>
                 <SolidColorBrush x:Key="HeroActionSettingsFallbackFillBrush"
-                                 Color="#7E171D29"/>
+                                 Color="#7414181D"/>
                 <SolidColorBrush x:Key="HeroActionPlayFallbackForegroundBrush"
                                  Color="#FFF3F6FB"/>
                 <SolidColorBrush x:Key="HeroActionSettingsFallbackForegroundBrush"
@@ -45,7 +45,7 @@
                                      EndPoint="1,1">
                         <GradientStop Color="#D4FFFFFF"
                                       Offset="0"/>
-                        <GradientStop Color="#6FA1C2E2"
+                        <GradientStop Color="#52F2F5F8"
                                       Offset="0.42"/>
                         <GradientStop Color="#26FFFFFF"
                                       Offset="1"/>
@@ -55,7 +55,7 @@
                                      EndPoint="1,1">
                         <GradientStop Color="#A4FFFFFF"
                                       Offset="0"/>
-                        <GradientStop Color="#48C5D5E6"
+                        <GradientStop Color="#34EEF2F6"
                                       Offset="0.52"/>
                         <GradientStop Color="#18FFFFFF"
                                       Offset="1"/>
@@ -74,6 +74,8 @@
                                 Value="0"/>
                         <Setter Property="BorderThickness"
                                 Value="0"/>
+                        <Setter Property="UseSystemFocusVisuals"
+                                Value="False"/>
                 </Style>
         </UserControl.Resources>
 
@@ -320,12 +322,50 @@
                                         </Grid.ColumnDefinitions>
 
                                         <!-- Back stays top-left -->
-                                        <Button x:Name="BackButton"
-                                                Click="BackButton_Click"
-                                                Content="←"
-                                                VerticalAlignment="Top"
-                                                HorizontalAlignment="Left"
-                                                FontWeight="SemiBold"/>
+                                        <Grid x:Name="BackButtonChrome"
+                                              Width="34"
+                                              Height="34"
+                                              VerticalAlignment="Top"
+                                              HorizontalAlignment="Left"
+                                              RenderTransformOrigin="0.5,0.5">
+                                                <Grid.RenderTransform>
+                                                        <CompositeTransform x:Name="BackButtonTransform"
+                                                                            ScaleX="1"
+                                                                            ScaleY="1"
+                                                                            TranslateY="0"/>
+                                                </Grid.RenderTransform>
+                                                <Border x:Name="BackButtonShell"
+                                                        Background="{StaticResource HeroActionSettingsFallbackFillBrush}"
+                                                        BorderBrush="{StaticResource HeroActionSettingsFallbackBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="11"
+                                                        IsHitTestVisible="False">
+                                                        <FontIcon x:Name="BackButtonGlyph"
+                                                                  Glyph="&#xE72B;"
+                                                                  FontFamily="Segoe Fluent Icons"
+                                                                  FontSize="12"
+                                                                  Foreground="{StaticResource HeroActionSettingsFallbackForegroundBrush}"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                                </Border>
+                                                <Border x:Name="BackButtonHighlight"
+                                                        Background="#18FFFFFF"
+                                                        CornerRadius="11"
+                                                        Opacity="0"
+                                                        IsHitTestVisible="False"/>
+                                                <Button x:Name="BackButton"
+                                                        Style="{StaticResource HeroActionInputButtonStyle}"
+                                                        Click="BackButton_Click"
+                                                        VerticalAlignment="Stretch"
+                                                        HorizontalAlignment="Stretch"
+                                                        CornerRadius="11"
+                                                        PointerEntered="HeroActionButton_PointerEntered"
+                                                        PointerExited="HeroActionButton_PointerExited"
+                                                        PointerPressed="HeroActionButton_PointerPressed"
+                                                        PointerReleased="HeroActionButton_PointerReleased"
+                                                        PointerCanceled="HeroActionButton_PointerCanceled"
+                                                        LostFocus="HeroActionButton_LostFocus"/>
+                                        </Grid>
 
                                         <!-- Logo overlayed with dynamic padding -->
                                         <Grid>
@@ -342,12 +382,20 @@
                                 </Grid>
 
                                 <!-- Settings button bottom-right of the hero (top half) with tighter inset -->
-                                <Grid Grid.RowSpan="3"
+                                <Grid x:Name="DetailsSettingsChrome"
+                                      Grid.RowSpan="3"
                                       Width="46"
                                       Height="46"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Bottom"
-                                      Margin="0,0,6,8">
+                                      Margin="0,0,6,8"
+                                      RenderTransformOrigin="0.5,0.5">
+                                        <Grid.RenderTransform>
+                                                <CompositeTransform x:Name="DetailsSettingsTransform"
+                                                                    ScaleX="1"
+                                                                    ScaleY="1"
+                                                                    TranslateY="0"/>
+                                        </Grid.RenderTransform>
                                         <Border x:Name="DetailsSettingsShell"
                                                 Background="{StaticResource HeroActionSettingsFallbackFillBrush}"
                                                 BorderBrush="{StaticResource HeroActionSettingsFallbackBorderBrush}"
@@ -364,12 +412,23 @@
                                                                   VerticalAlignment="Center"/>
                                                 </Grid>
                                         </Border>
+                                        <Border x:Name="DetailsSettingsHighlight"
+                                                Background="#18FFFFFF"
+                                                CornerRadius="16"
+                                                Opacity="0"
+                                                IsHitTestVisible="False"/>
                                         <Button x:Name="DetailsSettingsButton"
                                                 Style="{StaticResource HeroActionInputButtonStyle}"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch"
                                                 CornerRadius="16"
                                                 Command="{Binding OpenGameSettingsCommand}"
+                                                PointerEntered="HeroActionButton_PointerEntered"
+                                                PointerExited="HeroActionButton_PointerExited"
+                                                PointerPressed="HeroActionButton_PointerPressed"
+                                                PointerReleased="HeroActionButton_PointerReleased"
+                                                PointerCanceled="HeroActionButton_PointerCanceled"
+                                                LostFocus="HeroActionButton_LostFocus"
                                                 ToolTipService.ToolTip="Game settings">
                                                 <Button.Resources>
                                                         <SolidColorBrush x:Key="ButtonBackground"
@@ -395,12 +454,20 @@
                                 </Grid>
 
                                 <!-- Play button anchored to the hero's lower-left corner -->
-                                <Grid Grid.Row="2"
+                                <Grid x:Name="DetailsPlayChrome"
+                                      Grid.Row="2"
                                       MinWidth="170"
                                       Height="58"
                                       HorizontalAlignment="Left"
                                       VerticalAlignment="Bottom"
-                                      Margin="0,0,0,2">
+                                      Margin="0,0,0,2"
+                                      RenderTransformOrigin="0.5,0.5">
+                                        <Grid.RenderTransform>
+                                                <CompositeTransform x:Name="DetailsPlayTransform"
+                                                                    ScaleX="1"
+                                                                    ScaleY="1"
+                                                                    TranslateY="0"/>
+                                        </Grid.RenderTransform>
                                         <Border x:Name="DetailsPlayShell"
                                                 Background="{StaticResource HeroActionPlayFallbackFillBrush}"
                                                 BorderBrush="{StaticResource HeroActionPlayFallbackBorderBrush}"
@@ -421,17 +488,28 @@
                                                                            Text="PLAY"
                                                                            FontSize="16"
                                                                            FontWeight="Bold"
-                                                                           CharacterSpacing="120"
-                                                                           Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
+                                                           CharacterSpacing="120"
+                                                           Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
                                                         </StackPanel>
                                                 </Grid>
                                         </Border>
+                                        <Border x:Name="DetailsPlayHighlight"
+                                                Background="#20FFFFFF"
+                                                CornerRadius="28"
+                                                Opacity="0"
+                                                IsHitTestVisible="False"/>
                                         <Button x:Name="DetailsPlayButton"
                                                 Style="{StaticResource HeroActionInputButtonStyle}"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch"
                                                 CornerRadius="28"
                                                 Command="{Binding PlayGameCommand}"
+                                                PointerEntered="HeroActionButton_PointerEntered"
+                                                PointerExited="HeroActionButton_PointerExited"
+                                                PointerPressed="HeroActionButton_PointerPressed"
+                                                PointerReleased="HeroActionButton_PointerReleased"
+                                                PointerCanceled="HeroActionButton_PointerCanceled"
+                                                LostFocus="HeroActionButton_LostFocus"
                                                 ToolTipService.ToolTip="Launch game">
                                                 <Button.Resources>
                                                         <SolidColorBrush x:Key="ButtonBackground"

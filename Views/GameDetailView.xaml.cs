@@ -1,17 +1,12 @@
-using Codec.Helpers;
-using Codec.Models;
 using Codec.ViewModels;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
-using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Codec.Views
 {
@@ -55,24 +50,12 @@ namespace Codec.Views
         private const int OFN_PATHMUSTEXIST = 0x00000800;
         private const int OFN_NOCHANGEDIR = 0x00000008;
 
-        private readonly DispatcherQueue _dispatcherQueue;
-        private CancellationTokenSource? _heroPaletteCts;
-        private MainViewModel? _observedViewModel;
-        private Game? _observedGame;
-        private long _heroPaletteVersion;
-
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
         public GameDetailView()
         {
             InitializeComponent();
-
-            _dispatcherQueue = DispatcherQueue.GetForCurrentThread()!;
-            ApplyHeroActionPalette(HeroActionPaletteExtractor.Default);
-
-            DataContextChanged += GameDetailView_DataContextChanged;
             Loaded += GameDetailView_Loaded;
-            Unloaded += GameDetailView_Unloaded;
             SizeChanged += GameDetailView_SizeChanged;
         }
 
@@ -159,25 +142,8 @@ namespace Codec.Views
                 await ViewModel.DeleteSelectedGameCommand.ExecuteAsync(null);
         }
 
-        private void GameDetailView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            AttachToViewModel(args.NewValue as MainViewModel);
-            QueueHeroActionPaletteRefresh();
-        }
-
         private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
-        {
-            AttachToViewModel(ViewModel);
-            UpdateSettingsLayoutState();
-            QueueHeroActionPaletteRefresh();
-        }
-
-        private void GameDetailView_Unloaded(object sender, RoutedEventArgs e)
-        {
-            CancelHeroActionPaletteRefresh();
-            DetachFromGame();
-            DetachFromViewModel();
-        }
+            => UpdateSettingsLayoutState();
 
         private void GameDetailView_SizeChanged(object sender, SizeChangedEventArgs e)
             => UpdateSettingsLayoutState();
@@ -216,171 +182,203 @@ namespace Codec.Views
             }
         }
 
-        private void AttachToViewModel(MainViewModel? viewModel)
+        private void HeroActionButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+            => UpdateHeroActionVisualState(sender as Button, isHovered: true, isPressed: false);
+
+        private void HeroActionButton_PointerExited(object sender, PointerRoutedEventArgs e)
+            => UpdateHeroActionVisualState(sender as Button, isHovered: false, isPressed: false);
+
+        private void HeroActionButton_PointerPressed(object sender, PointerRoutedEventArgs e)
+            => UpdateHeroActionVisualState(sender as Button, isHovered: true, isPressed: true);
+
+        private void HeroActionButton_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            if (ReferenceEquals(_observedViewModel, viewModel))
+            if (sender is Button button)
             {
-                return;
-            }
+                bool isPointerOver = button.IsPointerOver;
+                UpdateHeroActionVisualState(button, isPointerOver, isPressed: false);
 
-            DetachFromViewModel();
-            _observedViewModel = viewModel;
-
-            if (_observedViewModel != null)
-            {
-                _observedViewModel.PropertyChanged += ObservedViewModel_PropertyChanged;
-            }
-
-            AttachToGame(viewModel?.SelectedGame);
-        }
-
-        private void DetachFromViewModel()
-        {
-            if (_observedViewModel != null)
-            {
-                _observedViewModel.PropertyChanged -= ObservedViewModel_PropertyChanged;
-                _observedViewModel = null;
-            }
-        }
-
-        private void AttachToGame(Game? game)
-        {
-            if (ReferenceEquals(_observedGame, game))
-            {
-                return;
-            }
-
-            DetachFromGame();
-            _observedGame = game;
-
-            if (_observedGame != null)
-            {
-                _observedGame.PropertyChanged += ObservedGame_PropertyChanged;
-            }
-        }
-
-        private void DetachFromGame()
-        {
-            if (_observedGame != null)
-            {
-                _observedGame.PropertyChanged -= ObservedGame_PropertyChanged;
-                _observedGame = null;
-            }
-        }
-
-        private void ObservedViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(MainViewModel.SelectedGame))
-            {
-                return;
-            }
-
-            AttachToGame(_observedViewModel?.SelectedGame);
-            QueueHeroActionPaletteRefresh();
-        }
-
-        private void ObservedGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(e.PropertyName)
-                && e.PropertyName != nameof(Game.LibHero)
-                && e.PropertyName != nameof(Game.LibHeroCache)
-                && e.PropertyName != nameof(Game.LibHeroUrl))
-            {
-                return;
-            }
-
-            QueueHeroActionPaletteRefresh();
-        }
-
-        private void QueueHeroActionPaletteRefresh()
-        {
-            CancelHeroActionPaletteRefresh();
-
-            long version = Interlocked.Increment(ref _heroPaletteVersion);
-            var cts = new CancellationTokenSource();
-            _heroPaletteCts = cts;
-
-            _ = RefreshHeroActionPaletteAsync(_observedGame?.LibHeroCache, _observedGame?.LibHero, version, cts.Token);
-        }
-
-        private void CancelHeroActionPaletteRefresh()
-        {
-            _heroPaletteCts?.Cancel();
-            _heroPaletteCts?.Dispose();
-            _heroPaletteCts = null;
-        }
-
-        private async Task RefreshHeroActionPaletteAsync(string? heroCachePath, string? heroPath, long version, CancellationToken cancellationToken)
-        {
-            HeroActionPalette palette;
-
-            try
-            {
-                palette = await HeroActionPaletteExtractor.ExtractAsync(heroCachePath, heroPath, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            if (cancellationToken.IsCancellationRequested || version != Interlocked.Read(ref _heroPaletteVersion))
-            {
-                return;
-            }
-
-            void ApplyCurrentPalette()
-            {
-                if (cancellationToken.IsCancellationRequested || version != Interlocked.Read(ref _heroPaletteVersion))
+                if (isPointerOver)
                 {
-                    return;
+                    AnimateHeroActionClick(button);
                 }
-
-                ApplyHeroActionPalette(palette);
-            }
-
-            if (_dispatcherQueue.HasThreadAccess)
-            {
-                ApplyCurrentPalette();
-            }
-            else
-            {
-                _ = _dispatcherQueue.TryEnqueue(ApplyCurrentPalette);
             }
         }
 
-        private void ApplyHeroActionPalette(HeroActionPalette palette)
+        private void HeroActionButton_PointerCanceled(object sender, PointerRoutedEventArgs e)
+            => UpdateHeroActionVisualState(sender as Button, isHovered: false, isPressed: false);
+
+        private void HeroActionButton_LostFocus(object sender, RoutedEventArgs e)
         {
-            DetailsPlayShell.Background = new SolidColorBrush(palette.PlayBackgroundColor);
-            DetailsPlayShell.BorderBrush = CreateBorderBrush(
-                palette.PlayBorderStartColor,
-                palette.PlayBorderMidColor,
-                palette.PlayBorderEndColor,
-                0.42);
-
-            DetailsSettingsShell.Background = new SolidColorBrush(palette.SettingsBackgroundColor);
-            DetailsSettingsShell.BorderBrush = CreateBorderBrush(
-                palette.SettingsBorderStartColor,
-                palette.SettingsBorderMidColor,
-                palette.SettingsBorderEndColor,
-                0.52);
-
-            var playForeground = new SolidColorBrush(palette.ForegroundColor);
-            DetailsPlayGlyph.Foreground = playForeground;
-            DetailsPlayText.Foreground = playForeground;
-            DetailsSettingsGlyph.Foreground = new SolidColorBrush(palette.MutedForegroundColor);
+            if (sender is Button button && !button.IsPointerOver)
+            {
+                UpdateHeroActionVisualState(button, isHovered: false, isPressed: false);
+            }
         }
 
-        private static LinearGradientBrush CreateBorderBrush(Windows.UI.Color startColor, Windows.UI.Color midColor, Windows.UI.Color endColor, double midOffset)
-            => new()
+        private void UpdateHeroActionVisualState(Button? button, bool isHovered, bool isPressed)
+        {
+            if (button == null)
+                return;
+
+            HeroActionVisualTarget? target = GetHeroActionVisualTarget(button);
+            if (target == null)
+                return;
+
+            double targetScale = isPressed
+                ? target.PressedScale
+                : isHovered
+                    ? target.HoverScale
+                    : 1.0;
+            double highlightOpacity = isPressed
+                ? target.PressedHighlightOpacity
+                : isHovered
+                    ? target.HoverHighlightOpacity
+                    : 0.0;
+            double translateY = isPressed
+                ? target.PressedTranslateY
+                : 0.0;
+
+            AnimateHeroAction(target.Transform, target.Highlight, targetScale, highlightOpacity, translateY);
+        }
+
+        private void AnimateHeroActionClick(Button button)
+        {
+            HeroActionVisualTarget? target = GetHeroActionVisualTarget(button);
+            if (target == null)
+                return;
+
+            var storyboard = new Storyboard();
+
+            storyboard.Children.Add(CreateKeyFrameAnimation(
+                target.Transform,
+                "(CompositeTransform.ScaleX)",
+                (TimeSpan.FromMilliseconds(85), target.HoverScale + target.ClickPulseScaleDelta),
+                (TimeSpan.FromMilliseconds(190), target.HoverScale)));
+            storyboard.Children.Add(CreateKeyFrameAnimation(
+                target.Transform,
+                "(CompositeTransform.ScaleY)",
+                (TimeSpan.FromMilliseconds(85), target.HoverScale + target.ClickPulseScaleDelta),
+                (TimeSpan.FromMilliseconds(190), target.HoverScale)));
+            storyboard.Children.Add(CreateKeyFrameAnimation(
+                target.Transform,
+                "(CompositeTransform.TranslateY)",
+                (TimeSpan.FromMilliseconds(85), target.ClickPulseTranslateY),
+                (TimeSpan.FromMilliseconds(190), 0d)));
+            storyboard.Children.Add(CreateKeyFrameAnimation(
+                target.Highlight,
+                "Opacity",
+                (TimeSpan.FromMilliseconds(85), target.HoverHighlightOpacity + target.ClickPulseHighlightDelta),
+                (TimeSpan.FromMilliseconds(190), target.HoverHighlightOpacity)));
+
+            storyboard.Begin();
+        }
+
+        private static void AnimateHeroAction(CompositeTransform transform, UIElement highlight, double targetScale, double targetHighlightOpacity, double targetTranslateY)
+        {
+            var storyboard = new Storyboard();
+
+            storyboard.Children.Add(CreateDoubleAnimation(transform, "(CompositeTransform.ScaleX)", targetScale));
+            storyboard.Children.Add(CreateDoubleAnimation(transform, "(CompositeTransform.ScaleY)", targetScale));
+            storyboard.Children.Add(CreateDoubleAnimation(transform, "(CompositeTransform.TranslateY)", targetTranslateY));
+            storyboard.Children.Add(CreateDoubleAnimation(highlight, "Opacity", targetHighlightOpacity));
+
+            storyboard.Begin();
+        }
+
+        private static DoubleAnimation CreateDoubleAnimation(DependencyObject target, string propertyPath, double to)
+        {
+            var animation = new DoubleAnimation
             {
-                StartPoint = new Windows.Foundation.Point(0, 0),
-                EndPoint = new Windows.Foundation.Point(1, 1),
-                GradientStops =
-                {
-                    new GradientStop { Color = startColor, Offset = 0 },
-                    new GradientStop { Color = midColor, Offset = midOffset },
-                    new GradientStop { Color = endColor, Offset = 1 }
-                }
+                To = to,
+                Duration = TimeSpan.FromMilliseconds(150),
+                EnableDependentAnimation = true,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
+
+            Storyboard.SetTarget(animation, target);
+            Storyboard.SetTargetProperty(animation, propertyPath);
+            return animation;
+        }
+
+        private static DoubleAnimationUsingKeyFrames CreateKeyFrameAnimation(
+            DependencyObject target,
+            string propertyPath,
+            params (TimeSpan time, double value)[] keyFrames)
+        {
+            var animation = new DoubleAnimationUsingKeyFrames
+            {
+                EnableDependentAnimation = true
+            };
+
+            foreach ((TimeSpan time, double value) in keyFrames)
+            {
+                animation.KeyFrames.Add(new EasingDoubleKeyFrame
+                {
+                    KeyTime = KeyTime.FromTimeSpan(time),
+                    Value = value,
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                });
+            }
+
+            Storyboard.SetTarget(animation, target);
+            Storyboard.SetTargetProperty(animation, propertyPath);
+            return animation;
+        }
+
+        private HeroActionVisualTarget? GetHeroActionVisualTarget(Button button)
+        {
+            if (ReferenceEquals(button, DetailsPlayButton))
+            {
+                return new HeroActionVisualTarget(
+                    DetailsPlayTransform,
+                    DetailsPlayHighlight,
+                    HoverScale: 1.025,
+                    PressedScale: 0.97,
+                    HoverHighlightOpacity: 0.1,
+                    PressedHighlightOpacity: 0.18,
+                    PressedTranslateY: 1.5,
+                    ClickPulseScaleDelta: 0.018,
+                    ClickPulseHighlightDelta: 0.08,
+                    ClickPulseTranslateY: -0.8);
+            }
+
+            if (ReferenceEquals(button, DetailsSettingsButton))
+            {
+                return CreateCompactHeroActionTarget(DetailsSettingsTransform, DetailsSettingsHighlight);
+            }
+
+            if (ReferenceEquals(button, BackButton))
+            {
+                return CreateCompactHeroActionTarget(BackButtonTransform, BackButtonHighlight);
+            }
+
+            return null;
+        }
+
+        private static HeroActionVisualTarget CreateCompactHeroActionTarget(CompositeTransform transform, UIElement highlight)
+            => new(
+                Transform: transform,
+                Highlight: highlight,
+                HoverScale: 1.018,
+                PressedScale: 0.974,
+                HoverHighlightOpacity: 0.08,
+                PressedHighlightOpacity: 0.14,
+                PressedTranslateY: 1.1,
+                ClickPulseScaleDelta: 0.013,
+                ClickPulseHighlightDelta: 0.055,
+                ClickPulseTranslateY: -0.55);
+
+        private sealed record HeroActionVisualTarget(
+            CompositeTransform Transform,
+            UIElement Highlight,
+            double HoverScale,
+            double PressedScale,
+            double HoverHighlightOpacity,
+            double PressedHighlightOpacity,
+            double PressedTranslateY,
+            double ClickPulseScaleDelta,
+            double ClickPulseHighlightDelta,
+            double ClickPulseTranslateY);
     }
 }
