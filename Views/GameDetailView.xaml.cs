@@ -1,11 +1,16 @@
+using Codec.Helpers;
+using Codec.Models;
 using Codec.ViewModels;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.Views
@@ -25,22 +30,22 @@ namespace Codec.Views
             public IntPtr hwndOwner;
             public IntPtr hInstance;
             public string lpstrFilter;
-            public string lpstrCustomFilter;
+            public string? lpstrCustomFilter;
             public int nMaxCustFilter;
             public int nFilterIndex;
             public IntPtr lpstrFile;
             public int nMaxFile;
-            public string lpstrFileTitle;
+            public string? lpstrFileTitle;
             public int nMaxFileTitle;
-            public string lpstrInitialDir;
-            public string lpstrTitle;
+            public string? lpstrInitialDir;
+            public string? lpstrTitle;
             public int Flags;
             public short nFileOffset;
             public short nFileExtension;
-            public string lpstrDefExt;
+            public string? lpstrDefExt;
             public IntPtr lCustData;
             public IntPtr lpfnHook;
-            public string lpTemplateName;
+            public string? lpTemplateName;
             public IntPtr pvReserved;
             public int dwReserved;
             public int FlagsEx;
@@ -50,14 +55,24 @@ namespace Codec.Views
         private const int OFN_PATHMUSTEXIST = 0x00000800;
         private const int OFN_NOCHANGEDIR = 0x00000008;
 
-        private bool _heroButtonRefreshQueued;
+        private readonly DispatcherQueue _dispatcherQueue;
+        private CancellationTokenSource? _heroPaletteCts;
+        private MainViewModel? _observedViewModel;
+        private Game? _observedGame;
+        private long _heroPaletteVersion;
+
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
         public GameDetailView()
         {
             InitializeComponent();
-            HeroBackdropImage.RegisterPropertyChangedCallback(Image.SourceProperty, HeroBackdropImage_SourceChanged);
+
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread()!;
+            ApplyHeroActionPalette(HeroActionPaletteExtractor.Default);
+
+            DataContextChanged += GameDetailView_DataContextChanged;
             Loaded += GameDetailView_Loaded;
+            Unloaded += GameDetailView_Unloaded;
             SizeChanged += GameDetailView_SizeChanged;
         }
 
@@ -144,10 +159,24 @@ namespace Codec.Views
                 await ViewModel.DeleteSelectedGameCommand.ExecuteAsync(null);
         }
 
+        private void GameDetailView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            AttachToViewModel(args.NewValue as MainViewModel);
+            QueueHeroActionPaletteRefresh();
+        }
+
         private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
         {
+            AttachToViewModel(ViewModel);
             UpdateSettingsLayoutState();
-            QueueHeroButtonMaterialRefresh();
+            QueueHeroActionPaletteRefresh();
+        }
+
+        private void GameDetailView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            CancelHeroActionPaletteRefresh();
+            DetachFromGame();
+            DetachFromViewModel();
         }
 
         private void GameDetailView_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -187,64 +216,171 @@ namespace Codec.Views
             }
         }
 
-        private void HeroBackdropImage_SourceChanged(DependencyObject sender, DependencyProperty dp)
-            => QueueHeroButtonMaterialRefresh();
-
-        private void HeroBackdropImage_ImageOpened(object sender, RoutedEventArgs e)
-            => QueueHeroButtonMaterialRefresh();
-
-        private async void QueueHeroButtonMaterialRefresh()
+        private void AttachToViewModel(MainViewModel? viewModel)
         {
-            if (_heroButtonRefreshQueued)
+            if (ReferenceEquals(_observedViewModel, viewModel))
+            {
                 return;
+            }
 
-            _heroButtonRefreshQueued = true;
+            DetachFromViewModel();
+            _observedViewModel = viewModel;
+
+            if (_observedViewModel != null)
+            {
+                _observedViewModel.PropertyChanged += ObservedViewModel_PropertyChanged;
+            }
+
+            AttachToGame(viewModel?.SelectedGame);
+        }
+
+        private void DetachFromViewModel()
+        {
+            if (_observedViewModel != null)
+            {
+                _observedViewModel.PropertyChanged -= ObservedViewModel_PropertyChanged;
+                _observedViewModel = null;
+            }
+        }
+
+        private void AttachToGame(Game? game)
+        {
+            if (ReferenceEquals(_observedGame, game))
+            {
+                return;
+            }
+
+            DetachFromGame();
+            _observedGame = game;
+
+            if (_observedGame != null)
+            {
+                _observedGame.PropertyChanged += ObservedGame_PropertyChanged;
+            }
+        }
+
+        private void DetachFromGame()
+        {
+            if (_observedGame != null)
+            {
+                _observedGame.PropertyChanged -= ObservedGame_PropertyChanged;
+                _observedGame = null;
+            }
+        }
+
+        private void ObservedViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(MainViewModel.SelectedGame))
+            {
+                return;
+            }
+
+            AttachToGame(_observedViewModel?.SelectedGame);
+            QueueHeroActionPaletteRefresh();
+        }
+
+        private void ObservedGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e.PropertyName)
+                && e.PropertyName != nameof(Game.LibHero)
+                && e.PropertyName != nameof(Game.LibHeroCache)
+                && e.PropertyName != nameof(Game.LibHeroUrl))
+            {
+                return;
+            }
+
+            QueueHeroActionPaletteRefresh();
+        }
+
+        private void QueueHeroActionPaletteRefresh()
+        {
+            CancelHeroActionPaletteRefresh();
+
+            long version = Interlocked.Increment(ref _heroPaletteVersion);
+            var cts = new CancellationTokenSource();
+            _heroPaletteCts = cts;
+
+            _ = RefreshHeroActionPaletteAsync(_observedGame?.LibHeroCache, _observedGame?.LibHero, version, cts.Token);
+        }
+
+        private void CancelHeroActionPaletteRefresh()
+        {
+            _heroPaletteCts?.Cancel();
+            _heroPaletteCts?.Dispose();
+            _heroPaletteCts = null;
+        }
+
+        private async Task RefreshHeroActionPaletteAsync(string? heroCachePath, string? heroPath, long version, CancellationToken cancellationToken)
+        {
+            HeroActionPalette palette;
 
             try
             {
-                await Task.Yield();
-                await Task.Delay(16);
-                RefreshHeroButtonMaterial(DetailsPlayButton, "HeroGlassAccentBrush", "HeroPlayBorderBrush", "HeroGlassForegroundBrush");
-                RefreshHeroButtonMaterial(DetailsSettingsButton, "HeroGlassNeutralBrush", "HeroSettingsBorderBrush", "HeroGlassMutedForegroundBrush");
+                palette = await HeroActionPaletteExtractor.ExtractAsync(heroCachePath, heroPath, cancellationToken).ConfigureAwait(false);
             }
-            finally
-            {
-                _heroButtonRefreshQueued = false;
-            }
-        }
-
-        private void RefreshHeroButtonMaterial(Button? button, string backgroundKey, string borderKey, string foregroundKey)
-        {
-            if (button == null
-                || Resources[backgroundKey] is not AcrylicBrush backgroundTemplate
-                || Resources[borderKey] is not Brush borderBrush
-                || Resources[foregroundKey] is not Brush foregroundBrush)
+            catch (OperationCanceledException)
             {
                 return;
             }
 
-            button.Background = CloneAcrylicBrush(backgroundTemplate);
-            button.BorderBrush = borderBrush;
-            button.Foreground = foregroundBrush;
+            if (cancellationToken.IsCancellationRequested || version != Interlocked.Read(ref _heroPaletteVersion))
+            {
+                return;
+            }
 
-            button.Resources["ButtonBackground"] = CloneAcrylicBrush(backgroundTemplate);
-            button.Resources["ButtonBackgroundPointerOver"] = CloneAcrylicBrush(backgroundTemplate);
-            button.Resources["ButtonBackgroundPressed"] = CloneAcrylicBrush(backgroundTemplate);
-            button.Resources["ButtonBorderBrush"] = borderBrush;
-            button.Resources["ButtonBorderBrushPointerOver"] = borderBrush;
-            button.Resources["ButtonBorderBrushPressed"] = borderBrush;
-            button.Resources["ButtonForeground"] = foregroundBrush;
-            button.Resources["ButtonForegroundPointerOver"] = foregroundBrush;
-            button.Resources["ButtonForegroundPressed"] = foregroundBrush;
+            void ApplyCurrentPalette()
+            {
+                if (cancellationToken.IsCancellationRequested || version != Interlocked.Read(ref _heroPaletteVersion))
+                {
+                    return;
+                }
+
+                ApplyHeroActionPalette(palette);
+            }
+
+            if (_dispatcherQueue.HasThreadAccess)
+            {
+                ApplyCurrentPalette();
+            }
+            else
+            {
+                _ = _dispatcherQueue.TryEnqueue(ApplyCurrentPalette);
+            }
         }
 
-        private static AcrylicBrush CloneAcrylicBrush(AcrylicBrush source)
+        private void ApplyHeroActionPalette(HeroActionPalette palette)
+        {
+            DetailsPlayShell.Background = new SolidColorBrush(palette.PlayBackgroundColor);
+            DetailsPlayShell.BorderBrush = CreateBorderBrush(
+                palette.PlayBorderStartColor,
+                palette.PlayBorderMidColor,
+                palette.PlayBorderEndColor,
+                0.42);
+
+            DetailsSettingsShell.Background = new SolidColorBrush(palette.SettingsBackgroundColor);
+            DetailsSettingsShell.BorderBrush = CreateBorderBrush(
+                palette.SettingsBorderStartColor,
+                palette.SettingsBorderMidColor,
+                palette.SettingsBorderEndColor,
+                0.52);
+
+            var playForeground = new SolidColorBrush(palette.ForegroundColor);
+            DetailsPlayGlyph.Foreground = playForeground;
+            DetailsPlayText.Foreground = playForeground;
+            DetailsSettingsGlyph.Foreground = new SolidColorBrush(palette.MutedForegroundColor);
+        }
+
+        private static LinearGradientBrush CreateBorderBrush(Windows.UI.Color startColor, Windows.UI.Color midColor, Windows.UI.Color endColor, double midOffset)
             => new()
             {
-                TintColor = source.TintColor,
-                TintOpacity = source.TintOpacity,
-                TintLuminosityOpacity = source.TintLuminosityOpacity,
-                FallbackColor = source.FallbackColor
+                StartPoint = new Windows.Foundation.Point(0, 0),
+                EndPoint = new Windows.Foundation.Point(1, 1),
+                GradientStops =
+                {
+                    new GradientStop { Color = startColor, Offset = 0 },
+                    new GradientStop { Color = midColor, Offset = midOffset },
+                    new GradientStop { Color = endColor, Offset = 1 }
+                }
             };
     }
 }
