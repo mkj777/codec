@@ -32,6 +32,95 @@
                                 </Setter.Value>
                         </Setter>
                 </Style>
+                <SolidColorBrush x:Key="HeroGlassForegroundBrush"
+                                 Color="#FFF1F5FB"/>
+                <SolidColorBrush x:Key="HeroGlassMutedForegroundBrush"
+                                 Color="#FFD7DFEA"/>
+                <AcrylicBrush x:Key="HeroGlassNeutralBrush"
+                              TintColor="#FFE7EEF9"
+                              TintOpacity="0.05"
+                              TintLuminosityOpacity="0.38"
+                              FallbackColor="#220D121A"/>
+                <AcrylicBrush x:Key="HeroGlassAccentBrush"
+                              TintColor="#FFDAE7FB"
+                              TintOpacity="0.08"
+                              TintLuminosityOpacity="0.44"
+                              FallbackColor="#28141C2E"/>
+                <LinearGradientBrush x:Key="HeroPlayBorderBrush"
+                                     StartPoint="0,0"
+                                     EndPoint="1,1">
+                        <GradientStop Color="#CCFFFFFF"
+                                      Offset="0"/>
+                        <GradientStop Color="#78A9C8EA"
+                                      Offset="0.42"/>
+                        <GradientStop Color="#22FFFFFF"
+                                      Offset="1"/>
+                </LinearGradientBrush>
+                <LinearGradientBrush x:Key="HeroSettingsBorderBrush"
+                                     StartPoint="0,0"
+                                     EndPoint="1,1">
+                        <GradientStop Color="#AAFFFFFF"
+                                      Offset="0"/>
+                        <GradientStop Color="#3CD5E3F1"
+                                      Offset="0.52"/>
+                        <GradientStop Color="#16FFFFFF"
+                                      Offset="1"/>
+                </LinearGradientBrush>
+                <Style x:Key="HeroGlassButtonBaseStyle"
+                       TargetType="Button">
+                        <Setter Property="UseSystemFocusVisuals"
+                                Value="False"/>
+                        <Setter Property="BorderThickness"
+                                Value="1.5"/>
+                        <Setter Property="HorizontalContentAlignment"
+                                Value="Center"/>
+                        <Setter Property="VerticalContentAlignment"
+                                Value="Center"/>
+                        <Setter Property="Foreground"
+                                Value="{StaticResource HeroGlassForegroundBrush}"/>
+                        <Setter Property="Padding"
+                                Value="18,12"/>
+                </Style>
+                <Style x:Key="HeroPlayButtonStyle"
+                       BasedOn="{StaticResource HeroGlassButtonBaseStyle}"
+                       TargetType="Button">
+                        <Setter Property="Background"
+                                Value="{StaticResource HeroGlassAccentBrush}"/>
+                        <Setter Property="BorderBrush"
+                                Value="{StaticResource HeroPlayBorderBrush}"/>
+                        <Setter Property="CornerRadius"
+                                Value="28"/>
+                        <Setter Property="MinWidth"
+                                Value="170"/>
+                        <Setter Property="MinHeight"
+                                Value="58"/>
+                        <Setter Property="Padding"
+                                Value="26,14"/>
+                        <Setter Property="FontSize"
+                                Value="16"/>
+                        <Setter Property="FontWeight"
+                                Value="Bold"/>
+                </Style>
+                <Style x:Key="HeroSettingsButtonStyle"
+                       BasedOn="{StaticResource HeroGlassButtonBaseStyle}"
+                       TargetType="Button">
+                        <Setter Property="Background"
+                                Value="{StaticResource HeroGlassNeutralBrush}"/>
+                        <Setter Property="BorderBrush"
+                                Value="{StaticResource HeroSettingsBorderBrush}"/>
+                        <Setter Property="CornerRadius"
+                                Value="16"/>
+                        <Setter Property="Width"
+                                Value="46"/>
+                        <Setter Property="Height"
+                                Value="46"/>
+                        <Setter Property="Padding"
+                                Value="0"/>
+                        <Setter Property="BorderThickness"
+                                Value="1"/>
+                        <Setter Property="Foreground"
+                                Value="{StaticResource HeroGlassMutedForegroundBrush}"/>
+                </Style>
         </UserControl.Resources>
 
         <Grid x:Name="RootLayout">
@@ -253,9 +342,11 @@
 
                 <!-- Hero covers upper half -->
                 <Grid Grid.Row="0">
-                        <Image Source="{Binding SelectedGame.LibHero}"
+                        <Image x:Name="HeroBackdropImage"
+                               Source="{Binding SelectedGame.LibHero}"
                                Stretch="UniformToFill"
-                               Margin="-20,0,0,0"/>
+                               Margin="-20,0,0,0"
+                               ImageOpened="HeroBackdropImage_ImageOpened"/>
                         <Grid Background="#2C000000"
                               Margin="-20,0,0,0"/>
                         <Grid x:Name="HeroOverlay"
@@ -300,47 +391,145 @@
                                 <!-- Settings button bottom-right of the hero (top half) with tighter inset -->
                                 <Button x:Name="DetailsSettingsButton"
                                         Grid.RowSpan="3"
-                                        Content="Settings"
+                                        Style="{StaticResource HeroSettingsButtonStyle}"
                                         HorizontalAlignment="Right"
                                         Command="{Binding OpenGameSettingsCommand}"
                                         VerticalAlignment="Bottom"
-                                        Margin="0,0,0,0"
-                                        FontWeight="SemiBold"/>
+                                        Margin="0,0,6,8"
+                                        ToolTipService.ToolTip="Game settings">
+                                        <Button.Resources>
+                                                <AcrylicBrush x:Key="ButtonBackground"
+                                                              TintColor="#FFE7EEF9"
+                                                              TintOpacity="0.05"
+                                                              TintLuminosityOpacity="0.38"
+                                                              FallbackColor="#220D121A"/>
+                                                <AcrylicBrush x:Key="ButtonBackgroundPointerOver"
+                                                              TintColor="#FFE7EEF9"
+                                                              TintOpacity="0.05"
+                                                              TintLuminosityOpacity="0.38"
+                                                              FallbackColor="#220D121A"/>
+                                                <AcrylicBrush x:Key="ButtonBackgroundPressed"
+                                                              TintColor="#FFE7EEF9"
+                                                              TintOpacity="0.05"
+                                                              TintLuminosityOpacity="0.38"
+                                                              FallbackColor="#220D121A"/>
+                                                <LinearGradientBrush x:Key="ButtonBorderBrush"
+                                                                     StartPoint="0,0"
+                                                                     EndPoint="1,1">
+                                                        <GradientStop Color="#AAFFFFFF"
+                                                                      Offset="0"/>
+                                                        <GradientStop Color="#3CD5E3F1"
+                                                                      Offset="0.52"/>
+                                                        <GradientStop Color="#16FFFFFF"
+                                                                      Offset="1"/>
+                                                </LinearGradientBrush>
+                                                <LinearGradientBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                     StartPoint="0,0"
+                                                                     EndPoint="1,1">
+                                                        <GradientStop Color="#AAFFFFFF"
+                                                                      Offset="0"/>
+                                                        <GradientStop Color="#3CD5E3F1"
+                                                                      Offset="0.52"/>
+                                                        <GradientStop Color="#16FFFFFF"
+                                                                      Offset="1"/>
+                                                </LinearGradientBrush>
+                                                <LinearGradientBrush x:Key="ButtonBorderBrushPressed"
+                                                                     StartPoint="0,0"
+                                                                     EndPoint="1,1">
+                                                        <GradientStop Color="#AAFFFFFF"
+                                                                      Offset="0"/>
+                                                        <GradientStop Color="#3CD5E3F1"
+                                                                      Offset="0.52"/>
+                                                        <GradientStop Color="#16FFFFFF"
+                                                                      Offset="1"/>
+                                                </LinearGradientBrush>
+                                                <SolidColorBrush x:Key="ButtonForeground"
+                                                                 Color="#FFD7DFEA"/>
+                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                 Color="#FFD7DFEA"/>
+                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                 Color="#FFD7DFEA"/>
+                                        </Button.Resources>
+                                        <FontIcon Glyph="&#xE713;"
+                                                  FontFamily="Segoe Fluent Icons"
+                                                  FontSize="16"
+                                                  Foreground="{Binding Foreground, ElementName=DetailsSettingsButton}"/>
+                                </Button>
 
                                 <!-- Play button anchored to the hero's lower-left corner -->
                                 <Button x:Name="DetailsPlayButton"
                                         Grid.Row="2"
-                                        Content="PLAY"
-                                        Padding="34,14"
+                                        Style="{StaticResource HeroPlayButtonStyle}"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Bottom"
-                                        Margin="0,0,0,0"
-                                        FontSize="18"
-                                        FontWeight="Bold"
-                                        Background="#33FF8A3D"
-                                        BorderBrush="#FFFF8A3D"
-                                        Foreground="#FFF8F6F1"
-                                        Command="{Binding PlayGameCommand}">
+                                        Margin="0,0,0,2"
+                                        Command="{Binding PlayGameCommand}"
+                                        ToolTipService.ToolTip="Launch game">
                                         <Button.Resources>
-                                                <SolidColorBrush x:Key="ButtonBackground"
-                                                                 Color="#33FF8A3D"/>
-                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                 Color="#55FF8A3D"/>
-                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                 Color="#77FF8A3D"/>
-                                                <SolidColorBrush x:Key="ButtonBorderBrush"
-                                                                 Color="#FFFF8A3D"/>
-                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                 Color="#FFFFA766"/>
-                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                 Color="#FFFFB57C"/>
+                                                <AcrylicBrush x:Key="ButtonBackground"
+                                                              TintColor="#FFDAE7FB"
+                                                              TintOpacity="0.08"
+                                                              TintLuminosityOpacity="0.44"
+                                                              FallbackColor="#28141C2E"/>
+                                                <AcrylicBrush x:Key="ButtonBackgroundPointerOver"
+                                                              TintColor="#FFDAE7FB"
+                                                              TintOpacity="0.08"
+                                                              TintLuminosityOpacity="0.44"
+                                                              FallbackColor="#28141C2E"/>
+                                                <AcrylicBrush x:Key="ButtonBackgroundPressed"
+                                                              TintColor="#FFDAE7FB"
+                                                              TintOpacity="0.08"
+                                                              TintLuminosityOpacity="0.44"
+                                                              FallbackColor="#28141C2E"/>
+                                                <LinearGradientBrush x:Key="ButtonBorderBrush"
+                                                                     StartPoint="0,0"
+                                                                     EndPoint="1,1">
+                                                        <GradientStop Color="#CCFFFFFF"
+                                                                      Offset="0"/>
+                                                        <GradientStop Color="#78A9C8EA"
+                                                                      Offset="0.42"/>
+                                                        <GradientStop Color="#22FFFFFF"
+                                                                      Offset="1"/>
+                                                </LinearGradientBrush>
+                                                <LinearGradientBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                     StartPoint="0,0"
+                                                                     EndPoint="1,1">
+                                                        <GradientStop Color="#CCFFFFFF"
+                                                                      Offset="0"/>
+                                                        <GradientStop Color="#78A9C8EA"
+                                                                      Offset="0.42"/>
+                                                        <GradientStop Color="#22FFFFFF"
+                                                                      Offset="1"/>
+                                                </LinearGradientBrush>
+                                                <LinearGradientBrush x:Key="ButtonBorderBrushPressed"
+                                                                     StartPoint="0,0"
+                                                                     EndPoint="1,1">
+                                                        <GradientStop Color="#CCFFFFFF"
+                                                                      Offset="0"/>
+                                                        <GradientStop Color="#78A9C8EA"
+                                                                      Offset="0.42"/>
+                                                        <GradientStop Color="#22FFFFFF"
+                                                                      Offset="1"/>
+                                                </LinearGradientBrush>
                                                 <SolidColorBrush x:Key="ButtonForeground"
-                                                                 Color="#FFF8F6F1"/>
+                                                                 Color="#FFF1F5FB"/>
                                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                 Color="#FFFFFFFF"/>
+                                                                 Color="#FFF1F5FB"/>
                                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                 Color="#FFFFFFFF"/>
+                                                                 Color="#FFF1F5FB"/>
                                         </Button.Resources>
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="10">
+                                                <FontIcon Glyph="&#xE768;"
+                                                          FontFamily="Segoe Fluent Icons"
+                                                          FontSize="16"
+                                                          Foreground="{Binding Foreground, ElementName=DetailsPlayButton}"/>
+                                                <TextBlock Text="PLAY"
+                                                           FontSize="16"
+                                                           FontWeight="Bold"
+                                                           CharacterSpacing="120"
+                                                           Foreground="{Binding Foreground, ElementName=DetailsPlayButton}"/>
+                                        </StackPanel>
                                 </Button>
                         </Grid>
                 </Grid>

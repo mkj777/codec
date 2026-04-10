@@ -2,6 +2,7 @@ using Codec.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -49,11 +50,13 @@ namespace Codec.Views
         private const int OFN_PATHMUSTEXIST = 0x00000800;
         private const int OFN_NOCHANGEDIR = 0x00000008;
 
+        private bool _heroButtonRefreshQueued;
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
         public GameDetailView()
         {
             InitializeComponent();
+            HeroBackdropImage.RegisterPropertyChangedCallback(Image.SourceProperty, HeroBackdropImage_SourceChanged);
             Loaded += GameDetailView_Loaded;
             SizeChanged += GameDetailView_SizeChanged;
         }
@@ -142,7 +145,10 @@ namespace Codec.Views
         }
 
         private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
-            => UpdateSettingsLayoutState();
+        {
+            UpdateSettingsLayoutState();
+            QueueHeroButtonMaterialRefresh();
+        }
 
         private void GameDetailView_SizeChanged(object sender, SizeChangedEventArgs e)
             => UpdateSettingsLayoutState();
@@ -180,5 +186,65 @@ namespace Codec.Views
                 HeroLogo.MaxWidth = Math.Clamp(targetHeight * 2.2, 360, 640);
             }
         }
+
+        private void HeroBackdropImage_SourceChanged(DependencyObject sender, DependencyProperty dp)
+            => QueueHeroButtonMaterialRefresh();
+
+        private void HeroBackdropImage_ImageOpened(object sender, RoutedEventArgs e)
+            => QueueHeroButtonMaterialRefresh();
+
+        private async void QueueHeroButtonMaterialRefresh()
+        {
+            if (_heroButtonRefreshQueued)
+                return;
+
+            _heroButtonRefreshQueued = true;
+
+            try
+            {
+                await Task.Yield();
+                await Task.Delay(16);
+                RefreshHeroButtonMaterial(DetailsPlayButton, "HeroGlassAccentBrush", "HeroPlayBorderBrush", "HeroGlassForegroundBrush");
+                RefreshHeroButtonMaterial(DetailsSettingsButton, "HeroGlassNeutralBrush", "HeroSettingsBorderBrush", "HeroGlassMutedForegroundBrush");
+            }
+            finally
+            {
+                _heroButtonRefreshQueued = false;
+            }
+        }
+
+        private void RefreshHeroButtonMaterial(Button? button, string backgroundKey, string borderKey, string foregroundKey)
+        {
+            if (button == null
+                || Resources[backgroundKey] is not AcrylicBrush backgroundTemplate
+                || Resources[borderKey] is not Brush borderBrush
+                || Resources[foregroundKey] is not Brush foregroundBrush)
+            {
+                return;
+            }
+
+            button.Background = CloneAcrylicBrush(backgroundTemplate);
+            button.BorderBrush = borderBrush;
+            button.Foreground = foregroundBrush;
+
+            button.Resources["ButtonBackground"] = CloneAcrylicBrush(backgroundTemplate);
+            button.Resources["ButtonBackgroundPointerOver"] = CloneAcrylicBrush(backgroundTemplate);
+            button.Resources["ButtonBackgroundPressed"] = CloneAcrylicBrush(backgroundTemplate);
+            button.Resources["ButtonBorderBrush"] = borderBrush;
+            button.Resources["ButtonBorderBrushPointerOver"] = borderBrush;
+            button.Resources["ButtonBorderBrushPressed"] = borderBrush;
+            button.Resources["ButtonForeground"] = foregroundBrush;
+            button.Resources["ButtonForegroundPointerOver"] = foregroundBrush;
+            button.Resources["ButtonForegroundPressed"] = foregroundBrush;
+        }
+
+        private static AcrylicBrush CloneAcrylicBrush(AcrylicBrush source)
+            => new()
+            {
+                TintColor = source.TintColor,
+                TintOpacity = source.TintOpacity,
+                TintLuminosityOpacity = source.TintLuminosityOpacity,
+                FallbackColor = source.FallbackColor
+            };
     }
 }
