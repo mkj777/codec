@@ -6,21 +6,28 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Codec.Models;
+using Codec.Services.Storage;
 
-namespace Codec.Services
+namespace Codec.Services.Fetching
 {
-    public static class SteamDetailsService
+    public class SteamDetailsService
     {
-        private static readonly HttpClient Http = new HttpClient();
+        private readonly HttpClient _http = new();
+        private readonly MetadataCache _cache;
 
-        private static async Task<string?> ResolveAssetUrlAsync(string primaryUrl, string fallbackUrl)
+        public SteamDetailsService(MetadataCache cache)
+        {
+            _cache = cache;
+        }
+
+        private async Task<string?> ResolveAssetUrlAsync(string primaryUrl, string fallbackUrl)
         {
             async Task<bool> IsReachableAsync(string url)
             {
                 try
                 {
                     using var request = new HttpRequestMessage(HttpMethod.Head, url);
-                    using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                     if (response.IsSuccessStatusCode)
                     {
                         return true;
@@ -33,7 +40,7 @@ namespace Codec.Services
                     }
 
                     // Fallback: try a lightweight GET to validate actual body is not an HTML 404.
-                    using var getResponse = await Http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    using var getResponse = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                     if (!getResponse.IsSuccessStatusCode)
                     {
                         return false;
@@ -65,7 +72,7 @@ namespace Codec.Services
             return null;
         }
 
-        public static async Task PopulateFromSteamAsync(Game game)
+        public async Task PopulateFromSteamAsync(Game game)
         {
             if (!game.SteamID.HasValue)
             {
@@ -97,7 +104,7 @@ namespace Codec.Services
             try
             {
                 var url = $"https://store.steampowered.com/api/appdetails?appids={game.SteamID.Value}";
-                var json = await DataCacheService.GetStringAsync(url);
+                var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromDays(1));
                 using var doc = JsonDocument.Parse(json);
 
                 if (!doc.RootElement.TryGetProperty(game.SteamID.Value.ToString(), out var appNode))
@@ -237,7 +244,7 @@ namespace Codec.Services
 
         }
 
-        private static string MapEsrbRating(string rating)
+        private string MapEsrbRating(string rating)
         {
             string normalized = rating.Trim();
             string upper = normalized.ToUpperInvariant();
@@ -266,12 +273,12 @@ namespace Codec.Services
             };
         }
 
-        private static async Task PopulateReviewsAsync(Game game)
+        private async Task PopulateReviewsAsync(Game game)
         {
             try
             {
                 var url = $"https://store.steampowered.com/appreviews/{game.SteamID}/?json=1&language=all&filter=all&num_per_page=0";
-                var json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromHours(6)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
 
                 if (!doc.RootElement.TryGetProperty("query_summary", out var summary) || summary.ValueKind != JsonValueKind.Object)
@@ -297,12 +304,12 @@ namespace Codec.Services
             }
         }
 
-        private static async Task PopulatePriceAsync(Game game)
+        private async Task PopulatePriceAsync(Game game)
         {
             try
             {
                 var url = $"https://steamspy.com/api.php?request=appdetails&appid={game.SteamID}";
-                var json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromHours(4)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
 
                 var root = doc.RootElement;
@@ -349,7 +356,7 @@ namespace Codec.Services
             }
         }
 
-        private static int TryGetInt(JsonElement root, string property)
+        private int TryGetInt(JsonElement root, string property)
         {
             try
             {
@@ -374,7 +381,7 @@ namespace Codec.Services
             return -1;
         }
 
-        private static int ComputeDiscountPercent(int initialCents, int priceCents)
+        private int ComputeDiscountPercent(int initialCents, int priceCents)
         {
             if (initialCents <= 0 || priceCents < 0)
             {
@@ -385,7 +392,7 @@ namespace Codec.Services
             return (int)Math.Round(pct * 100, MidpointRounding.AwayFromZero);
         }
 
-        private static string FormatPrice(int cents)
+        private string FormatPrice(int cents)
         {
             if (cents < 0)
             {

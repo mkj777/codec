@@ -1,3 +1,4 @@
+using Codec.Services.Storage;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -5,20 +6,20 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Codec.Services
+namespace Codec.Services.Fetching
 {
-    public static class GameAssetService
+    public class GameAssetService
     {
-        private static readonly HttpClient _httpClient = new();
+        private readonly HttpClient _http = new();
 
-        private static string GetCapsulesDir()
+        private string GetCapsulesDir()
         {
             string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "Capsules");
             Directory.CreateDirectory(baseDir);
             return baseDir;
         }
 
-        private static string GetGridDbDir()
+        private string GetGridDbDir()
         {
             string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "GridDb");
             Directory.CreateDirectory(baseDir);
@@ -30,7 +31,7 @@ namespace Codec.Services
         /// Attempts several known variants and returns the first successful local file URI.
         /// If force is true, existing local files are overwritten.
         /// </summary>
-        public static async Task<string?> DownloadSteamLibraryCoverAsync(int steamId, bool force = false)
+        public async Task<string?> DownloadSteamLibraryCoverAsync(int steamId, bool force = false)
         {
             try
             {
@@ -57,7 +58,7 @@ namespace Codec.Services
                         try { File.Delete(filePath); } catch (Exception delEx) { Debug.WriteLine($"Failed to delete old cover: {delEx.Message}"); }
                     }
 
-                    using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                     if (!response.IsSuccessStatusCode)
                     {
                         Debug.WriteLine($"Cover variant not available for {steamId}: {url} -> {(int)response.StatusCode}");
@@ -84,12 +85,12 @@ namespace Codec.Services
         /// <summary>
         /// Downloads the first available SteamGridDB grid for the given entry.
         /// </summary>
-        public static async Task<string?> DownloadGridDbCoverAsync(int gridDbId, bool force = false)
+        public async Task<string?> DownloadGridDbCoverAsync(int gridDbId, bool force = false)
         {
             try
             {
                 string gridsUrl = $"https://codec-api-proxy.vercel.app/api/griddb/grids?id={gridDbId}";
-                var response = await _httpClient.GetStringAsync(gridsUrl);
+                var response = await _http.GetStringAsync(gridsUrl);
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("data", out var dataArray) || dataArray.GetArrayLength() == 0)
@@ -130,7 +131,7 @@ namespace Codec.Services
                     return new Uri(filePath).AbsoluteUri;
                 }
 
-                using var downloadResponse = await _httpClient.GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead);
+                using var downloadResponse = await _http.GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead);
                 if (!downloadResponse.IsSuccessStatusCode)
                 {
                     Debug.WriteLine($"GridDB cover variant not available for {gridDbId}: {gridUrl} -> {(int)downloadResponse.StatusCode}");

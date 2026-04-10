@@ -1,8 +1,9 @@
+using Codec.Services.Scanning.Scanners;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Codec.Services
+namespace Codec.Services.Scanning
 {
     /// <summary>
     /// Central catalog of well-known system/utility applications that should never be
@@ -179,8 +180,8 @@ namespace Codec.Services
         private static string Normalize(string value)
         {
             return value
-                .Replace('™', ' ')
-                .Replace('®', ' ')
+                .Replace('?', ' ')
+                .Replace('?', ' ')
                 .Replace('_', ' ')
                 .Replace('-', ' ')
                 .Trim()

@@ -1,5 +1,6 @@
 using Codec.Models;
 using Codec.Services;
+using Codec.Services.Storage;
 using Codec.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -31,7 +32,7 @@ namespace Codec.Views
         {
             InitializeComponent();
             Title = "Codec";
-            ViewModel = new MainViewModel();
+            ViewModel = new MainViewModel(App.Services);
             RootGrid.DataContext = ViewModel;
             ExtendsContentIntoTitleBar = true;
             AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"));
@@ -180,11 +181,11 @@ namespace Codec.Views
                     return;
 
                 Debug.WriteLine($"Starting ID lookup for: {exeFile.Path}");
-                var (steamId, rawgId) = await GameNameService.FindGameIdsAsync(exeFile.Path);
+                var (steamId, rawgId) = await App.Services.GameName.FindGameIdsAsync(exeFile.Path);
 
                 string steamIdText = steamId.HasValue ? steamId.Value.ToString() : "Not found";
                 string rawgIdText = rawgId.HasValue ? rawgId.Value.ToString() : "Not found";
-                string bestName = GameNameService.GetBestName(exeFile.Path) ?? "Unknown";
+                string bestName = App.Services.GameName.GetBestName(exeFile.Path) ?? "Unknown";
 
                 var testDialog = new ContentDialog
                 {
@@ -371,8 +372,8 @@ namespace Codec.Views
                 ViewModel.SidebarSelectedItem = null;
                 ViewModel.Games.Clear();
 
-                DataCacheService.Clear();
-                await LibraryStorageService.ResetAsync();
+                App.Services.Cache.ClearAll();
+                await App.Services.LibraryStorage.ResetAsync();
                 resetSuccessful = true;
             }
             catch (Exception ex)

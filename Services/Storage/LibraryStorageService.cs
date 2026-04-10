@@ -6,38 +6,38 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Codec.Services
+namespace Codec.Services.Storage
 {
-    public static class LibraryStorageService
+    public class LibraryStorageService
     {
         public const string AppDataFolderName = "Codec Game Library";
-        private static readonly JsonSerializerOptions _jsonOptions = new()
+        private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true
         };
 
-        private static string GetBaseDirectory()
+        private string GetBaseDirectory()
         {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDataFolderName);
         }
 
-        private static string GetLibraryPath()
+        private string GetLibraryPath()
         {
             string dir = EnsureStorageInitialized();
             return Path.Combine(dir, "library.json");
         }
 
-        public static string EnsureStorageInitialized()
+        public string EnsureStorageInitialized()
         {
             string dir = GetBaseDirectory();
             Directory.CreateDirectory(dir);
             return dir;
         }
 
-        public static string GetLibraryPathForDiagnostics() => GetLibraryPath();
+        public string GetLibraryPathForDiagnostics() => GetLibraryPath();
 
-        public static async Task SaveAsync(IEnumerable<Game> games)
+        public async Task SaveAsync(IEnumerable<Game> games)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace Codec.Services
             }
         }
 
-        public static async Task<List<Game>> LoadAsync()
+        public async Task<List<Game>> LoadAsync()
         {
             try
             {
@@ -72,7 +72,7 @@ namespace Codec.Services
             }
         }
 
-        public static async Task ResetAsync()
+        public async Task ResetAsync()
         {
             try
             {

@@ -8,16 +8,23 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Codec.Models;
+using Codec.Services.Storage;
 
-namespace Codec.Services
+namespace Codec.Services.Fetching
 {
-    public static class RawgDetailsService
+    public class RawgDetailsService
     {
         private const string DetailsEndpoint = "https://codec-api-proxy.vercel.app/api/rawg/details?id=";
         private const string SearchEndpoint = "https://codec-api-proxy.vercel.app/api/rawg/search?term=";
-        private static readonly HttpClient Http = new();
+        private readonly HttpClient _http = new();
+        private readonly MetadataCache _cache;
 
-        public static async Task TryPopulateRawgFromSearchAsync(Game game)
+        public RawgDetailsService(MetadataCache cache)
+        {
+            _cache = cache;
+        }
+
+        public async Task TryPopulateRawgFromSearchAsync(Game game)
         {
             if (game == null || game.RawgID.HasValue || string.IsNullOrWhiteSpace(game.Name))
             {
@@ -27,7 +34,7 @@ namespace Codec.Services
             try
             {
                 string url = SearchEndpoint + Uri.EscapeDataString(game.Name);
-                string json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                string json = await _cache.GetOrFetchAsync("rawg", url, TimeSpan.FromDays(1)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
@@ -72,7 +79,7 @@ namespace Codec.Services
             }
         }
 
-        public static async Task PopulateAsync(Game game)
+        public async Task PopulateAsync(Game game)
         {
             if (game == null || !game.RawgID.HasValue)
             {
@@ -82,7 +89,7 @@ namespace Codec.Services
             try
             {
                 string url = DetailsEndpoint + game.RawgID.Value;
-                string json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                string json = await _cache.GetOrFetchAsync("rawg", url, TimeSpan.FromDays(1)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
@@ -201,7 +208,7 @@ namespace Codec.Services
             }
         }
 
-        private static string? GetString(JsonElement element, string property)
+        private string? GetString(JsonElement element, string property)
         {
             if (element.TryGetProperty(property, out var prop))
             {
@@ -213,7 +220,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static int? TryGetInt(JsonElement element, string property)
+        private int? TryGetInt(JsonElement element, string property)
         {
             if (element.TryGetProperty(property, out var prop))
             {
@@ -230,7 +237,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static string? GetFirstName(JsonElement root, string arrayProperty)
+        private string? GetFirstName(JsonElement root, string arrayProperty)
         {
             if (root.TryGetProperty(arrayProperty, out var array) && array.ValueKind == JsonValueKind.Array)
             {
@@ -246,7 +253,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static List<string> GetNameList(JsonElement root, string arrayProperty, string childProperty = "")
+        private List<string> GetNameList(JsonElement root, string arrayProperty, string childProperty = "")
         {
             var list = new List<string>();
             if (root.TryGetProperty(arrayProperty, out var array) && array.ValueKind == JsonValueKind.Array)
@@ -264,7 +271,7 @@ namespace Codec.Services
             return list;
         }
 
-        private static string StripHtml(string value)
+        private string StripHtml(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -275,7 +282,7 @@ namespace Codec.Services
             return Regex.Replace(withoutTags, "\\s+", " ").Trim();
         }
 
-        private static string MapEsrbRating(string rating)
+        private string MapEsrbRating(string rating)
         {
             string normalized = rating.Trim();
 
@@ -290,7 +297,7 @@ namespace Codec.Services
             };
         }
 
-        private static string? GetFirstScreenshot(JsonElement root)
+        private string? GetFirstScreenshot(JsonElement root)
         {
             if (root.TryGetProperty("short_screenshots", out var shots) && shots.ValueKind == JsonValueKind.Array)
             {
@@ -307,7 +314,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static string TruncateWithEllipsis(string value, int maxLength)
+        private string TruncateWithEllipsis(string value, int maxLength)
         {
             if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
             {
@@ -322,7 +329,7 @@ namespace Codec.Services
             return value.Substring(0, maxLength).TrimEnd() + "...";
         }
 
-        private static bool IsPlaceholder(string? url)
+        private bool IsPlaceholder(string? url)
         {
             if (string.IsNullOrWhiteSpace(url))
             {
@@ -332,7 +339,7 @@ namespace Codec.Services
             return url.Contains("placehold.co", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool ShouldOverwrite(string? existing, int? steamId)
+        private bool ShouldOverwrite(string? existing, int? steamId)
         {
             if (!steamId.HasValue)
             {
@@ -342,7 +349,7 @@ namespace Codec.Services
             return string.IsNullOrWhiteSpace(existing);
         }
 
-        private static string? NormalizeHero(string? url)
+        private string? NormalizeHero(string? url)
         {
             if (string.IsNullOrWhiteSpace(url))
             {

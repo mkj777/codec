@@ -1,3 +1,5 @@
+using Codec.Services.Scanning.Scanners;
+using Codec.Services.Storage;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,7 +8,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Codec.Services
+namespace Codec.Services.Scanning
 {
     /// <summary>
     /// Persists small cache entries for folders that were already validated so that
@@ -101,12 +103,8 @@ namespace Codec.Services
             long? dirTimestamp = TimestampUtility.GetDirectoryTimestamp(candidate.FolderPath);
             long? exeTimestamp = TimestampUtility.GetFileTimestamp(executablePath);
 
-            if (!dirTimestamp.HasValue || !exeTimestamp.HasValue)
-            {
-                // If timestamps cannot be obtained we still keep the entry but mark timestamps as 0
-                dirTimestamp ??= 0;
-                exeTimestamp ??= 0;
-            }
+            dirTimestamp ??= 0;
+            exeTimestamp ??= 0;
 
             _entries[candidate.FolderPath] = new CachedScanResult
             {
@@ -140,7 +138,10 @@ namespace Codec.Services
 
         private static string GetCachePath()
         {
-            string baseDir = LibraryStorageService.EnsureStorageInitialized();
+            string baseDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                LibraryStorageService.AppDataFolderName);
+            Directory.CreateDirectory(baseDir);
             return Path.Combine(baseDir, CacheFileName);
         }
 

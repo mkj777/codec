@@ -1,4 +1,5 @@
-﻿using Codec.Views;
+﻿using Codec.Services;
+using Codec.Views;
 using Microsoft.UI.Xaml;
 
 namespace Codec
@@ -8,6 +9,8 @@ namespace Codec
     /// </summary>
     public partial class App : Application
     {
+        public static ServiceHost Services { get; } = new();
+
         private Window? _window;
 
         /// <summary>

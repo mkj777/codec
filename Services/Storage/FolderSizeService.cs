@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Codec.Services
+namespace Codec.Services.Storage
 {
     public static class FolderSizeService
     {

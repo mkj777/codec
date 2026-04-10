@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Codec.Services
+namespace Codec.Services.Scanning
 {
     internal static class GameContentHeuristics
     {

@@ -7,8 +7,9 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Codec.Services.Storage;
 
-namespace Codec.Services
+namespace Codec.Services.Resolving
 {
     public enum RawgValidationMode
     {
@@ -19,9 +20,10 @@ namespace Codec.Services
     /// <summary>
     /// Service for validating games via RAWG.io API
     /// </summary>
-    public static class GameDetailsService
+    public class GameDetailsService
     {
-        private static readonly HttpClient _httpClient = new();
+        private readonly MetadataCache _cache;
+        private readonly HttpClient _httpClient = new();
         private const string RawgSearchUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
         private const int DefaultPageSize = 5;
         private const double StrictScoreThreshold = 0.88;
@@ -29,10 +31,15 @@ namespace Codec.Services
         private const double MinimumScoreDelta = 0.08;
         private const int MinimumRatingsCount = 5;
 
+        public GameDetailsService(MetadataCache cache)
+        {
+            _cache = cache;
+        }
+
         /// <summary>
         /// Validates if a game name exists in RAWG database with strict filtering and scoring.
         /// </summary>
-        public static async Task<int?> ValidateGameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
+        public async Task<int?> ValidateGameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
         {
             if (string.IsNullOrWhiteSpace(gameName))
             {
@@ -45,7 +52,7 @@ namespace Codec.Services
             try
             {
                 string url = BuildSearchUrl(searchName, settings.PageSize);
-                var response = await DataCacheService.GetStringAsync(url);
+                var response = await _cache.GetOrFetchAsync("rawg-validation", url, TimeSpan.FromDays(7));
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("results", out var resultsElement) || resultsElement.ValueKind != JsonValueKind.Array)
@@ -84,7 +91,7 @@ namespace Codec.Services
             }
         }
 
-        private static string BuildSearchUrl(string searchName, int pageSize)
+        private string BuildSearchUrl(string searchName, int pageSize)
         {
             var query = new List<string>
             {
@@ -101,7 +108,7 @@ namespace Codec.Services
             return $"{RawgSearchUrl}?{string.Join("&", query)}";
         }
 
-        private static IEnumerable<RawgCandidate> ScoreRawgResults(JsonElement results, string searchName, RawgValidationSettings settings)
+        private IEnumerable<RawgCandidate> ScoreRawgResults(JsonElement results, string searchName, RawgValidationSettings settings)
         {
             foreach (var result in results.EnumerateArray().Take(settings.PageSize))
             {
@@ -112,7 +119,7 @@ namespace Codec.Services
             }
         }
 
-        private static bool TryCreateCandidate(JsonElement element, string queryName, out RawgCandidate candidate)
+        private bool TryCreateCandidate(JsonElement element, string queryName, out RawgCandidate candidate)
         {
             candidate = default!;
 
@@ -158,7 +165,7 @@ namespace Codec.Services
             return true;
         }
 
-        private static bool PassesPlatformFilter(JsonElement element)
+        private bool PassesPlatformFilter(JsonElement element)
         {
             if (HasParentPlatform(element, 1))
             {
@@ -168,7 +175,7 @@ namespace Codec.Services
             return HasPlatform(element, 4);
         }
 
-        private static bool HasParentPlatform(JsonElement element, int platformId)
+        private bool HasParentPlatform(JsonElement element, int platformId)
         {
             if (!element.TryGetProperty("parent_platforms", out var parentPlatforms) || parentPlatforms.ValueKind != JsonValueKind.Array)
             {
@@ -188,7 +195,7 @@ namespace Codec.Services
             return false;
         }
 
-        private static bool HasPlatform(JsonElement element, int platformId)
+        private bool HasPlatform(JsonElement element, int platformId)
         {
             if (!element.TryGetProperty("platforms", out var platforms) || platforms.ValueKind != JsonValueKind.Array)
             {
@@ -208,7 +215,7 @@ namespace Codec.Services
             return false;
         }
 
-        private static bool IsAdditionOrSeries(JsonElement element)
+        private bool IsAdditionOrSeries(JsonElement element)
         {
             int additions = element.TryGetProperty("additions_count", out var additionsProp) && additionsProp.TryGetInt32(out var a) ? a : 0;
             int dlc = element.TryGetProperty("dlc_count", out var dlcProp) && dlcProp.TryGetInt32(out var d) ? d : 0;
@@ -217,7 +224,7 @@ namespace Codec.Services
             return additions > 0 || dlc > 0 || series > 0;
         }
 
-        private static double CalculateReleaseBoost(string queryName, JsonElement element)
+        private double CalculateReleaseBoost(string queryName, JsonElement element)
         {
             int? queryYear = ExtractYear(queryName);
             if (!queryYear.HasValue)
@@ -254,7 +261,7 @@ namespace Codec.Services
             return diff > 3 ? -0.05 : 0;
         }
 
-        private static double CalculatePopularityBoost(JsonElement element)
+        private double CalculatePopularityBoost(JsonElement element)
         {
             if (element.TryGetProperty("ratings_count", out var ratingsProp) && ratingsProp.TryGetInt32(out var ratings))
             {
@@ -265,7 +272,7 @@ namespace Codec.Services
             return 0;
         }
 
-        private static int? ExtractYear(string value)
+        private int? ExtractYear(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -284,7 +291,7 @@ namespace Codec.Services
         /// <summary>
         /// Applies special name overrides for specific games
         /// </summary>
-        private static string ApplyGameNameOverrides(string gameName)
+        private string ApplyGameNameOverrides(string gameName)
         {
             string normalized = gameName.Trim().ToLowerInvariant();
 
@@ -297,18 +304,14 @@ namespace Codec.Services
             return gameName;
         }
 
-        private static double CalculateNameSimilarity(string name1, string name2)
+        private double CalculateNameSimilarity(string name1, string name2)
         {
             string normalized1 = NormalizeName(name1);
             string normalized2 = NormalizeName(name2);
-
-            int distance = LevenshteinDistance(normalized1, normalized2);
-            int maxLength = Math.Max(normalized1.Length, normalized2.Length);
-
-            return maxLength > 0 ? 1.0 - ((double)distance / maxLength) : 0.0;
+            return Helpers.StringSimilarity.Calculate(normalized1, normalized2);
         }
 
-        private static string NormalizeName(string name)
+        private string NormalizeName(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -334,34 +337,6 @@ namespace Codec.Services
             name = Regex.Replace(name, @"\s+", " ");
 
             return name.Trim();
-        }
-
-        private static int LevenshteinDistance(string source, string target)
-        {
-            if (string.IsNullOrEmpty(source)) return target?.Length ?? 0;
-            if (string.IsNullOrEmpty(target)) return source.Length;
-
-            var d = new int[source.Length + 1, target.Length + 1];
-
-            for (int i = 0; i <= source.Length; i++)
-                d[i, 0] = i;
-
-            for (int j = 0; j <= target.Length; j++)
-                d[0, j] = j;
-
-            for (int i = 1; i <= source.Length; i++)
-            {
-                for (int j = 1; j <= target.Length; j++)
-                {
-                    int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
-                    d[i, j] = Math.Min(
-                        Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                        d[i - 1, j - 1] + cost
-                    );
-                }
-            }
-
-            return d[source.Length, target.Length];
         }
 
         private sealed record RawgCandidate(int RawgId, string Name, double Score);

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(ls \"C:/Users/maxik/Desktop/_Develop/codec/Services/\"*.cs)",
+      "Bash(mv SteamDetailsService.cs RawgDetailsService.cs HltbService.cs GameAssetService.cs GridDbService.cs Fetching/)",
+      "Bash(mv GameNameService.cs GameDetailsService.cs Resolving/)"
+    ]
+  }
+}

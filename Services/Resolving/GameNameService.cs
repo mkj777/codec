@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Codec.Services.Scanning;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,47 +15,51 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Codec.Services
+namespace Codec.Services.Resolving
 {
-    public static class GameNameService
+    public class GameNameService
     {
         private const string SteamSearchUrl = "https://steamcommunity.com/actions/SearchApps/";
         private const string SteamDetailsUrl = "https://store.steampowered.com/api/appdetails?appids=";
 
-        private static readonly HttpClient _httpClient = new();
-        private static readonly ScannerConfig Config = new();
-        private static readonly SemaphoreSlim SteamApiSemaphore = new(Config.MaxConcurrentApiRequests, Config.MaxConcurrentApiRequests);
-        private static readonly ConcurrentDictionary<string, CachedSearchEntry> SearchCache = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly JsonSerializerOptions JsonOptions = new()
+        private readonly GameDetailsService _gameDetails;
+        private readonly HttpClient _httpClient = new();
+        private readonly ScannerConfig Config = new();
+        private readonly SemaphoreSlim SteamApiSemaphore;
+        private readonly ConcurrentDictionary<string, CachedSearchEntry> SearchCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             NumberHandling = JsonNumberHandling.AllowReadingFromString
         };
 
-        private static readonly HashSet<string> DeprioritizedTerms = new(StringComparer.OrdinalIgnoreCase)
+        private readonly HashSet<string> DeprioritizedTerms = new(StringComparer.OrdinalIgnoreCase)
         {
             "win64", "win32", "x64", "x86", "bin", "binaries", "game", "data", "content",
             "win64-shipping", "win32-shipping", "shipping", "launcher", "bootstrap", "UE4", "UE5", "Unreal Engine", "Engine"
         };
 
-        private static readonly string[] CommonPrefixes = { "setup", "launcher", "client" };
-        private static readonly string[] CommonSuffixes = { "setup", "launcher", "client", "game" };
-        private static readonly string[] EditionSuffixes =
+        private readonly string[] CommonPrefixes = { "setup", "launcher", "client" };
+        private readonly string[] CommonSuffixes = { "setup", "launcher", "client", "game" };
+        private readonly string[] EditionSuffixes =
         {
             "deluxe", "standard", "enhanced", "remastered", "ultimate", "definitive",
             "complete", "goty", "gold", "digital", "edition", "anniversary"
         };
 
-        private static readonly Regex MultiSpaceRegex = new("\\s+", RegexOptions.Compiled);
-        private static readonly Regex CamelCaseRegex = new("(?<=[a-z0-9])([A-Z])", RegexOptions.Compiled);
-        private static readonly Regex SpecialCharRegex = new("[()\\[\\]{},-:;!?]", RegexOptions.Compiled);
+        private readonly Regex MultiSpaceRegex = new("\\s+", RegexOptions.Compiled);
+        private readonly Regex CamelCaseRegex = new("(?<=[a-z0-9])([A-Z])", RegexOptions.Compiled);
+        private readonly Regex SpecialCharRegex = new("[()\\[\\]{},-:;!?]", RegexOptions.Compiled);
 
-        private static readonly object RateLimitGate = new();
-        private static DateTime _lastSteamRequestUtc = DateTime.MinValue;
+        private readonly object RateLimitGate = new();
+        private DateTime _lastSteamRequestUtc = DateTime.MinValue;
 
-        static GameNameService()
+        public GameNameService(GameDetailsService gameDetails)
         {
+            _gameDetails = gameDetails;
+            SteamApiSemaphore = new SemaphoreSlim(Config.MaxConcurrentApiRequests, Config.MaxConcurrentApiRequests);
+
             if (!_httpClient.DefaultRequestHeaders.UserAgent.Any())
             {
                 _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CodecGameScanner/1.0 (+https://github.com/mkj777/codec)");
@@ -139,7 +144,7 @@ namespace Codec.Services
             public static extern bool VerQueryValue(IntPtr pBlock, string lpSubBlock, out IntPtr lplpBuffer, out uint puLen);
         }
 
-        private static string? GetVersionInfoValue(string path, string valueKey)
+        private string? GetVersionInfoValue(string path, string valueKey)
         {
             if (!File.Exists(path)) return null;
 
@@ -171,7 +176,7 @@ namespace Codec.Services
             return null;
         }
 
-        public static async Task<(int? steamId, int? rawgId)> FindGameIdsAsync(string exePath)
+        public async Task<(int? steamId, int? rawgId)> FindGameIdsAsync(string exePath)
         {
             GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath);
             int? steamId = steamMatch != null ? (int)steamMatch.SteamAppId : null;
@@ -192,7 +197,7 @@ namespace Codec.Services
             return (steamId, rawgId);
         }
 
-        private static async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default)
+        private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
             {
@@ -296,7 +301,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static async Task<string?> GetSteamGameNameAsync(int steamId)
+        private async Task<string?> GetSteamGameNameAsync(int steamId)
         {
             try
             {
@@ -319,13 +324,13 @@ namespace Codec.Services
             return null;
         }
 
-        private static async Task<int?> FindSteamIdAsync(string exePath)
+        private async Task<int?> FindSteamIdAsync(string exePath)
         {
             GameMatch? match = await ResolveSteamMatchAsync(exePath);
             return match != null ? (int)match.SteamAppId : null;
         }
 
-        private static List<LocalGameCandidate> BuildCandidates(string exePath)
+        private List<LocalGameCandidate> BuildCandidates(string exePath)
         {
             var candidates = new List<LocalGameCandidate>();
 
@@ -376,7 +381,7 @@ namespace Codec.Services
                 .ToList();
         }
 
-        private static IEnumerable<SearchCandidate> GenerateSearchCandidates(LocalGameCandidate candidate)
+        private IEnumerable<SearchCandidate> GenerateSearchCandidates(LocalGameCandidate candidate)
         {
             var (priority, weight) = candidate.MetadataSource.ToLowerInvariant() switch
             {
@@ -429,7 +434,7 @@ namespace Codec.Services
             }
         }
 
-        private static IEnumerable<string> GenerateProgressiveVariants(string normalized)
+        private IEnumerable<string> GenerateProgressiveVariants(string normalized)
         {
             var variants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -457,7 +462,7 @@ namespace Codec.Services
             return variants;
         }
 
-        private static IEnumerable<string> GenerateNumericVariants(string normalized)
+        private IEnumerable<string> GenerateNumericVariants(string normalized)
         {
             var tokens = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < tokens.Length; i++)
@@ -482,7 +487,7 @@ namespace Codec.Services
             }
         }
 
-        private static string RemoveEditionSuffixes(string name)
+        private string RemoveEditionSuffixes(string name)
         {
             var tokens = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
             while (tokens.Count > 1 && EditionSuffixes.Contains(tokens[^1], StringComparer.OrdinalIgnoreCase))
@@ -492,7 +497,7 @@ namespace Codec.Services
             return string.Join(' ', tokens);
         }
 
-        private static async Task<List<SteamSearchResult>> SearchSteamAsync(string normalizedName, CancellationToken cancellationToken)
+        private async Task<List<SteamSearchResult>> SearchSteamAsync(string normalizedName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(normalizedName))
             {
@@ -571,7 +576,7 @@ namespace Codec.Services
             return new List<SteamSearchResult>();
         }
 
-        private static async Task DelayForRateLimitAsync(CancellationToken cancellationToken)
+        private async Task DelayForRateLimitAsync(CancellationToken cancellationToken)
         {
             TimeSpan delay = TimeSpan.Zero;
             lock (RateLimitGate)
@@ -591,7 +596,7 @@ namespace Codec.Services
             }
         }
 
-        private static float CalculateMatchScore(string localName, string steamResult, LocalGameCandidate source)
+        private float CalculateMatchScore(string localName, string steamResult, LocalGameCandidate source)
         {
             if (string.IsNullOrWhiteSpace(localName) || string.IsNullOrWhiteSpace(steamResult))
             {
@@ -605,7 +610,7 @@ namespace Codec.Services
 
             float score = 0f;
 
-            float levenshteinSimilarity = 1f - (float)LevenshteinDistance(localName, steamResult) /
+            float levenshteinSimilarity = 1f - (float)Helpers.StringSimilarity.LevenshteinDistance(localName, steamResult) /
                 Math.Max(localName.Length, steamResult.Length);
             score += levenshteinSimilarity * 0.6f;
 
@@ -628,7 +633,7 @@ namespace Codec.Services
             return Math.Clamp(score, 0f, 1f);
         }
 
-        private static float CalculateTokenOverlap(string s1, string s2)
+        private float CalculateTokenOverlap(string s1, string s2)
         {
             var tokens1 = s1.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             var tokens2 = s2.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -644,27 +649,8 @@ namespace Codec.Services
             return union == 0 ? 0f : intersection / (float)union;
         }
 
-        private static int LevenshteinDistance(string source, string target)
-        {
-            if (string.IsNullOrEmpty(source)) return target?.Length ?? 0;
-            if (string.IsNullOrEmpty(target)) return source.Length;
 
-            var d = new int[source.Length + 1, target.Length + 1];
-            for (int i = 0; i <= source.Length; i++) d[i, 0] = i;
-            for (int j = 0; j <= target.Length; j++) d[0, j] = j;
-
-            for (int i = 1; i <= source.Length; i++)
-            {
-                for (int j = 1; j <= target.Length; j++)
-                {
-                    int cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
-                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
-                }
-            }
-            return d[source.Length, target.Length];
-        }
-
-        private static string NormalizeName(string? raw)
+        private string NormalizeName(string? raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
 
@@ -682,7 +668,7 @@ namespace Codec.Services
             return value;
         }
 
-        private static string RemoveFileExtension(string value)
+        private string RemoveFileExtension(string value)
         {
             var extensions = new[] { ".exe", ".msi" };
             foreach (string ext in extensions)
@@ -695,7 +681,7 @@ namespace Codec.Services
             return value;
         }
 
-        private static string TrimAffixes(string value)
+        private string TrimAffixes(string value)
         {
             foreach (string prefix in CommonPrefixes)
             {
@@ -710,7 +696,7 @@ namespace Codec.Services
             return value;
         }
 
-        private static string SanitizeUmlauts(string value)
+        private string SanitizeUmlauts(string value)
         {
             return value
                 .Replace("ä", "ae", StringComparison.OrdinalIgnoreCase)
@@ -724,7 +710,7 @@ namespace Codec.Services
                 .Replace("ú", "u", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string SanitizeRawName(string value)
+        private string SanitizeRawName(string value)
         {
             var builder = new StringBuilder(value.Length);
             foreach (char c in value)
@@ -741,7 +727,7 @@ namespace Codec.Services
             return builder.ToString();
         }
 
-        private static string? FindMuiFile(string exePath)
+        private string? FindMuiFile(string exePath)
         {
             string? dir = Path.GetDirectoryName(exePath);
             if (dir == null) return null;
@@ -761,12 +747,12 @@ namespace Codec.Services
             return null;
         }
 
-        public static string? GetBestName(string exePath)
+        public string? GetBestName(string exePath)
         {
             return GetPrioritizedNames(exePath).FirstOrDefault() ?? Path.GetFileNameWithoutExtension(exePath);
         }
 
-        private static List<string> GetPrioritizedNames(string exePath)
+        private List<string> GetPrioritizedNames(string exePath)
         {
             string? productName = GetVersionInfoValue(exePath, "ProductName");
             string? fileDescription = GetVersionInfoValue(exePath, "FileDescription");
@@ -802,7 +788,7 @@ namespace Codec.Services
             return distinctNames;
         }
 
-        private static int? GetSteamAppIdFromFile(string exePath)
+        private int? GetSteamAppIdFromFile(string exePath)
         {
             try
             {
@@ -824,7 +810,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static async Task<int?> FindRawgIdAsync(string exePath)
+        private async Task<int?> FindRawgIdAsync(string exePath)
         {
             if (GameContentHeuristics.PathMatchesUtility(exePath))
             {
@@ -840,13 +826,13 @@ namespace Codec.Services
             return await FindRawgIdByNameAsync(bestName, RawgValidationMode.Strict);
         }
 
-        public static async Task<int?> FindRawgIdByNameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
+        public async Task<int?> FindRawgIdByNameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
         {
             if (string.IsNullOrWhiteSpace(gameName)) return null;
-            return await GameDetailsService.ValidateGameAsync(gameName, mode);
+            return await _gameDetails.ValidateGameAsync(gameName, mode);
         }
 
-        private static bool TryParseRoman(string token, out int value)
+        private bool TryParseRoman(string token, out int value)
         {
             value = 0;
             if (string.IsNullOrWhiteSpace(token)) return false;
@@ -887,7 +873,7 @@ namespace Codec.Services
             return true;
         }
 
-        private static string? ToRoman(int number)
+        private string? ToRoman(int number)
         {
             if (number <= 0 || number > 3999) return null;
 

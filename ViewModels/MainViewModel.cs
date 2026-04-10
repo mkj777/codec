@@ -1,5 +1,8 @@
 using Codec.Models;
 using Codec.Services;
+using Codec.Services.Resolving;
+using Codec.Services.Scanning;
+using Codec.Services.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
@@ -10,7 +13,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,184 +24,35 @@ namespace Codec.ViewModels
         private const int SidebarSearchDebounceDelayMs = 300;
         private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
-        // Settings Sidebar
-        [RelayCommand]
-        private void OpenGameSettings()
-        {
-            IsGameSettingsOpen = true;
-        }
-
-        [RelayCommand]
-        private void CloseGameSettings()
-        {
-            IsGameSettingsOpen = false;
-        }
-
-        // Media Overlay
-        [RelayCommand]
-        private void OpenMediaOverlay()
-        {
-            IsMediaOverlayOpen = true;
-        }
-
-        [RelayCommand]
-        private void CloseMediaOverlay()
-        {
-            IsMediaOverlayOpen = false;
-        }
-
-        // Erhält den Pfad (z.B. der .bat Datei) von der View und speichert ihn
-        [RelayCommand]
-        private async Task SetLaunchScriptAsync(string batFilePath)
-        {
-            if (SelectedGame == null || string.IsNullOrWhiteSpace(batFilePath))
-                return;
-
-            SelectedGame.LaunchScript = batFilePath;
-
-            // UI zwingen, den neuen Wert des SelectedGames neu zu laden
-            OnPropertyChanged(nameof(SelectedGame));
-
-            // Direkt persistent speichern, damit der Wert beim Neustart bleibt
-            await LibraryStorageService.SaveAsync(Games);
-        }
-
-        [RelayCommand]
-        private async Task ClearLaunchScriptAsync()
-        {
-            if (SelectedGame == null)
-                return;
-
-            SelectedGame.LaunchScript = null;
-            OnPropertyChanged(nameof(SelectedGame));
-
-            await LibraryStorageService.SaveAsync(Games);
-        }
-
-        [RelayCommand]
-        private async Task DeleteSelectedGameAsync()
-        {
-            if (SelectedGame == null)
-                return;
-
-            var gameToDelete = SelectedGame;
-            var removed = Games.Remove(gameToDelete);
-
-            if (!removed)
-            {
-                var matchingGame = Games.FirstOrDefault(game => game.Id == gameToDelete.Id);
-                if (matchingGame != null)
-                    removed = Games.Remove(matchingGame);
-            }
-
-            if (!removed)
-                return;
-
-            IsGameSettingsOpen = false;
-            IsDetailsVisible = false;
-            SelectedGame = null;
-            SidebarSelectedItem = null;
-            IsOnboardingVisible = Games.Count == 0;
-
-            await LibraryStorageService.SaveAsync(Games);
-        }
-
-        [RelayCommand]
-        private void PlayGame()
-        {
-            if (SelectedGame == null)
-                return;
-
-            try
-            {
-                // Check if there's a custom launch script
-                if (!string.IsNullOrWhiteSpace(SelectedGame.LaunchScript) && File.Exists(SelectedGame.LaunchScript))
-                {
-                    // Launch using the custom script
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = SelectedGame.LaunchScript,
-                        UseShellExecute = true,
-                        WorkingDirectory = Path.GetDirectoryName(SelectedGame.LaunchScript)
-                    });
-                }
-                // Otherwise use the executable
-                else if (!string.IsNullOrWhiteSpace(SelectedGame.Executable) && File.Exists(SelectedGame.Executable))
-                {
-                    // Launch the game executable
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = SelectedGame.Executable,
-                        UseShellExecute = true,
-                        WorkingDirectory = Path.GetDirectoryName(SelectedGame.Executable)
-                    });
-                }
-                else
-                {
-                    Debug.WriteLine($"Cannot launch {SelectedGame.Name}: executable not found at {SelectedGame.Executable}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to launch {SelectedGame.Name}: {ex.Message}");
-            }
-        }
-
-        [RelayCommand]
-        private void OpenGameFolder()
-        {
-            if (SelectedGame == null)
-                return;
-
-            try
-            {
-                string folderPath = SelectedGame.FolderLocation;
-
-                if (!string.IsNullOrWhiteSpace(folderPath) && Directory.Exists(folderPath))
-                {
-                    // Open the folder in Windows Explorer
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "explorer.exe",
-                        Arguments = $"\"{folderPath}\"",
-                        UseShellExecute = true
-                    });
-                }
-                else
-                {
-                    Debug.WriteLine($"Cannot open folder for {SelectedGame.Name}: folder not found at {folderPath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to open folder for {SelectedGame.Name}: {ex.Message}");
-            }
-        }
         private readonly DispatcherQueue _dispatcherQueue;
+        private readonly ServiceHost _services;
         private CancellationTokenSource? _sidebarSearchDebounceCts;
         private string _appliedSearchText = string.Empty;
 
         public ObservableCollection<Game> Games { get; set; } = new();
         public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
 
-        public MainViewModel()
+        public MainViewModel(ServiceHost services)
         {
+            _services = services;
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             Games.CollectionChanged += Games_CollectionChanged;
             RefreshSidebarFilteredGames();
         }
 
+        // ---------------------------------------------------------------------------------
+        // Observable Properties
+        // ---------------------------------------------------------------------------------
+
         public bool HasGames => Games.Count > 0;
         public bool IsEmptyLibrary => !HasGames;
 
-        // View switching
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsLibraryGridVisible))]
         private bool _isDetailsVisible;
 
         public bool IsLibraryGridVisible => !IsDetailsVisible;
 
-        // Loading / onboarding states
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsLibraryVisible))]
         private bool _isInitialLoading = true;
@@ -223,7 +76,6 @@ namespace Codec.ViewModels
 
         public bool IsLibraryVisible => !IsInitialLoading && !IsOnboardingVisible && !IsLoadingVisible;
 
-        // Scan progress overlay
         [ObservableProperty] private bool _isScanProgressVisible;
         [ObservableProperty] private string _scanProgressMessage = string.Empty;
         [ObservableProperty] private bool _scanProgressIsIndeterminate = true;
@@ -231,24 +83,13 @@ namespace Codec.ViewModels
         [ObservableProperty] private double _scanProgressMaximum = 1;
         [ObservableProperty] private double _scanProgressMinimum;
 
-        // Other overlays
-        [ObservableProperty] private bool _isDetailLoadingVisible;
         [ObservableProperty] private bool _isAppSpinnerActive;
-
-        // Settings sidebar
         [ObservableProperty] private bool _isGameSettingsOpen;
-
-        // Media overlay
         [ObservableProperty] private bool _isMediaOverlayOpen;
-
-        // Sidebar lock
         [ObservableProperty] private bool _isUiEnabled = true;
-
-        // Sidebar selection sync (BackCommand sets this to null to clear ListView)
         [ObservableProperty] private Game? _sidebarSelectedItem;
         [ObservableProperty] private string _searchText = string.Empty;
 
-        // Debug mode detection
         [ObservableProperty]
         private bool _isDebugMode =
 #if DEBUG
@@ -267,7 +108,7 @@ namespace Codec.ViewModels
         }
 
         // ---------------------------------------------------------------------------------
-        // Commands
+        // Navigation
         // ---------------------------------------------------------------------------------
 
         [RelayCommand]
@@ -280,67 +121,32 @@ namespace Codec.ViewModels
             SidebarSelectedItem = null;
         }
 
-        [RelayCommand]
-        private async Task SelectGameAsync(Game game)
+        // ---------------------------------------------------------------------------------
+        // Library Lifecycle
+        // ---------------------------------------------------------------------------------
+
+        public async Task LoadLibraryAsync()
         {
-            IsDetailLoadingVisible = true;
+            _services.LibraryStorage.EnsureStorageInitialized();
+            SetLoadingState(true, "Loading your library...", "Preparing Codec");
 
-            var folderSizeTask = FolderSizeService.CalculateAsync(game.FolderLocation);
+            var saved = await _services.LibraryStorage.LoadAsync();
+            await EnsureCoversAsync(saved);
+            var sortedSavedGames = saved
+                .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
+                .ThenBy(game => game.Id)
+                .ToList();
 
-            try
-            {
-                var rawgTask = game.RawgID.HasValue ? RawgDetailsService.PopulateAsync(game) : Task.CompletedTask;
-                var steamTask = game.SteamID.HasValue ? SteamDetailsService.PopulateFromSteamAsync(game) : Task.CompletedTask;
-                var hltbTask = HltbService.PopulateAsync(game, _dispatcherQueue);
+            Games.Clear();
+            foreach (var g in sortedSavedGames)
+                Games.Add(g);
 
-                await Task.WhenAll(rawgTask, steamTask);
+            await _services.LibraryStorage.SaveAsync(Games);
+            QueueBackgroundPrefetch(Games);
 
-                if (string.IsNullOrWhiteSpace(game.RawgUrl))
-                {
-                    string? rawgUrl = null;
-                    if (!string.IsNullOrWhiteSpace(game.RawgSlug))
-                        rawgUrl = $"https://rawg.io/games/{game.RawgSlug}";
-                    else if (game.RawgID.HasValue)
-                        rawgUrl = $"https://rawg.io/games/{game.RawgID.Value}";
-                    game.RawgUrl = rawgUrl ?? "https://rawg.io";
-                }
-                if (string.IsNullOrWhiteSpace(game.HltbUrl))
-                    game.HltbUrl = "https://howlongtobeat.com";
-
-                SelectedGame = game;
-
-                _ = folderSizeTask.ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        Debug.WriteLine($"Folder size fetch failed for {game.Name}: {t.Exception?.GetBaseException().Message}");
-                        return;
-                    }
-                    var size = t.Result;
-                    _ = _dispatcherQueue.TryEnqueue(() =>
-                    {
-                        if (game.FolderSize != size)
-                        {
-                            game.FolderSize = size;
-                            _ = LibraryStorageService.SaveAsync(Games);
-                        }
-                    });
-                }, TaskScheduler.Default);
-
-                await AwaitHeroAndLogoAsync(game);
-
-                IsDetailsVisible = true;
-
-                _ = hltbTask.ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                        Debug.WriteLine($"HLTB fetch failed: {t.Exception?.GetBaseException().Message}");
-                }, TaskContinuationOptions.ExecuteSynchronously);
-            }
-            finally
-            {
-                IsDetailLoadingVisible = false;
-            }
+            SetLoadingState(false);
+            IsInitialLoading = false;
+            IsOnboardingVisible = Games.Count == 0;
         }
 
         [RelayCommand]
@@ -358,7 +164,7 @@ namespace Codec.ViewModels
                     if (!string.IsNullOrWhiteSpace(message))
                         LoadingSubtitle = message;
                 });
-                var scanner = new GameScanner();
+                var scanner = new GameScanner(_services.GameName);
                 var scanResults = await scanner.ScanAllGamesAsync(progress);
 
                 var newGames = new List<Game>();
@@ -389,7 +195,7 @@ namespace Codec.ViewModels
 
                 var fallbackTasks = newGames
                     .Where(g => !g.RawgID.HasValue)
-                    .Select(g => RawgDetailsService.TryPopulateRawgFromSearchAsync(g));
+                    .Select(g => _services.RawgDetails.TryPopulateRawgFromSearchAsync(g));
                 await Task.WhenAll(fallbackTasks);
 
                 await PopulateGridDbDataAsync(newGames);
@@ -415,7 +221,7 @@ namespace Codec.ViewModels
                         LoadingSubtitle = $"Preparing artwork... ({processed}/{totalGames})";
                 }
 
-                await LibraryStorageService.SaveAsync(Games);
+                await _services.LibraryStorage.SaveAsync(Games);
                 QueueBackgroundPrefetch(Games);
             }
             finally
@@ -455,16 +261,16 @@ namespace Codec.ViewModels
             }
 
             string folderLocation = Path.GetDirectoryName(normalizedExePath) ?? string.Empty;
-            string detectedName = GameNameService.GetBestName(normalizedExePath) ?? Path.GetFileNameWithoutExtension(normalizedExePath);
+            string detectedName = _services.GameName.GetBestName(normalizedExePath) ?? Path.GetFileNameWithoutExtension(normalizedExePath);
 
             try
             {
-                var (steamId, rawgId) = await GameNameService.FindGameIdsAsync(normalizedExePath);
+                var (steamId, rawgId) = await _services.GameName.FindGameIdsAsync(normalizedExePath);
 
                 if (!rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
                 {
                     var mode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
-                    rawgId = await GameDetailsService.ValidateGameAsync(detectedName, mode);
+                    rawgId = await _services.GameDetails.ValidateGameAsync(detectedName, mode);
                 }
 
                 if (steamId.HasValue && Games.Any(g => g.SteamID == steamId.Value))
@@ -501,16 +307,16 @@ namespace Codec.ViewModels
 
                 if (game.SteamID.HasValue)
                 {
-                    await SteamDetailsService.PopulateFromSteamAsync(game);
+                    await _services.SteamDetails.PopulateFromSteamAsync(game);
                 }
 
                 if (game.RawgID.HasValue)
                 {
-                    await RawgDetailsService.PopulateAsync(game);
+                    await _services.RawgDetails.PopulateAsync(game);
                 }
                 else
                 {
-                    await RawgDetailsService.TryPopulateRawgFromSearchAsync(game);
+                    await _services.RawgDetails.TryPopulateRawgFromSearchAsync(game);
                 }
 
                 if (string.IsNullOrWhiteSpace(game.RawgUrl))
@@ -534,11 +340,11 @@ namespace Codec.ViewModels
                     game.HltbUrl = "https://howlongtobeat.com";
                 }
 
-                await HltbService.PopulateAsync(game, _dispatcherQueue);
+                await _services.Hltb.PopulateAsync(game, _dispatcherQueue);
                 await EnsureCoverForGameAsync(game);
 
                 InsertGameAlphabetically(game);
-                await LibraryStorageService.SaveAsync(Games);
+                await _services.LibraryStorage.SaveAsync(Games);
                 QueueBackgroundPrefetch(new[] { game });
 
                 IsOnboardingVisible = false;
@@ -552,229 +358,9 @@ namespace Codec.ViewModels
             }
         }
 
-        public async Task LoadLibraryAsync()
-        {
-            LibraryStorageService.EnsureStorageInitialized();
-            SetLoadingState(true, "Loading your library...", "Preparing Codec");
-
-            var saved = await LibraryStorageService.LoadAsync();
-            await EnsureCoversAsync(saved);
-            var sortedSavedGames = saved
-                .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
-                .ThenBy(game => game.Id)
-                .ToList();
-
-            Games.Clear();
-            foreach (var g in sortedSavedGames)
-                Games.Add(g);
-
-            await LibraryStorageService.SaveAsync(Games);
-            QueueBackgroundPrefetch(Games);
-
-            SetLoadingState(false);
-            IsInitialLoading = false;
-            IsOnboardingVisible = Games.Count == 0;
-        }
-
-        public async Task RefreshCoversAsync()
-        {
-            ShowScanProgress("Fetching Covers...", Games.Count == 0);
-            PrepareCoverProgress(Games.Count, "Update Cover", "No Games to update.");
-
-            int processed = 0;
-            foreach (var g in Games)
-            {
-                if (g.SteamID.HasValue)
-                {
-                    var cover = await GameAssetService.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
-                    if (!string.IsNullOrEmpty(cover))
-                        g.LibCapsuleUrl = cover;
-                    await Task.Delay(75);
-                }
-                else
-                {
-                    await GridDbService.TryPopulateGridAssetsAsync(g, forceCoverDownload: true);
-                    await Task.Delay(75);
-                }
-
-                processed++;
-                UpdateCoverProgress(processed, Games.Count, "Updating Cover");
-            }
-
-            await LibraryStorageService.SaveAsync(Games);
-            HideScanProgress();
-        }
-
         // ---------------------------------------------------------------------------------
-        // Private helpers
+        // Sidebar Search & Filter
         // ---------------------------------------------------------------------------------
-
-        private async Task EnsureCoversAsync(IEnumerable<Game> games)
-        {
-            foreach (var g in games)
-            {
-                bool needsCover = IsPlaceholder(g.LibCapsule) || LocalFileMissing(g.LibCapsule);
-
-                if (g.SteamID.HasValue && needsCover)
-                {
-                    try
-                    {
-                        Debug.WriteLine($"Fetching cover for {g.Name} (SteamID {g.SteamID})");
-                        var cover = await GameAssetService.DownloadSteamLibraryCoverAsync(g.SteamID.Value);
-                        if (!string.IsNullOrEmpty(cover))
-                            g.LibCapsuleUrl = cover;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Cover fetch failed for {g.Name} ({g.SteamID}): {ex.Message}");
-                    }
-                    await Task.Delay(75);
-                }
-                else if (!g.SteamID.HasValue && needsCover)
-                {
-                    await GridDbService.TryPopulateGridAssetsAsync(g);
-                    await Task.Delay(75);
-                }
-            }
-        }
-
-        private Task EnsureCoverForGameAsync(Game game) => EnsureCoversAsync(new[] { game });
-
-        private static async Task PopulateGridDbDataAsync(IEnumerable<Game> games)
-        {
-            foreach (var game in games)
-            {
-                if (game.SteamID.HasValue)
-                    continue;
-                await GridDbService.TryPopulateGridAssetsAsync(game);
-                await Task.Delay(75);
-            }
-        }
-
-        private static bool IsPlaceholder(string? uri) =>
-            string.IsNullOrWhiteSpace(uri) || uri.StartsWith("https://placehold.co/", StringComparison.OrdinalIgnoreCase);
-
-        private static bool LocalFileMissing(string? uri)
-        {
-            if (string.IsNullOrWhiteSpace(uri)) return true;
-            if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed)) return true;
-            if (parsed.IsFile)
-            {
-                try { return !File.Exists(parsed.LocalPath); } catch { return true; }
-            }
-            return false;
-        }
-
-        private async Task AwaitHeroAndLogoAsync(Game game)
-        {
-            bool NeedsLogo() => game.SteamID.HasValue;
-            bool HasHero() => !IsPlaceholder(game.LibHero);
-            bool HasLogo() => !IsPlaceholder(game.LibLogo);
-
-            const int maxWaitMs = 6000;
-            const int stepMs = 100;
-            int waited = 0;
-
-            while (waited < maxWaitMs)
-            {
-                if (HasHero() && (!NeedsLogo() || HasLogo()))
-                    return;
-                await Task.Delay(stepMs);
-                waited += stepMs;
-            }
-        }
-
-        private void ShowScanProgress(string message, bool isIndeterminate)
-        {
-            ScanProgressMessage = message;
-            ScanProgressIsIndeterminate = isIndeterminate;
-            ScanProgressValue = 0;
-            ScanProgressMaximum = 1;
-            IsScanProgressVisible = false;
-            SetLoadingState(true, message, isIndeterminate ? "This will take a few minutes..." : string.Empty);
-        }
-
-        private void PrepareCoverProgress(int totalGames, string? labelPrefix = null, string? emptyMessage = null)
-        {
-            LoadingTitle = labelPrefix ?? "Loading covers";
-            if (totalGames <= 0)
-            {
-                ScanProgressIsIndeterminate = true;
-                ScanProgressMessage = emptyMessage ?? "No new games found.";
-                LoadingSubtitle = emptyMessage ?? "No new games found.";
-                return;
-            }
-            ScanProgressIsIndeterminate = false;
-            ScanProgressMinimum = 0;
-            ScanProgressMaximum = totalGames;
-            ScanProgressValue = 0;
-            ScanProgressMessage = $"{labelPrefix ?? "Loading covers"} (0/{totalGames})";
-            LoadingSubtitle = $"Preparing artwork... (0/{totalGames})";
-        }
-
-        private void UpdateCoverProgress(int processed, int total, string? labelPrefix = null)
-        {
-            if (total <= 0) return;
-            ScanProgressIsIndeterminate = false;
-            ScanProgressValue = Math.Min(processed, total);
-            ScanProgressMessage = $"{labelPrefix ?? "Loading covers"} ({Math.Min(processed, total)}/{total})";
-            LoadingTitle = labelPrefix ?? "Loading covers";
-            LoadingSubtitle = $"Preparing artwork... ({Math.Min(processed, total)}/{total})";
-        }
-
-        private void HideScanProgress()
-        {
-            IsScanProgressVisible = false;
-            SetLoadingState(false);
-        }
-
-        private void QueueBackgroundPrefetch(IEnumerable<Game> games)
-        {
-            foreach (var game in games)
-            {
-                QueueSteamWarmups(game);
-                QueueRawgWarmups(game);
-                QueueHltbWarmups(game);
-            }
-        }
-
-        private static void QueueSteamWarmups(Game game)
-        {
-            if (!game.SteamID.HasValue) return;
-            int id = game.SteamID.Value;
-            DataCacheService.QueueWarmup($"https://store.steampowered.com/api/appdetails?appids={id}");
-            DataCacheService.QueueWarmup($"https://store.steampowered.com/appreviews/{id}/?json=1&language=all&filter=all&num_per_page=0");
-            DataCacheService.QueueWarmup($"https://steamspy.com/api.php?request=appdetails&appid={id}");
-        }
-
-        private static void QueueRawgWarmups(Game game)
-        {
-            if (game.RawgID.HasValue)
-            {
-                DataCacheService.QueueWarmup($"https://codec-api-proxy.vercel.app/api/rawg/details?id={game.RawgID.Value}");
-                return;
-            }
-            if (!string.IsNullOrWhiteSpace(game.Name))
-            {
-                string term = Uri.EscapeDataString(game.Name);
-                DataCacheService.QueueWarmup($"https://codec-api-proxy.vercel.app/api/rawg/search?term={term}");
-            }
-        }
-
-        private static void QueueHltbWarmups(Game game)
-        {
-            if (string.IsNullOrWhiteSpace(game.Name)) return;
-            string normalized = NormalizeForHltb(game.Name);
-            if (!string.IsNullOrWhiteSpace(normalized))
-                DataCacheService.QueueWarmup($"https://codec-api-proxy.vercel.app/api/hltb/search?term={Uri.EscapeDataString(normalized)}");
-        }
-
-        private static string NormalizeForHltb(string value)
-        {
-            string cleaned = Regex.Replace(value, "[^a-zA-Z0-9 ]", " ");
-            cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
-            return cleaned;
-        }
 
         partial void OnSearchTextChanged(string value)
         {

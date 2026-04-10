@@ -238,22 +238,6 @@
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center"/>
 
-            <Grid Visibility="{Binding IsDetailLoadingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                  Background="{StaticResource BlurOverlayBrush}"
-                  HorizontalAlignment="Stretch"
-                  VerticalAlignment="Stretch">
-                <StackPanel HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Spacing="12">
-                    <ProgressRing Width="64"
-                                  Height="64"
-                                  IsActive="True"/>
-                    <TextBlock Text="Loading game assets..."
-                               FontSize="16"
-                               HorizontalAlignment="Center"/>
-                </StackPanel>
-            </Grid>
-
             <Grid x:Name="MediaOverlay"
                   Visibility="{Binding IsMediaOverlayOpen, Converter={StaticResource BoolToVisibilityConverter}}"
                   HorizontalAlignment="Stretch"

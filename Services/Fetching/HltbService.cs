@@ -5,15 +5,22 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Codec.Models;
+using Codec.Services.Storage;
 
-namespace Codec.Services
+namespace Codec.Services.Fetching
 {
-    public static class HltbService
+    public class HltbService
     {
         private const string SearchEndpoint = "https://codec-api-proxy.vercel.app/api/hltb/search?term=";
-        private static readonly HttpClient Http = new();
+        private readonly HttpClient _http = new();
+        private readonly MetadataCache _cache;
 
-        public static async Task PopulateAsync(Game game, Microsoft.UI.Dispatching.DispatcherQueue? dispatcher = null)
+        public HltbService(MetadataCache cache)
+        {
+            _cache = cache;
+        }
+
+        public async Task PopulateAsync(Game game, Microsoft.UI.Dispatching.DispatcherQueue? dispatcher = null)
         {
             if (game == null)
             {
@@ -35,7 +42,7 @@ namespace Codec.Services
             try
             {
                 var url = SearchEndpoint + Uri.EscapeDataString(term);
-                var json = await DataCacheService.GetStringAsync(url).ConfigureAwait(false);
+                var json = await _cache.GetOrFetchAsync("hltb", url, TimeSpan.FromDays(7)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
 
                 if (!doc.RootElement.TryGetProperty("success", out var successProp) || !successProp.GetBoolean())
@@ -122,7 +129,7 @@ namespace Codec.Services
             }
         }
 
-        private static int? GetInt(JsonElement element, string propertyName)
+        private int? GetInt(JsonElement element, string propertyName)
         {
             if (element.TryGetProperty(propertyName, out var prop))
             {
@@ -140,7 +147,7 @@ namespace Codec.Services
             return null;
         }
 
-        private static double GetSimilarity(JsonElement candidate, string referenceName)
+        private double GetSimilarity(JsonElement candidate, string referenceName)
         {
             double similarity = 0;
 
@@ -157,22 +164,18 @@ namespace Codec.Services
             return similarity;
         }
 
-        private static double CalculateNameSimilarity(string reference, string candidate)
+        private double CalculateNameSimilarity(string reference, string candidate)
         {
             string normRef = Normalize(reference);
             string normCand = Normalize(candidate);
 
             if (normRef.Length == 0 || normCand.Length == 0)
-            {
                 return 0;
-            }
 
-            int distance = LevenshteinDistance(normRef, normCand);
-            int maxLength = Math.Max(normRef.Length, normCand.Length);
-            return maxLength > 0 ? 1.0 - ((double)distance / maxLength) : 0;
+            return Helpers.StringSimilarity.Calculate(normRef, normCand);
         }
 
-        private static string Normalize(string value)
+        private string Normalize(string value)
         {
             string lower = value.ToLowerInvariant();
             lower = Regex.Replace(lower, "[^a-z0-9\\s]", " ");
@@ -180,7 +183,7 @@ namespace Codec.Services
             return lower;
         }
 
-        private static string NormalizeSearchTerm(string? value)
+        private string NormalizeSearchTerm(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -193,28 +196,5 @@ namespace Codec.Services
             return cleaned;
         }
 
-        private static int LevenshteinDistance(string source, string target)
-        {
-            if (string.IsNullOrEmpty(source)) return target?.Length ?? 0;
-            if (string.IsNullOrEmpty(target)) return source.Length;
-
-            int[,] d = new int[source.Length + 1, target.Length + 1];
-
-            for (int i = 0; i <= source.Length; i++) d[i, 0] = i;
-            for (int j = 0; j <= target.Length; j++) d[0, j] = j;
-
-            for (int i = 1; i <= source.Length; i++)
-            {
-                for (int j = 1; j <= target.Length; j++)
-                {
-                    int cost = source[i - 1] == target[j - 1] ? 0 : 1;
-                    d[i, j] = Math.Min(
-                        Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                        d[i - 1, j - 1] + cost);
-                }
-            }
-
-            return d[source.Length, target.Length];
-        }
     }
 }
