@@ -161,12 +161,15 @@ namespace Codec.Models
         // logo
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibLogo))]
+        [NotifyPropertyChangedFor(nameof(HasLogo))]
         private string? libLogoUrl;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibLogo))]
+        [NotifyPropertyChangedFor(nameof(HasLogo))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private string? libLogoCache;
         public string LibLogo => GetEffectiveAssetPath(LibLogoCache, LibLogoUrl, PlaceholderLogo);
+        public bool HasLogo => !string.IsNullOrWhiteSpace(LibLogoUrl) || !string.IsNullOrWhiteSpace(LibLogoCache);
         public bool DisplayedAssetsReady => HasRequiredDisplayedAssetsCached();
 
         // media

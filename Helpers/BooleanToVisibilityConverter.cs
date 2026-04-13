@@ -10,7 +10,9 @@ namespace Codec.Helpers
         {
             if (value is bool flag)
             {
-                return flag ? Visibility.Visible : Visibility.Collapsed;
+                bool reverse = parameter is string s && s.Equals("Reverse", StringComparison.OrdinalIgnoreCase);
+                bool visible = reverse ? !flag : flag;
+                return visible ? Visibility.Visible : Visibility.Collapsed;
             }
             return Visibility.Collapsed;
         }

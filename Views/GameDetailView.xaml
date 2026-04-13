@@ -372,12 +372,24 @@
                                                 <Image x:Name="HeroLogo"
                                                        Source="{Binding SelectedGame.LibLogo}"
                                                        Height="300"
-                                                       MaxWidth="600"
+                                                       MaxWidth="500"
+                                                       MaxHeight="300"
                                                        Stretch="Uniform"
                                                        HorizontalAlignment="Left"
                                                        VerticalAlignment="Top"
                                                        IsHitTestVisible="False"
-                                                       Margin="24,50,0,0"/>
+                                                       Margin="36,78,0,0"
+                                                       Visibility="{Binding SelectedGame.HasLogo, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                <TextBlock Text="{Binding SelectedGame.Name}"
+                                                           HorizontalAlignment="Left"
+                                                           VerticalAlignment="Top"
+                                                           IsHitTestVisible="False"
+                                                           Margin="78,48,0,0"
+                                                           FontSize="42"
+                                                           FontWeight="Bold"
+                                                           TextWrapping="Wrap"
+                                                           MaxWidth="600"
+                                                           Visibility="{Binding SelectedGame.HasLogo, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"/>
                                         </Grid>
                                 </Grid>
 
