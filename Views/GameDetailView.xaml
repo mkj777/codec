@@ -557,46 +557,17 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled"
                                       HorizontalAlignment="Stretch"
-                                      Padding="10,-4,0,0">
+                                      Padding="10,4,0,0">
                                 <Grid ColumnSpacing="20">
                                         <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <Grid Grid.Column="0"
-                                              RowSpacing="16">
-                                                <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
+                                        <Grid Grid.Column="0">
 
-                                                <!-- Row 1: Game Name -->
-                                                <Grid Grid.Row="0"
-                                                      ColumnSpacing="12"
-                                                      HorizontalAlignment="Stretch"
-                                                      Margin="0,8,0,0">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <Button Grid.Column="0"
-                                                                Content="View Media"
-                                                                Command="{Binding OpenMediaOverlayCommand}"
-                                                                VerticalAlignment="Center"
-                                                                FontWeight="SemiBold"/>
-
-                                                        <TextBlock Grid.Column="1"
-                                                                   Text="{Binding SelectedGame.Name}"
-                                                                   FontSize="22"
-                                                                   FontWeight="Bold"
-                                                                   TextWrapping="WrapWholeWords"
-                                                                   VerticalAlignment="Center"/>
-                                                </Grid>
-
-                                                <!-- Row 2: Game Info Block split into two columns -->
-                                                <Grid Grid.Row="1"
+                                                <!-- Game Info Block split into two columns -->
+                                                <Grid
                                                       ColumnSpacing="6"
                                                       HorizontalAlignment="Stretch">
                                                         <Grid.ColumnDefinitions>
@@ -696,7 +667,7 @@
                                                 <ItemsControl ItemsSource="{Binding SelectedGame.PlatformLogoUris, Mode=OneWay}"
                                                               HorizontalAlignment="Right"
                                                               VerticalAlignment="Top"
-                                                              Margin="0,0,0,10">
+                                                              Margin="0,-10,4,10">
                                                         <ItemsControl.ItemsPanel>
                                                                 <ItemsPanelTemplate>
                                                                         <StackPanel Orientation="Horizontal"
@@ -714,31 +685,54 @@
 
                                                 <StackPanel Spacing="0"
                                                             VerticalAlignment="Top"
-                                                            HorizontalAlignment="Right">
+                                                            HorizontalAlignment="Right"
+                                                            Margin="0,0,2,0">
+                                                        <StackPanel.Resources>
+                                                                <SolidColorBrush x:Key="HyperlinkButtonBackgroundPointerOver"
+                                                                                 Color="Transparent"/>
+                                                                <SolidColorBrush x:Key="HyperlinkButtonBackgroundPressed"
+                                                                                 Color="Transparent"/>
+                                                        </StackPanel.Resources>
                                                         <HyperlinkButton Content="Website"
                                                                          Foreground="White"
+                                                                         Margin="0"
+                                                                         Padding="0"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.OfficialWebsiteUrl}"
                                                                          Visibility="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="Steam"
                                                                          Foreground="White"
+                                                                         Margin="0,4,0,0"
+                                                                         Padding="0"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.SteamPageUrl}"
                                                                          Visibility="{Binding SelectedGame.SteamPageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="RAWG"
                                                                          Foreground="White"
+                                                                         Margin="0,6,0,0"
+                                                                         Padding="0"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.RawgUrl}"
                                                                          Visibility="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="HLTB"
                                                                          Foreground="White"
+                                                                         Margin="0,6,0,0"
+                                                                         Padding="0"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.HltbUrl}"
                                                                          Visibility="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                        <HyperlinkButton Content="Media"
+                                                                         Foreground="White"
+                                                                         Margin="0,6,0,0"
+                                                                         Padding="0"
+                                                                         Opacity="0.45"
+                                                                         FontWeight="SemiBold"
+                                                                         HorizontalAlignment="Right"
+                                                                         Command="{Binding OpenMediaOverlayCommand}"/>
                                                 </StackPanel>
                                         </StackPanel>
                                 </Grid>
