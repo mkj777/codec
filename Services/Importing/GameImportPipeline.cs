@@ -100,6 +100,8 @@ namespace Codec.Services.Importing
                     var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath).ConfigureAwait(false);
                     steamId ??= resolvedIds.steamId;
                     rawgId ??= resolvedIds.rawgId;
+                    if (!string.IsNullOrWhiteSpace(resolvedIds.steamName))
+                        detectedName = resolvedIds.steamName;
                 }
 
                 if (!rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
@@ -210,7 +212,6 @@ namespace Codec.Services.Importing
             game.HasLogoAssetSource = hydration.HasLogoSource;
             game.LibLogoUrl = hydration.LogoUrl;
             game.LibLogoCache = hydration.LogoCachePath;
-            game.NotifyDisplayedAssetStateChanged();
         }
     }
 }

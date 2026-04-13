@@ -151,7 +151,6 @@ namespace Codec.Models
         // hero
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibHero))]
-        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private string? libHeroUrl;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibHero))]
@@ -162,7 +161,6 @@ namespace Codec.Models
         // logo
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibLogo))]
-        [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private string? libLogoUrl;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibLogo))]
@@ -371,15 +369,6 @@ namespace Codec.Models
             HltbUrl = source.HltbUrl;
             LaunchScript = source.LaunchScript;
             IsFullyImported = source.IsFullyImported;
-            NotifyDisplayedAssetStateChanged();
-        }
-
-        public void NotifyDisplayedAssetStateChanged()
-        {
-            OnPropertyChanged(nameof(LibCapsule));
-            OnPropertyChanged(nameof(LibHero));
-            OnPropertyChanged(nameof(LibLogo));
-            OnPropertyChanged(nameof(DisplayedAssetsReady));
         }
     }
 }

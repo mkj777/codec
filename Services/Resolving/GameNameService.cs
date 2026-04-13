@@ -176,10 +176,11 @@ namespace Codec.Services.Resolving
             return null;
         }
 
-        public async Task<(int? steamId, int? rawgId)> FindGameIdsAsync(string exePath)
+        public async Task<(int? steamId, int? rawgId, string? steamName)> FindGameIdsAsync(string exePath)
         {
             GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath);
             int? steamId = steamMatch != null ? (int)steamMatch.SteamAppId : null;
+            string? steamName = steamMatch?.SteamName;
             int? rawgId = null;
 
             if (steamMatch != null)
@@ -194,7 +195,7 @@ namespace Codec.Services.Resolving
                 rawgId = await FindRawgIdAsync(exePath);
             }
 
-            return (steamId, rawgId);
+            return (steamId, rawgId, steamName);
         }
 
         private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default)

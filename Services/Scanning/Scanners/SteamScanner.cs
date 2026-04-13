@@ -209,6 +209,9 @@ namespace Codec.Services.Scanning.Scanners
                 if (!isReady)
                     continue;
 
+                if (drive.DriveType == DriveType.Network)
+                    continue;
+
                 yield return drive;
             }
         }

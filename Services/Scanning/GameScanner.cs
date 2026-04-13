@@ -159,7 +159,7 @@ namespace Codec.Services.Scanning
                     Debug.WriteLine($"  [STEAM LOOKUP] Searching Steam for: '{candidate.Name}'");
                     try
                     {
-                        (int? foundSteamId, int? _) = await _gameName.FindGameIdsAsync(executablePath);
+                        (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath);
                         if (foundSteamId.HasValue)
                         {
                             steamId = foundSteamId;

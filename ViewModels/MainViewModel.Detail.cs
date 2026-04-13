@@ -207,12 +207,6 @@ namespace Codec.ViewModels
                 var persistedSnapshot = await RunOnUiThreadAsync(() =>
                 {
                     game.ApplyHydrationSnapshot(snapshot);
-                    game.IsFullyImported = displayedAssets.AreRequiredAssetsReady;
-                    game.NotifyDisplayedAssetStateChanged();
-                    if (ReferenceEquals(SelectedGame, game))
-                    {
-                        OnPropertyChanged(nameof(SelectedGame));
-                    }
                     return Games.ToList();
                 });
 
@@ -234,7 +228,6 @@ namespace Codec.ViewModels
             game.HasLogoAssetSource = hydration.HasLogoSource;
             game.LibLogoUrl = hydration.LogoUrl;
             game.LibLogoCache = hydration.LogoCachePath;
-            game.NotifyDisplayedAssetStateChanged();
         }
     }
 }

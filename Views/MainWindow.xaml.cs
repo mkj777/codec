@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -37,7 +38,27 @@ namespace Codec.Views
             ExtendsContentIntoTitleBar = true;
             AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"));
             ConfigureWindowConstraints();
+            ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             _ = ViewModel.LoadLibraryAsync();
+        }
+
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ViewModel.IsMediaOverlayOpen) && !ViewModel.IsMediaOverlayOpen)
+                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+                    () => StopAllMediaPlayers(MediaOverlayFlipView));
+        }
+
+        private static void StopAllMediaPlayers(DependencyObject parent)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is MediaPlayerElement mediaPlayerElement)
+                    mediaPlayerElement.MediaPlayer?.Pause();
+                else
+                    StopAllMediaPlayers(child);
+            }
         }
 
         private void ConfigureWindowConstraints()
@@ -150,11 +171,11 @@ namespace Codec.Views
                     return;
 
                 Debug.WriteLine($"Starting ID lookup for: {exeFile.Path}");
-                var (steamId, rawgId) = await App.Services.GameName.FindGameIdsAsync(exeFile.Path);
+                var (steamId, rawgId, steamName) = await App.Services.GameName.FindGameIdsAsync(exeFile.Path);
 
                 string steamIdText = steamId.HasValue ? steamId.Value.ToString() : "Not found";
                 string rawgIdText = rawgId.HasValue ? rawgId.Value.ToString() : "Not found";
-                string bestName = App.Services.GameName.GetBestName(exeFile.Path) ?? "Unknown";
+                string bestName = steamName ?? App.Services.GameName.GetBestName(exeFile.Path) ?? "Unknown";
 
                 var testDialog = new ContentDialog
                 {
