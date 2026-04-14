@@ -100,6 +100,12 @@ namespace Codec.Views
                 ViewModel.CloseMediaOverlayCommand.Execute(null);
         }
 
+        private void LibraryTitle_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.BackCommand.CanExecute(null))
+                ViewModel.BackCommand.Execute(null);
+        }
+
         private static void ApplySidebarItemForeground(ListViewItem container, bool isSelected)
         {
             var brush = isSelected ? SidebarSelectedForegroundBrush : SidebarUnselectedForegroundBrush;

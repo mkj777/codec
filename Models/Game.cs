@@ -96,6 +96,14 @@ namespace Codec.Models
             ? $"{SteamReviewSummary} ({SteamReviewTotal})"
             : NotAvailableText;
 
+        public string DisplaySteamReviewSummary => HasSteamReview
+            ? SteamReviewSummary!
+            : NotAvailableText;
+
+        public string DisplaySteamReviewCount => HasSteamReview
+            ? $" ({SteamReviewTotal})"
+            : string.Empty;
+
         public double SteamReviewOpacity => GetAvailabilityOpacity(HasSteamReview);
 
         public string DisplayMainStory => FormatCompletionTime(TimeToCompleteMainStory);
@@ -307,12 +315,16 @@ namespace Codec.Models
         partial void OnSteamReviewSummaryChanged(string? value)
         {
             OnPropertyChanged(nameof(DisplaySteamReview));
+            OnPropertyChanged(nameof(DisplaySteamReviewSummary));
+            OnPropertyChanged(nameof(DisplaySteamReviewCount));
             OnPropertyChanged(nameof(SteamReviewOpacity));
         }
 
         partial void OnSteamReviewTotalChanged(int? value)
         {
             OnPropertyChanged(nameof(DisplaySteamReview));
+            OnPropertyChanged(nameof(DisplaySteamReviewSummary));
+            OnPropertyChanged(nameof(DisplaySteamReviewCount));
             OnPropertyChanged(nameof(SteamReviewOpacity));
         }
 

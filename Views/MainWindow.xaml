@@ -66,11 +66,30 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBlock Text="Codec Library"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   Margin="0,12,0,8"
-                                   HorizontalAlignment="Center"/>
+                        <Button Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0"
+                                Margin="0,12,0,8"
+                                HorizontalAlignment="Center"
+                                Click="LibraryTitle_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                 Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                 Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBackground"
+                                                 Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                 Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                 Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrush"
+                                                 Color="Transparent"/>
+                            </Button.Resources>
+                            <TextBlock Text="Codec."
+                                       FontSize="18"
+                                       FontWeight="Bold"/>
+                        </Button>
                         <TextBox Grid.Row="1"
                                  Margin="0,0,0,0"
                                  Height="{StaticResource SidebarGameRowHeight}"

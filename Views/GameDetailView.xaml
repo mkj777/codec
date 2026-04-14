@@ -448,11 +448,11 @@
                                 <!-- Settings button bottom-right of the hero (top half) with tighter inset -->
                                 <Grid x:Name="DetailsSettingsChrome"
                                       Grid.RowSpan="3"
-                                      Width="46"
-                                      Height="46"
+                                      Width="40"
+                                      Height="40"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Bottom"
-                                      Margin="0,0,6,8"
+                                      Margin="0,0,0,0"
                                       RenderTransformOrigin="0.5,0.5">
                                         <Grid.RenderTransform>
                                                 <CompositeTransform x:Name="DetailsSettingsTransform"
@@ -538,7 +538,7 @@
                                                 BorderThickness="1.5"
                                                 CornerRadius="28"
                                                 IsHitTestVisible="False">
-                                                <Grid Padding="26,14">
+                                                <Grid Padding="24,12">
                                                         <StackPanel Orientation="Horizontal"
                                                                     Spacing="10"
                                                                     HorizontalAlignment="Center"
@@ -608,6 +608,8 @@
                                 <Border x:Name="SettingsPanelBorder"
                                         Width="380"
                                         MinWidth="320"
+                                        MinHeight="100"
+                                        MaxHeight="360"
                                         HorizontalAlignment="Right"
                                         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
                                         BorderBrush="#33FFFFFF"
@@ -865,10 +867,14 @@
                                                                 <TextBlock Text="Steam Reviews"
                                                                            Opacity="0.4"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
-                                                                <TextBlock Text="{Binding SelectedGame.DisplaySteamReview, FallbackValue='Not Available'}"
-                                                                           Opacity="{Binding SelectedGame.SteamReviewOpacity, FallbackValue=0.6}"
+                                                                <TextBlock Opacity="{Binding SelectedGame.SteamReviewOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                           TextWrapping="Wrap"/>
+                                                                           TextWrapping="Wrap">
+                                                                        <Run Text="{Binding SelectedGame.DisplaySteamReviewSummary, FallbackValue='Not Available'}"/>
+                                                                        <Run Text="{Binding SelectedGame.DisplaySteamReviewCount, FallbackValue=''}"
+                                                                             FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                             Foreground="#A0A0A0"/>
+                                                                </TextBlock>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Main Story"
