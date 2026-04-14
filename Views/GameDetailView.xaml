@@ -918,6 +918,7 @@
 
                                                 <StackPanel x:Name="FolderSizeSection"
                                                             Grid.Row="0"
+                                                            Margin="0,-10,0,0"
                                                             Grid.Column="0"
                                                             Spacing="4">
                                                         <TextBlock x:Name="FolderSizeLabel"
@@ -925,7 +926,7 @@
                                                                    Opacity="0.5"
                                                                    FontSize="12"/>
                                                         <TextBlock x:Name="FolderSizeValue"
-                                                                   Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Calculating...'}"
+                                                                   Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
                                                                    FontWeight="SemiBold"
                                                                    FontSize="16"/>
                                                 </StackPanel>
@@ -944,12 +945,14 @@
                                                                    TextWrapping="Wrap"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    MaxLines="3"
+                                                                   Margin="0,-4,0,0"
+                                                                   Padding="0"
                                                                    Foreground="#A0A0A0"
                                                                    FontSize="14"/>
 
                                                         <StackPanel Orientation="Horizontal"
                                                                     Spacing="8">
-                                                                <Button Content="Browse..."
+                                                                <Button Content="Browse"
                                                                         Click="SelectScriptButton_Click"/>
 
                                                                 <Button Content="Clear"
