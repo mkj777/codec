@@ -15,8 +15,6 @@ namespace Codec.Views
 {
     public sealed partial class GameDetailView : UserControl, INotifyPropertyChanged
     {
-        private IGameDetailView_Bindings? Bindings;
-
         [DllImport("user32.dll")]
         private static extern IntPtr GetActiveWindow();
 

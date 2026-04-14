@@ -598,6 +598,136 @@
                                         </Button>
                                 </Grid>
                         </Grid>
+
+                        <Grid x:Name="SettingsOverlay"
+                              Visibility="{Binding IsGameSettingsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <Grid Background="#80000000"
+                                      Margin="-20,0,0,0"
+                                      Tapped="Scrim_Tapped"/>
+
+                                <Border x:Name="SettingsPanelBorder"
+                                        Width="380"
+                                        MinWidth="320"
+                                        HorizontalAlignment="Right"
+                                        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                                        BorderBrush="#33FFFFFF"
+                                        BorderThickness="1,0,0,0"
+                                        Margin="0,64,0,64"
+                                        CornerRadius="14,0,0,14">
+
+                                        <Grid x:Name="SettingsRootGrid">
+                                                <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <Grid Grid.Row="0">
+                                                        <TextBlock x:Name="SettingsHeaderText"
+                                                                   Text="Game Settings"
+                                                                   FontSize="22"
+                                                                   FontWeight="Bold"
+                                                                   VerticalAlignment="Center"/>
+                                                        <Button Content="✕"
+                                                                Command="{Binding CloseGameSettingsCommand}"
+                                                                HorizontalAlignment="Right"
+                                                                Background="Transparent"
+                                                                BorderThickness="0"
+                                                                FontSize="18"/>
+                                                </Grid>
+
+                                                <Grid x:Name="SettingsContentGrid"
+                                                      Grid.Row="1">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition x:Name="SettingsPrimaryColumn"
+                                                                                  Width="*"/>
+                                                                <ColumnDefinition x:Name="SettingsSecondaryColumn"
+                                                                                  Width="0"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel x:Name="FolderSizeSection"
+                                                                    Grid.Row="0"
+                                                                    Margin="0,-10,0,0"
+                                                                    Grid.Column="0"
+                                                                    Spacing="4">
+                                                                <TextBlock x:Name="FolderSizeLabel"
+                                                                           Text="FOLDER SIZE"
+                                                                           Opacity="0.5"
+                                                                           FontSize="12"/>
+                                                                <TextBlock x:Name="FolderSizeValue"
+                                                                           Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
+                                                                           FontWeight="SemiBold"
+                                                                           FontSize="16"/>
+                                                        </StackPanel>
+
+                                                        <StackPanel x:Name="LaunchScriptSection"
+                                                                    Grid.Row="1"
+                                                                    Grid.Column="0"
+                                                                    Spacing="8">
+                                                                <TextBlock x:Name="LaunchScriptLabel"
+                                                                           Text="CUSTOM LAUNCH SCRIPT"
+                                                                           Opacity="0.5"
+                                                                           FontSize="12"/>
+
+                                                                <TextBlock x:Name="LaunchScriptValue"
+                                                                           Text="{Binding SelectedGame.LaunchScript, TargetNullValue='No script selected', FallbackValue='No script selected'}"
+                                                                           TextWrapping="Wrap"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           MaxLines="3"
+                                                                           Margin="0,-4,0,0"
+                                                                           Padding="0"
+                                                                           Foreground="#A0A0A0"
+                                                                           FontSize="14"/>
+
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Spacing="8">
+                                                                        <Button Content="Browse"
+                                                                                Click="SelectScriptButton_Click"/>
+
+                                                                        <Button Content="Clear"
+                                                                                Command="{Binding ClearLaunchScriptCommand}"
+                                                                                Visibility="{Binding SelectedGame.LaunchScript, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                                </StackPanel>
+                                                        </StackPanel>
+                                                </Grid>
+
+                                                <StackPanel x:Name="DeleteSection"
+                                                            Grid.Row="2"
+                                                            Spacing="8">
+                                                        <TextBlock x:Name="DeleteSectionLabel"
+                                                                   Text="LIBRARY"
+                                                                   Opacity="0.5"
+                                                                   FontSize="12"/>
+                                                        <Grid ColumnSpacing="8">
+                                                                <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <Button Content="Open Folder"
+                                                                        Grid.Column="0"
+                                                                        Command="{Binding OpenGameFolderCommand}"
+                                                                        HorizontalAlignment="Stretch"/>
+                                                                <Button Content="Delete from Library"
+                                                                        Grid.Column="1"
+                                                                        Click="DeleteSelectedGameButton_Click"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        Foreground="#FFFFC7C7"
+                                                                        BorderBrush="#99FF7A7A"
+                                                                        Background="#66A11F1F"/>
+                                                        </Grid>
+                                                        <TextBlock x:Name="DeleteSectionHelperText"
+                                                                   Text="Removes this game from Codec. Files stay on disk."
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="#A0A0A0"
+                                                                   FontSize="12"/>
+                                                </StackPanel>
+                                        </Grid>
+                                </Border>
+                        </Grid>
                 </Grid>
 
                 <!-- Lower Half -->
@@ -850,135 +980,6 @@
                                         </StackPanel>
                                 </Grid>
                         </ScrollViewer>
-                </Grid>
-                <Grid x:Name="SettingsOverlay"
-                      Visibility="{Binding IsGameSettingsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
-
-                        <Grid Background="#80000000"
-                              Tapped="Scrim_Tapped"/>
-
-                        <Border x:Name="SettingsPanelBorder"
-                                Width="380"
-                                MinWidth="320"
-                                HorizontalAlignment="Right"
-                                Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-                                BorderBrush="#33FFFFFF"
-                                BorderThickness="1,0,0,0"
-                                Margin="0 64 0 64"
-                                CornerRadius="14 0 0 14">
-
-                                <Grid x:Name="SettingsRootGrid">
-                                        <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="*"/>
-                                                <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <Grid Grid.Row="0">
-                                                <TextBlock x:Name="SettingsHeaderText"
-                                                           Text="Game Settings"
-                                                           FontSize="22"
-                                                           FontWeight="Bold"
-                                                           VerticalAlignment="Center"/>
-                                                <Button Content="✕"
-                                                        Command="{Binding CloseGameSettingsCommand}"
-                                                        HorizontalAlignment="Right"
-                                                        Background="Transparent"
-                                                        BorderThickness="0"
-                                                        FontSize="18"/>
-                                        </Grid>
-
-                                        <Grid x:Name="SettingsContentGrid"
-                                              Grid.Row="1">
-                                                <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition x:Name="SettingsPrimaryColumn"
-                                                                          Width="*"/>
-                                                        <ColumnDefinition x:Name="SettingsSecondaryColumn"
-                                                                          Width="0"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-
-                                                <StackPanel x:Name="FolderSizeSection"
-                                                            Grid.Row="0"
-                                                            Margin="0,-10,0,0"
-                                                            Grid.Column="0"
-                                                            Spacing="4">
-                                                        <TextBlock x:Name="FolderSizeLabel"
-                                                                   Text="FOLDER SIZE"
-                                                                   Opacity="0.5"
-                                                                   FontSize="12"/>
-                                                        <TextBlock x:Name="FolderSizeValue"
-                                                                   Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
-                                                                   FontWeight="SemiBold"
-                                                                   FontSize="16"/>
-                                                </StackPanel>
-
-                                                <StackPanel x:Name="LaunchScriptSection"
-                                                            Grid.Row="1"
-                                                            Grid.Column="0"
-                                                            Spacing="8">
-                                                        <TextBlock x:Name="LaunchScriptLabel"
-                                                                   Text="CUSTOM LAUNCH SCRIPT"
-                                                                   Opacity="0.5"
-                                                                   FontSize="12"/>
-
-                                                        <TextBlock x:Name="LaunchScriptValue"
-                                                                   Text="{Binding SelectedGame.LaunchScript, TargetNullValue='No script selected', FallbackValue='No script selected'}"
-                                                                   TextWrapping="Wrap"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   MaxLines="3"
-                                                                   Margin="0,-4,0,0"
-                                                                   Padding="0"
-                                                                   Foreground="#A0A0A0"
-                                                                   FontSize="14"/>
-
-                                                        <StackPanel Orientation="Horizontal"
-                                                                    Spacing="8">
-                                                                <Button Content="Browse"
-                                                                        Click="SelectScriptButton_Click"/>
-
-                                                                <Button Content="Clear"
-                                                                        Command="{Binding ClearLaunchScriptCommand}"
-                                                                        Visibility="{Binding SelectedGame.LaunchScript, Converter={StaticResource NullToVisibilityConverter}}"/>
-                                                        </StackPanel>
-                                                </StackPanel>
-                                        </Grid>
-
-                                        <StackPanel x:Name="DeleteSection"
-                                                    Grid.Row="2"
-                                                    Spacing="8">
-                                                <TextBlock x:Name="DeleteSectionLabel"
-                                                           Text="LIBRARY"
-                                                           Opacity="0.5"
-                                                           FontSize="12"/>
-                                                <Grid ColumnSpacing="8">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <Button Content="Open Folder"
-                                                                Grid.Column="0"
-                                                                Command="{Binding OpenGameFolderCommand}"
-                                                                HorizontalAlignment="Stretch"/>
-                                                        <Button Content="Delete from Library"
-                                                                Grid.Column="1"
-                                                                Click="DeleteSelectedGameButton_Click"
-                                                                HorizontalAlignment="Stretch"
-                                                                Foreground="#FFFFC7C7"
-                                                                BorderBrush="#99FF7A7A"
-                                                                Background="#66A11F1F"/>
-                                                </Grid>
-                                                <TextBlock x:Name="DeleteSectionHelperText"
-                                                           Text="Removes this game from Codec. Files stay on disk."
-                                                           TextWrapping="Wrap"
-                                                           Foreground="#A0A0A0"
-                                                           FontSize="12"/>
-                                        </StackPanel>
-                                </Grid>
-                        </Border>
                 </Grid>
         </Grid>
 
