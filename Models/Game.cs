@@ -9,6 +9,7 @@ namespace Codec.Models
 {
     public partial class Game : ObservableObject
     {
+        private const string NotAvailableText = "Not Available";
         private static readonly Dictionary<string, int> PlatformDisplayOrder = new(StringComparer.OrdinalIgnoreCase)
         {
             ["windows"] = 0,
@@ -84,6 +85,26 @@ namespace Codec.Models
             .DistinctBy(platform => platform!.Key, StringComparer.OrdinalIgnoreCase)
             .OrderBy(platform => platform!.Order)
             .Select(platform => platform!.LogoUri);
+
+        public string DisplayAgeRating => IsUnavailableText(AgeRating, "Not Rated")
+            ? NotAvailableText
+            : AgeRating!;
+
+        public double AgeRatingOpacity => GetAvailabilityOpacity(!IsUnavailableText(AgeRating, "Not Rated"));
+
+        public string DisplaySteamReview => HasSteamReview
+            ? $"{SteamReviewSummary} ({SteamReviewTotal})"
+            : NotAvailableText;
+
+        public double SteamReviewOpacity => GetAvailabilityOpacity(HasSteamReview);
+
+        public string DisplayMainStory => FormatCompletionTime(TimeToCompleteMainStory);
+
+        public double MainStoryOpacity => GetAvailabilityOpacity(HasCompletionTime(TimeToCompleteMainStory));
+
+        public string DisplayCompletionist => FormatCompletionTime(TimeToCompleteCompletionist);
+
+        public double CompletionistOpacity => GetAvailabilityOpacity(HasCompletionTime(TimeToCompleteCompletionist));
 
         // game assets with cache for offline first, effective path resolution
         private static string GetEffectiveAssetPath(string? cachePath, string? url, string placeholder)
@@ -275,6 +296,94 @@ namespace Codec.Models
             {
                 return false;
             }
+        }
+
+        partial void OnAgeRatingChanged(string? value)
+        {
+            OnPropertyChanged(nameof(DisplayAgeRating));
+            OnPropertyChanged(nameof(AgeRatingOpacity));
+        }
+
+        partial void OnSteamReviewSummaryChanged(string? value)
+        {
+            OnPropertyChanged(nameof(DisplaySteamReview));
+            OnPropertyChanged(nameof(SteamReviewOpacity));
+        }
+
+        partial void OnSteamReviewTotalChanged(int? value)
+        {
+            OnPropertyChanged(nameof(DisplaySteamReview));
+            OnPropertyChanged(nameof(SteamReviewOpacity));
+        }
+
+        partial void OnTimeToCompleteMainStoryChanged(int? value)
+        {
+            OnPropertyChanged(nameof(DisplayMainStory));
+            OnPropertyChanged(nameof(MainStoryOpacity));
+        }
+
+        partial void OnTimeToCompleteCompletionistChanged(int? value)
+        {
+            OnPropertyChanged(nameof(DisplayCompletionist));
+            OnPropertyChanged(nameof(CompletionistOpacity));
+        }
+
+        private bool HasSteamReview =>
+            !IsUnavailableText(SteamReviewSummary, "N/A") &&
+            SteamReviewTotal is > 0;
+
+        private static bool HasCompletionTime(int? seconds) => seconds is > 0;
+
+        private static double GetAvailabilityOpacity(bool isAvailable) => isAvailable ? 1d : 0.6d;
+
+        private static bool IsUnavailableText(string? value, params string[] placeholders)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return true;
+            }
+
+            string normalized = value.Trim();
+            if (normalized.Equals(NotAvailableText, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            foreach (string placeholder in placeholders)
+            {
+                if (normalized.Equals(placeholder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string FormatCompletionTime(int? seconds)
+        {
+            if (seconds is not > 0)
+            {
+                return NotAvailableText;
+            }
+
+            double hours = seconds.Value / 3600d;
+            double rounded = Math.Round(hours * 2, MidpointRounding.AwayFromZero) / 2d;
+
+            if (rounded <= 0)
+            {
+                return NotAvailableText;
+            }
+
+            bool isHalfHour = Math.Abs(rounded - Math.Round(rounded)) > 0.001;
+            if (!isHalfHour)
+            {
+                int whole = (int)Math.Round(rounded);
+                return whole == 1 ? "1 Hour" : $"{whole} Hours";
+            }
+
+            int wholePart = (int)Math.Floor(rounded);
+            return wholePart <= 0 ? "½ Hour" : $"{wholePart}½ Hours";
         }
 
         public Game CreateHydrationSnapshot()

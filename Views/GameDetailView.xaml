@@ -680,7 +680,8 @@
                                                                 <TextBlock Text="Age Rating"
                                                                            Opacity="0.4"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
-                                                                <TextBlock Text="{Binding SelectedGame.AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"
+                                                                <TextBlock Text="{Binding SelectedGame.DisplayAgeRating, FallbackValue='Not Available'}"
+                                                                           Opacity="{Binding SelectedGame.AgeRatingOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
@@ -730,40 +731,30 @@
                                                             Grid.Column="1"
                                                             Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}"
                                                             VerticalAlignment="Top">
-                                                        <StackPanel Spacing="0"
-                                                                    Visibility="{Binding SelectedGame.SteamID, Converter={StaticResource NullToVisibilityConverter}}">
+                                                        <StackPanel Spacing="0">
                                                                 <TextBlock Text="Steam Reviews"
                                                                            Opacity="0.4"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
-                                                                <TextBlock FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                           TextWrapping="Wrap">
-                                        <Run Text="{Binding SelectedGame.SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
-                                        <Run Text="("
-                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
-                                                                                Foreground="Gray"/>
-                                        <Run Text="{Binding SelectedGame.SteamReviewTotal, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
-                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
-                                                                                Foreground="Gray"/>
-                                        <Run Text=")"
-                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
-                                                                                Foreground="Gray"/>
-                                                                </TextBlock>
-                                                        </StackPanel>
-                                                        <StackPanel Spacing="0"
-                                                                    Visibility="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}">
-                                                                <TextBlock Text="Main Story"
-                                                                           Opacity="0.4"
-                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
-                                                                <TextBlock Text="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"
+                                                                <TextBlock Text="{Binding SelectedGame.DisplaySteamReview, FallbackValue='Not Available'}"
+                                                                           Opacity="{Binding SelectedGame.SteamReviewOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
-                                                        <StackPanel Spacing="0"
-                                                                    Visibility="{Binding SelectedGame.TimeToCompleteCompletionist, Converter={StaticResource NullToVisibilityConverter}}">
+                                                        <StackPanel Spacing="0">
+                                                                <TextBlock Text="Main Story"
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock Text="{Binding SelectedGame.DisplayMainStory, FallbackValue='Not Available'}"
+                                                                           Opacity="{Binding SelectedGame.MainStoryOpacity, FallbackValue=0.6}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                        <StackPanel Spacing="0">
                                                                 <TextBlock Text="Completionist"
                                                                            Opacity="0.4"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
-                                                                <TextBlock Text="{Binding SelectedGame.TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"
+                                                                <TextBlock Text="{Binding SelectedGame.DisplayCompletionist, FallbackValue='Not Available'}"
+                                                                           Opacity="{Binding SelectedGame.CompletionistOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
