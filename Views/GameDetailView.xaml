@@ -627,6 +627,7 @@
                                                 <Grid Grid.Row="0">
                                                         <TextBlock x:Name="SettingsHeaderText"
                                                                    Text="Game Settings"
+                                                                   Margin="0,-8,0,0"
                                                                    FontSize="22"
                                                                    FontWeight="Bold"
                                                                    VerticalAlignment="Center"/>
