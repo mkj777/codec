@@ -5,12 +5,15 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Codec.Views
 {
-    public sealed partial class GameDetailView : UserControl
+    public sealed partial class GameDetailView : UserControl, INotifyPropertyChanged
     {
         [DllImport("user32.dll")]
         private static extern IntPtr GetActiveWindow();
@@ -49,8 +52,40 @@ namespace Codec.Views
         private const int OFN_FILEMUSTEXIST = 0x00001000;
         private const int OFN_PATHMUSTEXIST = 0x00000800;
         private const int OFN_NOCHANGEDIR = 0x00000008;
+        private const double DetailsComfortableBreakpoint = 900d;
+        private const double DetailsCompactBreakpoint = 680d;
+        private const double DetailsMetricMinWidth = 520d;
+        private const double DetailsMetricMaxWidth = 1180d;
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private double _detailsLabelFontSize = 13d;
+        private double _detailsValueFontSize = 15d;
+        private double _detailsInlineFontSize = 12d;
+        private double _detailsLinkFontSize = 14d;
+        private double _detailsPlatformIconHeight = 22d;
+        private double _detailsSectionSpacing = 8d;
+        private double _detailsDataSetSpacing = 14d;
+        private double _detailsDescriptionSpacing = 10d;
+        private double _detailsInnerColumnSpacing = 20d;
+        private double _detailsOuterColumnSpacing = 20d;
+        private double _detailsDescriptionMaxWidth = 420d;
+        private Thickness _detailsScrollViewerPadding = new(10, 4, 0, 0);
+
+        public double DetailsLabelFontSize => _detailsLabelFontSize;
+        public double DetailsValueFontSize => _detailsValueFontSize;
+        public double DetailsInlineFontSize => _detailsInlineFontSize;
+        public double DetailsLinkFontSize => _detailsLinkFontSize;
+        public double DetailsPlatformIconHeight => _detailsPlatformIconHeight;
+        public double DetailsSectionSpacing => _detailsSectionSpacing;
+        public double DetailsDataSetSpacing => _detailsDataSetSpacing;
+        public double DetailsDescriptionSpacing => _detailsDescriptionSpacing;
+        public double DetailsInnerColumnSpacing => _detailsInnerColumnSpacing;
+        public double DetailsOuterColumnSpacing => _detailsOuterColumnSpacing;
+        public double DetailsDescriptionMaxWidth => _detailsDescriptionMaxWidth;
+        public Thickness DetailsScrollViewerPadding => _detailsScrollViewerPadding;
 
         public GameDetailView()
         {
@@ -143,10 +178,17 @@ namespace Codec.Views
         }
 
         private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
-            => UpdateSettingsLayoutState();
+            => UpdateResponsiveLayoutState();
 
         private void GameDetailView_SizeChanged(object sender, SizeChangedEventArgs e)
-            => UpdateSettingsLayoutState();
+            => UpdateResponsiveLayoutState();
+
+        private void UpdateResponsiveLayoutState()
+        {
+            UpdateSettingsLayoutState();
+            UpdateDetailsLayoutState();
+            UpdateDetailsResponsiveMetrics();
+        }
 
         private void UpdateSettingsLayoutState()
         {
@@ -168,6 +210,72 @@ namespace Codec.Views
             }
 
             _ = VisualStateManager.GoToState(this, stateName, useTransitions: true);
+        }
+
+        private void UpdateDetailsLayoutState()
+        {
+            if (RootLayout == null)
+                return;
+
+            double paneWidth = GetDetailsPaneWidth();
+            double height = ActualHeight;
+            bool requiresTightLayout = paneWidth < DetailsCompactBreakpoint || height <= 700d;
+
+            string stateName = requiresTightLayout
+                ? "DetailsTightState"
+                : paneWidth < DetailsComfortableBreakpoint
+                    ? "DetailsCompactState"
+                    : "DetailsComfortableState";
+
+            _ = VisualStateManager.GoToState(this, stateName, useTransitions: true);
+        }
+
+        private void UpdateDetailsResponsiveMetrics()
+        {
+            double paneWidth = GetDetailsPaneWidth();
+
+            SetResponsiveProperty(ref _detailsLabelFontSize, ScaleResponsiveValue(paneWidth, 11d, 13d), nameof(DetailsLabelFontSize));
+            SetResponsiveProperty(ref _detailsValueFontSize, ScaleResponsiveValue(paneWidth, 12d, 15d), nameof(DetailsValueFontSize));
+            SetResponsiveProperty(ref _detailsInlineFontSize, ScaleResponsiveValue(paneWidth, 10d, 12d), nameof(DetailsInlineFontSize));
+            SetResponsiveProperty(ref _detailsLinkFontSize, ScaleResponsiveValue(paneWidth, 12d, 14d), nameof(DetailsLinkFontSize));
+            SetResponsiveProperty(ref _detailsPlatformIconHeight, ScaleResponsiveValue(paneWidth, 16d, 22d), nameof(DetailsPlatformIconHeight));
+            SetResponsiveProperty(ref _detailsSectionSpacing, ScaleResponsiveValue(paneWidth, 4d, 8d), nameof(DetailsSectionSpacing));
+            SetResponsiveProperty(ref _detailsDataSetSpacing, ScaleResponsiveValue(paneWidth, 10d, 18d), nameof(DetailsDataSetSpacing));
+            SetResponsiveProperty(ref _detailsDescriptionSpacing, ScaleResponsiveValue(paneWidth, 8d, 14d), nameof(DetailsDescriptionSpacing));
+            SetResponsiveProperty(ref _detailsInnerColumnSpacing, ScaleResponsiveValue(paneWidth, 12d, 22d), nameof(DetailsInnerColumnSpacing));
+            SetResponsiveProperty(ref _detailsOuterColumnSpacing, ScaleResponsiveValue(paneWidth, 4d, 10d), nameof(DetailsOuterColumnSpacing));
+            SetResponsiveProperty(ref _detailsDescriptionMaxWidth, ScaleResponsiveValue(paneWidth, 220d, 460d), nameof(DetailsDescriptionMaxWidth));
+
+            double horizontalPadding = ScaleResponsiveValue(paneWidth, 0d, 4d);
+            double topPadding = ScaleResponsiveValue(paneWidth, 0d, 3d);
+            SetResponsiveProperty(ref _detailsScrollViewerPadding, new Thickness(horizontalPadding, topPadding, 0, 0), nameof(DetailsScrollViewerPadding));
+        }
+
+        private double GetDetailsPaneWidth()
+        {
+            if (DetailsLowerGrid?.ActualWidth > 0)
+                return DetailsLowerGrid.ActualWidth;
+
+            if (ActualWidth > 0)
+                return ActualWidth;
+
+            return DetailsComfortableBreakpoint;
+        }
+
+        private static double ScaleResponsiveValue(double paneWidth, double min, double max)
+        {
+            double clampedWidth = Math.Clamp(paneWidth, DetailsMetricMinWidth, DetailsMetricMaxWidth);
+            double progress = (clampedWidth - DetailsMetricMinWidth) / (DetailsMetricMaxWidth - DetailsMetricMinWidth);
+            return min + ((max - min) * progress);
+        }
+
+        private void SetResponsiveProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+                return;
+
+            field = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         private void HeroOverlay_SizeChanged(object sender, SizeChangedEventArgs e)

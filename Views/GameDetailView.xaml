@@ -102,18 +102,12 @@
                                                         Value="0"/>
                                                 <Setter Target="SettingsHeaderText.FontSize"
                                                         Value="22"/>
-                                                <Setter Target="FolderLocationLabel.FontSize"
-                                                        Value="12"/>
                                                 <Setter Target="FolderSizeLabel.FontSize"
                                                         Value="12"/>
                                                 <Setter Target="LaunchScriptLabel.FontSize"
                                                         Value="12"/>
                                                 <Setter Target="DeleteSectionLabel.FontSize"
                                                         Value="12"/>
-                                                <Setter Target="FolderLocationValue.FontSize"
-                                                        Value="13"/>
-                                                <Setter Target="FolderLocationValue.MaxLines"
-                                                        Value="4"/>
                                                 <Setter Target="FolderSizeValue.FontSize"
                                                         Value="16"/>
                                                 <Setter Target="LaunchScriptValue.FontSize"
@@ -122,28 +116,20 @@
                                                         Value="3"/>
                                                 <Setter Target="DeleteSectionHelperText.Visibility"
                                                         Value="Visible"/>
-                                                <Setter Target="FolderLocationSection.Spacing"
-                                                        Value="8"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
                                                         Value="4"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
                                                         Value="8"/>
                                                 <Setter Target="DeleteSection.Spacing"
                                                         Value="8"/>
-                                                <Setter Target="FolderLocationSection.(Grid.Row)"
-                                                        Value="0"/>
-                                                <Setter Target="FolderLocationSection.(Grid.Column)"
-                                                        Value="0"/>
-                                                <Setter Target="FolderLocationSection.(Grid.ColumnSpan)"
-                                                        Value="1"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Row)"
-                                                        Value="1"/>
+                                                        Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Column)"
                                                         Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.ColumnSpan)"
                                                         Value="1"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.Row)"
-                                                        Value="2"/>
+                                                        Value="1"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.Column)"
                                                         Value="0"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.ColumnSpan)"
@@ -171,18 +157,12 @@
                                                         Value="*"/>
                                                 <Setter Target="SettingsHeaderText.FontSize"
                                                         Value="21"/>
-                                                <Setter Target="FolderLocationLabel.FontSize"
-                                                        Value="11"/>
                                                 <Setter Target="FolderSizeLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="LaunchScriptLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="DeleteSectionLabel.FontSize"
                                                         Value="11"/>
-                                                <Setter Target="FolderLocationValue.FontSize"
-                                                        Value="12"/>
-                                                <Setter Target="FolderLocationValue.MaxLines"
-                                                        Value="3"/>
                                                 <Setter Target="FolderSizeValue.FontSize"
                                                         Value="15"/>
                                                 <Setter Target="LaunchScriptValue.FontSize"
@@ -191,24 +171,16 @@
                                                         Value="2"/>
                                                 <Setter Target="DeleteSectionHelperText.Visibility"
                                                         Value="Visible"/>
-                                                <Setter Target="FolderLocationSection.Spacing"
-                                                        Value="6"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
                                                         Value="4"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
                                                         Value="6"/>
                                                 <Setter Target="DeleteSection.Spacing"
                                                         Value="6"/>
-                                                <Setter Target="FolderLocationSection.(Grid.Row)"
-                                                        Value="0"/>
-                                                <Setter Target="FolderLocationSection.(Grid.Column)"
-                                                        Value="0"/>
-                                                <Setter Target="FolderLocationSection.(Grid.ColumnSpan)"
-                                                        Value="1"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Row)"
                                                         Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Column)"
-                                                        Value="1"/>
+                                                        Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.ColumnSpan)"
                                                         Value="1"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.Row)"
@@ -216,7 +188,7 @@
                                                 <Setter Target="LaunchScriptSection.(Grid.Column)"
                                                         Value="0"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.ColumnSpan)"
-                                                        Value="2"/>
+                                                        Value="1"/>
                                         </VisualState.Setters>
                                 </VisualState>
 
@@ -240,18 +212,12 @@
                                                         Value="*"/>
                                                 <Setter Target="SettingsHeaderText.FontSize"
                                                         Value="19"/>
-                                                <Setter Target="FolderLocationLabel.FontSize"
-                                                        Value="11"/>
                                                 <Setter Target="FolderSizeLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="LaunchScriptLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="DeleteSectionLabel.FontSize"
                                                         Value="11"/>
-                                                <Setter Target="FolderLocationValue.FontSize"
-                                                        Value="12"/>
-                                                <Setter Target="FolderLocationValue.MaxLines"
-                                                        Value="2"/>
                                                 <Setter Target="FolderSizeValue.FontSize"
                                                         Value="14"/>
                                                 <Setter Target="LaunchScriptValue.FontSize"
@@ -260,24 +226,16 @@
                                                         Value="1"/>
                                                 <Setter Target="DeleteSectionHelperText.Visibility"
                                                         Value="Collapsed"/>
-                                                <Setter Target="FolderLocationSection.Spacing"
-                                                        Value="4"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
                                                         Value="2"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
                                                         Value="4"/>
                                                 <Setter Target="DeleteSection.Spacing"
                                                         Value="4"/>
-                                                <Setter Target="FolderLocationSection.(Grid.Row)"
-                                                        Value="0"/>
-                                                <Setter Target="FolderLocationSection.(Grid.Column)"
-                                                        Value="0"/>
-                                                <Setter Target="FolderLocationSection.(Grid.ColumnSpan)"
-                                                        Value="1"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Row)"
                                                         Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Column)"
-                                                        Value="1"/>
+                                                        Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.ColumnSpan)"
                                                         Value="1"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.Row)"
@@ -285,7 +243,107 @@
                                                 <Setter Target="LaunchScriptSection.(Grid.Column)"
                                                         Value="0"/>
                                                 <Setter Target="LaunchScriptSection.(Grid.ColumnSpan)"
+                                                        Value="1"/>
+                                        </VisualState.Setters>
+                                </VisualState>
+                        </VisualStateGroup>
+                        <VisualStateGroup x:Name="DetailsLayoutStates">
+                                <VisualState x:Name="DetailsComfortableState">
+                                        <VisualState.Setters>
+                                                <Setter Target="DetailsScrollViewer.VerticalScrollBarVisibility"
+                                                        Value="Hidden"/>
+                                                <Setter Target="DetailsScrollViewer.VerticalScrollMode"
+                                                        Value="Disabled"/>
+                                                <Setter Target="DetailsActionsColumn.Width"
+                                                        Value="Auto"/>
+                                                <Setter Target="DetailsContentGrid.(Grid.ColumnSpan)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.Row)"
+                                                        Value="0"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.Column)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.ColumnSpan)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.HorizontalAlignment"
+                                                        Value="Right"/>
+                                                <Setter Target="DetailsPlatformItemsControl.HorizontalAlignment"
+                                                        Value="Right"/>
+                                                <Setter Target="DetailsLinksPanel.HorizontalAlignment"
+                                                        Value="Right"/>
+                                                <Setter Target="DetailsActionsSection.Margin"
+                                                        Value="0,14,12,0"/>
+                                                <Setter Target="DetailsPlatformItemsControl.Margin"
+                                                        Value="0,-8,4,10"/>
+                                                <Setter Target="DetailsPrimaryColumn.Width"
+                                                        Value="1.1*"/>
+                                                <Setter Target="DetailsSecondaryColumn.Width"
+                                                        Value="*"/>
+                                        </VisualState.Setters>
+                                </VisualState>
+
+                                <VisualState x:Name="DetailsCompactState">
+                                        <VisualState.Setters>
+                                                <Setter Target="DetailsScrollViewer.VerticalScrollBarVisibility"
+                                                        Value="Hidden"/>
+                                                <Setter Target="DetailsScrollViewer.VerticalScrollMode"
+                                                        Value="Disabled"/>
+                                                <Setter Target="DetailsActionsColumn.Width"
+                                                        Value="Auto"/>
+                                                <Setter Target="DetailsContentGrid.(Grid.ColumnSpan)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.Row)"
+                                                        Value="0"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.Column)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.ColumnSpan)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.HorizontalAlignment"
+                                                        Value="Right"/>
+                                                <Setter Target="DetailsPlatformItemsControl.HorizontalAlignment"
+                                                        Value="Right"/>
+                                                <Setter Target="DetailsLinksPanel.HorizontalAlignment"
+                                                        Value="Right"/>
+                                                <Setter Target="DetailsActionsSection.Margin"
+                                                        Value="0,10,6,0"/>
+                                                <Setter Target="DetailsPlatformItemsControl.Margin"
+                                                        Value="0,-4,2,8"/>
+                                                <Setter Target="DetailsPrimaryColumn.Width"
+                                                        Value="1.05*"/>
+                                                <Setter Target="DetailsSecondaryColumn.Width"
+                                                        Value="*"/>
+                                        </VisualState.Setters>
+                                </VisualState>
+
+                                <VisualState x:Name="DetailsTightState">
+                                        <VisualState.Setters>
+                                                <Setter Target="DetailsScrollViewer.VerticalScrollBarVisibility"
+                                                        Value="Auto"/>
+                                                <Setter Target="DetailsScrollViewer.VerticalScrollMode"
+                                                        Value="Enabled"/>
+                                                <Setter Target="DetailsActionsColumn.Width"
+                                                        Value="0"/>
+                                                <Setter Target="DetailsContentGrid.(Grid.ColumnSpan)"
                                                         Value="2"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.Row)"
+                                                        Value="1"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.Column)"
+                                                        Value="0"/>
+                                                <Setter Target="DetailsActionsSection.(Grid.ColumnSpan)"
+                                                        Value="2"/>
+                                                <Setter Target="DetailsActionsSection.HorizontalAlignment"
+                                                        Value="Left"/>
+                                                <Setter Target="DetailsPlatformItemsControl.HorizontalAlignment"
+                                                        Value="Left"/>
+                                                <Setter Target="DetailsLinksPanel.HorizontalAlignment"
+                                                        Value="Left"/>
+                                                <Setter Target="DetailsActionsSection.Margin"
+                                                        Value="0,10,0,0"/>
+                                                <Setter Target="DetailsPlatformItemsControl.Margin"
+                                                        Value="0,0,0,8"/>
+                                                <Setter Target="DetailsPrimaryColumn.Width"
+                                                        Value="*"/>
+                                                <Setter Target="DetailsSecondaryColumn.Width"
+                                                        Value="*"/>
                                         </VisualState.Setters>
                                 </VisualState>
                         </VisualStateGroup>
@@ -551,142 +609,207 @@
                 <!-- Lower Half -->
                 <Grid x:Name="DetailsLowerGrid"
                       Grid.Row="1"
-                      Padding="8,10,0,10">
+                      Padding="18,10,0,10">
 
                         <!-- Game Info + Description + Links -->
-                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                        <ScrollViewer x:Name="DetailsScrollViewer"
+                                      VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled"
                                       HorizontalAlignment="Stretch"
-                                      Padding="10,4,0,0">
-                                <Grid ColumnSpacing="20">
+                                      Padding="{x:Bind DetailsScrollViewerPadding, Mode=OneWay}">
+                                <Grid x:Name="DetailsLowerContentGrid"
+                                      ColumnSpacing="{x:Bind DetailsOuterColumnSpacing, Mode=OneWay}"
+                                      RowSpacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
+                                        <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition x:Name="DetailsActionsColumn"
+                                                                  Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <Grid Grid.Column="0">
+                                        <Grid x:Name="DetailsContentGrid"
+                                              Grid.Row="0"
+                                              Grid.Column="0"
+                                              RowSpacing="{x:Bind DetailsDataSetSpacing, Mode=OneWay}"
+                                              ColumnSpacing="{x:Bind DetailsInnerColumnSpacing, Mode=OneWay}"
+                                              HorizontalAlignment="Stretch">
+                                                <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition x:Name="DetailsPrimaryColumn"
+                                                                          MaxWidth="280"/>
+                                                        <ColumnDefinition x:Name="DetailsSecondaryColumn"
+                                                                          Width="*"/>
+                                                </Grid.ColumnDefinitions>
 
-                                                <!-- Game Info Block split into two columns -->
-                                                <Grid
-                                                      ColumnSpacing="6"
-                                                      HorizontalAlignment="Stretch">
-                                                        <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition MaxWidth="250"/>
-                                                                <ColumnDefinition MaxWidth="350"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <StackPanel Grid.Column="0"
-                                                                    Spacing="6">
+                                                <StackPanel x:Name="DetailsInfoPrimarySection"
+                                                      Grid.Row="0"
+                                                      Grid.Column="0"
+                                                      Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Publisher"
-                                                                           Opacity="0.4"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Developer"
-                                                                           Opacity="0.4"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Genre"
-                                                                           Opacity="0.4"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap"/>
+                                                        </StackPanel>
+                                                </StackPanel>
+
+                                                <StackPanel x:Name="DetailsInfoTopSecondarySection"
+                                                            Grid.Row="1"
+                                                            Grid.Column="0"
+                                                            Margin="0,-10,0,0"
+                                                            Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
+                                                        <StackPanel Spacing="0">
+                                                                <TextBlock Text="Age Rating"
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock Text="{Binding SelectedGame.AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
-                                                                <TextBlock Text="Age Rating"
-                                                                           Opacity="0.4"/>
-                                                                <TextBlock Text="{Binding SelectedGame.AgeRating, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not Rated', FallbackValue='Not Rated'}"/>
-                                                        </StackPanel>
-                                                        <StackPanel Spacing="0">
                                                                 <TextBlock Text="Release Date"
-                                                                           Opacity="0.4"/>
-                                                                <TextBlock Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Price"
-                                                                           Opacity="0.4"/>
-                                                                <TextBlock>
-                                    <Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
-                                    <Run Text="{Binding SelectedGame.PriceDiscount, FallbackValue=''}"
-                                                                        FontSize="12"
-                                                                        Foreground="#B3FFFFFF"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap">
+                                        <Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
+                                        <Run Text="{Binding SelectedGame.PriceDiscount, FallbackValue=''}"
+                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                                Foreground="#B3FFFFFF"/>
                                                                 </TextBlock>
                                                         </StackPanel>
-                                                        </StackPanel>
+                                                </StackPanel>
 
-                                                        <StackPanel Grid.Column="1"
-                                                                    Spacing="8">
+                                                <StackPanel x:Name="DetailsDescriptionSection"
+                                                            Grid.Row="1"
+                                                            Grid.Column="1"
+                                                            Margin="0,-10,0,0"
+                                                            Spacing="0"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Top">
+                                                        <TextBlock Text="Description"
+                                                                   Opacity="0.4"
+                                                                   Margin="0,0,0,0"
+                                                                   HorizontalAlignment="Left"
+                                                                   FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                        <TextBlock Text="{Binding SelectedGame.Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                   HorizontalAlignment="Left"
+                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                   MaxWidth="{x:Bind DetailsDescriptionMaxWidth, Mode=OneWay}"
+                                                                   TextWrapping="Wrap"/>
+                                                </StackPanel>
+
+                                                <StackPanel x:Name="DetailsInfoSecondarySection"
+                                                            Grid.Row="0"
+                                                            Grid.Column="1"
+                                                            Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}"
+                                                            VerticalAlignment="Top">
                                                         <StackPanel Spacing="0"
                                                                     Visibility="{Binding SelectedGame.SteamID, Converter={StaticResource NullToVisibilityConverter}}">
                                                                 <TextBlock Text="Steam Reviews"
-                                                                           Opacity="0.4"/>
-                                                                <TextBlock>
-                                    <Run Text="{Binding SelectedGame.SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
-                                    <Run Text="("
-                                                                        FontSize="12"
-                                                                        Foreground="Gray"/>
-                                    <Run Text="{Binding SelectedGame.SteamReviewTotal, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
-                                                                        FontSize="12"
-                                                                        Foreground="Gray"/>
-                                    <Run Text=")"
-                                                                        FontSize="12"
-                                                                        Foreground="Gray"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap">
+                                        <Run Text="{Binding SelectedGame.SteamReviewSummary, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
+                                        <Run Text="("
+                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                                Foreground="Gray"/>
+                                        <Run Text="{Binding SelectedGame.SteamReviewTotal, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                                Foreground="Gray"/>
+                                        <Run Text=")"
+                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                                Foreground="Gray"/>
                                                                 </TextBlock>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0"
                                                                     Visibility="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}">
                                                                 <TextBlock Text="Main Story"
-                                                                           Opacity="0.4"/>
-                                                                <TextBlock Text="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock Text="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0"
                                                                     Visibility="{Binding SelectedGame.TimeToCompleteCompletionist, Converter={StaticResource NullToVisibilityConverter}}">
                                                                 <TextBlock Text="Completionist"
-                                                                           Opacity="0.4"/>
-                                                                <TextBlock Text="{Binding SelectedGame.TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"/>
-                                                        </StackPanel>
-                                                        <StackPanel Spacing="0">
-                                                                <TextBlock Text="Description"
-                                                                           Opacity="0.4"/>
-                                                        <TextBlock Text="{Binding SelectedGame.Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                           Opacity="0.4"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <TextBlock Text="{Binding SelectedGame.TimeToCompleteCompletionist, Converter={StaticResource SecondsToTimeConverter}, FallbackValue='N/A'}"
+                                                                           FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
-                                                        </StackPanel>
-                                                </Grid>
+                                                </StackPanel>
                                         </Grid>
 
                                         <!-- Actions, platform icons, and links -->
-                                        <StackPanel Grid.Column="1"
-                                                    Spacing="0"
-                                                    Margin="0,14,12,0"
+                                        <StackPanel x:Name="DetailsActionsSection"
+                                                    Grid.Row="0"
+                                                    Grid.Column="1"
+                                                    Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}"
+                                                    Margin="0,10,6,0"
                                                     VerticalAlignment="Top"
                                                     HorizontalAlignment="Right">
-                                                <ItemsControl ItemsSource="{Binding SelectedGame.PlatformLogoUris, Mode=OneWay}"
+                                                <ItemsControl x:Name="DetailsPlatformItemsControl"
+                                                              ItemsSource="{Binding SelectedGame.PlatformLogoUris, Mode=OneWay}"
+                                                              Tag="{x:Bind DetailsPlatformIconHeight, Mode=OneWay}"
                                                               HorizontalAlignment="Right"
                                                               VerticalAlignment="Top"
                                                               Margin="0,-10,4,10">
                                                         <ItemsControl.ItemsPanel>
                                                                 <ItemsPanelTemplate>
                                                                         <StackPanel Orientation="Horizontal"
-                                                                                    Spacing="10"/>
+                                                                                    Spacing="8"/>
                                                                 </ItemsPanelTemplate>
                                                         </ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                                 <DataTemplate>
                                                                         <Image Source="{Binding}"
-                                                                               Height="20"
+                                                                               Height="{Binding Tag, ElementName=DetailsPlatformItemsControl}"
                                                                                Stretch="Uniform"/>
                                                                 </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
 
-                                                <StackPanel Spacing="0"
+                                                <StackPanel x:Name="DetailsLinksPanel"
+                                                            Spacing="0"
                                                             VerticalAlignment="Top"
                                                             HorizontalAlignment="Right"
-                                                            Margin="0,0,2,0">
+                                                            Margin="0,-6,4,0">
                                                         <StackPanel.Resources>
                                                                 <SolidColorBrush x:Key="HyperlinkButtonBackgroundPointerOver"
                                                                                  Color="Transparent"/>
@@ -697,6 +820,7 @@
                                                                          Foreground="White"
                                                                          Margin="0"
                                                                          Padding="0"
+                                                                         FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.OfficialWebsiteUrl}"
@@ -705,6 +829,7 @@
                                                                          Foreground="White"
                                                                          Margin="0,4,0,0"
                                                                          Padding="0"
+                                                                         FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.SteamPageUrl}"
@@ -713,6 +838,7 @@
                                                                          Foreground="White"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
+                                                                         FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.RawgUrl}"
@@ -721,6 +847,7 @@
                                                                          Foreground="White"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
+                                                                         FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.HltbUrl}"
@@ -729,6 +856,7 @@
                                                                          Foreground="White"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
+                                                                         FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
                                                                          Opacity="0.45"
                                                                          FontWeight="SemiBold"
                                                                          HorizontalAlignment="Right"
@@ -786,33 +914,10 @@
                                                 <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
 
-                                                <StackPanel x:Name="FolderLocationSection"
-                                                            Grid.Row="0"
-                                                            Grid.Column="0"
-                                                            Spacing="8">
-                                                        <TextBlock x:Name="FolderLocationLabel"
-                                                                   Text="FOLDER LOCATION"
-                                                                   Opacity="0.5"
-                                                                   FontSize="12"/>
-
-                                                        <TextBlock x:Name="FolderLocationValue"
-                                                                   Text="{Binding SelectedGame.FolderLocation, FallbackValue='Unknown'}"
-                                                                   TextWrapping="Wrap"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   MaxLines="4"
-                                                                   Foreground="#A0A0A0"
-                                                                   FontSize="13"/>
-
-                                                        <Button Content="Open Folder"
-                                                                Command="{Binding OpenGameFolderCommand}"
-                                                                HorizontalAlignment="Left"/>
-                                                </StackPanel>
-
                                                 <StackPanel x:Name="FolderSizeSection"
-                                                            Grid.Row="1"
+                                                            Grid.Row="0"
                                                             Grid.Column="0"
                                                             Spacing="4">
                                                         <TextBlock x:Name="FolderSizeLabel"
@@ -826,7 +931,7 @@
                                                 </StackPanel>
 
                                                 <StackPanel x:Name="LaunchScriptSection"
-                                                            Grid.Row="2"
+                                                            Grid.Row="1"
                                                             Grid.Column="0"
                                                             Spacing="8">
                                                         <TextBlock x:Name="LaunchScriptLabel"
@@ -861,12 +966,23 @@
                                                            Text="LIBRARY"
                                                            Opacity="0.5"
                                                            FontSize="12"/>
-                                                <Button Content="Delete from Library"
-                                                        Click="DeleteSelectedGameButton_Click"
-                                                        HorizontalAlignment="Stretch"
-                                                        Foreground="#FFFFC7C7"
-                                                        BorderBrush="#99FF7A7A"
-                                                        Background="#66A11F1F"/>
+                                                <Grid ColumnSpacing="8">
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button Content="Open Folder"
+                                                                Grid.Column="0"
+                                                                Command="{Binding OpenGameFolderCommand}"
+                                                                HorizontalAlignment="Stretch"/>
+                                                        <Button Content="Delete from Library"
+                                                                Grid.Column="1"
+                                                                Click="DeleteSelectedGameButton_Click"
+                                                                HorizontalAlignment="Stretch"
+                                                                Foreground="#FFFFC7C7"
+                                                                BorderBrush="#99FF7A7A"
+                                                                Background="#66A11F1F"/>
+                                                </Grid>
                                                 <TextBlock x:Name="DeleteSectionHelperText"
                                                            Text="Removes this game from Codec only. Files stay on disk."
                                                            TextWrapping="Wrap"
