@@ -114,8 +114,6 @@
                                                         Value="14"/>
                                                 <Setter Target="LaunchScriptValue.MaxLines"
                                                         Value="3"/>
-                                                <Setter Target="DeleteSectionHelperText.Visibility"
-                                                        Value="Visible"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
                                                         Value="4"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
@@ -169,8 +167,6 @@
                                                         Value="13"/>
                                                 <Setter Target="LaunchScriptValue.MaxLines"
                                                         Value="2"/>
-                                                <Setter Target="DeleteSectionHelperText.Visibility"
-                                                        Value="Visible"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
                                                         Value="4"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
@@ -224,8 +220,6 @@
                                                         Value="12"/>
                                                 <Setter Target="LaunchScriptValue.MaxLines"
                                                         Value="1"/>
-                                                <Setter Target="DeleteSectionHelperText.Visibility"
-                                                        Value="Collapsed"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
                                                         Value="2"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
@@ -987,7 +981,7 @@
                                                                 Background="#66A11F1F"/>
                                                 </Grid>
                                                 <TextBlock x:Name="DeleteSectionHelperText"
-                                                           Text="Removes this game from Codec only. Files stay on disk."
+                                                           Text="Removes this game from Codec. Files stay on disk."
                                                            TextWrapping="Wrap"
                                                            Foreground="#A0A0A0"
                                                            FontSize="12"/>
