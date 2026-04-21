@@ -1,19 +1,15 @@
 using Codec.Models;
 using Codec.Services.Importing;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.ViewModels
 {
     public partial class MainViewModel
     {
-        private CancellationTokenSource? _importNotificationCts;
-
         private Task<IReadOnlyCollection<Game>> GetLibrarySnapshotAsync()
             => RunOnUiThreadAsync<IReadOnlyCollection<Game>>(() => Games.ToList());
 
@@ -33,75 +29,25 @@ namespace Codec.ViewModels
         {
             _ = RunOnUiThreadAsync(() =>
             {
-                IsImportStatusVisible = snapshot.IsActive;
-                ImportStatusMessage = snapshot.Message;
-                QueuedCount = snapshot.QueuedCount;
-                ProcessingCount = snapshot.ProcessingCount;
+                IsScanning = snapshot.IsScanning;
+                IsImportStatusVisible = snapshot.IsActive && !IsStartupScanToastVisible;
                 AddedCount = snapshot.AddedCount;
-                SkippedCount = snapshot.SkippedCount;
-                FailedCount = snapshot.FailedCount;
+                ImportRemainingCount = snapshot.QueuedCount + snapshot.ProcessingCount;
                 IsOnboardingVisible = Games.Count == 0 && !snapshot.IsActive;
-            });
-        }
-
-        private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification)
-        {
-            _ = ShowImportNotificationAsync(notification.Title, notification.Message, notification.Severity, notification.AutoHide);
-        }
-
-        private async Task ShowImportNotificationAsync(
-            string title,
-            string message,
-            ImportNotificationSeverity severity,
-            bool autoHide = true,
-            int autoHideDelayMs = 4500)
-        {
-            CancellationTokenSource? notificationCts = null;
-
-            await RunOnUiThreadAsync(() =>
-            {
-                _importNotificationCts?.Cancel();
-                _importNotificationCts?.Dispose();
-
-                notificationCts = new CancellationTokenSource();
-                _importNotificationCts = notificationCts;
-
-                ImportNotificationTitle = title;
-                ImportNotificationMessage = message;
-                ImportNotificationBarSeverity = severity switch
+                if (!snapshot.IsActive)
                 {
-                    Codec.Services.Importing.ImportNotificationSeverity.Success => InfoBarSeverity.Success,
-                    Codec.Services.Importing.ImportNotificationSeverity.Warning => InfoBarSeverity.Warning,
-                    Codec.Services.Importing.ImportNotificationSeverity.Error => InfoBarSeverity.Error,
-                    _ => InfoBarSeverity.Informational
-                };
-                IsImportNotificationVisible = true;
-            });
-
-            if (!autoHide || notificationCts == null)
-            {
-                return;
-            }
-
-            try
-            {
-                await Task.Delay(autoHideDelayMs, notificationCts.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            await RunOnUiThreadAsync(() =>
-            {
-                if (_importNotificationCts == notificationCts)
-                {
-                    IsImportNotificationVisible = false;
-                    _importNotificationCts.Dispose();
-                    _importNotificationCts = null;
+                    IsStartupScanToastVisible = false;
+                    string? detected = _importCoordinator.DetectedSteamClientPath;
+                    if (!string.IsNullOrEmpty(detected) && detected != _appSettings.SteamClientPath)
+                    {
+                        _appSettings.SteamClientPath = detected;
+                        _ = _services.AppSettings.SaveAsync(_appSettings);
+                    }
                 }
             });
         }
+
+        private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification) { }
 
         private Task RunOnUiThreadAsync(Action action)
         {

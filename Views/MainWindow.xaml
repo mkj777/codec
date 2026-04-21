@@ -36,6 +36,10 @@
             </Style>
         </Grid.Resources>
 
+        <Grid.RenderTransform>
+            <TranslateTransform x:Name="ShakeTransform"/>
+        </Grid.RenderTransform>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -159,24 +163,6 @@
                         <StackPanel Grid.Row="3"
                                     Spacing="6"
                                     Margin="4,0,4,0">
-                            <Button x:Name="SidebarDebugButton"
-                                    Content="Debug"
-                                    IsEnabled="{Binding IsUiEnabled}"
-                                    Visibility="{Binding IsDebugMode, Converter={StaticResource BoolToVisibilityConverter}}"
-                                    HorizontalAlignment="Stretch"
-                                    FontWeight="SemiBold">
-                                <Button.Flyout>
-                                    <MenuFlyout>
-                                        <MenuFlyoutItem Text="Debug Data"
-                                                        Click="Debug_Click"/>
-                                        <MenuFlyoutItem Text="Refresh Covers"
-                                                        Click="RefreshCovers_Click"/>
-                                        <MenuFlyoutItem Text="Check IDs"
-                                                        Click="DebugCheckIds_Click"/>
-                                    </MenuFlyout>
-                                </Button.Flyout>
-                            </Button>
-
                             <Grid Height="160"
                                   Margin="0,0,0,8">
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
@@ -191,18 +177,8 @@
                                         FontSize="12"
                                         FontWeight="Medium"
                                         Background="#A0363636"
-                                        BorderBrush="#A9363636">
-                                    <Button.Flyout>
-                                        <MenuFlyout>
-                                            <MenuFlyoutItem Text="Scan for Games"
-                                                            Click="SidebarAddGames_Click"/>
-                                            <MenuFlyoutItem Text="Add by Executable"
-                                                            Click="AddGame_Click"/>
-                                            <MenuFlyoutItem Text="Reset App"
-                                                            Click="ResetApp_Click"/>
-                                        </MenuFlyout>
-                                    </Button.Flyout>
-                                </Button>
+                                        BorderBrush="#A9363636"
+                                        Click="ManageButton_Click"/>
                             </Grid>
                         </StackPanel>
                     </Grid>
@@ -229,28 +205,85 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               IsHitTestVisible="True">
-            <StackPanel HorizontalAlignment="Right"
-                        VerticalAlignment="Bottom"
-                        Margin="0,0,16,16"
-                        CornerRadius="8"
-                        MaxWidth="420"
-                        Spacing="8">
-                <InfoBar IsOpen="{Binding IsImportNotificationVisible, Mode=OneWay}"
-                         IsClosable="False"
-                         CornerRadius="8"
-                         Background="#202020"
-                         Severity="{Binding ImportNotificationBarSeverity, Mode=OneWay}"
-                         Title="{Binding ImportNotificationTitle, Mode=OneWay}"
-                         Message="{Binding ImportNotificationMessage, Mode=OneWay}"/>
+            <!-- Import status card -->
+            <Border Visibility="{Binding IsImportStatusVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,16"
+                    Background="#1C1C1C"
+                    CornerRadius="12"
+                    Padding="16,14"
+                    MinWidth="220">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <InfoBar IsOpen="{Binding IsImportStatusVisible, Mode=OneWay}"
-                         IsClosable="False"
-                         Background="#202020"
-                         Severity="Informational"
-                         CornerRadius="8"
-                         Title="Adding Games in Progress"
-                         Message="{Binding ImportStatusMessage, Mode=OneWay}"/>
-            </StackPanel>
+                    <ProgressRing Grid.Column="0"
+                                  IsActive="{Binding IsImportStatusVisible, Mode=OneWay}"
+                                  Width="28"
+                                  Height="28"
+                                  VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Text="Adding to Library"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#999999"
+                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding AddedCount, Mode=OneWay}"
+                                           FontSize="22"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           VerticalAlignment="Center"
+                                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                <TextBlock Text="added"
+                                           FontSize="12"
+                                           Foreground="#555555"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ImportRemainingCount, Mode=OneWay}"
+                                           FontSize="22"
+                                           FontWeight="Bold"
+                                           Foreground="#444444"
+                                           VerticalAlignment="Center"
+                                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                <TextBlock Text="processing"
+                                           FontSize="12"
+                                           Foreground="#444444"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Startup background scan toast -->
+            <Border Visibility="{Binding IsStartupScanToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,16"
+                    Background="#1C1C1C"
+                    CornerRadius="8"
+                    Padding="12,10">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="10"
+                            VerticalAlignment="Center">
+                    <ProgressRing IsActive="True"
+                                  Width="16"
+                                  Height="16"
+                                  VerticalAlignment="Center"/>
+                    <TextBlock Text="Looking for new games"
+                               FontSize="13"
+                               Foreground="#CCCCCC"
+                               VerticalAlignment="Center"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                </StackPanel>
+            </Border>
 
             <StackPanel Visibility="{Binding IsScanProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                         Background="#BF1C1C1C"
@@ -379,6 +412,15 @@
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
                                FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                    <CheckBox x:Name="OnboardingScanOnStartupCheckBox"
+                              Content="Scan for games on startup"
+                              IsChecked="True"
+                              Foreground="White"
+                              Margin="0,4,0,0"/>
+                    <CheckBox x:Name="OnboardingLaunchSteamSilentCheckBox"
+                              Content="Launch Steam on startup"
+                              IsChecked="False"
+                              Foreground="White"/>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8"
                                 Margin="4,0,0,0">
@@ -393,6 +435,113 @@
                     </StackPanel>
                 </StackPanel>
             </Grid>
+        </Grid>
+
+        <!-- Settings overlay -->
+        <Grid x:Name="SettingsOverlay"
+              Grid.RowSpan="2"
+              Grid.ColumnSpan="2"
+              Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+              IsHitTestVisible="True">
+            <Grid Background="#BF000000"
+                  Tapped="SettingsScrim_Tapped"/>
+            <Border Background="#1C1C1C"
+                    CornerRadius="12"
+                    Padding="32"
+                    MinWidth="320"
+                    MaxWidth="400"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <Grid>
+                        <TextBlock Text="Settings"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
+                                   VerticalAlignment="Center"/>
+                        <Button Content="✕"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="14"
+                                FontWeight="Bold"
+                                Padding="8,4"
+                                Click="SettingsClose_Click"/>
+                    </Grid>
+                    <ToggleSwitch Header="Scan for games on startup"
+                                  IsOn="{Binding ScanOnStartup, Mode=TwoWay}"
+                                  Margin="0,-8,0,-8"/>
+                    <ToggleSwitch Header="Launch Steam on startup"
+                                  IsOn="{Binding LaunchSteamSilent, Mode=TwoWay}"
+                                  Margin="0,-8,0,-8"/>
+                    <Border Height="1"
+                            Background="#333333"/>
+                    <Button Content="Scan for Games"
+                            HorizontalAlignment="Stretch"
+                            IsEnabled="{Binding CanStartScan}"
+                            Click="SidebarAddGames_Click"/>
+                    <Button Content="Add by Executable"
+                            HorizontalAlignment="Stretch"
+                            Click="AddGame_Click"/>
+                    <Button Content="Reset App"
+                            HorizontalAlignment="Stretch"
+                            Foreground="#FF6B6B"
+                            Click="ResetApp_Click"/>
+                    <Button x:Name="SidebarDebugButton"
+                            Content="Debug"
+                            IsEnabled="{Binding IsUiEnabled}"
+                            Visibility="{Binding IsDebugMode, Converter={StaticResource BoolToVisibilityConverter}}"
+                            HorizontalAlignment="Stretch"
+                            FontWeight="SemiBold">
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Debug Data"
+                                                Click="Debug_Click"/>
+                                <MenuFlyoutItem Text="Refresh Covers"
+                                                Click="RefreshCovers_Click"/>
+                                <MenuFlyoutItem Text="Check IDs"
+                                                Click="DebugCheckIds_Click"/>
+                                <MenuFlyoutItem Text="Start Steam Silent"
+                                                Click="DebugLaunchSteamSilent_Click"/>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Fire reset animation overlay -->
+        <Grid x:Name="FireOverlay"
+              Grid.RowSpan="2"
+              Grid.ColumnSpan="2"
+              Visibility="Collapsed"
+              IsHitTestVisible="False">
+            <Rectangle x:Name="FireDarkBackground"
+                       Fill="#FF000000"
+                       Opacity="0"/>
+            <Canvas x:Name="FireParticleCanvas"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"/>
+            <Rectangle x:Name="FireBottomGlow"
+                       VerticalAlignment="Bottom"
+                       HorizontalAlignment="Stretch"
+                       Height="360"
+                       Opacity="0">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,1"
+                                         EndPoint="0,0">
+                        <GradientStop Color="#FF000000"
+                                      Offset="0"/>
+                        <GradientStop Color="#DDFF3300"
+                                      Offset="0.35"/>
+                        <GradientStop Color="#AAFF8800"
+                                      Offset="0.65"/>
+                        <GradientStop Color="#00FF4400"
+                                      Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
         </Grid>
 
         <!-- Loading overlay for initial load or scanning -->

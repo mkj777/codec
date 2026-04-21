@@ -97,7 +97,15 @@ namespace Codec.ViewModels
 
             try
             {
-                if (!string.IsNullOrWhiteSpace(SelectedGame.LaunchScript) && File.Exists(SelectedGame.LaunchScript))
+                if (SelectedGame.SteamID.HasValue)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = $"steam://rungameid/{SelectedGame.SteamID.Value}",
+                        UseShellExecute = true
+                    });
+                }
+                else if (!string.IsNullOrWhiteSpace(SelectedGame.LaunchScript) && File.Exists(SelectedGame.LaunchScript))
                 {
                     Process.Start(new ProcessStartInfo
                     {

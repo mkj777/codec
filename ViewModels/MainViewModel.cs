@@ -17,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AppSettings = Codec.Services.Storage.AppSettings;
 
 namespace Codec.ViewModels
 {
@@ -30,6 +31,8 @@ namespace Codec.ViewModels
         private readonly LibraryImportCoordinator _importCoordinator;
         private CancellationTokenSource? _sidebarSearchDebounceCts;
         private string _appliedSearchText = string.Empty;
+        private AppSettings _appSettings = new();
+        private bool _suppressSettingsSave = false;
 
         public ObservableCollection<Game> Games { get; set; } = new();
         public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
@@ -85,6 +88,12 @@ namespace Codec.ViewModels
 
         public bool IsLibraryVisible => !IsInitialLoading && !IsOnboardingVisible && !IsLoadingVisible;
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanStartScan))]
+        private bool _isScanning;
+
+        public bool CanStartScan => !IsScanning;
+
         [ObservableProperty] private bool _isScanProgressVisible;
         [ObservableProperty] private string _scanProgressMessage = string.Empty;
         [ObservableProperty] private bool _scanProgressIsIndeterminate = true;
@@ -95,18 +104,19 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isAppSpinnerActive;
         [ObservableProperty] private bool _isGameSettingsOpen;
         [ObservableProperty] private bool _isMediaOverlayOpen;
+        [ObservableProperty] private bool _isSettingsVisible;
+        [ObservableProperty] private bool _scanOnStartup;
+        [ObservableProperty] private bool _launchSteamSilent;
         [ObservableProperty] private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
+        [ObservableProperty] private bool _isStartupScanToastVisible;
         [ObservableProperty] private string _importStatusMessage = string.Empty;
         [ObservableProperty] private int _queuedCount;
         [ObservableProperty] private int _processingCount;
         [ObservableProperty] private int _addedCount;
         [ObservableProperty] private int _skippedCount;
         [ObservableProperty] private int _failedCount;
-        [ObservableProperty] private bool _isImportNotificationVisible;
-        [ObservableProperty] private string _importNotificationTitle = "Library Import";
-        [ObservableProperty] private string _importNotificationMessage = string.Empty;
-        [ObservableProperty] private InfoBarSeverity _importNotificationBarSeverity = InfoBarSeverity.Informational;
+        [ObservableProperty] private int _importRemainingCount;
         [ObservableProperty] private Game? _sidebarSelectedItem;
         [ObservableProperty] private string _searchText = string.Empty;
 
@@ -150,6 +160,12 @@ namespace Codec.ViewModels
             _services.LibraryStorage.EnsureStorageInitialized();
             SetLoadingState(true, "Loading your library...", "Preparing Codec");
 
+            _appSettings = await _services.AppSettings.LoadAsync();
+            _suppressSettingsSave = true;
+            ScanOnStartup = _appSettings.ScanOnStartup;
+            LaunchSteamSilent = _appSettings.LaunchSteamSilent;
+            _suppressSettingsSave = false;
+
             var saved = await _services.LibraryStorage.LoadAsync();
             await EnsureCoversAsync(saved);
             var sortedSavedGames = saved
@@ -166,7 +182,65 @@ namespace Codec.ViewModels
 
             SetLoadingState(false);
             IsInitialLoading = false;
-            IsOnboardingVisible = Games.Count == 0;
+            IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
+
+            if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
+                _ = ScanGamesOnStartupAsync();
+        }
+
+        public async Task CompleteOnboardingAsync(bool scanOnStartup, bool launchSteamSilent)
+        {
+            _appSettings.OnboardingCompleted = true;
+            _appSettings.ScanOnStartup = scanOnStartup;
+            _appSettings.LaunchSteamSilent = launchSteamSilent;
+            _suppressSettingsSave = true;
+            ScanOnStartup = scanOnStartup;
+            LaunchSteamSilent = launchSteamSilent;
+            _suppressSettingsSave = false;
+            await _services.AppSettings.SaveAsync(_appSettings);
+        }
+
+        public void CancelImport() => _importCoordinator.Cancel();
+
+        public void ResetAppSettings()
+        {
+            _appSettings = new AppSettings();
+            _suppressSettingsSave = true;
+            ScanOnStartup = false;
+            LaunchSteamSilent = false;
+            _suppressSettingsSave = false;
+        }
+
+        partial void OnScanOnStartupChanged(bool value)
+        {
+            if (_suppressSettingsSave) return;
+            _appSettings.ScanOnStartup = value;
+            _ = _services.AppSettings.SaveAsync(_appSettings);
+        }
+
+        partial void OnLaunchSteamSilentChanged(bool value)
+        {
+            if (_suppressSettingsSave) return;
+            _appSettings.LaunchSteamSilent = value;
+            _ = _services.AppSettings.SaveAsync(_appSettings);
+        }
+
+        public string? TryLaunchSteamSilent()
+        {
+            string? path = _appSettings.SteamClientPath;
+            if (string.IsNullOrEmpty(path))
+                return "Steam client path not found. Run a game scan first.";
+            if (!System.IO.File.Exists(path))
+                return $"steam.exe not found at:\n{path}";
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path, "-silent") { UseShellExecute = true });
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to launch Steam: {ex.Message}";
+            }
         }
 
         [RelayCommand]
@@ -177,20 +251,16 @@ namespace Codec.ViewModels
             IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible;
         }
 
+        private async Task ScanGamesOnStartupAsync()
+        {
+            IsStartupScanToastVisible = true;
+            await _importCoordinator.StartScanAsync();
+        }
+
         public async Task<ImportEnqueueResult> AddGameCommand(string executablePath)
         {
             IsOnboardingVisible = false;
             var result = await _importCoordinator.EnqueueManualExecutableAsync(executablePath);
-            await ShowImportNotificationAsync(
-                "Library Import",
-                result.Message,
-                result.Status switch
-                {
-                    ImportEnqueueResultStatus.Accepted => Codec.Services.Importing.ImportNotificationSeverity.Informational,
-                    ImportEnqueueResultStatus.Duplicate => Codec.Services.Importing.ImportNotificationSeverity.Warning,
-                    ImportEnqueueResultStatus.Invalid => Codec.Services.Importing.ImportNotificationSeverity.Warning,
-                    _ => Codec.Services.Importing.ImportNotificationSeverity.Error
-                });
             if (!result.IsAccepted && Games.Count == 0)
             {
                 IsOnboardingVisible = true;

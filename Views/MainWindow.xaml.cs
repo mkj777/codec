@@ -7,6 +7,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -26,6 +27,15 @@ namespace Codec.Views
 
         private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(Colors.White);
         private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9A, 0x9A, 0x9A));
+
+        private static readonly Windows.UI.Color[] FireColors =
+        [
+            ColorHelper.FromArgb(255, 255, 220, 30),
+            ColorHelper.FromArgb(255, 255, 170, 0),
+            ColorHelper.FromArgb(255, 255, 100, 0),
+            ColorHelper.FromArgb(255, 255, 50, 0),
+            ColorHelper.FromArgb(255, 220, 20, 0),
+        ];
 
         public MainViewModel ViewModel { get; }
 
@@ -124,20 +134,39 @@ namespace Codec.Views
             }
         }
 
-        private async void SidebarAddGames_Click(object sender, RoutedEventArgs e)
-            => await ViewModel.ScanGamesCommand.ExecuteAsync(null);
+        private void ManageButton_Click(object sender, RoutedEventArgs e)
+            => ViewModel.IsSettingsVisible = true;
 
-        private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
+        private void SettingsClose_Click(object sender, RoutedEventArgs e)
+            => ViewModel.IsSettingsVisible = false;
+
+        private void SettingsScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+            => ViewModel.IsSettingsVisible = false;
+
+        private async void SidebarAddGames_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.IsOnboardingVisible = false;
+            ViewModel.IsSettingsVisible = false;
             await ViewModel.ScanGamesCommand.ExecuteAsync(null);
         }
 
-        private void OnboardingSkip_Click(object sender, RoutedEventArgs e)
-            => ViewModel.IsOnboardingVisible = false;
+        private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
+        {
+            bool scanOnStartup = OnboardingScanOnStartupCheckBox.IsChecked == true;
+            bool launchSteamSilent = OnboardingLaunchSteamSilentCheckBox.IsChecked == true;
+            ViewModel.IsOnboardingVisible = false;
+            await ViewModel.CompleteOnboardingAsync(scanOnStartup, launchSteamSilent);
+            await ViewModel.ScanGamesCommand.ExecuteAsync(null);
+        }
+
+        private async void OnboardingSkip_Click(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.CompleteOnboardingAsync(false, false);
+            ViewModel.IsOnboardingVisible = false;
+        }
 
         private async void AddGame_Click(object sender, RoutedEventArgs e)
         {
+            ViewModel.IsSettingsVisible = false;
             try
             {
                 var exePicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
@@ -207,6 +236,19 @@ namespace Codec.Views
             {
                 ViewModel.IsUiEnabled = true;
             }
+        }
+
+        private async void DebugLaunchSteamSilent_Click(object sender, RoutedEventArgs e)
+        {
+            string? error = ViewModel.TryLaunchSteamSilent();
+            var dialog = new ContentDialog
+            {
+                Title = "Launch Steam Silent",
+                Content = error ?? "Steam launched with -silent flag.",
+                CloseButtonText = "Ok",
+                XamlRoot = Content.XamlRoot
+            };
+            await dialog.ShowAsync();
         }
 
         private async void Debug_Click(object sender, RoutedEventArgs e)
@@ -343,6 +385,7 @@ namespace Codec.Views
 
         private async void ResetApp_Click(object sender, RoutedEventArgs e)
         {
+            ViewModel.IsSettingsVisible = false;
             var confirmationDialog = new ContentDialog
             {
                 Title = "Reset Codec",
@@ -353,27 +396,26 @@ namespace Codec.Views
                 XamlRoot = Content.XamlRoot
             };
 
-            var result = await confirmationDialog.ShowAsync();
-            if (result != ContentDialogResult.Primary)
+            if (await confirmationDialog.ShowAsync() != ContentDialogResult.Primary)
                 return;
 
-            bool resetSuccessful = false;
+            ViewModel.IsUiEnabled = false;
+            ViewModel.CancelImport();
+            ViewModel.IsDetailsVisible = false;
+            ViewModel.SelectedGame = null;
+            ViewModel.SidebarSelectedItem = null;
+            ViewModel.Games.Clear();
+
+            var fireTask = PlayFireAnimationAsync();
+
             try
             {
-                ViewModel.IsAppSpinnerActive = true;
-                ViewModel.IsUiEnabled = false;
-
-                ViewModel.IsDetailsVisible = false;
-                ViewModel.SelectedGame = null;
-                ViewModel.SidebarSelectedItem = null;
-                ViewModel.Games.Clear();
-
                 App.Services.Cache.ClearAll();
                 await App.Services.LibraryStorage.ResetAsync();
-                resetSuccessful = true;
             }
             catch (Exception ex)
             {
+                await fireTask;
                 var errorDialog = new ContentDialog
                 {
                     Title = "Reset Error",
@@ -382,26 +424,147 @@ namespace Codec.Views
                     XamlRoot = Content.XamlRoot
                 };
                 await errorDialog.ShowAsync();
-            }
-            finally
-            {
-                ViewModel.IsAppSpinnerActive = false;
                 ViewModel.IsUiEnabled = true;
+                return;
             }
 
-            if (resetSuccessful)
+            ViewModel.ResetAppSettings();
+            ViewModel.SetLoadingState(false);
+            ViewModel.IsOnboardingVisible = true;
+
+            await fireTask;
+
+            ViewModel.IsUiEnabled = true;
+        }
+
+        private async Task PlayFireAnimationAsync()
+        {
+            FireOverlay.Visibility = Visibility.Visible;
+            FireDarkBackground.Opacity = 1;
+
+            AnimateOpacity(FireBottomGlow, 0, 1.0, 0.5);
+
+            var shakeSb = BuildShakeStoryboard();
+            shakeSb.Begin();
+
+            var random = new Random();
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+            timer.Tick += (_, _) =>
             {
-                var successDialog = new ContentDialog
+                SpawnFireParticle(FireParticleCanvas, random);
+                SpawnFireParticle(FireParticleCanvas, random);
+                SpawnFireParticle(FireParticleCanvas, random);
+            };
+            timer.Start();
+
+            await Task.Delay(2600);
+            timer.Stop();
+
+            AnimateOpacity(FireOverlay, 1, 0, 0.65);
+            await Task.Delay(650);
+
+            shakeSb.Stop();
+            ShakeTransform.X = 0;
+            FireOverlay.Visibility = Visibility.Collapsed;
+            FireOverlay.Opacity = 1;
+            FireDarkBackground.Opacity = 0;
+            FireBottomGlow.Opacity = 0;
+            FireParticleCanvas.Children.Clear();
+        }
+
+        private void SpawnFireParticle(Microsoft.UI.Xaml.Controls.Canvas canvas, Random random)
+        {
+            double w = canvas.ActualWidth;
+            double h = canvas.ActualHeight;
+            if (w <= 0 || h <= 0) return;
+
+            var color = FireColors[random.Next(FireColors.Length)];
+            double size = 14 + random.NextDouble() * 38;
+            double x = random.NextDouble() * (w + size) - size / 2;
+            double secs = 0.7 + random.NextDouble() * 1.1;
+
+            var brush = new RadialGradientBrush();
+            brush.GradientStops.Add(new GradientStop { Color = color, Offset = 0 });
+            brush.GradientStops.Add(new GradientStop
+            {
+                Color = ColorHelper.FromArgb(0, color.R, color.G, color.B),
+                Offset = 1
+            });
+
+            var ellipse = new Microsoft.UI.Xaml.Shapes.Ellipse
+            {
+                Width = size,
+                Height = size * 1.7,
+                Fill = brush,
+                Opacity = 0.7 + random.NextDouble() * 0.3,
+                IsHitTestVisible = false
+            };
+
+            Microsoft.UI.Xaml.Controls.Canvas.SetLeft(ellipse, x);
+            Microsoft.UI.Xaml.Controls.Canvas.SetTop(ellipse, h);
+            canvas.Children.Add(ellipse);
+
+            var move = new DoubleAnimation
+            {
+                From = h,
+                To = -size * 2,
+                Duration = new Duration(TimeSpan.FromSeconds(secs)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            var fade = new DoubleAnimation
+            {
+                From = ellipse.Opacity,
+                To = 0,
+                BeginTime = TimeSpan.FromSeconds(secs * 0.5),
+                Duration = new Duration(TimeSpan.FromSeconds(secs * 0.5))
+            };
+
+            var sb = new Storyboard();
+            Storyboard.SetTarget(move, ellipse);
+            Storyboard.SetTargetProperty(move, "(Canvas.Top)");
+            Storyboard.SetTarget(fade, ellipse);
+            Storyboard.SetTargetProperty(fade, "Opacity");
+            sb.Children.Add(move);
+            sb.Children.Add(fade);
+            sb.Completed += (_, _) => canvas.Children.Remove(ellipse);
+            sb.Begin();
+        }
+
+        private Storyboard BuildShakeStoryboard()
+        {
+            var anim = new DoubleAnimationUsingKeyFrames { RepeatBehavior = new RepeatBehavior(11) };
+            (double X, double Ms)[] keys =
+            [
+                (0, 0), (8, 38), (-8, 76), (5, 111), (-5, 146), (3, 176), (-3, 206), (0, 236)
+            ];
+            foreach (var (x, ms) in keys)
+                anim.KeyFrames.Add(new LinearDoubleKeyFrame
                 {
-                    Title = "Codec Reset",
-                    Content = "All saved data and cached content have been deleted.",
-                    CloseButtonText = "Close",
-                    XamlRoot = Content.XamlRoot
-                };
-                await successDialog.ShowAsync();
-                ViewModel.IsOnboardingVisible = true;
-                ViewModel.SetLoadingState(false);
-            }
+                    Value = x,
+                    KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(ms))
+                });
+
+            Storyboard.SetTarget(anim, ShakeTransform);
+            Storyboard.SetTargetProperty(anim, "X");
+
+            var sb = new Storyboard();
+            sb.Children.Add(anim);
+            return sb;
+        }
+
+        private static void AnimateOpacity(UIElement target, double from, double to, double secs)
+        {
+            var anim = new DoubleAnimation
+            {
+                From = from,
+                To = to,
+                Duration = new Duration(TimeSpan.FromSeconds(secs))
+            };
+            var sb = new Storyboard();
+            Storyboard.SetTarget(anim, target);
+            Storyboard.SetTargetProperty(anim, "Opacity");
+            sb.Children.Add(anim);
+            sb.Begin();
         }
     }
 }

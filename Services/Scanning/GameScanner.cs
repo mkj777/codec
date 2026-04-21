@@ -29,13 +29,16 @@ namespace Codec.Services.Scanning
         private readonly List<PlatformScanner> _platformScanners;
         private readonly HeuristicScanner _heuristicScanner;
         private readonly GameNameService _gameName;
+        private readonly SteamScanner _steamScanner = new();
+
+        public string? DetectedSteamClientPath => _steamScanner.DetectedSteamClientPath;
 
         public GameScanner(GameNameService gameName)
         {
             _gameName = gameName;
             _platformScanners = new List<PlatformScanner>
             {
-                new SteamScanner(),
+                _steamScanner,
                 new EpicGamesScanner(),
                 new UbisoftConnectScanner(),
                 new BattleNetScanner(),

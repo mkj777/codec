@@ -31,6 +31,8 @@ namespace Codec.Services.Scanning.Scanners
 
         public override string PlatformName => "Steam";
 
+        public string? DetectedSteamClientPath { get; private set; }
+
         public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
         {
             var candidates = new List<GameCandidate>();
@@ -72,6 +74,16 @@ namespace Codec.Services.Scanning.Scanners
             if (definitionFiles.Count == 0)
             {
                 return folders;
+            }
+
+            foreach (var file in definitionFiles)
+            {
+                string? steamDir = Path.GetDirectoryName(Path.GetDirectoryName(file));
+                if (!string.IsNullOrEmpty(steamDir))
+                {
+                    string exe = Path.Combine(steamDir, "steam.exe");
+                    if (File.Exists(exe)) { DetectedSteamClientPath = exe; break; }
+                }
             }
 
             foreach (var definitionFile in definitionFiles)

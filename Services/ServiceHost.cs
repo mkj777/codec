@@ -14,6 +14,7 @@ namespace Codec.Services
         // Storage
         public MetadataCache Cache { get; }
         public LibraryStorageService LibraryStorage { get; }
+        public AppSettingsService AppSettings { get; }
 
         // Resolving
         public GameDetailsService GameDetails { get; }
@@ -32,6 +33,7 @@ namespace Codec.Services
         {
             Cache = new MetadataCache();
             LibraryStorage = new LibraryStorageService();
+            AppSettings = new AppSettingsService();
 
             GameDetails = new GameDetailsService(Cache);
             GameName = new GameNameService(GameDetails);

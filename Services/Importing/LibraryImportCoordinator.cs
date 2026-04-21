@@ -22,6 +22,9 @@ namespace Codec.Services.Importing
         private readonly object _stateGate = new();
         private readonly CancellationTokenSource _disposeCts = new();
 
+        private CancellationTokenSource _scanCts = new();
+        private volatile bool _drainQueue;
+
         private bool _isScanRunning;
         private int _queuedCount;
         private int _processingCount;
@@ -29,6 +32,8 @@ namespace Codec.Services.Importing
         private int _skippedCount;
         private int _failedCount;
         private int _lastCompletedSessionTotal;
+
+        public string? DetectedSteamClientPath => _scanner.DetectedSteamClientPath;
 
         public event EventHandler<GameImportStatusSnapshot>? StatusChanged;
         public event EventHandler<ImportNotification>? NotificationRaised;
@@ -79,11 +84,31 @@ namespace Codec.Services.Importing
             await Task.CompletedTask;
         }
 
+        public void Cancel()
+        {
+            lock (_stateGate)
+            {
+                _isScanRunning = false;
+                _queuedCount = 0;
+                _processingCount = 0;
+            }
+
+            _drainQueue = true;
+
+            var old = _scanCts;
+            _scanCts = new CancellationTokenSource();
+            old.Cancel();
+            old.Dispose();
+
+            PublishStatus();
+        }
+
         private async Task RunScanAsync()
         {
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_scanCts.Token, _disposeCts.Token);
             try
             {
-                await foreach (var candidate in _scanner.ScanIncrementallyAsync(_disposeCts.Token).ConfigureAwait(false))
+                await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token).ConfigureAwait(false))
                 {
                     await TryEnqueueScanCandidateAsync(candidate).ConfigureAwait(false);
                 }
@@ -210,6 +235,18 @@ namespace Codec.Services.Importing
                     {
                         _queuedCount = Math.Max(0, _queuedCount - 1);
                         _processingCount = 1;
+                    }
+
+                    if (_drainQueue)
+                    {
+                        lock (_stateGate)
+                        {
+                            _processingCount = 0;
+                            _reservedExecutables.Remove(request.ExecutablePath);
+                        }
+
+                        PublishStatus();
+                        continue;
                     }
 
                     PublishStatus();
@@ -355,6 +392,7 @@ namespace Codec.Services.Importing
                 return;
             }
 
+            _drainQueue = false;
             _addedCount = 0;
             _skippedCount = 0;
             _failedCount = 0;
@@ -398,8 +436,10 @@ namespace Codec.Services.Importing
         public void Dispose()
         {
             _disposeCts.Cancel();
+            _scanCts.Cancel();
             _queue.Writer.TryComplete();
             _disposeCts.Dispose();
+            _scanCts.Dispose();
         }
     }
 }
