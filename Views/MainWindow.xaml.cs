@@ -13,6 +13,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
@@ -50,7 +52,18 @@ namespace Codec.Views
             ConfigureWindowConstraints();
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             _ = ViewModel.LoadLibraryAsync();
+            RootGrid.Loaded += MainWindow_Loaded;
         }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            if (new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
+                AdminWarningToast.Visibility = Visibility.Visible;
+        }
+
+        private void AdminWarningClose_Click(object sender, RoutedEventArgs e)
+            => AdminWarningToast.Visibility = Visibility.Collapsed;
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -169,15 +182,11 @@ namespace Codec.Views
             ViewModel.IsSettingsVisible = false;
             try
             {
-                var exePicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
-                exePicker.FileTypeFilter.Add(".exe");
-                InitializeWithWindow.Initialize(exePicker, WindowNative.GetWindowHandle(this));
-
-                var exeFile = await exePicker.PickSingleFileAsync();
-                if (exeFile == null)
+                var path = await PickExeFileAsync();
+                if (path == null)
                     return;
 
-                await ViewModel.AddGameCommand(exeFile.Path);
+                await ViewModel.AddGameCommand(path);
             }
             catch (Exception ex)
             {
@@ -197,20 +206,16 @@ namespace Codec.Views
             ViewModel.IsUiEnabled = false;
             try
             {
-                var exePicker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
-                exePicker.FileTypeFilter.Add(".exe");
-                InitializeWithWindow.Initialize(exePicker, WindowNative.GetWindowHandle(this));
-
-                var exeFile = await exePicker.PickSingleFileAsync();
-                if (exeFile == null)
+                var path = await PickExeFileAsync();
+                if (path == null)
                     return;
 
-                Debug.WriteLine($"Starting ID lookup for: {exeFile.Path}");
-                var (steamId, rawgId, steamName) = await App.Services.GameName.FindGameIdsAsync(exeFile.Path);
+                Debug.WriteLine($"Starting ID lookup for: {path}");
+                var (steamId, rawgId, steamName) = await App.Services.GameName.FindGameIdsAsync(path);
 
                 string steamIdText = steamId.HasValue ? steamId.Value.ToString() : "Not found";
                 string rawgIdText = rawgId.HasValue ? rawgId.Value.ToString() : "Not found";
-                string bestName = steamName ?? App.Services.GameName.GetBestName(exeFile.Path) ?? "Unknown";
+                string bestName = steamName ?? App.Services.GameName.GetBestName(path) ?? "Unknown";
 
                 var testDialog = new ContentDialog
                 {
@@ -565,6 +570,68 @@ namespace Codec.Views
             Storyboard.SetTargetProperty(anim, "Opacity");
             sb.Children.Add(anim);
             sb.Begin();
+        }
+
+        private async Task<string?> PickExeFileAsync()
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            bool isAdmin = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+
+            if (isAdmin)
+                return PickExeFileWin32(WindowNative.GetWindowHandle(this));
+
+            var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.ComputerFolder };
+            picker.FileTypeFilter.Add(".exe");
+            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+            var file = await picker.PickSingleFileAsync();
+            return file?.Path;
+        }
+
+        private static string? PickExeFileWin32(IntPtr hwndOwner)
+        {
+            var ofn = new OpenFileName
+            {
+                hwndOwner = hwndOwner,
+                lpstrFilter = "Executable Files\0*.exe\0All Files\0*.*\0",
+                lpstrFile = new string('\0', 260),
+                nMaxFile = 260,
+                lpstrTitle = "Select Executable",
+                Flags = 0x00001000 | 0x00000800 | 0x00000008 // OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR
+            };
+            ofn.lStructSize = Marshal.SizeOf(ofn);
+
+            return GetOpenFileName(ref ofn) ? ofn.lpstrFile.TrimEnd('\0') : null;
+        }
+
+        [DllImport("comdlg32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern bool GetOpenFileName(ref OpenFileName ofn);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        private struct OpenFileName
+        {
+            public int lStructSize;
+            public IntPtr hwndOwner;
+            public IntPtr hInstance;
+            public string? lpstrFilter;
+            public string? lpstrCustomFilter;
+            public int nMaxCustFilter;
+            public int nFilterIndex;
+            public string? lpstrFile;
+            public int nMaxFile;
+            public string? lpstrFileTitle;
+            public int nMaxFileTitle;
+            public string? lpstrInitialDir;
+            public string? lpstrTitle;
+            public int Flags;
+            public short nFileOffset;
+            public short nFileExtension;
+            public string? lpstrDefExt;
+            public IntPtr lCustData;
+            public IntPtr lpfnHook;
+            public string? lpTemplateName;
+            public IntPtr pvReserved;
+            public int dwReserved;
+            public int flagsEx;
         }
     }
 }

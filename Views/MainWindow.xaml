@@ -205,6 +205,51 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               IsHitTestVisible="True">
+            <!-- Admin warning toast -->
+            <Border x:Name="AdminWarningToast"
+                    Visibility="Collapsed"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="0,32,32,0"
+                    Background="#1C1C1C"
+                    BorderBrush="#FFD700"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    Padding="14,12">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Grid.Column="0"
+                              Glyph="&#xE7BA;"
+                              FontSize="16"
+                              Foreground="#FFD700"
+                              VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Spacing="2" MaxWidth="260">
+                        <TextBlock Text="Running as Administrator"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFD700"/>
+                        <TextBlock Text="Some features may not work correctly."
+                                   FontSize="12"
+                                   Foreground="#FFD700"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.8"/>
+                    </StackPanel>
+                    <Button Grid.Column="2"
+                            Content="✕"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="#FFD700"
+                            FontSize="12"
+                            Padding="4,0"
+                            VerticalAlignment="Top"
+                            Click="AdminWarningClose_Click"/>
+                </Grid>
+            </Border>
+
             <!-- Import status card -->
             <Border Visibility="{Binding IsImportStatusVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                     HorizontalAlignment="Right"
