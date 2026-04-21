@@ -1,5 +1,7 @@
 > [!IMPORTANT]
-> **Codec is currently in development.** Some features may be incomplete or subject to change.
+> **Codec is currently in development.** Some features are partly or completely unfinished/missing. Screenshots and Information are subject to change.  
+
+<img src="https://github.com/user-attachments/assets/25d63350-808d-440d-bee2-b27d77de2bd4" align="left" width="140" alt="stand" style="margin-right: 15px;">
 
 ## Codec
 Codec is a lightweight Game Library. Hopefully a Place for everything you need.
