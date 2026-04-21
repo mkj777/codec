@@ -308,7 +308,7 @@
             </Border>
 
             <!-- Scan complete card -->
-            <Border Visibility="{Binding IsScanCompleteVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+            <Border Visibility="{Binding IsScanCompleteEffectiveVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
                     Margin="0,0,16,16"
@@ -347,6 +347,68 @@
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Game not added toast -->
+            <Border Visibility="{Binding IsGameNotAddedToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,16"
+                    Background="#1C1C1C"
+                    CornerRadius="12"
+                    Padding="16,14"
+                    MinWidth="220">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <FontIcon Grid.Column="0"
+                              Glyph="&#xE783;"
+                              FontSize="22"
+                              Foreground="#E57373"
+                              VerticalAlignment="Center"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="Game could not be added"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#CCCCCC"
+                               VerticalAlignment="Center"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                </Grid>
+            </Border>
+
+            <!-- Game already in library toast -->
+            <Border Visibility="{Binding IsGameAlreadyAddedToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,16"
+                    Background="#1C1C1C"
+                    CornerRadius="12"
+                    Padding="16,14"
+                    MinWidth="220">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <FontIcon Grid.Column="0"
+                              Glyph="&#xE8F1;"
+                              FontSize="22"
+                              Foreground="#FFB74D"
+                              VerticalAlignment="Center"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="Game already in library"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#CCCCCC"
+                               VerticalAlignment="Center"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                 </Grid>
             </Border>
 

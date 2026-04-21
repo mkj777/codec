@@ -65,7 +65,25 @@ namespace Codec.ViewModels
             _dispatcherQueue.TryEnqueue(() => IsScanCompleteVisible = false);
         }
 
-        private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification) { }
+        private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification)
+        {
+            if (!notification.IsManual || notification.Severity == ImportNotificationSeverity.Success)
+                return;
+
+            _ = RunOnUiThreadAsync(() =>
+            {
+                if (notification.IsAlreadyAdded)
+                {
+                    IsGameAlreadyAddedToastVisible = true;
+                    _ = DismissGameAlreadyAddedToastAsync();
+                }
+                else
+                {
+                    IsGameNotAddedToastVisible = true;
+                    _ = DismissGameNotAddedToastAsync();
+                }
+            });
+        }
 
         private Task RunOnUiThreadAsync(Action action)
         {

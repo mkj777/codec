@@ -183,7 +183,7 @@ namespace Codec.Services.Importing
                 normalizedPath,
                 folder,
                 nameHint,
-                "Manual Executable",
+                "Added manually",
                 IsManual: true), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
@@ -283,7 +283,8 @@ namespace Codec.Services.Importing
                                     request.IsManual
                                         ? "Codec finished the metadata pass but the game is still missing required artwork, so it was not added."
                                         : $"Codec skipped '{request.NameHint}' because required artwork was not ready.",
-                                    ImportNotificationSeverity.Error));
+                                    ImportNotificationSeverity.Error,
+                                    IsManual: request.IsManual));
                                 break;
                             case GameImportResultStatus.Duplicate:
                             case GameImportResultStatus.Invalid:
@@ -297,7 +298,9 @@ namespace Codec.Services.Importing
                                     RaiseNotification(new ImportNotification(
                                         "Library Import",
                                         result.Message,
-                                        ImportNotificationSeverity.Warning));
+                                        ImportNotificationSeverity.Warning,
+                                        IsManual: true,
+                                        IsAlreadyAdded: result.Status == GameImportResultStatus.Duplicate));
                                 }
                                 break;
                             default:
@@ -309,7 +312,8 @@ namespace Codec.Services.Importing
                                 RaiseNotification(new ImportNotification(
                                     "Library Import",
                                     request.IsManual ? result.Message : $"Codec could not finish importing '{request.NameHint}'.",
-                                    ImportNotificationSeverity.Error));
+                                    ImportNotificationSeverity.Error,
+                                    IsManual: request.IsManual));
                                 break;
                         }
                     }

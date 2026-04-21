@@ -27,7 +27,7 @@ namespace Codec.Tests
             string exePath = CreateTempExe();
             try
             {
-                var existing = new Game { Name = "Existing", Executable = exePath, FolderLocation = Path.GetDirectoryName(exePath) ?? string.Empty, ImportedFrom = "Manual Executable" };
+                var existing = new Game { Name = "Existing", Executable = exePath, FolderLocation = Path.GetDirectoryName(exePath) ?? string.Empty, ImportedFrom = "Added manually" };
                 var pipeline = new FakePipeline(_ => GameImportResult.Invalid("should not run"));
                 using var coordinator = CreateCoordinator(
                     pipeline,

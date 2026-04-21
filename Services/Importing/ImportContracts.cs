@@ -52,7 +52,9 @@ namespace Codec.Services.Importing
         string Title,
         string Message,
         ImportNotificationSeverity Severity,
-        bool AutoHide = true);
+        bool AutoHide = true,
+        bool IsManual = false,
+        bool IsAlreadyAdded = false);
 
     public sealed record GameImportStatusSnapshot(
         bool IsActive,

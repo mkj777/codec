@@ -110,7 +110,20 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
         [ObservableProperty] private bool _isStartupScanToastVisible;
-        [ObservableProperty] private bool _isScanCompleteVisible;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsScanCompleteEffectiveVisible))]
+        private bool _isScanCompleteVisible;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsScanCompleteEffectiveVisible))]
+        private bool _isGameNotAddedToastVisible;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsScanCompleteEffectiveVisible))]
+        private bool _isGameAlreadyAddedToastVisible;
+
+        public bool IsScanCompleteEffectiveVisible => IsScanCompleteVisible && !IsGameNotAddedToastVisible && !IsGameAlreadyAddedToastVisible;
         [ObservableProperty] private int _scanCompleteAddedCount;
         [ObservableProperty] private string _importStatusMessage = string.Empty;
         [ObservableProperty] private int _queuedCount;
@@ -267,7 +280,29 @@ namespace Codec.ViewModels
             {
                 IsOnboardingVisible = true;
             }
+            if (result.Status == ImportEnqueueResultStatus.Invalid)
+            {
+                IsGameNotAddedToastVisible = true;
+                _ = DismissGameNotAddedToastAsync();
+            }
+            else if (result.Status == ImportEnqueueResultStatus.Duplicate)
+            {
+                IsGameAlreadyAddedToastVisible = true;
+                _ = DismissGameAlreadyAddedToastAsync();
+            }
             return result;
+        }
+
+        private async Task DismissGameNotAddedToastAsync()
+        {
+            await Task.Delay(4000).ConfigureAwait(false);
+            _dispatcherQueue.TryEnqueue(() => IsGameNotAddedToastVisible = false);
+        }
+
+        private async Task DismissGameAlreadyAddedToastAsync()
+        {
+            await Task.Delay(4000).ConfigureAwait(false);
+            _dispatcherQueue.TryEnqueue(() => IsGameAlreadyAddedToastVisible = false);
         }
 
         // ---------------------------------------------------------------------------------
