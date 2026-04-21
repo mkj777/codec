@@ -1,11 +1,14 @@
 > [!IMPORTANT]
 > **Codec is currently in development.** Some features are partly or completely unfinished/missing. Screenshots and Information are subject to change.  
 
-<img src="https://github.com/user-attachments/assets/25d63350-808d-440d-bee2-b27d77de2bd4" align="left" width="140" alt="stand" style="margin-right: 15px;">
+<img src="https://github.com/user-attachments/assets/b935f0ff-bf2b-4c9e-8a09-de25201c729d"  align="left" width="130" alt="stand" style="margin-right: 15px;"/>
 
-## Codec
-Codec is a lightweight Game Library. Hopefully a Place for everything you need.
 
+### Codec
+Codec is a lightweight Game Library.  
+Hopefully a place for everything you need. 
+   
+---
 ### Features
 Scanning your PC for all your Games  
 Launching them through Codec  
