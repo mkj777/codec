@@ -10,6 +10,8 @@ namespace Codec.ViewModels
 {
     public partial class MainViewModel
     {
+        private bool _wasImportActive;
+
         private Task<IReadOnlyCollection<Game>> GetLibrarySnapshotAsync()
             => RunOnUiThreadAsync<IReadOnlyCollection<Game>>(() => Games.ToList());
 
@@ -29,6 +31,9 @@ namespace Codec.ViewModels
         {
             _ = RunOnUiThreadAsync(() =>
             {
+                bool wasActive = _wasImportActive;
+                _wasImportActive = snapshot.IsActive;
+
                 IsScanning = snapshot.IsScanning;
                 IsImportStatusVisible = snapshot.IsActive && !IsStartupScanToastVisible;
                 AddedCount = snapshot.AddedCount;
@@ -43,8 +48,21 @@ namespace Codec.ViewModels
                         _appSettings.SteamClientPath = detected;
                         _ = _services.AppSettings.SaveAsync(_appSettings);
                     }
+
+                    if (wasActive)
+                    {
+                        ScanCompleteAddedCount = snapshot.AddedCount;
+                        IsScanCompleteVisible = true;
+                        _ = DismissScanCompleteAsync();
+                    }
                 }
             });
+        }
+
+        private async Task DismissScanCompleteAsync()
+        {
+            await Task.Delay(4000).ConfigureAwait(false);
+            _dispatcherQueue.TryEnqueue(() => IsScanCompleteVisible = false);
         }
 
         private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification) { }

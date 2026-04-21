@@ -168,7 +168,7 @@
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
                                        Stretch="Uniform"/>
                                 <Button x:Name="SidebarAddButton"
-                                        Content="Manage"
+                                        Content="Settings"
                                         IsEnabled="{Binding IsUiEnabled}"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Bottom"
@@ -257,6 +257,49 @@
                                            Foreground="#444444"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Scan complete card -->
+            <Border Visibility="{Binding IsScanCompleteVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,16"
+                    Background="#1C1C1C"
+                    CornerRadius="12"
+                    Padding="16,14"
+                    MinWidth="220">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <FontIcon Grid.Column="0"
+                              Glyph="&#xE73E;"
+                              FontSize="22"
+                              Foreground="#4CAF50"
+                              VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Text="Scan Complete"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#999999"
+                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ScanCompleteAddedCount, Mode=OneWay}"
+                                       FontSize="22"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       VerticalAlignment="Center"
+                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                            <TextBlock Text="games added"
+                                       FontSize="12"
+                                       Foreground="#555555"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
                 </Grid>

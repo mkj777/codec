@@ -110,6 +110,8 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
         [ObservableProperty] private bool _isStartupScanToastVisible;
+        [ObservableProperty] private bool _isScanCompleteVisible;
+        [ObservableProperty] private int _scanCompleteAddedCount;
         [ObservableProperty] private string _importStatusMessage = string.Empty;
         [ObservableProperty] private int _queuedCount;
         [ObservableProperty] private int _processingCount;
