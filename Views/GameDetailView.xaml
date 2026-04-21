@@ -517,6 +517,32 @@
                                         </Button>
                                 </Grid>
 
+                                <!-- Import source tag bottom-center of hero -->
+                                <Border Grid.Row="2"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Bottom"
+                                        Background="#22000000"
+                                        BorderBrush="#44FFFFFF"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="10,4"
+                                        Margin="0,0,50,0"
+                                        Visibility="{Binding SelectedGame.ImportedFrom, Converter={StaticResource NullToVisibilityConverter}}">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="5">
+                                                <TextBlock Text="via"
+                                                           Opacity="0.55"
+                                                           FontSize="12"
+                                                           Foreground="White"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding SelectedGame.ImportedFromDisplay}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="White"
+                                                           VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                </Border>
+
                                 <!-- Play button anchored to the hero's lower-left corner -->
                                 <Grid x:Name="DetailsPlayChrome"
                                       Grid.Row="2"
