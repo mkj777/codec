@@ -157,10 +157,12 @@ namespace Codec.Services.Scanning
                     continue;
                 }
 
-                // Determine Steam ID: use existing if available, otherwise search for it
+                // Determine Steam ID: use existing if available, otherwise search for it.
+                // Skip Steam lookup for Riot Games (not on Steam — avoids fuzzy false matches).
                 int? steamId = candidate.SteamAppId;
+                bool isRiotSource = string.Equals(candidate.Source, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
-                if (!steamId.HasValue)
+                if (!steamId.HasValue && !isRiotSource)
                 {
                     Debug.WriteLine($"  [STEAM LOOKUP] Searching Steam for: '{candidate.Name}'");
                     try

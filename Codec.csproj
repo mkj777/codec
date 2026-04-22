@@ -108,16 +108,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="Assets\Riot\2XKO\2xkoCapsule.jpg" />
-    <Content Remove="Assets\Riot\2XKO\2xkoHero.png" />
-    <Content Remove="Assets\Riot\2XKO\2XKOLogo.png" />
-    <Content Remove="Assets\Riot\LeagueOfLegends\leagueCapsule.png" />
-    <Content Remove="Assets\Riot\LeagueOfLegends\leagueHero.jpg" />
-    <Content Remove="Assets\Riot\LeagueOfLegends\leagueLogo.png" />
-    <Content Remove="Assets\Riot\riotLogo.png" />
-    <Content Remove="Assets\Riot\Valorant\valorantCapsule.png" />
-    <Content Remove="Assets\Riot\Valorant\valorantHero.jpg" />
-    <Content Remove="Assets\Riot\Valorant\valorantLogo.svg" />
+    <Content Include="Assets\Riot\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,7 @@
 using Codec.Models;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Fetching
@@ -58,6 +60,12 @@ namespace Codec.Services.Fetching
             if (game == null)
             {
                 return new DisplayedAssetHydrationResult(null, null, false, null, null, false, null, null);
+            }
+
+            var bundled = TryResolveBundledRiotAssets(game);
+            if (bundled != null)
+            {
+                return bundled;
             }
 
             string? capsuleCachePath = game.LibCapsuleCache;
@@ -122,6 +130,43 @@ namespace Codec.Services.Fetching
                 game.HasLogoAssetSource || !string.IsNullOrWhiteSpace(game.LibLogoUrl),
                 game.LibLogoUrl,
                 game.LibLogoCache);
+        }
+
+        private sealed record BundledRiotAsset(string Folder, string Capsule, string Hero, string Logo);
+
+        private static readonly Dictionary<string, BundledRiotAsset> RiotBundledAssets = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["2XKO"] = new("2XKO", "2xkoCapsule.jpg", "2xkoHero.png", "2xkoLogo.png"),
+            ["League of Legends"] = new("LeagueOfLegends", "leagueCapsule.png", "leagueHero.jpg", "leagueLogo.png"),
+            ["VALORANT"] = new("Valorant", "valorantCapsule.png", "valorantHero.jpg", "valorantLogo.png"),
+            ["Valorant"] = new("Valorant", "valorantCapsule.png", "valorantHero.jpg", "valorantLogo.png"),
+        };
+
+        private static DisplayedAssetHydrationResult? TryResolveBundledRiotAssets(Game game)
+        {
+            if (string.IsNullOrWhiteSpace(game.Name))
+                return null;
+
+            if (!RiotBundledAssets.TryGetValue(game.Name.Trim(), out var asset))
+                return null;
+
+            string baseDir = Path.Combine(AppContext.BaseDirectory, "Assets", "Riot", asset.Folder);
+            string capsule = Path.Combine(baseDir, asset.Capsule);
+            string hero = Path.Combine(baseDir, asset.Hero);
+            string logo = Path.Combine(baseDir, asset.Logo);
+
+            if (!File.Exists(capsule) || !File.Exists(hero) || !File.Exists(logo))
+                return null;
+
+            return new DisplayedAssetHydrationResult(
+                GridDbId: null,
+                CapsuleCachePath: capsule,
+                HasHeroSource: true,
+                HeroUrl: null,
+                HeroCachePath: hero,
+                HasLogoSource: true,
+                LogoUrl: null,
+                LogoCachePath: logo);
         }
 
         private static string BuildAssetKey(Game game, string suffix)
