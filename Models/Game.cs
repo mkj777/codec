@@ -228,42 +228,42 @@ namespace Codec.Models
 
             if (normalized.Contains("pc") || normalized.Contains("windows"))
             {
-                return CreatePlatformLogo("windows", "ms-appx:///Assets/windows_logo.png");
+                return CreatePlatformLogo("windows", "ms-appx:///Assets/platforms/windows_logo.png");
             }
 
             if (normalized.Contains("playstation"))
             {
-                return CreatePlatformLogo("playstation", "ms-appx:///Assets/playstation_logo.png");
+                return CreatePlatformLogo("playstation", "ms-appx:///Assets/platforms/playstation_logo.png");
             }
 
             if (normalized.Contains("xbox"))
             {
-                return CreatePlatformLogo("xbox", "ms-appx:///Assets/xbox_logo.png");
+                return CreatePlatformLogo("xbox", "ms-appx:///Assets/platforms/xbox_logo.png");
             }
 
             if (normalized.Contains("nintendo") || normalized.Contains("switch"))
             {
-                return CreatePlatformLogo("nintendo-switch", "ms-appx:///Assets/NintendoSwitch_logo.png");
+                return CreatePlatformLogo("nintendo-switch", "ms-appx:///Assets/platforms/NintendoSwitch_logo.png");
             }
 
             if (normalized.Contains("mac"))
             {
-                return CreatePlatformLogo("macos", "ms-appx:///Assets/MacOS_logo.png");
+                return CreatePlatformLogo("macos", "ms-appx:///Assets/platforms/MacOS_logo.png");
             }
 
             if (normalized.Contains("linux"))
             {
-                return CreatePlatformLogo("linux", "ms-appx:///Assets/linux_logo.png");
+                return CreatePlatformLogo("linux", "ms-appx:///Assets/platforms/linux_logo.png");
             }
 
             if (normalized.Contains("ios"))
             {
-                return CreatePlatformLogo("ios", "ms-appx:///Assets/iOS_logo.png");
+                return CreatePlatformLogo("ios", "ms-appx:///Assets/platforms/iOS_logo.png");
             }
 
             if (normalized.Contains("android"))
             {
-                return CreatePlatformLogo("android", "ms-appx:///Assets/android_logo.png");
+                return CreatePlatformLogo("android", "ms-appx:///Assets/platforms/android_logo.png");
             }
 
             return null;

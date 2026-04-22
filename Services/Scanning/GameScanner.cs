@@ -22,7 +22,8 @@ namespace Codec.Services.Scanning
         int? RawgId,
         string ImportSource,
         string ExecutablePath,
-        string FolderLocation);
+        string FolderLocation,
+        string? LaunchScriptPath = null);
 
     public class GameScanner
     {
@@ -43,7 +44,8 @@ namespace Codec.Services.Scanning
                 new UbisoftConnectScanner(),
                 new BattleNetScanner(),
                 new EAAppScanner(),
-                new GOGScanner()
+                new GOGScanner(),
+                new RiotGamesScanner()
             };
             _heuristicScanner = new HeuristicScanner();
         }
@@ -141,7 +143,8 @@ namespace Codec.Services.Scanning
                         cachedResult.RawgId,
                         cachedResult.ImportSource,
                         cachedResult.ExecutablePath,
-                        cachedResult.FolderPath);
+                        cachedResult.FolderPath,
+                        cachedResult.LaunchScriptPath);
                     continue;
                 }
 
@@ -195,8 +198,8 @@ namespace Codec.Services.Scanning
                 }
 
                 Debug.WriteLine($"  ? VALIDATED: '{candidate.Name}' (Steam ID: {steamId?.ToString() ?? "N/A"}, RAWG ID: {rawgId?.ToString() ?? "N/A"})");
-                scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId);
-                yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath);
+                scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath);
+                yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath, candidate.LaunchScriptPath);
             }
 
             await scanCache.SaveAsync();

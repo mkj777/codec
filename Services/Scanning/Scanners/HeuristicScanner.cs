@@ -46,6 +46,7 @@ namespace Codec.Services.Scanning.Scanners
             // Game Launchers (not games themselves)
             "Steam", "Epic Games Launcher", "GOG Galaxy", "Ubisoft Connect",
             "EA App", "Battle.net", "Origin", "Xbox",
+            "Riot Games", "Riot Client", "Riot Vanguard",
 
             // Emulators (not games themselves)
             "BlueStacks", "Nox", "LDPlayer", "MEmu", "Dolphin Emulator",

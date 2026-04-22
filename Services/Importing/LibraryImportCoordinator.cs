@@ -192,10 +192,12 @@ namespace Codec.Services.Importing
 
         private async Task TryEnqueueScanCandidateAsync(ValidatedScanCandidate candidate)
         {
+            Debug.WriteLine($"[IMPORT-ENQUEUE] {candidate.GameName} source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath}");
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
 
             if (librarySnapshot.Any(g => string.Equals(g.Executable, candidate.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
             {
+                Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (already in library): {candidate.GameName}");
                 IncrementSkipped();
                 return;
             }
@@ -205,6 +207,7 @@ namespace Codec.Services.Importing
                 ResetSessionCountsIfIdle_NoLock();
                 if (!_reservedExecutables.Add(candidate.ExecutablePath))
                 {
+                    Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (already reserved): {candidate.GameName}");
                     _skippedCount++;
                     PublishStatus_NoLock();
                     return;
@@ -220,7 +223,8 @@ namespace Codec.Services.Importing
                 candidate.ImportSource,
                 candidate.SteamAppId,
                 candidate.RawgId,
-                IsManual: false), _disposeCts.Token).ConfigureAwait(false);
+                IsManual: false,
+                candidate.LaunchScriptPath), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
         }
@@ -253,6 +257,8 @@ namespace Codec.Services.Importing
                     var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
                     var result = await _pipeline.ImportAsync(request, librarySnapshot, _disposeCts.Token).ConfigureAwait(false);
 
+                    Debug.WriteLine($"[IMPORT-RESULT] {request.NameHint} status={result.Status} msg='{result.Message}' fullyImported={result.Game?.IsFullyImported} assetsReady={result.Game?.DisplayedAssetsReady}");
+
                     try
                     {
                         switch (result.Status)
@@ -270,6 +276,14 @@ namespace Codec.Services.Importing
                                         "Library Import",
                                         result.Message,
                                         ImportNotificationSeverity.Success));
+                                }
+                                break;
+                            case GameImportResultStatus.Added when result.Game != null && result.Game.IsFullyImported && !request.IsManual:
+                                // Platform scanner game: commit even without full artwork
+                                await _commitImportedGameAsync(result.Game).ConfigureAwait(false);
+                                lock (_stateGate)
+                                {
+                                    _addedCount++;
                                 }
                                 break;
                             case GameImportResultStatus.Added:

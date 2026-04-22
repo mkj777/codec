@@ -38,7 +38,8 @@ namespace Codec.Services.Scanning
             "battlenet\\games",
             "rockstar games\\launcher",
             "xboxgames",
-            "windowsapps"
+            "windowsapps",
+            "riot games"
         };
 
         public static bool ShouldIgnoreCandidate(string? displayName, string? folderPath, string source, bool hasSteamAppId)

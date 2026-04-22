@@ -19,7 +19,7 @@ namespace Codec.Services.Fetching
             public bool IsCoverCached => HasLocalAsset(CapsuleCachePath);
             public bool IsHeroCached => HasLocalAsset(HeroCachePath);
             public bool IsLogoCached => HasLocalAsset(LogoCachePath);
-            public bool AreRequiredAssetsReady => IsCoverCached && IsHeroCached && (!HasLogoSource || IsLogoCached);
+            public bool AreRequiredAssetsReady => IsCoverCached && (!HasHeroSource || IsHeroCached) && (!HasLogoSource || IsLogoCached);
 
             private static bool HasLocalAsset(string? path)
             {

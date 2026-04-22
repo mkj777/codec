@@ -58,8 +58,7 @@ namespace Codec.Services.Scanning.Scanners
             foreach (var game in installedGames)
             {
                 string gameFolderPath = Path.Combine(game.LibraryPath, "steamapps", "common", game.InstallDir);
-                string source = $"Steam ({game.LibraryPath})";
-                candidates.Add(new GameCandidate(game.Name, gameFolderPath, source, game.AppId));
+                candidates.Add(new GameCandidate(game.Name, gameFolderPath, PlatformName, game.AppId));
             }
 
             return candidates;

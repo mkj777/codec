@@ -11,7 +11,8 @@ namespace Codec.Services.Scanning.Scanners
         string Name,
         string FolderPath,
         string Source,
-        int? SteamAppId = null
+        int? SteamAppId = null,
+        string? LaunchScriptPath = null
     );
 
     /// <summary>

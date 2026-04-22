@@ -97,11 +97,14 @@ namespace Codec.ViewModels
 
             try
             {
-                if (SelectedGame.SteamID.HasValue)
+                bool isSteamGame = SelectedGame.SteamID.HasValue
+                    && string.Equals(SelectedGame.ImportedFrom, "Steam", StringComparison.OrdinalIgnoreCase);
+
+                if (isSteamGame)
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = $"steam://rungameid/{SelectedGame.SteamID.Value}",
+                        FileName = $"steam://rungameid/{SelectedGame.SteamID!.Value}",
                         UseShellExecute = true
                     });
                 }

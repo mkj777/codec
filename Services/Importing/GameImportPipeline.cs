@@ -40,10 +40,12 @@ namespace Codec.Services.Importing
 
         public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
         {
+            Debug.WriteLine($"[PIPELINE] ENTRY name='{request.NameHint}' source='{request.ImportSource}' exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} rawg={request.RawgId}");
             cancellationToken.ThrowIfCancellationRequested();
 
             if (string.IsNullOrWhiteSpace(request.ExecutablePath))
             {
+                Debug.WriteLine($"[PIPELINE] INVALID (empty exe): '{request.NameHint}'");
                 return GameImportResult.Invalid("No executable was selected.");
             }
 
@@ -54,21 +56,25 @@ namespace Codec.Services.Importing
             }
             catch
             {
+                Debug.WriteLine($"[PIPELINE] INVALID (bad path): '{request.ExecutablePath}'");
                 return GameImportResult.Invalid("The selected executable path is invalid.");
             }
 
             if (!File.Exists(normalizedExePath))
             {
+                Debug.WriteLine($"[PIPELINE] INVALID (exe missing): '{normalizedExePath}'");
                 return GameImportResult.Invalid("The selected executable no longer exists.");
             }
 
             if (GameContentHeuristics.PathMatchesUtility(normalizedExePath))
             {
+                Debug.WriteLine($"[PIPELINE] INVALID (utility path): '{normalizedExePath}'");
                 return GameImportResult.Invalid("Codec rejected this executable because it looks like a launcher or utility.");
             }
 
             if (librarySnapshot.Any(g => string.Equals(g.Executable, normalizedExePath, StringComparison.OrdinalIgnoreCase)))
             {
+                Debug.WriteLine($"[PIPELINE] DUPLICATE (exe in library): '{normalizedExePath}'");
                 return GameImportResult.Duplicate("This executable is already in your library.");
             }
 
@@ -87,6 +93,7 @@ namespace Codec.Services.Importing
 
             if (GameContentHeuristics.NameMatchesUtility(detectedName))
             {
+                Debug.WriteLine($"[PIPELINE] INVALID (utility name): '{detectedName}'");
                 return GameImportResult.Invalid($"Codec rejected '{detectedName}' because it looks like a launcher or utility.");
             }
 
@@ -112,11 +119,13 @@ namespace Codec.Services.Importing
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
                 {
+                    Debug.WriteLine($"[PIPELINE] DUPLICATE (steam id {steamId} in library): '{detectedName}'");
                     return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
                 }
 
                 if (rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
                 {
+                    Debug.WriteLine($"[PIPELINE] DUPLICATE (rawg id {rawgId} in library): '{detectedName}'");
                     return GameImportResult.Duplicate($"A game with RAWG ID {rawgId.Value} already exists in your library.");
                 }
 
@@ -127,7 +136,10 @@ namespace Codec.Services.Importing
                     FolderLocation = folderLocation,
                     ImportedFrom = request.ImportSource,
                     SteamID = steamId,
-                    RawgID = rawgId
+                    RawgID = rawgId,
+                    LaunchScript = !string.IsNullOrWhiteSpace(request.LaunchScriptPath) && File.Exists(request.LaunchScriptPath)
+                        ? request.LaunchScriptPath
+                        : null
                 };
 
                 if (Directory.Exists(folderLocation))
@@ -163,17 +175,22 @@ namespace Codec.Services.Importing
                 ApplyDisplayedAssetHydration(game, displayedAssets);
                 FinalizeFallbackLinks(game);
 
-                if (!displayedAssets.AreRequiredAssetsReady)
+                bool isFromPlatformScanner = !string.Equals(request.ImportSource, "Heuristic Scan", StringComparison.OrdinalIgnoreCase)
+                    && !request.IsManual;
+
+                if (!displayedAssets.AreRequiredAssetsReady && !isFromPlatformScanner)
                 {
+                    Debug.WriteLine($"[PIPELINE] FAILED (assets not ready, manual/heuristic): '{game.Name}' cover={displayedAssets.IsCoverCached} hero={displayedAssets.IsHeroCached}/{displayedAssets.HasHeroSource} logo={displayedAssets.IsLogoCached}/{displayedAssets.HasLogoSource}");
                     return GameImportResult.Failed($"Codec could not finish downloading the required artwork for {game.Name}.");
                 }
 
                 game.IsFullyImported = true;
+                Debug.WriteLine($"[PIPELINE] ADDED: '{game.Name}' steam={game.SteamID} rawg={game.RawgID} lnk={game.LaunchScript}");
                 return GameImportResult.Added(game, $"{game.Name} was added to your library.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Import pipeline failed for '{normalizedExePath}': {ex.Message}");
+                Debug.WriteLine($"[PIPELINE] FAILED (exception) '{normalizedExePath}': {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return GameImportResult.Failed("Codec could not finish importing this game.");
             }
         }
