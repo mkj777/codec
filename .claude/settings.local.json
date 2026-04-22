@@ -4,7 +4,12 @@
       "Bash(dotnet build:*)",
       "Bash(ls \"C:/Users/maxik/Desktop/_Develop/codec/Services/\"*.cs)",
       "Bash(mv SteamDetailsService.cs RawgDetailsService.cs HltbService.cs GameAssetService.cs GridDbService.cs Fetching/)",
-      "Bash(mv GameNameService.cs GameDetailsService.cs Resolving/)"
+      "Bash(mv GameNameService.cs GameDetailsService.cs Resolving/)",
+      "Bash(mkdir -p /c/Users/maxik/Desktop/_Develop/codec/Assets/platforms)",
+      "Bash(mv /c/Users/maxik/Desktop/_Develop/codec/Assets/windows_logo.png /c/Users/maxik/Desktop/_Develop/codec/Assets/platforms/)",
+      "Bash(mv /c/Users/maxik/Desktop/_Develop/codec/Assets/playstation_logo.png /c/Users/maxik/Desktop/_Develop/codec/Assets/platforms/)",
+      "Bash(mv /c/Users/maxik/Desktop/_Develop/codec/Assets/xbox_logo.png /c/Users/maxik/Desktop/_Develop/codec/Assets/platforms/)",
+      "Bash(mv /c/Users/maxik/Desktop/_Develop/codec/Assets/NintendoSwitch_logo.png /c/Users/maxik/Desktop/_Develop/codec/Assets/platforms/)"
     ]
   }
 }
