@@ -79,7 +79,8 @@ namespace Codec.Services.Scanning
             "EA App",
             "EA Javelin Anticheat",
             "GOG Galaxy",
-            "Ubisoft Connect"
+            "Ubisoft Connect",
+            "Everything"
         };
 
         private static readonly string[] VendorTokens =
