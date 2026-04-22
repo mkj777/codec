@@ -173,7 +173,6 @@ namespace Codec.ViewModels
         public async Task LoadLibraryAsync()
         {
             _services.LibraryStorage.EnsureStorageInitialized();
-            SetLoadingState(true, "Loading your library...", "Preparing Codec");
 
             _appSettings = await _services.AppSettings.LoadAsync();
             _suppressSettingsSave = true;

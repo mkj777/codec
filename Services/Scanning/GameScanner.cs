@@ -57,68 +57,111 @@ namespace Codec.Services.Scanning
             [EnumeratorCancellation] CancellationToken cancellationToken = default,
             IProgress<string>? progress = null)
         {
+            var totalStopwatch = Stopwatch.StartNew();
             var allCandidates = new List<GameCandidate>();
+            var phase1Timings = new List<(string Name, long Ms, int Count)>();
+            long phase2Ms = 0;
+            int phase2Count = 0;
+            long phase3Ms = 0;
+            long cacheLoadMs;
+            long cacheSaveMs;
+            long dedupFilterMs;
+            int cacheHits = 0;
+            int newValidated = 0;
+            int rejectedNoExe = 0;
+            int rejectedNoRawg = 0;
+            int skippedUtility = 0;
+            int duplicateCount = 0;
+            int catalogFiltered = 0;
+            long steamLookupTotalMs = 0;
+            int steamLookupCount = 0;
+            long rawgValidationTotalMs = 0;
+            int rawgValidationCount = 0;
+            long exeDetectionTotalMs = 0;
+            int exeDetectionCount = 0;
+
+            var cacheSw = Stopwatch.StartNew();
             var scanCache = await ScanCache.LoadAsync();
+            cacheSw.Stop();
+            cacheLoadMs = cacheSw.ElapsedMilliseconds;
 
             Debug.WriteLine("=== STARTING COMPLETE GAME LIBRARY SCAN ===");
             progress?.Report("Starting comprehensive game scan...");
 
             // PHASE 1: High-Reliability Launcher Integration
             Debug.WriteLine("\n=== PHASE 1: LAUNCHER INTEGRATION ===");
+            var phase1Sw = Stopwatch.StartNew();
             foreach (var scanner in _platformScanners)
             {
+                var scannerSw = Stopwatch.StartNew();
+                int count = 0;
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     progress?.Report($"Scanning {scanner.PlatformName}...");
                     var candidates = await scanner.ScanAsync(progress);
+                    count = candidates.Count;
                     allCandidates.AddRange(candidates);
-                    Debug.WriteLine($"? {scanner.PlatformName}: Found {candidates.Count} games");
+                    scannerSw.Stop();
+                    Debug.WriteLine($"  {scanner.PlatformName}: {count} games in {scannerSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"? {scanner.PlatformName} scan failed: {ex.Message}");
+                    scannerSw.Stop();
+                    Debug.WriteLine($"  {scanner.PlatformName} FAILED in {scannerSw.ElapsedMilliseconds}ms: {ex.Message}");
                     progress?.Report($"Warning: {scanner.PlatformName} scan failed");
                 }
+                phase1Timings.Add((scanner.PlatformName, scannerSw.ElapsedMilliseconds, count));
             }
+            phase1Sw.Stop();
 
             // PHASE 2: Heuristic Environmental Scanning
             Debug.WriteLine("\n=== PHASE 2: HEURISTIC SCANNING ===");
+            var phase2Sw = Stopwatch.StartNew();
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report("Scanning standard installation directories...");
                 var heuristicCandidates = await _heuristicScanner.ScanAsync(progress);
+                phase2Count = heuristicCandidates.Count;
                 allCandidates.AddRange(heuristicCandidates);
-                Debug.WriteLine($"? Heuristic scan: Found {heuristicCandidates.Count} potential games");
+                Debug.WriteLine($"  Heuristic: {phase2Count} potential games");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"? Heuristic scan failed: {ex.Message}");
+                Debug.WriteLine($"  Heuristic FAILED: {ex.Message}");
             }
+            phase2Sw.Stop();
+            phase2Ms = phase2Sw.ElapsedMilliseconds;
 
-            // Remove duplicates based on folder path
+            // Dedup + catalog filter
+            var dedupSw = Stopwatch.StartNew();
+            int beforeDedup = allCandidates.Count;
             allCandidates = allCandidates
                 .GroupBy(c => c.FolderPath, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.First())
                 .ToList();
+            duplicateCount = beforeDedup - allCandidates.Count;
 
-            // Drop known non-game software early to avoid expensive heuristics
             int beforeCatalogFilter = allCandidates.Count;
             allCandidates = allCandidates
                 .Where(candidate => !NonGameSoftwareCatalog.IsNonGameCandidate(candidate))
                 .ToList();
+            catalogFiltered = beforeCatalogFilter - allCandidates.Count;
+            dedupSw.Stop();
+            dedupFilterMs = dedupSw.ElapsedMilliseconds;
 
-            if (beforeCatalogFilter != allCandidates.Count)
+            Debug.WriteLine($"\n  Dedup: removed {duplicateCount} duplicate folder paths");
+            if (catalogFiltered > 0)
             {
-                Debug.WriteLine($"\n- Non-game exclusions: Filtered {beforeCatalogFilter - allCandidates.Count} utility entries");
+                Debug.WriteLine($"  Catalog filter: removed {catalogFiltered} utility entries");
             }
-
-            Debug.WriteLine($"\n? Total unique candidates: {allCandidates.Count}");
+            Debug.WriteLine($"  Unique candidates: {allCandidates.Count} ({dedupFilterMs}ms)");
 
             // PHASE 3: External Validation & Enrichment + EXE Detection
             Debug.WriteLine("\n=== PHASE 3: VALIDATION & EXE DETECTION ===");
             progress?.Report($"Validating and analyzing {allCandidates.Count} candidates...");
+            var phase3Sw = Stopwatch.StartNew();
 
             int processedCount = 0;
 
@@ -130,13 +173,15 @@ namespace Codec.Services.Scanning
 
                 if (GameContentHeuristics.ShouldIgnoreCandidate(candidate.Name, candidate.FolderPath, candidate.Source, candidate.SteamAppId.HasValue))
                 {
-                    Debug.WriteLine($"  ? SKIPPED: '{candidate.Name}' flagged as utility/non-game");
+                    Debug.WriteLine($"  SKIP '{candidate.Name}' (utility/non-game heuristic)");
+                    skippedUtility++;
                     continue;
                 }
 
                 if (scanCache.TryGetValid(candidate, out var cachedResult))
                 {
-                    Debug.WriteLine($"  ? Cache hit: '{candidate.Name}' (last scanned {cachedResult.CachedAtUtc:u})");
+                    Debug.WriteLine($"  CACHE-HIT '{candidate.Name}' (cached {cachedResult.CachedAtUtc:u})");
+                    cacheHits++;
                     yield return new ValidatedScanCandidate(
                         cachedResult.SteamAppId,
                         cachedResult.GameName,
@@ -148,64 +193,111 @@ namespace Codec.Services.Scanning
                     continue;
                 }
 
-                // Execute EXE detection funnel
+                // EXE detection funnel
+                var exeSw = Stopwatch.StartNew();
                 string executablePath = ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
+                exeSw.Stop();
+                exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                exeDetectionCount++;
 
                 if (string.IsNullOrEmpty(executablePath))
                 {
-                    Debug.WriteLine($"  ? REJECTED: '{candidate.Name}' - No valid executable found");
+                    Debug.WriteLine($"  REJECT '{candidate.Name}' (no exe, exe-detect {exeSw.ElapsedMilliseconds}ms)");
+                    rejectedNoExe++;
                     continue;
                 }
 
-                // Determine Steam ID: use existing if available, otherwise search for it.
-                // Skip Steam lookup for Riot Games (not on Steam — avoids fuzzy false matches).
+                // Steam ID: existing, or lookup (skip for Riot — not on Steam, avoids fuzzy false matches)
                 int? steamId = candidate.SteamAppId;
                 bool isRiotSource = string.Equals(candidate.Source, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
                 if (!steamId.HasValue && !isRiotSource)
                 {
-                    Debug.WriteLine($"  [STEAM LOOKUP] Searching Steam for: '{candidate.Name}'");
+                    var steamSw = Stopwatch.StartNew();
                     try
                     {
                         (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath);
+                        steamSw.Stop();
+                        steamLookupTotalMs += steamSw.ElapsedMilliseconds;
+                        steamLookupCount++;
                         if (foundSteamId.HasValue)
                         {
                             steamId = foundSteamId;
-                            Debug.WriteLine($"  ? Steam ID found: {steamId} for '{candidate.Name}'");
+                            Debug.WriteLine($"  STEAM-LOOKUP '{candidate.Name}' -> id={steamId} ({steamSw.ElapsedMilliseconds}ms)");
                         }
                         else
                         {
-                            Debug.WriteLine($"  ? No Steam ID found for '{candidate.Name}'");
+                            Debug.WriteLine($"  STEAM-LOOKUP '{candidate.Name}' -> none ({steamSw.ElapsedMilliseconds}ms)");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"  ? Steam lookup failed for '{candidate.Name}': {ex.Message}");
+                        steamSw.Stop();
+                        steamLookupTotalMs += steamSw.ElapsedMilliseconds;
+                        steamLookupCount++;
+                        Debug.WriteLine($"  STEAM-LOOKUP '{candidate.Name}' FAILED ({steamSw.ElapsedMilliseconds}ms): {ex.Message}");
                     }
                 }
-                else
-                {
-                    Debug.WriteLine($"  ? Using existing Steam ID: {steamId} for '{candidate.Name}'");
-                }
 
-                // External validation via RAWG API
+                // RAWG validation
+                var rawgSw = Stopwatch.StartNew();
                 int? rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, steamId.HasValue);
+                rawgSw.Stop();
+                rawgValidationTotalMs += rawgSw.ElapsedMilliseconds;
+                rawgValidationCount++;
 
-                // Apply strict validation: discard if not found in RAWG (unless from Phase 1)
                 bool isFromLauncher = !candidate.Source.Equals("Heuristic Scan", StringComparison.OrdinalIgnoreCase);
                 if (!rawgId.HasValue && !isFromLauncher)
                 {
-                    Debug.WriteLine($"  ? REJECTED: '{candidate.Name}' - Not found in RAWG database (likely not a game)");
+                    Debug.WriteLine($"  REJECT '{candidate.Name}' (no RAWG match, rawg {rawgSw.ElapsedMilliseconds}ms)");
+                    rejectedNoRawg++;
                     continue;
                 }
 
-                Debug.WriteLine($"  ? VALIDATED: '{candidate.Name}' (Steam ID: {steamId?.ToString() ?? "N/A"}, RAWG ID: {rawgId?.ToString() ?? "N/A"})");
+                Debug.WriteLine($"  VALIDATED '{candidate.Name}' steam={steamId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"} (rawg {rawgSw.ElapsedMilliseconds}ms, exe {exeSw.ElapsedMilliseconds}ms)");
+                newValidated++;
                 scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath);
                 yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath, candidate.LaunchScriptPath);
             }
 
+            phase3Sw.Stop();
+            phase3Ms = phase3Sw.ElapsedMilliseconds;
+
+            var saveSw = Stopwatch.StartNew();
             await scanCache.SaveAsync();
+            saveSw.Stop();
+            cacheSaveMs = saveSw.ElapsedMilliseconds;
+
             progress?.Report("Scan complete.");
+            totalStopwatch.Stop();
+
+            // Summary
+            int totalFound = cacheHits + newValidated;
+            int totalRejected = rejectedNoExe + rejectedNoRawg + skippedUtility;
+            string phase1Breakdown = string.Join(", ",
+                phase1Timings
+                    .OrderByDescending(t => t.Ms)
+                    .Select(t => $"{t.Name}: {t.Ms}ms ({t.Count})"));
+
+            Debug.WriteLine("\n=== SCAN COMPLETE ===");
+            Debug.WriteLine($"Total time:       {totalStopwatch.Elapsed.TotalSeconds:0.0}s");
+            Debug.WriteLine($"Candidates:       {allCandidates.Count} unique (dedup removed {duplicateCount}, catalog removed {catalogFiltered})");
+            Debug.WriteLine($"Games yielded:    {totalFound}");
+            Debug.WriteLine($"  Cache hits:     {cacheHits}");
+            Debug.WriteLine($"  New validated:  {newValidated}");
+            Debug.WriteLine($"Rejected:         {totalRejected} (no-exe: {rejectedNoExe}, no-rawg: {rejectedNoRawg}, utility: {skippedUtility})");
+            Debug.WriteLine($"Phase 1 time:     {phase1Sw.ElapsedMilliseconds}ms [{phase1Breakdown}]");
+            Debug.WriteLine($"Phase 2 time:     {phase2Ms}ms ({phase2Count} candidates)");
+            Debug.WriteLine($"Phase 3 time:     {phase3Ms}ms");
+            if (exeDetectionCount > 0)
+                Debug.WriteLine($"  ExeDetect:      {exeDetectionTotalMs}ms total, {exeDetectionTotalMs / exeDetectionCount}ms avg ({exeDetectionCount} calls)");
+            if (steamLookupCount > 0)
+                Debug.WriteLine($"  SteamLookup:    {steamLookupTotalMs}ms total, {steamLookupTotalMs / steamLookupCount}ms avg ({steamLookupCount} calls)");
+            if (rawgValidationCount > 0)
+                Debug.WriteLine($"  RawgValidate:   {rawgValidationTotalMs}ms total, {rawgValidationTotalMs / rawgValidationCount}ms avg ({rawgValidationCount} calls)");
+            Debug.WriteLine($"Dedup/filter:     {dedupFilterMs}ms");
+            Debug.WriteLine($"Cache load/save:  {cacheLoadMs}ms / {cacheSaveMs}ms");
+            Debug.WriteLine("=====================");
         }
 
         public async Task<List<ValidatedScanCandidate>> ScanAllGamesAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
@@ -216,7 +308,6 @@ namespace Codec.Services.Scanning
                 results.Add(candidate);
             }
 
-            Debug.WriteLine($"\n=== SCAN COMPLETE: {results.Count} validated games ===");
             return results;
         }
 

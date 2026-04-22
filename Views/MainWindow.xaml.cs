@@ -70,6 +70,37 @@ namespace Codec.Views
             if (e.PropertyName == nameof(ViewModel.IsMediaOverlayOpen) && !ViewModel.IsMediaOverlayOpen)
                 DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
                     () => StopAllMediaPlayers(MediaOverlayFlipView));
+
+            if (e.PropertyName == nameof(ViewModel.IsInitialLoading) && !ViewModel.IsInitialLoading)
+                DispatcherQueue.TryEnqueue(() => PlayStartupOpenAnimation());
+        }
+
+        private void PlayStartupOpenAnimation()
+        {
+            var transform = (CompositeTransform)StartupOverlay.RenderTransform;
+            transform.CenterX = StartupOverlay.ActualWidth / 2;
+            transform.CenterY = StartupOverlay.ActualHeight / 2;
+
+            var duration = new Duration(TimeSpan.FromMilliseconds(280));
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = duration, EasingFunction = ease };
+            var scaleX = new DoubleAnimation { From = 1, To = 1.04, Duration = duration, EasingFunction = ease };
+            var scaleY = new DoubleAnimation { From = 1, To = 1.04, Duration = duration, EasingFunction = ease };
+
+            Storyboard.SetTarget(fadeOut, StartupOverlay);
+            Storyboard.SetTargetProperty(fadeOut, "Opacity");
+            Storyboard.SetTarget(scaleX, transform);
+            Storyboard.SetTargetProperty(scaleX, "ScaleX");
+            Storyboard.SetTarget(scaleY, transform);
+            Storyboard.SetTargetProperty(scaleY, "ScaleY");
+
+            var sb = new Storyboard();
+            sb.Children.Add(fadeOut);
+            sb.Children.Add(scaleX);
+            sb.Children.Add(scaleY);
+            sb.Completed += (_, _) => StartupOverlay.Visibility = Visibility.Collapsed;
+            sb.Begin();
         }
 
         private static void StopAllMediaPlayers(DependencyObject parent)

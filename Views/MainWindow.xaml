@@ -694,6 +694,17 @@
             </Rectangle>
         </Grid>
 
+        <!-- Startup overlay — fades out via code-behind when library is ready -->
+        <Border x:Name="StartupOverlay"
+                Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Background="#FF1C1C1C"
+                IsHitTestVisible="True">
+            <Border.RenderTransform>
+                <CompositeTransform/>
+            </Border.RenderTransform>
+        </Border>
+
         <!-- Loading overlay for initial load or scanning -->
         <Grid x:Name="LoadingOverlay"
               Grid.RowSpan="2"
