@@ -109,10 +109,13 @@ namespace Codec.Services.Importing
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_scanCts.Token, _disposeCts.Token);
             try
             {
-                await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token).ConfigureAwait(false))
+                await Task.Run(async () =>
                 {
-                    await TryEnqueueScanCandidateAsync(candidate).ConfigureAwait(false);
-                }
+                    await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token).ConfigureAwait(false))
+                    {
+                        await TryEnqueueScanCandidateAsync(candidate).ConfigureAwait(false);
+                    }
+                }).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

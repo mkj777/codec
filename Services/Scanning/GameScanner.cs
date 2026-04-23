@@ -198,7 +198,20 @@ namespace Codec.Services.Scanning
 
                 // EXE detection funnel
                 var exeSw = Stopwatch.StartNew();
-                string executablePath = ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
+                string executablePath;
+                try
+                {
+                    executablePath = ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
+                }
+                catch (Exception ex)
+                {
+                    exeSw.Stop();
+                    exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                    exeDetectionCount++;
+                    Debug.WriteLine($"  REJECT '{candidate.Name}' (exe-detect error {exeSw.ElapsedMilliseconds}ms): {ex.GetType().Name}: {ex.Message}");
+                    rejectedNoExe++;
+                    continue;
+                }
                 exeSw.Stop();
                 exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
                 exeDetectionCount++;

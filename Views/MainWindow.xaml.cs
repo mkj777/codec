@@ -292,7 +292,7 @@ namespace Codec.Views
             ViewModel.IsUiEnabled = false;
             try
             {
-                var panel = new StackPanel { Spacing = 8, MinWidth = 360 };
+                var panel = new StackPanel { Spacing = 8, MinWidth = 900 };
 
                 static string? FormatList(System.Collections.Generic.IEnumerable<string>? values) =>
                     values != null && values.Any() ? string.Join(", ", values) : null;
@@ -361,10 +361,17 @@ namespace Codec.Views
                     panel.Children.Add(expander);
                 }
 
-                var container = new Grid { MaxWidth = 800, MaxHeight = 540 };
+                var container = new StackPanel { Spacing = 8, MaxWidth = 1100 };
+                container.Children.Add(new TextBlock
+                {
+                    Text = $"{ViewModel.Games.Count} games in library",
+                    FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                    FontSize = 14
+                });
                 container.Children.Add(new ScrollViewer
                 {
                     Content = panel,
+                    MaxHeight = 540,
                     VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                     HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
                 });
@@ -466,10 +473,10 @@ namespace Codec.Views
 
             ViewModel.ResetAppSettings();
             ViewModel.SetLoadingState(false);
-            ViewModel.IsOnboardingVisible = true;
 
             await fireTask;
 
+            ViewModel.IsOnboardingVisible = true;
             ViewModel.IsUiEnabled = true;
         }
 

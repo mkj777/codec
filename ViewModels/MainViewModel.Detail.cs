@@ -102,6 +102,10 @@ namespace Codec.ViewModels
 
                 if (isSteamGame)
                 {
+                    bool steamRunning = Process.GetProcessesByName("steam").Length > 0;
+                    if (!steamRunning)
+                        TryLaunchSteamSilent();
+
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = $"steam://rungameid/{SelectedGame.SteamID!.Value}",

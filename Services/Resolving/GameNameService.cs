@@ -64,7 +64,7 @@ namespace Codec.Services.Resolving
         private readonly Regex MultiSpaceRegex = new("\\s+", RegexOptions.Compiled);
         private readonly Regex CamelCaseRegex = new("(?<=[a-z0-9])([A-Z])", RegexOptions.Compiled);
         private readonly Regex SpecialCharRegex = new("[()\\[\\]{},-:;!?]", RegexOptions.Compiled);
-        private readonly Regex TrademarkRegex = new(@"\(TM\)|\(R\)|™|®", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private readonly Regex TrademarkRegex = new(@"\(TM\)|\(R\)|™|®|©", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly object RateLimitGate = new();
         private DateTime _lastSteamRequestUtc = DateTime.MinValue;
@@ -305,7 +305,6 @@ namespace Codec.Services.Resolving
                         if (match.ConfidenceScore >= Config.HighConfidenceThreshold)
                         {
                             Debug.WriteLine($"  ✓ High-confidence Steam match: {match.SteamName} ({match.SteamAppId}) via '{match.MatchedSearchTerm}' [{match.ConfidenceScore:P}]");
-                            return match;
                         }
                     }
                 }
@@ -313,7 +312,7 @@ namespace Codec.Services.Resolving
 
             if (bestMatch != null && bestMatch.ConfidenceScore >= Config.AcceptableConfidenceThreshold)
             {
-                Debug.WriteLine($"  ✓ Acceptable Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) [{bestMatch.ConfidenceScore:P}]");
+                Debug.WriteLine($"  ✓ {(bestMatch.ConfidenceScore >= Config.HighConfidenceThreshold ? "High-confidence" : "Acceptable")} Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) [{bestMatch.ConfidenceScore:P}]");
                 return bestMatch;
             }
 
@@ -663,13 +662,23 @@ namespace Codec.Services.Resolving
             // local name (e.g. local="need for speed rivals", steam="need for speed" → missing "rivals")
             var localTokens = localName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var steamTokens = steamResult.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "for", "the", "of", "a", "an", "and", "in", "on", "at", "to" };
             if (localTokens.Length > steamTokens.Length)
             {
-                var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "for", "the", "of", "a", "an", "and", "in", "on", "at", "to" };
                 int significantMissing = localTokens
                     .Where(lt => !stopWords.Contains(lt) && !steamTokens.Any(st => st.Equals(lt, StringComparison.OrdinalIgnoreCase)))
                     .Count();
                 score -= significantMissing * 0.20f;
+            }
+
+            // Extra-tokens-in-steam penalty: steam result has more significant tokens than local name
+            // Catches sequel/variant inflation (e.g. local="sim city", steam="sim city 4 deluxe")
+            if (steamTokens.Length > localTokens.Length)
+            {
+                int significantExtra = steamTokens
+                    .Where(st => !stopWords.Contains(st) && !localTokens.Any(lt => lt.Equals(st, StringComparison.OrdinalIgnoreCase)))
+                    .Count();
+                score -= significantExtra * 0.20f;
             }
 
             return Math.Clamp(score, 0f, 1f);

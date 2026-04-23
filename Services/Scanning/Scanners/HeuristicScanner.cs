@@ -8,29 +8,35 @@ using System.Threading.Tasks;
 namespace Codec.Services.Scanning.Scanners
 {
     /// <summary>
-    /// Phase 2: Heuristic environmental scanner for platform-independent installations
-    /// with multi-stage filtering
+    /// Phase 2: Heuristic environmental scanner.
+    /// Checks well-known game install roots on every ready non-network drive.
     /// </summary>
     public class HeuristicScanner : PlatformScanner
     {
         public override string PlatformName => "Heuristic Scan";
 
         private IReadOnlyList<string> _excludedPaths = Array.Empty<string>();
-
         public void SetExcludedPaths(IReadOnlyList<string> paths) => _excludedPaths = paths;
 
-        private static readonly string[] TargetDirectories = new[]
+        private static readonly string[] ScanRoots =
         {
-            @"C:\Program Files",
-            @"C:\Program Files (x86)",
-            @"C:\Games",
-            @"D:\",
-            @"E:\",
-            @"F:\"
+            "Program Files",
+            "Program Files (x86)",
+            "Games",
+            "XboxGames",
+            "Epic Games",
+            "GOG Games",
+            @"Ubisoft Game Launcher\games",
+            "EA Games",
+            "Riot Games",
         };
 
         private static readonly HashSet<string> DirectoryBlacklist = new(StringComparer.OrdinalIgnoreCase)
         {
+            // OS-level folders that should never be game candidates
+            "Users", "AppData", "ProgramData", "Windows", "System32", "SysWOW64",
+            "$Recycle.Bin", "Recovery", "PerfLogs", "Config.Msi", "MSOCache",
+
             // System & Drivers
             "NVIDIA Corporation", "Intel", "AMD", "Realtek", "Common Files", "Drivers",
             "Windows Defender", "Windows NT", "WindowsPowerShell", "Microsoft",
@@ -61,56 +67,48 @@ namespace Codec.Services.Scanning.Scanners
             ".git", ".vs", "packages", "obj", "debug", "release"
         };
 
-        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
+        public override Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
         {
-            var candidates = new List<GameCandidate>();
-
-            foreach (var targetDir in TargetDirectories)
+            return Task.Run(() =>
             {
-                if (!Directory.Exists(targetDir))
-                    continue;
+                var candidates = new List<GameCandidate>();
 
-                try
+                foreach (var drive in GetReadyNonNetworkDrives())
                 {
-                    progress?.Report($"Scanning {targetDir}...");
+                    string driveRoot = drive.RootDirectory.FullName;
 
-                    var subDirs = Directory.GetDirectories(targetDir);
-
-                    foreach (var dir in subDirs)
+                    foreach (var relRoot in ScanRoots)
                     {
-                        string dirName = new DirectoryInfo(dir).Name;
-
-                        // Hard skip blacklisted dirs — don't recurse into them either
-                        if (DirectoryBlacklist.Contains(dirName) || NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
-                        {
-                            Debug.WriteLine($"  [BLACKLIST] Skip + no recurse: {dirName}");
+                        string rootPath = Path.Combine(driveRoot, relRoot);
+                        if (!Directory.Exists(rootPath) || IsExcludedPath(rootPath))
                             continue;
-                        }
 
-                        // Hard skip paths owned by platform scanners — don't recurse either
-                        if (IsExcludedPath(dir))
+                        progress?.Report($"Scanning {rootPath}...");
+                        Debug.WriteLine($"  [HEURISTIC] Scanning root: {rootPath}");
+
+                        foreach (var dir in SafeGetDirectories(rootPath))
                         {
-                            Debug.WriteLine($"  [PLATFORM EXCLUDE] Owned by platform scanner: {dirName}");
-                            continue;
-                        }
+                            string dirName = new DirectoryInfo(dir).Name;
 
-                        TryAddCandidate(dir, dirName, candidates); // depth-1
+                            if (DirectoryBlacklist.Contains(dirName) || NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
+                            {
+                                Debug.WriteLine($"  [BLACKLIST] Skip: {dirName}");
+                                continue;
+                            }
 
-                        // depth-2: publisher/category folders (e.g. D:\Games\RPG\Baldurs Gate 3)
-                        foreach (var subDir in SafeGetDirectories(dir))
-                        {
-                            string subDirName = new DirectoryInfo(subDir).Name;
-                            TryAddCandidate(subDir, subDirName, candidates);
+                            if (IsExcludedPath(dir))
+                            {
+                                Debug.WriteLine($"  [PLATFORM EXCLUDE] Skip: {dirName}");
+                                continue;
+                            }
+
+                            TryAddCandidate(dir, dirName, candidates);
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"? Error scanning {targetDir}: {ex.Message}");
-                }
-            }
 
-            return await Task.FromResult(candidates);
+                return candidates;
+            });
         }
 
         private bool IsExcludedPath(string dir) =>
@@ -120,52 +118,77 @@ namespace Codec.Services.Scanning.Scanners
 
         private void TryAddCandidate(string dir, string dirName, List<GameCandidate> candidates)
         {
-            if (IsExcludedPath(dir))
+            try
             {
-                Debug.WriteLine($"  [PLATFORM EXCLUDE] Owned by platform scanner: {dirName}");
-                return;
-            }
+                if (IsExcludedPath(dir))
+                {
+                    Debug.WriteLine($"  [PLATFORM EXCLUDE] Owned by platform scanner: {dirName}");
+                    return;
+                }
 
-            if (NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
+                if (NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
+                {
+                    Debug.WriteLine($"  [CATALOG REJECT] Utility directory: {dirName}");
+                    return;
+                }
+
+                if (DirectoryBlacklist.Contains(dirName))
+                {
+                    Debug.WriteLine($"  [STAGE 1 REJECT] Blacklisted directory: {dirName}");
+                    return;
+                }
+
+                if (IsDeveloperProject(dir))
+                {
+                    Debug.WriteLine($"  [STAGE 2 REJECT] Developer project detected: {dirName}");
+                    return;
+                }
+
+                if (IsEmulator(dir))
+                {
+                    Debug.WriteLine($"  [STAGE 3 REJECT] Emulator detected: {dirName}");
+                    return;
+                }
+
+                if (!SafeEnumerateFiles(dir, "*.exe").Any())
+                {
+                    Debug.WriteLine($"  [STAGE 4 REJECT] No .exe files found: {dirName}");
+                    return;
+                }
+
+                if (IsDocumentationOrMediaFolder(dir))
+                {
+                    Debug.WriteLine($"  [STAGE 5 REJECT] Documentation/Media folder: {dirName}");
+                    return;
+                }
+
+                Debug.WriteLine($"  [PASSED] Candidate added: {dirName} ({dir})");
+                candidates.Add(new GameCandidate(dirName, dir, "Heuristic Scan"));
+            }
+            catch (Exception ex)
             {
-                Debug.WriteLine($"  [CATALOG REJECT] Utility directory: {dirName}");
-                return;
+                Debug.WriteLine($"  [FUNNEL ERROR] Skipping '{dirName}' ({dir}): {ex.GetType().Name}: {ex.Message}");
             }
-
-            if (DirectoryBlacklist.Contains(dirName))
-            {
-                Debug.WriteLine($"  [STAGE 1 REJECT] Blacklisted directory: {dirName}");
-                return;
-            }
-
-            if (IsDeveloperProject(dir))
-            {
-                Debug.WriteLine($"  [STAGE 2 REJECT] Developer project detected: {dirName}");
-                return;
-            }
-
-            if (IsEmulator(dir))
-            {
-                Debug.WriteLine($"  [STAGE 3 REJECT] Emulator detected: {dirName}");
-                return;
-            }
-
-            if (!SafeEnumerateFiles(dir, "*.exe").Any())
-            {
-                Debug.WriteLine($"  [STAGE 4 REJECT] No .exe files found: {dirName}");
-                return;
-            }
-
-            if (IsDocumentationOrMediaFolder(dir))
-            {
-                Debug.WriteLine($"  [STAGE 5 REJECT] Documentation/Media folder: {dirName}");
-                return;
-            }
-
-            Debug.WriteLine($"  [PASSED] Candidate added: {dirName} ({dir})");
-            candidates.Add(new GameCandidate(dirName, dir, "Heuristic Scan"));
         }
 
+        private static IEnumerable<DriveInfo> GetReadyNonNetworkDrives()
+        {
+            DriveInfo[] drives;
+            try { drives = DriveInfo.GetDrives(); }
+            catch { yield break; }
+
+            foreach (var drive in drives)
+            {
+                bool ready;
+                try { ready = drive.IsReady; }
+                catch { continue; }
+
+                if (!ready || drive.DriveType == DriveType.Network)
+                    continue;
+
+                yield return drive;
+            }
+        }
 
         private static IEnumerable<string> SafeGetDirectories(string path)
         {
@@ -182,13 +205,9 @@ namespace Codec.Services.Scanning.Scanners
                     .ToHashSet();
 
                 var devIndicators = new[] { "src", "lib", "test", "tests", "docs", ".git", ".vs", "node_modules", "packages" };
-                int matchCount = devIndicators.Count(indicator => subDirs.Contains(indicator));
-                return matchCount >= 3;
+                return devIndicators.Count(indicator => subDirs.Contains(indicator)) >= 3;
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
         private static bool IsEmulator(string directory)
@@ -196,7 +215,6 @@ namespace Codec.Services.Scanning.Scanners
             try
             {
                 var dirName = new DirectoryInfo(directory).Name.ToLowerInvariant();
-
                 var emulatorNames = new[]
                 {
                     "bluestacks", "nox", "ldplayer", "memu", "dolphin",
@@ -207,60 +225,38 @@ namespace Codec.Services.Scanning.Scanners
                 if (emulatorNames.Any(emu => dirName.Contains(emu)))
                     return true;
 
-                var files = Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly);
-                var fileNames = files.Select(f => Path.GetFileName(f).ToLowerInvariant()).ToArray();
+                var fileNames = Directory.GetFiles(directory, "*.*", SearchOption.TopDirectoryOnly)
+                    .Select(f => Path.GetFileName(f).ToLowerInvariant())
+                    .ToArray();
 
-                if (fileNames.Any(f => f.Contains("com.bluestacks") ||
-                                       f.Contains("noxplayer") ||
-                                       f.Contains("androidemulator")))
-                    return true;
-
-                return false;
+                return fileNames.Any(f => f.Contains("com.bluestacks") ||
+                                          f.Contains("noxplayer") ||
+                                          f.Contains("androidemulator"));
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
         private static bool IsDocumentationOrMediaFolder(string directory)
         {
             try
             {
-                int totalFiles = 0;
-                int docFiles = 0;
-                int mediaFiles = 0;
-                int exeFiles = 0;
+                int totalFiles = 0, docFiles = 0, mediaFiles = 0, exeFiles = 0;
 
                 foreach (var file in SafeEnumerateFiles(directory, "*.*"))
                 {
                     totalFiles++;
-                    var ext = Path.GetExtension(file).ToLowerInvariant();
-
-                    switch (ext)
+                    switch (Path.GetExtension(file).ToLowerInvariant())
                     {
-                        case ".pdf" or ".txt" or ".docx" or ".md":
-                            docFiles++;
-                            break;
-                        case ".mp3" or ".mp4" or ".avi" or ".mkv" or ".jpg" or ".png":
-                            mediaFiles++;
-                            break;
-                        case ".exe":
-                            exeFiles++;
-                            break;
+                        case ".pdf" or ".txt" or ".docx" or ".md": docFiles++; break;
+                        case ".mp3" or ".mp4" or ".avi" or ".mkv" or ".jpg" or ".png": mediaFiles++; break;
+                        case ".exe": exeFiles++; break;
                     }
                 }
 
-                if (totalFiles == 0)
-                    return false;
-
-                double nonGameRatio = (double)(docFiles + mediaFiles) / totalFiles;
-                return nonGameRatio > 0.7 && exeFiles < 3;
+                if (totalFiles == 0) return false;
+                return (double)(docFiles + mediaFiles) / totalFiles > 0.7 && exeFiles < 3;
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
         private static IEnumerable<string> SafeEnumerateFiles(string rootPath, string searchPattern)
@@ -273,39 +269,19 @@ namespace Codec.Services.Scanning.Scanners
                 string current = stack.Pop();
 
                 string[] files = Array.Empty<string>();
-                try
-                {
-                    files = Directory.GetFiles(current, searchPattern, SearchOption.TopDirectoryOnly);
-                }
-                catch (Exception ex) when (IsExpectedFileSystemException(ex))
-                {
-                    Debug.WriteLine($"  [ACCESS] Skipping files in '{current}': {ex.Message}");
-                }
+                try { files = Directory.GetFiles(current, searchPattern, SearchOption.TopDirectoryOnly); }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or PathTooLongException or IOException)
+                { Debug.WriteLine($"  [ACCESS] Skipping files in '{current}': {ex.Message}"); }
 
-                foreach (var file in files)
-                {
-                    yield return file;
-                }
+                foreach (var file in files) yield return file;
 
                 string[] subDirs = Array.Empty<string>();
-                try
-                {
-                    subDirs = Directory.GetDirectories(current);
-                }
-                catch (Exception ex) when (IsExpectedFileSystemException(ex))
-                {
-                    Debug.WriteLine($"  [ACCESS] Skipping subdirectories of '{current}': {ex.Message}");
-                    continue;
-                }
+                try { subDirs = Directory.GetDirectories(current); }
+                catch (Exception ex) when (ex is UnauthorizedAccessException or PathTooLongException or IOException)
+                { Debug.WriteLine($"  [ACCESS] Skipping subdirectories of '{current}': {ex.Message}"); continue; }
 
-                foreach (var subDir in subDirs)
-                {
-                    stack.Push(subDir);
-                }
+                foreach (var subDir in subDirs) stack.Push(subDir);
             }
         }
-
-        private static bool IsExpectedFileSystemException(Exception ex) =>
-            ex is UnauthorizedAccessException or PathTooLongException or IOException;
     }
 }
