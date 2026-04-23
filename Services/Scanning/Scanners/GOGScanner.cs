@@ -39,6 +39,7 @@ namespace Codec.Services.Scanning.Scanners
                                 Directory.Exists(installLocation))
                             {
                                 candidates.Add(new GameCandidate(displayName, installLocation, "GOG Galaxy"));
+                                _knownLibraryPaths.Add(installLocation);
                             }
                         }
                     }
@@ -47,6 +48,7 @@ namespace Codec.Services.Scanning.Scanners
                 string gogGamesPath = @"C:\GOG Games";
                 if (Directory.Exists(gogGamesPath))
                 {
+                    _knownLibraryPaths.Add(gogGamesPath);
                     foreach (var folder in Directory.GetDirectories(gogGamesPath))
                     {
                         string gameName = new DirectoryInfo(folder).Name;

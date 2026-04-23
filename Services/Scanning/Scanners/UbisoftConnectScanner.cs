@@ -40,6 +40,7 @@ namespace Codec.Services.Scanning.Scanners
                         string path = line.Split(':')[1].Trim().Trim('"');
                         if (Directory.Exists(path))
                         {
+                            _knownLibraryPaths.Add(path);
                             var gameFolders = Directory.GetDirectories(path);
                             foreach (var folder in gameFolders)
                             {

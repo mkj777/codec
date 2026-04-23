@@ -14,7 +14,12 @@ namespace Codec.Services.Resolving
     public enum RawgValidationMode
     {
         Strict,
-        SteamBacked
+        SteamBacked,
+        /// <summary>
+        /// Steam ID was provided directly by a platform launcher (confidence ≈ 100%).
+        /// Very lenient RAWG threshold — name-match is used for enrichment only.
+        /// </summary>
+        HighConfidenceSteam
     }
 
     /// <summary>
@@ -28,6 +33,7 @@ namespace Codec.Services.Resolving
         private const int DefaultPageSize = 5;
         private const double StrictScoreThreshold = 0.88;
         private const double SteamBackedScoreThreshold = 0.82;
+        private const double HighConfidenceSteamScoreThreshold = 0.60;
         private const double MinimumScoreDelta = 0.08;
         private const int MinimumRatingsCount = 5;
 
@@ -99,8 +105,6 @@ namespace Codec.Services.Resolving
                 $"page_size={pageSize}",
                 "ordering=-added",
                 "exclude_additions=true",
-                "exclude_game_series=true",
-                "exclude_parents=true",
                 "platforms=4",
                 "parent_platforms=1"
             };
@@ -146,11 +150,6 @@ namespace Codec.Services.Resolving
             }
 
             if (!PassesPlatformFilter(element))
-            {
-                return false;
-            }
-
-            if (IsAdditionOrSeries(element))
             {
                 return false;
             }
@@ -213,15 +212,6 @@ namespace Codec.Services.Resolving
             }
 
             return false;
-        }
-
-        private bool IsAdditionOrSeries(JsonElement element)
-        {
-            int additions = element.TryGetProperty("additions_count", out var additionsProp) && additionsProp.TryGetInt32(out var a) ? a : 0;
-            int dlc = element.TryGetProperty("dlc_count", out var dlcProp) && dlcProp.TryGetInt32(out var d) ? d : 0;
-            int series = element.TryGetProperty("game_series_count", out var seriesProp) && seriesProp.TryGetInt32(out var s) ? s : 0;
-
-            return additions > 0 || dlc > 0 || series > 0;
         }
 
         private double CalculateReleaseBoost(string queryName, JsonElement element)
@@ -345,6 +335,7 @@ namespace Codec.Services.Resolving
         {
             public static RawgValidationSettings FromMode(RawgValidationMode mode) => mode switch
             {
+                RawgValidationMode.HighConfidenceSteam => new RawgValidationSettings(HighConfidenceSteamScoreThreshold, MinimumScoreDelta, DefaultPageSize),
                 RawgValidationMode.SteamBacked => new RawgValidationSettings(SteamBackedScoreThreshold, MinimumScoreDelta, DefaultPageSize),
                 _ => new RawgValidationSettings(StrictScoreThreshold, MinimumScoreDelta, DefaultPageSize)
             };

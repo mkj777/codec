@@ -104,7 +104,7 @@ namespace Codec.Services.Importing
 
                 bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
-                if (!isRiotSource && (!steamId.HasValue || !rawgId.HasValue))
+                if (!isRiotSource && !steamId.HasValue && !rawgId.HasValue)
                 {
                     var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath).ConfigureAwait(false);
                     steamId ??= resolvedIds.steamId;

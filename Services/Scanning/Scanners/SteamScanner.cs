@@ -1,5 +1,6 @@
 using Gameloop.Vdf;
 using Gameloop.Vdf.Linq;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,28 +11,18 @@ using System.Threading.Tasks;
 namespace Codec.Services.Scanning.Scanners
 {
     /// <summary>
-    /// Steam launcher integration - deterministic VDF parsing
+    /// Steam launcher integration — reads install path from registry, parses libraryfolders.vdf.
+    /// VDF path is cached after first discovery; subsequent scans skip the lookup entirely.
     /// </summary>
     public class SteamScanner : PlatformScanner
     {
-        private const string SteamLibraryFoldersPath = @"C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf";
         private record SteamLibraryFolder(string Path, List<int> AppIds);
         private record SteamGameInfo(int AppId, string Name, string InstallDir, string LibraryPath);
-        private static readonly string[] LibraryFilePatterns = { "libraryfolders.vdf", "libraryfolder.vdf" };
-        private static readonly HashSet<string> DirectorySkipNames = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Windows",
-            "$Recycle.Bin",
-            "System Volume Information",
-            "Recovery",
-            "Config.Msi",
-            "MSOCache",
-            "PerfLogs"
-        };
 
         public override string PlatformName => "Steam";
-
         public string? DetectedSteamClientPath { get; private set; }
+
+        private string? _cachedVdfPath;
 
         public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
         {
@@ -46,6 +37,9 @@ namespace Codec.Services.Scanning.Scanners
 
             Debug.WriteLine($"? Found {libraryFolders.Count} Steam library folders");
 
+            foreach (var folder in libraryFolders)
+                _knownLibraryPaths.Add(folder.Path);
+
             var installedGames = new List<SteamGameInfo>();
             foreach (var folder in libraryFolders)
             {
@@ -57,38 +51,71 @@ namespace Codec.Services.Scanning.Scanners
 
             foreach (var game in installedGames)
             {
-                string gameFolderPath = Path.Combine(game.LibraryPath, "steamapps", "common", game.InstallDir);
+                string gameFolderPath = System.IO.Path.Combine(game.LibraryPath, "steamapps", "common", game.InstallDir);
                 candidates.Add(new GameCandidate(game.Name, gameFolderPath, PlatformName, game.AppId));
             }
 
             return candidates;
         }
 
+        /// <summary>
+        /// Returns the cached VDF path, or discovers it via registry on first call.
+        /// HKCU\Software\Valve\Steam\SteamPath always contains the correct Steam install location.
+        /// </summary>
+        private string? DiscoverVdfPath()
+        {
+            if (_cachedVdfPath != null)
+                return _cachedVdfPath;
+
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+                string? steamPath = key?.GetValue("SteamPath") as string;
+                if (string.IsNullOrWhiteSpace(steamPath))
+                {
+                    Debug.WriteLine("[SteamScanner] SteamPath registry value not found");
+                    return null;
+                }
+
+                string normalized = NormalizePath(steamPath);
+                string vdfPath = System.IO.Path.Combine(normalized, "steamapps", "libraryfolders.vdf");
+
+                if (!File.Exists(vdfPath))
+                {
+                    Debug.WriteLine($"[SteamScanner] libraryfolders.vdf not found at: {vdfPath}");
+                    return null;
+                }
+
+                _cachedVdfPath = vdfPath;
+                Debug.WriteLine($"[SteamScanner] VDF path cached: {_cachedVdfPath}");
+                return _cachedVdfPath;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SteamScanner] Registry lookup failed: {ex.Message}");
+                return null;
+            }
+        }
+
         private async Task<List<SteamLibraryFolder>> ParseLibraryFoldersAsync()
         {
             var folders = new List<SteamLibraryFolder>();
-            var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var definitionFiles = await Task.Run(DiscoverLibraryDefinitionFiles);
-            if (definitionFiles.Count == 0)
-            {
+            string? vdfPath = DiscoverVdfPath();
+            if (vdfPath == null)
                 return folders;
+
+            // Set steam client path from vdf location: {steamapps}/libraryfolders.vdf -> {steam root}/steam.exe
+            string? steamDir = System.IO.Path.GetDirectoryName(System.IO.Path.GetDirectoryName(vdfPath));
+            if (!string.IsNullOrEmpty(steamDir))
+            {
+                string exe = System.IO.Path.Combine(steamDir, "steam.exe");
+                if (File.Exists(exe))
+                    DetectedSteamClientPath = exe;
             }
 
-            foreach (var file in definitionFiles)
-            {
-                string? steamDir = Path.GetDirectoryName(Path.GetDirectoryName(file));
-                if (!string.IsNullOrEmpty(steamDir))
-                {
-                    string exe = Path.Combine(steamDir, "steam.exe");
-                    if (File.Exists(exe)) { DetectedSteamClientPath = exe; break; }
-                }
-            }
-
-            foreach (var definitionFile in definitionFiles)
-            {
-                await ParseLibraryDefinitionAsync(definitionFile, folders, processedFiles);
-            }
+            var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            await ParseLibraryDefinitionAsync(vdfPath, folders, processedFiles);
 
             return folders
                 .GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
@@ -101,9 +128,7 @@ namespace Codec.Services.Scanning.Scanners
         private async Task ParseLibraryDefinitionAsync(string filePath, List<SteamLibraryFolder> accumulator, HashSet<string> processedFiles)
         {
             if (!processedFiles.Add(filePath))
-            {
                 return;
-            }
 
             try
             {
@@ -133,11 +158,9 @@ namespace Codec.Services.Scanning.Scanners
                     string? steamRoot = GetSteamRootFromLauncher(launcherPath);
                     if (!string.IsNullOrEmpty(steamRoot))
                     {
-                        string nested = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
+                        string nested = System.IO.Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
                         if (File.Exists(nested))
-                        {
                             await ParseLibraryDefinitionAsync(nested, accumulator, processedFiles);
-                        }
                     }
                 }
             }
@@ -147,177 +170,12 @@ namespace Codec.Services.Scanning.Scanners
             }
         }
 
-        private static List<string> DiscoverLibraryDefinitionFiles()
-        {
-            var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            if (File.Exists(SteamLibraryFoldersPath))
-            {
-                files.Add(SteamLibraryFoldersPath);
-            }
-
-            foreach (var candidate in GetSeedLibraryPaths())
-            {
-                if (File.Exists(candidate))
-                {
-                    files.Add(candidate);
-                }
-            }
-
-            foreach (var drive in GetReadyDrives())
-            {
-                foreach (var file in SafeEnumerateLibraryFiles(drive.RootDirectory.FullName))
-                {
-                    files.Add(file);
-                }
-            }
-
-            return files.ToList();
-        }
-
-        private static IEnumerable<string> GetSeedLibraryPaths()
-        {
-            var seeds = new List<string>();
-            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-            if (!string.IsNullOrWhiteSpace(programFiles))
-            {
-                seeds.Add(Path.Combine(programFiles, "Steam", "steamapps", "libraryfolders.vdf"));
-            }
-
-            var programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
-            if (!string.IsNullOrWhiteSpace(programFilesX86))
-            {
-                seeds.Add(Path.Combine(programFilesX86, "Steam", "steamapps", "libraryfolders.vdf"));
-            }
-
-            return seeds;
-        }
-
-        private static IEnumerable<DriveInfo> GetReadyDrives()
-        {
-            DriveInfo[] drives;
-            try
-            {
-                drives = DriveInfo.GetDrives();
-            }
-            catch
-            {
-                yield break;
-            }
-
-            foreach (var drive in drives)
-            {
-                bool isReady;
-                try
-                {
-                    isReady = drive.IsReady;
-                }
-                catch
-                {
-                    continue;
-                }
-
-                if (!isReady)
-                    continue;
-
-                if (drive.DriveType == DriveType.Network)
-                    continue;
-
-                yield return drive;
-            }
-        }
-
-        private static IEnumerable<string> SafeEnumerateLibraryFiles(string rootPath)
-        {
-            var stack = new Stack<string>();
-            stack.Push(rootPath);
-
-            while (stack.Count > 0)
-            {
-                string current = stack.Pop();
-
-                foreach (var file in GetFilesSafe(current))
-                {
-                    yield return file;
-                }
-
-                foreach (var subDir in GetDirectoriesSafe(current))
-                {
-                    if (ShouldSkipDirectory(subDir))
-                        continue;
-
-                    stack.Push(subDir);
-                }
-            }
-        }
-
-        private static IEnumerable<string> GetFilesSafe(string directory)
-        {
-            foreach (var pattern in LibraryFilePatterns)
-            {
-                string[] files = Array.Empty<string>();
-                try
-                {
-                    files = Directory.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly);
-                }
-                catch (Exception ex) when (IsExpectedFileSystemException(ex))
-                {
-                    Debug.WriteLine($"? [SteamScanner] Skipping files in '{directory}': {ex.Message}");
-                    continue;
-                }
-
-                foreach (var file in files)
-                {
-                    yield return file;
-                }
-            }
-        }
-
-        private static IEnumerable<string> GetDirectoriesSafe(string directory)
-        {
-            string[] subDirs = Array.Empty<string>();
-            try
-            {
-                subDirs = Directory.GetDirectories(directory);
-            }
-            catch (Exception ex) when (IsExpectedFileSystemException(ex))
-            {
-                Debug.WriteLine($"? [SteamScanner] Skipping subdirectories of '{directory}': {ex.Message}");
-            }
-
-            foreach (var subDir in subDirs)
-            {
-                yield return subDir;
-            }
-        }
-
-        private static bool ShouldSkipDirectory(string path)
-        {
-            try
-            {
-                var dirInfo = new DirectoryInfo(path);
-                if (dirInfo.Attributes.HasFlag(FileAttributes.ReparsePoint) || dirInfo.Attributes.HasFlag(FileAttributes.System))
-                    return true;
-
-                return DirectorySkipNames.Contains(dirInfo.Name);
-            }
-            catch
-            {
-                return true;
-            }
-        }
-
-        private static bool IsExpectedFileSystemException(Exception ex) =>
-            ex is UnauthorizedAccessException or PathTooLongException or IOException;
-
         private static string? ExtractFolderPath(VObject folderData)
         {
             foreach (var property in folderData)
             {
                 if (property.Key.Equals("path", StringComparison.OrdinalIgnoreCase))
-                {
                     return property.Value?.ToString();
-                }
             }
 
             return null;
@@ -333,9 +191,7 @@ namespace Codec.Services.Scanning.Scanners
                     foreach (var app in apps)
                     {
                         if (int.TryParse(app.Key, out int appId))
-                        {
                             ids.Add(appId);
-                        }
                     }
                 }
             }
@@ -348,9 +204,7 @@ namespace Codec.Services.Scanning.Scanners
             foreach (var property in pointerObj)
             {
                 if (property.Key.Equals("launcher", StringComparison.OrdinalIgnoreCase))
-                {
                     return property.Value?.ToString();
-                }
             }
 
             return null;
@@ -358,10 +212,10 @@ namespace Codec.Services.Scanning.Scanners
 
         private static string NormalizePath(string rawPath)
         {
-            string sanitized = rawPath.Replace('/', Path.DirectorySeparatorChar);
+            string sanitized = rawPath.Replace('/', System.IO.Path.DirectorySeparatorChar);
             try
             {
-                return Path.GetFullPath(sanitized);
+                return System.IO.Path.GetFullPath(sanitized);
             }
             catch
             {
@@ -372,17 +226,13 @@ namespace Codec.Services.Scanning.Scanners
         private static string? GetSteamRootFromLauncher(string? launcherPath)
         {
             if (string.IsNullOrWhiteSpace(launcherPath))
-            {
                 return null;
-            }
 
             string normalized = NormalizePath(launcherPath);
             try
             {
                 if (normalized.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Path.GetDirectoryName(normalized);
-                }
+                    return System.IO.Path.GetDirectoryName(normalized);
 
                 return Directory.Exists(normalized) ? normalized : null;
             }
@@ -395,12 +245,10 @@ namespace Codec.Services.Scanning.Scanners
         private async Task<List<SteamGameInfo>> ParseAppManifestsAsync(string libraryPath, List<int> expectedAppIds)
         {
             var games = new List<SteamGameInfo>();
-            string steamAppsPath = Path.Combine(libraryPath, "steamapps");
+            string steamAppsPath = System.IO.Path.Combine(libraryPath, "steamapps");
 
             if (!Directory.Exists(steamAppsPath))
-            {
                 return games;
-            }
 
             try
             {
@@ -430,14 +278,12 @@ namespace Codec.Services.Scanning.Scanners
                             }
 
                             if (appId.HasValue && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(installDir) && expectedAppIds.Contains(appId.Value))
-                            {
                                 games.Add(new SteamGameInfo(appId.Value, name, installDir, libraryPath));
-                            }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"? Error parsing {Path.GetFileName(manifestFile)}: {ex.Message}");
+                        Debug.WriteLine($"? Error parsing {System.IO.Path.GetFileName(manifestFile)}: {ex.Message}");
                     }
                 }
             }

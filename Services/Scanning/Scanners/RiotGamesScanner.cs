@@ -19,6 +19,8 @@ namespace Codec.Services.Scanning.Scanners
             if (!Directory.Exists(RiotGamesRoot))
                 return Task.FromResult(candidates);
 
+            _knownLibraryPaths.Add(RiotGamesRoot);
+
             // Map folder names in C:\Riot Games\ (exclude Riot Client infrastructure folders)
             var gameFolders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var dir in Directory.GetDirectories(RiotGamesRoot))

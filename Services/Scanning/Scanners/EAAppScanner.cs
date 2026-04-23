@@ -31,6 +31,7 @@ namespace Codec.Services.Scanning.Scanners
                         if (!string.IsNullOrEmpty(installDir) && Directory.Exists(installDir))
                         {
                             candidates.Add(new GameCandidate(subKeyName, installDir, "EA App"));
+                            _knownLibraryPaths.Add(installDir);
                         }
                     }
                 }

@@ -70,6 +70,7 @@ namespace Codec.Services.Importing
                     return;
                 }
 
+                _drainQueue = false;
                 ResetSessionCountsIfIdle_NoLock();
                 _isScanRunning = true;
             }
@@ -168,6 +169,7 @@ namespace Codec.Services.Importing
 
             lock (_stateGate)
             {
+                _drainQueue = false;
                 ResetSessionCountsIfIdle_NoLock();
                 if (!_reservedExecutables.Add(normalizedPath))
                 {
@@ -192,6 +194,9 @@ namespace Codec.Services.Importing
 
         private async Task TryEnqueueScanCandidateAsync(ValidatedScanCandidate candidate)
         {
+            if (_drainQueue)
+                return;
+
             Debug.WriteLine($"[IMPORT-ENQUEUE] {candidate.GameName} source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath}");
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
 
@@ -410,7 +415,6 @@ namespace Codec.Services.Importing
                 return;
             }
 
-            _drainQueue = false;
             _addedCount = 0;
             _skippedCount = 0;
             _failedCount = 0;

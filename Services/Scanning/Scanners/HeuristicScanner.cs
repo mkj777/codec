@@ -15,6 +15,10 @@ namespace Codec.Services.Scanning.Scanners
     {
         public override string PlatformName => "Heuristic Scan";
 
+        private IReadOnlyList<string> _excludedPaths = Array.Empty<string>();
+
+        public void SetExcludedPaths(IReadOnlyList<string> paths) => _excludedPaths = paths;
+
         private static readonly string[] TargetDirectories = new[]
         {
             @"C:\Program Files",
@@ -45,7 +49,7 @@ namespace Codec.Services.Scanning.Scanners
 
             // Game Launchers (not games themselves)
             "Steam", "Epic Games Launcher", "GOG Galaxy", "Ubisoft Connect",
-            "EA App", "Battle.net", "Origin", "Xbox",
+            "EA App", "EA Games", "Battle.net", "Origin", "Xbox",
             "Riot Games", "Riot Client", "Riot Vanguard",
 
             // Emulators (not games themselves)
@@ -76,45 +80,28 @@ namespace Codec.Services.Scanning.Scanners
                     {
                         string dirName = new DirectoryInfo(dir).Name;
 
-                        if (NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
+                        // Hard skip blacklisted dirs — don't recurse into them either
+                        if (DirectoryBlacklist.Contains(dirName) || NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
                         {
-                            Debug.WriteLine($"  [CATALOG REJECT] Utility directory: {dirName}");
+                            Debug.WriteLine($"  [BLACKLIST] Skip + no recurse: {dirName}");
                             continue;
                         }
 
-                        if (DirectoryBlacklist.Contains(dirName))
+                        // Hard skip paths owned by platform scanners — don't recurse either
+                        if (IsExcludedPath(dir))
                         {
-                            Debug.WriteLine($"  [STAGE 1 REJECT] Blacklisted directory: {dirName}");
+                            Debug.WriteLine($"  [PLATFORM EXCLUDE] Owned by platform scanner: {dirName}");
                             continue;
                         }
 
-                        if (IsDeveloperProject(dir))
-                        {
-                            Debug.WriteLine($"  [STAGE 2 REJECT] Developer project detected: {dirName}");
-                            continue;
-                        }
+                        TryAddCandidate(dir, dirName, candidates); // depth-1
 
-                        if (IsEmulator(dir))
+                        // depth-2: publisher/category folders (e.g. D:\Games\RPG\Baldurs Gate 3)
+                        foreach (var subDir in SafeGetDirectories(dir))
                         {
-                            Debug.WriteLine($"  [STAGE 3 REJECT] Emulator detected: {dirName}");
-                            continue;
+                            string subDirName = new DirectoryInfo(subDir).Name;
+                            TryAddCandidate(subDir, subDirName, candidates);
                         }
-
-                        bool hasExecutable = SafeEnumerateFiles(dir, "*.exe").Any();
-                        if (!hasExecutable)
-                        {
-                            Debug.WriteLine($"  [STAGE 4 REJECT] No .exe files found: {dirName}");
-                            continue;
-                        }
-
-                        if (IsDocumentationOrMediaFolder(dir))
-                        {
-                            Debug.WriteLine($"  [STAGE 5 REJECT] Documentation/Media folder: {dirName}");
-                            continue;
-                        }
-
-                        Debug.WriteLine($"  [PASSED] Candidate added: {dirName}");
-                        candidates.Add(new GameCandidate(dirName, dir, "Heuristic Scan"));
                     }
                 }
                 catch (Exception ex)
@@ -124,6 +111,66 @@ namespace Codec.Services.Scanning.Scanners
             }
 
             return await Task.FromResult(candidates);
+        }
+
+        private bool IsExcludedPath(string dir) =>
+            _excludedPaths.Any(p =>
+                dir.Equals(p, StringComparison.OrdinalIgnoreCase) ||
+                dir.StartsWith(p + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+
+        private void TryAddCandidate(string dir, string dirName, List<GameCandidate> candidates)
+        {
+            if (IsExcludedPath(dir))
+            {
+                Debug.WriteLine($"  [PLATFORM EXCLUDE] Owned by platform scanner: {dirName}");
+                return;
+            }
+
+            if (NonGameSoftwareCatalog.IsNonGameDirectory(dirName, dir))
+            {
+                Debug.WriteLine($"  [CATALOG REJECT] Utility directory: {dirName}");
+                return;
+            }
+
+            if (DirectoryBlacklist.Contains(dirName))
+            {
+                Debug.WriteLine($"  [STAGE 1 REJECT] Blacklisted directory: {dirName}");
+                return;
+            }
+
+            if (IsDeveloperProject(dir))
+            {
+                Debug.WriteLine($"  [STAGE 2 REJECT] Developer project detected: {dirName}");
+                return;
+            }
+
+            if (IsEmulator(dir))
+            {
+                Debug.WriteLine($"  [STAGE 3 REJECT] Emulator detected: {dirName}");
+                return;
+            }
+
+            if (!SafeEnumerateFiles(dir, "*.exe").Any())
+            {
+                Debug.WriteLine($"  [STAGE 4 REJECT] No .exe files found: {dirName}");
+                return;
+            }
+
+            if (IsDocumentationOrMediaFolder(dir))
+            {
+                Debug.WriteLine($"  [STAGE 5 REJECT] Documentation/Media folder: {dirName}");
+                return;
+            }
+
+            Debug.WriteLine($"  [PASSED] Candidate added: {dirName} ({dir})");
+            candidates.Add(new GameCandidate(dirName, dir, "Heuristic Scan"));
+        }
+
+
+        private static IEnumerable<string> SafeGetDirectories(string path)
+        {
+            try { return Directory.GetDirectories(path); }
+            catch { return Array.Empty<string>(); }
         }
 
         private static bool IsDeveloperProject(string directory)

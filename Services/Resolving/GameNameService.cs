@@ -40,6 +40,19 @@ namespace Codec.Services.Resolving
             "win64-shipping", "win32-shipping", "shipping", "launcher", "bootstrap", "UE4", "UE5", "Unreal Engine", "Engine"
         };
 
+        // PE metadata names that identify the engine/middleware, not the game itself.
+        // These must never be used as name candidates for Steam/RAWG matching.
+        private static readonly HashSet<string> MetadataNameBlacklist = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Unreal Engine", "UnrealGame", "Unreal",
+            "Unity", "Unity Player",
+            "GameMaker Studio", "GameMaker",
+            "Godot Engine", "Godot",
+            "CryEngine", "CryGame",
+            "Win64", "Win32", "x64", "x86",
+            "Engine", "Game", "Launcher", "Bootstrap",
+        };
+
         private readonly string[] CommonPrefixes = { "setup", "launcher", "client" };
         private readonly string[] CommonSuffixes = { "setup", "launcher", "client", "game" };
         private readonly string[] EditionSuffixes =
@@ -51,6 +64,7 @@ namespace Codec.Services.Resolving
         private readonly Regex MultiSpaceRegex = new("\\s+", RegexOptions.Compiled);
         private readonly Regex CamelCaseRegex = new("(?<=[a-z0-9])([A-Z])", RegexOptions.Compiled);
         private readonly Regex SpecialCharRegex = new("[()\\[\\]{},-:;!?]", RegexOptions.Compiled);
+        private readonly Regex TrademarkRegex = new(@"\(TM\)|\(R\)|™|®", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly object RateLimitGate = new();
         private DateTime _lastSteamRequestUtc = DateTime.MinValue;
@@ -176,16 +190,21 @@ namespace Codec.Services.Resolving
             return null;
         }
 
-        public async Task<(int? steamId, int? rawgId, string? steamName)> FindGameIdsAsync(string exePath)
+        public async Task<(int? steamId, int? rawgId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null)
         {
-            GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath);
-            int? steamId = steamMatch != null ? (int)steamMatch.SteamAppId : null;
-            string? steamName = steamMatch?.SteamName;
+            GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint);
+
+            // Only assign a Steam ID when confidence is high — acceptable-confidence matches
+            // are unreliable (e.g. "UNREAL LIFE" fuzzy-matching "Fortnite" at 65%) and must
+            // only be used as a RAWG search name hint, never as a final Steam ID.
+            bool isHighConfidence = steamMatch != null && steamMatch.ConfidenceScore >= Config.HighConfidenceThreshold;
+            int? steamId = isHighConfidence ? (int)steamMatch!.SteamAppId : null;
+            string? steamName = isHighConfidence ? steamMatch!.SteamName : null;
             int? rawgId = null;
 
             if (steamMatch != null)
             {
-                Debug.WriteLine($"Using Steam name for RAWG search: {steamMatch.SteamName}");
+                Debug.WriteLine($"Using Steam name for RAWG search: {steamMatch.SteamName} (confidence {steamMatch.ConfidenceScore:P0}, Steam ID {(isHighConfidence ? "assigned" : "withheld")})");
                 rawgId = await FindRawgIdByNameAsync(steamMatch.SteamName, RawgValidationMode.SteamBacked);
             }
 
@@ -198,7 +217,7 @@ namespace Codec.Services.Resolving
             return (steamId, rawgId, steamName);
         }
 
-        private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default)
+        private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default, string? nameHint = null)
         {
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
             {
@@ -230,7 +249,7 @@ namespace Codec.Services.Resolving
                 };
             }
 
-            List<LocalGameCandidate> candidates = BuildCandidates(exePath);
+            List<LocalGameCandidate> candidates = BuildCandidates(exePath, nameHint);
             if (candidates.Count == 0)
             {
                 return null;
@@ -331,7 +350,7 @@ namespace Codec.Services.Resolving
             return match != null ? (int)match.SteamAppId : null;
         }
 
-        private List<LocalGameCandidate> BuildCandidates(string exePath)
+        private List<LocalGameCandidate> BuildCandidates(string exePath, string? nameHint = null)
         {
             var candidates = new List<LocalGameCandidate>();
 
@@ -367,8 +386,16 @@ namespace Codec.Services.Resolving
                 });
             }
 
-            AddCandidate(productName, "file_metadata");
-            if (!string.IsNullOrWhiteSpace(fileDescription) && !string.Equals(productName, fileDescription, StringComparison.OrdinalIgnoreCase))
+            // Launcher-provided name (e.g. EA App install folder) gets highest priority
+            if (!string.IsNullOrWhiteSpace(nameHint))
+                AddCandidate(nameHint.Trim(), "launcher");
+
+            // Filter PE metadata names that identify the engine, not the game
+            if (!MetadataNameBlacklist.Contains(productName?.Trim() ?? string.Empty))
+                AddCandidate(productName, "file_metadata");
+            if (!string.IsNullOrWhiteSpace(fileDescription)
+                && !string.Equals(productName, fileDescription, StringComparison.OrdinalIgnoreCase)
+                && !MetadataNameBlacklist.Contains(fileDescription.Trim()))
             {
                 AddCandidate(fileDescription, "file_metadata");
             }
@@ -387,6 +414,7 @@ namespace Codec.Services.Resolving
             var (priority, weight) = candidate.MetadataSource.ToLowerInvariant() switch
             {
                 "steam_appid" => (0, 1.0f),
+                "launcher"    => (0, 1.0f),
                 "file_metadata" => (1, 1.0f),
                 "registry" => (2, 0.9f),
                 "folder" => (3, 0.8f),
@@ -426,7 +454,7 @@ namespace Codec.Services.Resolving
                     yield return new SearchCandidate
                     {
                         SearchTerm = variant,
-                        NormalizedLocalName = variant,
+                        NormalizedLocalName = normalized, // score against original, not the shortened variant
                         Priority = priority + 1,
                         InitialWeight = MathF.Max(0.4f, weight - 0.1f),
                         Source = candidate
@@ -631,6 +659,19 @@ namespace Codec.Services.Resolving
                                    (float)Math.Max(localName.Length, steamResult.Length);
             score -= lengthPenalty * 0.1f;
 
+            // Subtitle penalty: penalise when Steam result is missing significant words from the
+            // local name (e.g. local="need for speed rivals", steam="need for speed" → missing "rivals")
+            var localTokens = localName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var steamTokens = steamResult.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (localTokens.Length > steamTokens.Length)
+            {
+                var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "for", "the", "of", "a", "an", "and", "in", "on", "at", "to" };
+                int significantMissing = localTokens
+                    .Where(lt => !stopWords.Contains(lt) && !steamTokens.Any(st => st.Equals(lt, StringComparison.OrdinalIgnoreCase)))
+                    .Count();
+                score -= significantMissing * 0.20f;
+            }
+
             return Math.Clamp(score, 0f, 1f);
         }
 
@@ -659,6 +700,7 @@ namespace Codec.Services.Resolving
             value = value.Replace('_', ' ').Replace('+', ' ');
             value = CamelCaseRegex.Replace(value, " $1");
             value = RemoveFileExtension(value);
+            value = TrademarkRegex.Replace(value, "");   // strip (TM), (R), ™, ® before splitting on parens
             value = SpecialCharRegex.Replace(value, " ");
             value = value.Replace("/", " ");
             value = SanitizeUmlauts(value);

@@ -115,6 +115,13 @@ namespace Codec.Services.Scanning
             }
             phase1Sw.Stop();
 
+            var allLibraryPaths = _platformScanners
+                .SelectMany(s => s.KnownLibraryPaths)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            _heuristicScanner.SetExcludedPaths(allLibraryPaths);
+            Debug.WriteLine($"  Platform library paths collected: {allLibraryPaths.Count}");
+
             // PHASE 2: Heuristic Environmental Scanning
             Debug.WriteLine("\n=== PHASE 2: HEURISTIC SCANNING ===");
             var phase2Sw = Stopwatch.StartNew();
@@ -216,7 +223,13 @@ namespace Codec.Services.Scanning
                     var steamSw = Stopwatch.StartNew();
                     try
                     {
-                        (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath);
+                        // For EA App candidates the registry key name can be mangled — use the
+                        // install folder name as a high-confidence hint for Steam name matching.
+                        string? nameHint = string.Equals(candidate.Source, "EA App", StringComparison.OrdinalIgnoreCase)
+                            ? new System.IO.DirectoryInfo(candidate.FolderPath).Name
+                            : null;
+
+                        (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath, nameHint);
                         steamSw.Stop();
                         steamLookupTotalMs += steamSw.ElapsedMilliseconds;
                         steamLookupCount++;
@@ -239,9 +252,17 @@ namespace Codec.Services.Scanning
                     }
                 }
 
-                // RAWG validation
+                // RAWG validation — mode depends on Steam ID source
+                // Launcher-provided Steam ID (e.g. SteamScanner): highest confidence → lenient threshold
+                // Lookup-found Steam ID (heuristic candidate): moderate confidence → standard SteamBacked threshold
+                var rawgMode = candidate.SteamAppId.HasValue
+                    ? RawgValidationMode.HighConfidenceSteam
+                    : steamId.HasValue
+                        ? RawgValidationMode.SteamBacked
+                        : RawgValidationMode.Strict;
+
                 var rawgSw = Stopwatch.StartNew();
-                int? rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, steamId.HasValue);
+                int? rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, rawgMode);
                 rawgSw.Stop();
                 rawgValidationTotalMs += rawgSw.ElapsedMilliseconds;
                 rawgValidationCount++;
@@ -311,11 +332,10 @@ namespace Codec.Services.Scanning
             return results;
         }
 
-        private async Task<int?> ValidateAndFetchRawgIdAsync(string gameName, bool hasSteamContext)
+        private async Task<int?> ValidateAndFetchRawgIdAsync(string gameName, RawgValidationMode mode)
         {
             try
             {
-                var mode = hasSteamContext ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
                 return await _gameName.FindRawgIdByNameAsync(gameName, mode);
             }
             catch (Exception ex)

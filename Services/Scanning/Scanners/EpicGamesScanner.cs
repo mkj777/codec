@@ -46,6 +46,7 @@ namespace Codec.Services.Scanning.Scanners
                             if (!string.IsNullOrEmpty(installPath) && Directory.Exists(installPath))
                             {
                                 candidates.Add(new GameCandidate(name, installPath, "Epic Games Store"));
+                                _knownLibraryPaths.Add(installPath);
                             }
                         }
                     }
