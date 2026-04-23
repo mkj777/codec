@@ -108,6 +108,13 @@ namespace Codec.Services.Fetching
                 }
             }
 
+            string? epicLogo = TryResolveBundledEpicLogo(game);
+            if (epicLogo != null)
+            {
+                hasLogoSource = true;
+                logoCachePath = epicLogo;
+            }
+
             return new DisplayedAssetHydrationResult(
                 gridDbId,
                 capsuleCachePath,
@@ -130,6 +137,23 @@ namespace Codec.Services.Fetching
                 game.HasLogoAssetSource || !string.IsNullOrWhiteSpace(game.LibLogoUrl),
                 game.LibLogoUrl,
                 game.LibLogoCache);
+        }
+
+        private static readonly Dictionary<string, string> EpicBundledLogos = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Fortnite"] = "fortniteLogo.png",
+        };
+
+        private static string? TryResolveBundledEpicLogo(Game game)
+        {
+            if (string.IsNullOrWhiteSpace(game.Name))
+                return null;
+
+            if (!EpicBundledLogos.TryGetValue(game.Name.Trim(), out var file))
+                return null;
+
+            string path = Path.Combine(AppContext.BaseDirectory, "Assets", "Epic", file);
+            return File.Exists(path) ? path : null;
         }
 
         private sealed record BundledRiotAsset(string Folder, string Capsule, string Hero, string Logo);
