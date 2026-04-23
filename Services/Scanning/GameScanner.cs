@@ -41,10 +41,6 @@ namespace Codec.Services.Scanning
             {
                 _steamScanner,
                 new EpicGamesScanner(),
-                new UbisoftConnectScanner(),
-                new BattleNetScanner(),
-                new EAAppScanner(),
-                new GOGScanner(),
                 new RiotGamesScanner()
             };
             _heuristicScanner = new HeuristicScanner();
@@ -223,13 +219,7 @@ namespace Codec.Services.Scanning
                     var steamSw = Stopwatch.StartNew();
                     try
                     {
-                        // For EA App candidates the registry key name can be mangled — use the
-                        // install folder name as a high-confidence hint for Steam name matching.
-                        string? nameHint = string.Equals(candidate.Source, "EA App", StringComparison.OrdinalIgnoreCase)
-                            ? new System.IO.DirectoryInfo(candidate.FolderPath).Name
-                            : null;
-
-                        (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath, nameHint);
+                        (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath);
                         steamSw.Stop();
                         steamLookupTotalMs += steamSw.ElapsedMilliseconds;
                         steamLookupCount++;
