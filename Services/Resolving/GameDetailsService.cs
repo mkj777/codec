@@ -30,6 +30,7 @@ namespace Codec.Services.Resolving
         private readonly MetadataCache _cache;
         private readonly HttpClient _httpClient = new();
         private const string RawgSearchUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
+        private const string RawgStoreUrl = "https://codec-api-proxy.vercel.app/api/rawg/store";
         private const int DefaultPageSize = 5;
         private const double StrictScoreThreshold = 0.88;
         private const double SteamBackedScoreThreshold = 0.82;
@@ -327,6 +328,40 @@ namespace Codec.Services.Resolving
             name = Regex.Replace(name, @"\s+", " ");
 
             return name.Trim();
+        }
+
+        /// <summary>
+        /// Deterministic RAWG lookup by Steam store ID — no fuzzy matching, no false positives.
+        /// Calls /api/rawg/store?store=1&amp;game_id={steamId} on the proxy.
+        /// </summary>
+        public async Task<int?> FindRawgIdBySteamIdAsync(int steamId)
+        {
+            try
+            {
+                string url = $"{RawgStoreUrl}?store=1&game_id={steamId}";
+                string response = await _cache.GetOrFetchAsync("rawg-store", url, TimeSpan.FromDays(30));
+                using var doc = JsonDocument.Parse(response);
+
+                if (!doc.RootElement.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
+                    return null;
+
+                var first = results.EnumerateArray().FirstOrDefault();
+                if (first.ValueKind == JsonValueKind.Object &&
+                    first.TryGetProperty("id", out var idProp) &&
+                    idProp.TryGetInt32(out int id) && id > 0)
+                {
+                    Debug.WriteLine($"  ✓ RAWG store-lookup steam={steamId} -> rawg={id}");
+                    return id;
+                }
+
+                Debug.WriteLine($"  ✗ RAWG store-lookup: no result for steam={steamId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"  ✗ RAWG store-lookup failed steam={steamId}: {ex.Message}");
+                return null;
+            }
         }
 
         private sealed record RawgCandidate(int RawgId, string Name, double Score);

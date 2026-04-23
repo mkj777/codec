@@ -3,6 +3,7 @@ using Codec.Services.Scanning.Scanners;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -196,31 +197,47 @@ namespace Codec.Services.Scanning
                     continue;
                 }
 
-                // EXE detection funnel
+                // EXE detection: Steam games → simple root scan; others → full heuristic funnel
                 var exeSw = Stopwatch.StartNew();
                 string executablePath;
-                try
+                if (candidate.SteamAppId.HasValue)
                 {
-                    executablePath = ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
-                }
-                catch (Exception ex)
-                {
+                    executablePath = TryGetSteamGameExe(candidate.FolderPath);
                     exeSw.Stop();
                     exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
                     exeDetectionCount++;
-                    Debug.WriteLine($"  REJECT '{candidate.Name}' (exe-detect error {exeSw.ElapsedMilliseconds}ms): {ex.GetType().Name}: {ex.Message}");
-                    rejectedNoExe++;
-                    continue;
+                    if (string.IsNullOrEmpty(executablePath))
+                    {
+                        Debug.WriteLine($"  REJECT '{candidate.Name}' (steam exe-scan {exeSw.ElapsedMilliseconds}ms: no exe at root)");
+                        rejectedNoExe++;
+                        continue;
+                    }
+                    Debug.WriteLine($"  STEAM-EXE '{candidate.Name}' -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
                 }
-                exeSw.Stop();
-                exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
-                exeDetectionCount++;
-
-                if (string.IsNullOrEmpty(executablePath))
+                else
                 {
-                    Debug.WriteLine($"  REJECT '{candidate.Name}' (no exe, exe-detect {exeSw.ElapsedMilliseconds}ms)");
-                    rejectedNoExe++;
-                    continue;
+                    try
+                    {
+                        executablePath = ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        exeSw.Stop();
+                        exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                        exeDetectionCount++;
+                        Debug.WriteLine($"  REJECT '{candidate.Name}' (exe-detect error {exeSw.ElapsedMilliseconds}ms): {ex.GetType().Name}: {ex.Message}");
+                        rejectedNoExe++;
+                        continue;
+                    }
+                    exeSw.Stop();
+                    exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                    exeDetectionCount++;
+                    if (string.IsNullOrEmpty(executablePath))
+                    {
+                        Debug.WriteLine($"  REJECT '{candidate.Name}' (no exe, exe-detect {exeSw.ElapsedMilliseconds}ms)");
+                        rejectedNoExe++;
+                        continue;
+                    }
                 }
 
                 // Steam ID: existing, or lookup (skip for Riot — not on Steam, avoids fuzzy false matches)
@@ -255,18 +272,24 @@ namespace Codec.Services.Scanning
                     }
                 }
 
-                // RAWG validation — mode depends on Steam ID source
-                // Launcher-provided Steam ID (e.g. SteamScanner): highest confidence → lenient threshold
-                // Lookup-found Steam ID (heuristic candidate): moderate confidence → standard SteamBacked threshold
-                var rawgMode = candidate.SteamAppId.HasValue
-                    ? RawgValidationMode.HighConfidenceSteam
-                    : steamId.HasValue
-                        ? RawgValidationMode.SteamBacked
-                        : RawgValidationMode.Strict;
-
+                // RAWG validation:
+                // Steam launcher candidates → deterministic store-ID lookup (no fuzzy matching)
+                // Heuristic/lookup-found Steam ID → name-based with SteamBacked leniency
+                // No Steam ID → strict name-based
                 var rawgSw = Stopwatch.StartNew();
-                int? rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, rawgMode);
-                rawgSw.Stop();
+                int? rawgId;
+                if (candidate.SteamAppId.HasValue)
+                {
+                    rawgId = await _gameName.FindRawgIdBySteamIdAsync(candidate.SteamAppId.Value);
+                    rawgSw.Stop();
+                    Debug.WriteLine($"  RAWG-STORE '{candidate.Name}' steam={candidate.SteamAppId} -> rawg={rawgId?.ToString() ?? "none"} ({rawgSw.ElapsedMilliseconds}ms)");
+                }
+                else
+                {
+                    var rawgMode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
+                    rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, rawgMode);
+                    rawgSw.Stop();
+                }
                 rawgValidationTotalMs += rawgSw.ElapsedMilliseconds;
                 rawgValidationCount++;
 
@@ -345,6 +368,31 @@ namespace Codec.Services.Scanning
             {
                 Debug.WriteLine($"  ? RAWG validation failed: {ex.Message}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Fast exe resolution for Steam games: scans root of install dir only, picks largest
+        /// non-utility exe. No recursive heuristic funnel needed — Steam handles launching.
+        /// </summary>
+        private static string TryGetSteamGameExe(string folderPath)
+        {
+            if (!Directory.Exists(folderPath))
+                return string.Empty;
+
+            try
+            {
+                var skip = new[] { "uninstall", "setup", "install", "vcredist", "vc_redist", "directx", "dxsetup", "crashpad", "crashreport", "redist" };
+                var exes = Directory.GetFiles(folderPath, "*.exe", SearchOption.TopDirectoryOnly)
+                    .Where(f => !skip.Any(s => Path.GetFileNameWithoutExtension(f).Contains(s, StringComparison.OrdinalIgnoreCase)))
+                    .OrderByDescending(f => new FileInfo(f).Length)
+                    .ToList();
+
+                return exes.Count > 0 ? exes[0] : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
             }
         }
     }

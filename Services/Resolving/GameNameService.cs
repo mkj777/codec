@@ -190,6 +190,8 @@ namespace Codec.Services.Resolving
             return null;
         }
 
+        public Task<int?> FindRawgIdBySteamIdAsync(int steamId) => _gameDetails.FindRawgIdBySteamIdAsync(steamId);
+
         public async Task<(int? steamId, int? rawgId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null)
         {
             GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint);

@@ -113,10 +113,20 @@ namespace Codec.Services.Importing
                         detectedName = resolvedIds.steamName;
                 }
 
-                if (!rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
+                if (!rawgId.HasValue)
                 {
-                    var mode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
-                    rawgId = await _gameDetails.ValidateGameAsync(detectedName, mode).ConfigureAwait(false);
+                    if (steamId.HasValue)
+                    {
+                        // Steam game: deterministic store-ID lookup — no name fuzzy-matching
+                        rawgId = await _gameDetails.FindRawgIdBySteamIdAsync(steamId.Value).ConfigureAwait(false);
+                    }
+
+                    if (!rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
+                    {
+                        // Non-Steam or store-lookup miss: fall back to name-based
+                        var mode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
+                        rawgId = await _gameDetails.ValidateGameAsync(detectedName, mode).ConfigureAwait(false);
+                    }
                 }
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
