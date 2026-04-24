@@ -24,6 +24,7 @@ namespace Codec.Services.Importing
 
         private CancellationTokenSource _scanCts = new();
         private volatile bool _drainQueue;
+        private Stopwatch? _clickStopwatch;
 
         private bool _isScanRunning;
         private int _queuedCount;
@@ -59,6 +60,8 @@ namespace Codec.Services.Importing
 
         public async Task StartScanAsync()
         {
+            _clickStopwatch = Stopwatch.StartNew();
+
             lock (_stateGate)
             {
                 if (_isScanRunning)
@@ -106,12 +109,13 @@ namespace Codec.Services.Importing
 
         private async Task RunScanAsync()
         {
+            var clickSw = _clickStopwatch;
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_scanCts.Token, _disposeCts.Token);
             try
             {
                 await Task.Run(async () =>
                 {
-                    await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token).ConfigureAwait(false))
+                    await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token, clickStopwatch: clickSw).ConfigureAwait(false))
                     {
                         await TryEnqueueScanCandidateAsync(candidate).ConfigureAwait(false);
                     }

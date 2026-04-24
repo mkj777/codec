@@ -134,6 +134,12 @@ namespace Codec.Services.Resolving
             public string Image { get; init; } = string.Empty;
         }
 
+        public enum MatchMethod
+        {
+            SteamAppIdFile,  // AppID read from steam_appid.txt — no string comparison
+            FuzzySearch      // similarity score from Levenshtein + token overlap
+        }
+
         public record GameMatch
         {
             public required uint SteamAppId { get; init; }
@@ -142,6 +148,7 @@ namespace Codec.Services.Resolving
             public required float ConfidenceScore { get; init; }
             public required string MatchedSearchTerm { get; init; }
             public required LocalGameCandidate LocalData { get; init; }
+            public required MatchMethod Method { get; init; }
         }
 
         private sealed record CachedSearchEntry(DateTime Timestamp, List<SteamSearchResult> Results);
@@ -196,9 +203,11 @@ namespace Codec.Services.Resolving
         {
             GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint);
 
-            // Only assign a Steam ID when confidence is high — acceptable-confidence matches
-            // are unreliable (e.g. "UNREAL LIFE" fuzzy-matching "Fortnite" at 65%).
-            bool isHighConfidence = steamMatch != null && steamMatch.ConfidenceScore >= Config.HighConfidenceThreshold;
+            // SteamAppIdFile is authoritative — no fuzzy threshold applies.
+            // FuzzySearch requires high confidence to avoid false positives.
+            bool isHighConfidence = steamMatch != null &&
+                (steamMatch.Method == MatchMethod.SteamAppIdFile ||
+                 steamMatch.ConfidenceScore >= Config.HighConfidenceThreshold);
             int? steamId = isHighConfidence ? (int)steamMatch!.SteamAppId : null;
             string? steamName = isHighConfidence ? steamMatch!.SteamName : null;
 
@@ -225,6 +234,7 @@ namespace Codec.Services.Resolving
                     LocalPath = exePath,
                     ConfidenceScore = 1.0f,
                     MatchedSearchTerm = "steam_appid.txt",
+                    Method = MatchMethod.SteamAppIdFile,
                     LocalData = new LocalGameCandidate
                     {
                         DetectedName = fallbackName,
@@ -282,6 +292,7 @@ namespace Codec.Services.Resolving
                             LocalPath = exePath,
                             ConfidenceScore = score,
                             MatchedSearchTerm = searchCandidate.SearchTerm,
+                            Method = MatchMethod.FuzzySearch,
                             LocalData = searchCandidate.Source
                         };
 
@@ -292,7 +303,7 @@ namespace Codec.Services.Resolving
 
                         if (match.ConfidenceScore >= Config.HighConfidenceThreshold)
                         {
-                            Debug.WriteLine($"  ✓ High-confidence Steam match: {match.SteamName} ({match.SteamAppId}) via '{match.MatchedSearchTerm}' [{match.ConfidenceScore:P}]");
+                            Debug.WriteLine($"  ✓ High-confidence Steam match: {match.SteamName} ({match.SteamAppId}) via '{match.MatchedSearchTerm}' [{match.ConfidenceScore:P0}]");
                         }
                     }
                 }
@@ -300,7 +311,8 @@ namespace Codec.Services.Resolving
 
             if (bestMatch != null && bestMatch.ConfidenceScore >= Config.AcceptableConfidenceThreshold)
             {
-                Debug.WriteLine($"  ✓ {(bestMatch.ConfidenceScore >= Config.HighConfidenceThreshold ? "High-confidence" : "Acceptable")} Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) [{bestMatch.ConfidenceScore:P}]");
+                string confidence = bestMatch.ConfidenceScore >= Config.HighConfidenceThreshold ? "High-confidence" : "Acceptable";
+                Debug.WriteLine($"  ✓ {confidence} Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) [{bestMatch.ConfidenceScore:P0}]");
                 return bestMatch;
             }
 

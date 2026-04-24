@@ -205,22 +205,35 @@ namespace Codec.Services.Importing
                     await _steamDetails.PopulateFromSteamAsync(game).ConfigureAwait(false);
                     await _hltb.PopulateAsync(game).ConfigureAwait(false);
 
-                    game.IgdbId = await _igdb.FindIgdbIdBySteamIdAsync(game.SteamID.Value).ConfigureAwait(false);
+                    var igdbIdTask = _igdb.FindIgdbIdBySteamIdAsync(game.SteamID.Value);
+                    var rawgIdTask = _gameDetails.FindRawgIdBySteamIdAsync(game.SteamID.Value);
+                    await Task.WhenAll(igdbIdTask, rawgIdTask).ConfigureAwait(false);
+
+                    game.IgdbId = igdbIdTask.Result;
+                    game.RawgID = rawgIdTask.Result;
+
                     if (game.IgdbId.HasValue)
                     {
                         await _igdb.PopulateFromIgdbAsync(game).ConfigureAwait(false);
                     }
+
+                    // RAWG populate (non-validating) — fills RawgSlug/RawgUrl for link display; Steam/IGDB fields protected by ShouldOverwrite
+                    if (game.RawgID.HasValue)
+                    {
+                        await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
-                    // Non-Steam: HLTB first (preferred TTB source), then IGDB/RAWG for metadata
+                    // Non-Steam: HLTB first (preferred TTB source), then IGDB for metadata, then RAWG always to store RawgID
                     await _hltb.PopulateAsync(game).ConfigureAwait(false);
 
                     if (game.IgdbId.HasValue)
                     {
                         await _igdb.PopulateFromIgdbAsync(game).ConfigureAwait(false);
                     }
-                    else if (game.RawgID.HasValue)
+
+                    if (game.RawgID.HasValue)
                     {
                         await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
                     }

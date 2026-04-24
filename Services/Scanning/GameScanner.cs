@@ -56,9 +56,10 @@ namespace Codec.Services.Scanning
         /// </summary>
         public async IAsyncEnumerable<ValidatedScanCandidate> ScanIncrementallyAsync(
             [EnumeratorCancellation] CancellationToken cancellationToken = default,
-            IProgress<string>? progress = null)
+            IProgress<string>? progress = null,
+            Stopwatch? clickStopwatch = null)
         {
-            var totalStopwatch = Stopwatch.StartNew();
+            var totalStopwatch = clickStopwatch ?? Stopwatch.StartNew();
             var allCandidates = new List<GameCandidate>();
             var phase1Timings = new List<(string Name, long Ms, int Count)>();
             long phase2Ms = 0;

@@ -179,12 +179,14 @@ namespace Codec.Services.Scanning.Scanners
 
             foreach (var drive in drives)
             {
+                if (drive.DriveType != DriveType.Fixed && drive.DriveType != DriveType.Removable)
+                    continue;
+
                 bool ready;
                 try { ready = drive.IsReady; }
                 catch { continue; }
 
-                if (!ready || drive.DriveType == DriveType.Network)
-                    continue;
+                if (!ready) continue;
 
                 yield return drive;
             }
