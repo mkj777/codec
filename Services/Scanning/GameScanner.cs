@@ -59,6 +59,7 @@ namespace Codec.Services.Scanning
             IProgress<string>? progress = null,
             Stopwatch? clickStopwatch = null)
         {
+            bool ownStopwatch = clickStopwatch is null;
             var totalStopwatch = clickStopwatch ?? Stopwatch.StartNew();
             var allCandidates = new List<GameCandidate>();
             var phase1Timings = new List<(string Name, long Ms, int Count)>();
@@ -330,7 +331,8 @@ namespace Codec.Services.Scanning
             cacheSaveMs = saveSw.ElapsedMilliseconds;
 
             progress?.Report("Scan complete.");
-            totalStopwatch.Stop();
+            if (ownStopwatch)
+                totalStopwatch.Stop();
 
             // Summary
             int totalFound = cacheHits + newValidated;
@@ -340,8 +342,8 @@ namespace Codec.Services.Scanning
                     .OrderByDescending(t => t.Ms)
                     .Select(t => $"{t.Name}: {t.Ms}ms ({t.Count})"));
 
-            Debug.WriteLine("\n=== SCAN COMPLETE ===");
-            Debug.WriteLine($"Total time:       {totalStopwatch.Elapsed.TotalSeconds:0.0}s");
+            Debug.WriteLine("\n=== SCAN COMPLETE (pipeline still running) ===");
+            Debug.WriteLine($"Scan time:        {totalStopwatch.Elapsed.TotalSeconds:0.0}s");
             Debug.WriteLine($"Candidates:       {allCandidates.Count} unique (dedup removed {duplicateCount}, catalog removed {catalogFiltered})");
             Debug.WriteLine($"Games yielded:    {totalFound}");
             Debug.WriteLine($"  Cache hits:     {cacheHits}");

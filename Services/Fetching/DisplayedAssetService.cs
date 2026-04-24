@@ -162,6 +162,8 @@ namespace Codec.Services.Fetching
         {
             ["2XKO"] = new("2XKO", "2xkoCapsule.jpg", "2xkoHero.png", "2xkoLogo.png"),
             ["League of Legends"] = new("LeagueOfLegends", "leagueCapsule.png", "leagueHero.jpg", "leagueLogo.png"),
+            ["Legends of Runeterra"] = new("LegendsOfRuneterra", "lorCapsule.png", "lorHero.jpg", "lorLogo.png"),
+            ["LoR"] = new("LegendsOfRuneterra", "lorCapsule.png", "lorHero.jpg", "lorLogo.png"),
             ["VALORANT"] = new("Valorant", "valorantCapsule.png", "valorantHero.jpg", "valorantLogo.png"),
             ["Valorant"] = new("Valorant", "valorantCapsule.png", "valorantHero.jpg", "valorantLogo.png"),
         };

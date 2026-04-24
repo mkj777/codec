@@ -105,6 +105,7 @@ namespace Codec.Services.Resolving
             public string? FileMetadataProductName { get; init; }
             public string? Version { get; init; }
             public string MetadataSource { get; init; } = "folder";
+            public int? CopyrightYear { get; init; }
         }
 
         public record SearchCandidate
@@ -199,9 +200,9 @@ namespace Codec.Services.Resolving
 
         public Task<int?> FindRawgIdBySteamIdAsync(int steamId) => _gameDetails.FindRawgIdBySteamIdAsync(steamId);
 
-        public async Task<(int? steamId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null)
+        public async Task<(int? steamId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null, bool skipFuzzySearch = false)
         {
-            GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint);
+            GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint, skipFuzzySearch: skipFuzzySearch);
 
             // SteamAppIdFile is authoritative — no fuzzy threshold applies.
             // FuzzySearch requires high confidence to avoid false positives.
@@ -214,7 +215,7 @@ namespace Codec.Services.Resolving
             return (steamId, steamName);
         }
 
-        private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default, string? nameHint = null)
+        private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default, string? nameHint = null, bool skipFuzzySearch = false)
         {
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
             {
@@ -246,6 +247,9 @@ namespace Codec.Services.Resolving
                     }
                 };
             }
+
+            if (skipFuzzySearch)
+                return null;
 
             List<LocalGameCandidate> candidates = BuildCandidates(exePath, nameHint);
             if (candidates.Count == 0)
@@ -311,6 +315,36 @@ namespace Codec.Services.Resolving
 
             if (bestMatch != null && bestMatch.ConfidenceScore >= Config.AcceptableConfidenceThreshold)
             {
+                // The SearchApps API can return a truncated/shortened name (e.g. "SimCity" for
+                // "SimCity™ 4 Deluxe Edition", appid 24780). Re-score against the authoritative
+                // appdetails name so the numeric-series penalty and token checks fire on the real title.
+                var appSummary = await GetSteamAppSummaryAsync((int)bestMatch.SteamAppId);
+                if (!string.IsNullOrWhiteSpace(appSummary.Name))
+                {
+                    string normalizedAuth = NormalizeName(appSummary.Name);
+                    string normalizedLocal = NormalizeName(bestMatch.LocalData.DetectedName);
+                    float authScore = CalculateMatchScore(normalizedLocal, normalizedAuth, bestMatch.LocalData);
+                    if (authScore < Config.AcceptableConfidenceThreshold)
+                    {
+                        Debug.WriteLine($"  ✗ Rejected: auth name '{appSummary.Name}' rescored {authScore:P0} < threshold (search API returned '{bestMatch.SteamName}')");
+                        return null;
+                    }
+
+                    // Year guard: copyright year on the local exe vs Steam release year.
+                    // "SimCity" exe © 2013, Steam app 24780 released 2003 → 10 year gap → wrong game.
+                    if (bestMatch.LocalData.CopyrightYear.HasValue && appSummary.ReleaseYear.HasValue)
+                    {
+                        int yearDiff = Math.Abs(bestMatch.LocalData.CopyrightYear.Value - appSummary.ReleaseYear.Value);
+                        if (yearDiff > 7)
+                        {
+                            Debug.WriteLine($"  ✗ Rejected: year mismatch local=©{bestMatch.LocalData.CopyrightYear} steam={appSummary.ReleaseYear} (gap={yearDiff})");
+                            return null;
+                        }
+                    }
+
+                    bestMatch = bestMatch with { SteamName = appSummary.Name, ConfidenceScore = authScore };
+                }
+
                 string confidence = bestMatch.ConfidenceScore >= Config.HighConfidenceThreshold ? "High-confidence" : "Acceptable";
                 Debug.WriteLine($"  ✓ {confidence} Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) [{bestMatch.ConfidenceScore:P0}]");
                 return bestMatch;
@@ -320,7 +354,9 @@ namespace Codec.Services.Resolving
             return null;
         }
 
-        private async Task<string?> GetSteamGameNameAsync(int steamId)
+        private record SteamAppSummary(string? Name, int? ReleaseYear);
+
+        private async Task<SteamAppSummary> GetSteamAppSummaryAsync(int steamId)
         {
             try
             {
@@ -330,18 +366,30 @@ namespace Codec.Services.Resolving
 
                 if (jsonDoc.RootElement.TryGetProperty(steamId.ToString(), out var appData) &&
                     appData.TryGetProperty("success", out var success) && success.GetBoolean() &&
-                    appData.TryGetProperty("data", out var data) &&
-                    data.TryGetProperty("name", out var nameProperty))
+                    appData.TryGetProperty("data", out var data))
                 {
-                    return nameProperty.GetString()?.Trim();
+                    string? name = data.TryGetProperty("name", out var nameProp) ? nameProp.GetString()?.Trim() : null;
+
+                    int? releaseYear = null;
+                    if (data.TryGetProperty("release_date", out var relDate) &&
+                        relDate.TryGetProperty("date", out var dateProp))
+                    {
+                        var m = Regex.Match(dateProp.GetString() ?? string.Empty, @"\b(2\d{3})\b");
+                        if (m.Success) releaseYear = int.Parse(m.Value);
+                    }
+
+                    return new SteamAppSummary(name, releaseYear);
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error fetching Steam details: {ex.Message}");
             }
-            return null;
+            return new SteamAppSummary(null, null);
         }
+
+        private async Task<string?> GetSteamGameNameAsync(int steamId) =>
+            (await GetSteamAppSummaryAsync(steamId)).Name;
 
         private async Task<int?> FindSteamIdAsync(string exePath)
         {
@@ -360,6 +408,7 @@ namespace Codec.Services.Resolving
             string? productName = GetVersionInfoValue(exePath, "ProductName");
             string? fileDescription = GetVersionInfoValue(exePath, "FileDescription");
             string? productVersion = GetVersionInfoValue(exePath, "ProductVersion");
+            string? legalCopyright = GetVersionInfoValue(exePath, "LegalCopyright");
 
             string? muiPath = string.IsNullOrEmpty(productName) && string.IsNullOrEmpty(fileDescription)
                 ? FindMuiFile(exePath)
@@ -369,6 +418,16 @@ namespace Codec.Services.Resolving
             {
                 productName ??= GetVersionInfoValue(muiPath, "ProductName");
                 fileDescription ??= GetVersionInfoValue(muiPath, "FileDescription");
+                legalCopyright ??= GetVersionInfoValue(muiPath, "LegalCopyright");
+            }
+
+            // Extract the most recent year starting with 2 from the copyright string (e.g. "© 2013 EA")
+            int? copyrightYear = null;
+            if (!string.IsNullOrWhiteSpace(legalCopyright))
+            {
+                var yearMatches = Regex.Matches(legalCopyright, @"\b(2\d{3})\b");
+                if (yearMatches.Count > 0)
+                    copyrightYear = yearMatches.Max(m => int.Parse(m.Value));
             }
 
             void AddCandidate(string? name, string source)
@@ -381,7 +440,8 @@ namespace Codec.Services.Resolving
                     ExecutableName = executableName,
                     FileMetadataProductName = productName,
                     Version = productVersion,
-                    MetadataSource = source
+                    MetadataSource = source,
+                    CopyrightYear = copyrightYear
                 });
             }
 
@@ -627,14 +687,26 @@ namespace Codec.Services.Resolving
         private float CalculateMatchScore(string localName, string steamResult, LocalGameCandidate source)
         {
             if (string.IsNullOrWhiteSpace(localName) || string.IsNullOrWhiteSpace(steamResult))
-            {
                 return 0f;
-            }
+
+            var localTokens = localName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var steamTokens = steamResult.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            // Hard guard: a series number present on one side but absent on the other is a
+            // disqualifying mismatch. "sim city" must never match "sim city 4" regardless of
+            // how well the rest of the string compares. Numbers that appear on both sides are
+            // symmetric and do not trigger this (e.g. "witcher 3" vs "witcher 3 wild hunt").
+            bool steamHasAsymmetricNumber = steamTokens.Any(st =>
+                int.TryParse(st, out int n) && n > 0 && n <= 100 &&
+                !localTokens.Any(lt => lt.Equals(st, StringComparison.OrdinalIgnoreCase)));
+            bool localHasAsymmetricNumber = localTokens.Any(lt =>
+                int.TryParse(lt, out int n) && n > 0 && n <= 100 &&
+                !steamTokens.Any(st => st.Equals(lt, StringComparison.OrdinalIgnoreCase)));
+            if (steamHasAsymmetricNumber || localHasAsymmetricNumber)
+                return 0f;
 
             if (localName.Equals(steamResult, StringComparison.OrdinalIgnoreCase))
-            {
                 return 1.0f;
-            }
 
             float score = 0f;
 
@@ -661,8 +733,6 @@ namespace Codec.Services.Resolving
             // Penalise token mismatches in both directions — catches series variants where token
             // counts are equal (e.g. "need for speed rivals" vs "need for speed heat": both 4 tokens,
             // but "rivals"/"heat" are mutually exclusive significant tokens → -0.40 total).
-            var localTokens = localName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var steamTokens = steamResult.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "for", "the", "of", "a", "an", "and", "in", "on", "at", "to" };
 
             int significantMissing = localTokens

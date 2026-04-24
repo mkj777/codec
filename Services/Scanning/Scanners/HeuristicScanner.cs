@@ -73,7 +73,7 @@ namespace Codec.Services.Scanning.Scanners
             {
                 var candidates = new List<GameCandidate>();
 
-                foreach (var drive in GetReadyNonNetworkDrives())
+                foreach (var drive in LocalDriveDiscovery.GetReadyNonNetworkDrives())
                 {
                     string driveRoot = drive.RootDirectory.FullName;
 
@@ -168,27 +168,6 @@ namespace Codec.Services.Scanning.Scanners
             catch (Exception ex)
             {
                 Debug.WriteLine($"  [FUNNEL ERROR] Skipping '{dirName}' ({dir}): {ex.GetType().Name}: {ex.Message}");
-            }
-        }
-
-        private static IEnumerable<DriveInfo> GetReadyNonNetworkDrives()
-        {
-            DriveInfo[] drives;
-            try { drives = DriveInfo.GetDrives(); }
-            catch { yield break; }
-
-            foreach (var drive in drives)
-            {
-                if (drive.DriveType != DriveType.Fixed && drive.DriveType != DriveType.Removable)
-                    continue;
-
-                bool ready;
-                try { ready = drive.IsReady; }
-                catch { continue; }
-
-                if (!ready) continue;
-
-                yield return drive;
             }
         }
 

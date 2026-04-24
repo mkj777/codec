@@ -133,6 +133,7 @@ namespace Codec.Services.Fetching
   summary,
   storyline,
   first_release_date,
+  release_dates.date,
   url,
   cover.image_id,
   artworks.image_id,
@@ -274,16 +275,28 @@ limit 1;";
                 game.IgdbUrl = $"https://www.igdb.com/games/{slug}";
             }
 
-            // Release date (Unix seconds) — always set, Steam's release fallback only runs when null
-            if (root.TryGetProperty("first_release_date", out var releaseNode) && releaseNode.ValueKind == JsonValueKind.Number)
+            // Release date: earliest across all platform dates + first_release_date
             {
-                if (releaseNode.TryGetInt64(out long unixSecs))
+                long? earliest = null;
+
+                if (root.TryGetProperty("first_release_date", out var frdNode) && frdNode.TryGetInt64(out long frdSecs))
+                    earliest = frdSecs;
+
+                if (root.TryGetProperty("release_dates", out var rdArray) && rdArray.ValueKind == JsonValueKind.Array)
                 {
-                    var dt = DateTimeOffset.FromUnixTimeSeconds(unixSecs).UtcDateTime;
-                    if (ShouldOverwrite(game.ReleaseDate == null ? null : game.ReleaseDate.Value.ToString(), game.SteamID) || !game.ReleaseDate.HasValue)
+                    foreach (var rd in rdArray.EnumerateArray())
                     {
-                        game.ReleaseDate = dt;
+                        if (rd.TryGetProperty("date", out var dateNode) && dateNode.TryGetInt64(out long dateSecs) && dateSecs > 0)
+                        {
+                            if (earliest == null || dateSecs < earliest)
+                                earliest = dateSecs;
+                        }
                     }
+                }
+
+                if (earliest.HasValue)
+                {
+                    game.ReleaseDate = DateTimeOffset.FromUnixTimeSeconds(earliest.Value).UtcDateTime;
                 }
             }
 

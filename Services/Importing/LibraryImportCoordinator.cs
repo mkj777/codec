@@ -431,6 +431,13 @@ namespace Codec.Services.Importing
                 _lastCompletedSessionTotal = sessionTotal;
             }
 
+            var sw = _clickStopwatch;
+            if (sw != null && sw.IsRunning)
+            {
+                sw.Stop();
+                Debug.WriteLine($"=== TOTAL TIME (scan + pipeline): {sw.Elapsed.TotalSeconds:0.0}s ===");
+            }
+
             RaiseNotification(new ImportNotification(
                 "Library Import",
                 $"Background import finished: {snapshot.AddedCount} added, {snapshot.SkippedCount} skipped, {snapshot.FailedCount} failed.",
