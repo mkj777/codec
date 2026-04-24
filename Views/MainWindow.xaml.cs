@@ -242,16 +242,15 @@ namespace Codec.Views
                     return;
 
                 Debug.WriteLine($"Starting ID lookup for: {path}");
-                var (steamId, rawgId, steamName) = await App.Services.GameName.FindGameIdsAsync(path);
+                var (steamId, steamName) = await App.Services.GameName.FindGameIdsAsync(path);
 
                 string steamIdText = steamId.HasValue ? steamId.Value.ToString() : "Not found";
-                string rawgIdText = rawgId.HasValue ? rawgId.Value.ToString() : "Not found";
                 string bestName = steamName ?? App.Services.GameName.GetBestName(path) ?? "Unknown";
 
                 var testDialog = new ContentDialog
                 {
                     Title = "GameName and ID Service",
-                    Content = $"Name: {bestName}\nSteam ID: {steamIdText}\nRAWG ID: {rawgIdText}",
+                    Content = $"Name: {bestName}\nSteam ID: {steamIdText}",
                     CloseButtonText = "Ok",
                     XamlRoot = Content.XamlRoot
                 };
@@ -355,7 +354,7 @@ namespace Codec.Views
                     AddRow("Official Website", g.OfficialWebsiteUrl);
                     AddRow("Steam Page", g.SteamPageUrl);
                     AddRow("RAWG Page", g.RawgUrl);
-                    AddRow("HowLongToBeat", g.HltbUrl);
+                    AddRow("IGDB Page", g.IgdbUrl);
 
                     expander.Content = grid;
                     panel.Children.Add(expander);

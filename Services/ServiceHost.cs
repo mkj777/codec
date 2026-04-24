@@ -23,6 +23,7 @@ namespace Codec.Services
         // Fetching
         public SteamDetailsService SteamDetails { get; }
         public RawgDetailsService RawgDetails { get; }
+        public IgdbService Igdb { get; }
         public HltbService Hltb { get; }
         public GameAssetService GameAssets { get; }
         public GridDbService GridDb { get; }
@@ -40,11 +41,12 @@ namespace Codec.Services
 
             SteamDetails = new SteamDetailsService(Cache);
             RawgDetails = new RawgDetailsService(Cache);
+            Igdb = new IgdbService();
             Hltb = new HltbService(Cache);
             GameAssets = new GameAssetService();
             GridDb = new GridDbService(GameAssets);
             DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb);
-            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Hltb, DisplayedAssets);
+            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets);
         }
     }
 }

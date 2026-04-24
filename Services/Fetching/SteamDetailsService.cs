@@ -103,7 +103,7 @@ namespace Codec.Services.Fetching
 
             try
             {
-                var url = $"https://store.steampowered.com/api/appdetails?appids={game.SteamID.Value}";
+                var url = $"https://store.steampowered.com/api/appdetails?appids={game.SteamID.Value}&l=english";
                 var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromDays(1));
                 using var doc = JsonDocument.Parse(json);
 

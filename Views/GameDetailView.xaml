@@ -991,15 +991,15 @@
                                                                          HorizontalAlignment="Right"
                                                                          NavigateUri="{Binding SelectedGame.RawgUrl}"
                                                                          Visibility="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
-                                                        <HyperlinkButton Content="HLTB"
+                                                        <HyperlinkButton Content="IGDB"
                                                                          Foreground="White"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
                                                                          Style="{StaticResource UnderlinedHyperlinkButton}"
                                                                          HorizontalAlignment="Right"
-                                                                         NavigateUri="{Binding SelectedGame.HltbUrl}"
-                                                                         Visibility="{Binding SelectedGame.TimeToCompleteMainStory, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                                         NavigateUri="{Binding SelectedGame.IgdbUrl}"
+                                                                         Visibility="{Binding SelectedGame.IgdbUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="Media"
                                                                          Foreground="White"
                                                                          Margin="0,6,0,0"

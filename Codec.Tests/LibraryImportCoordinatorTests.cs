@@ -1,4 +1,5 @@
 using Codec.Models;
+using Codec.Services.Fetching;
 using Codec.Services.Importing;
 using Codec.Services.Resolving;
 using Codec.Services.Scanning;
@@ -244,7 +245,7 @@ namespace Codec.Tests
             var cache = new MetadataCache();
             var gameDetails = new GameDetailsService(cache);
             var gameName = new GameNameService(gameDetails);
-            var scanner = new GameScanner(gameName);
+            var scanner = new GameScanner(gameName, new IgdbService());
 
             return new LibraryImportCoordinator(
                 pipeline,

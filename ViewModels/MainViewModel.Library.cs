@@ -96,7 +96,6 @@ namespace Codec.ViewModels
             {
                 QueueSteamWarmups(game);
                 QueueRawgWarmups(game);
-                QueueHltbWarmups(game);
             }
         }
 
@@ -121,21 +120,6 @@ namespace Codec.ViewModels
                 string term = Uri.EscapeDataString(game.Name);
                 _services.Cache.QueueWarmup("rawg", $"https://codec-api-proxy.vercel.app/api/rawg/search?term={term}", TimeSpan.FromDays(1));
             }
-        }
-
-        private void QueueHltbWarmups(Game game)
-        {
-            if (string.IsNullOrWhiteSpace(game.Name)) return;
-            string normalized = NormalizeForHltb(game.Name);
-            if (!string.IsNullOrWhiteSpace(normalized))
-                _services.Cache.QueueWarmup("hltb", $"https://codec-api-proxy.vercel.app/api/hltb/search?term={Uri.EscapeDataString(normalized)}", TimeSpan.FromDays(7));
-        }
-
-        private static string NormalizeForHltb(string value)
-        {
-            string cleaned = Regex.Replace(value, "[^a-zA-Z0-9 ]", " ");
-            cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
-            return cleaned;
         }
 
         // ---------------------------------------------------------------------------------

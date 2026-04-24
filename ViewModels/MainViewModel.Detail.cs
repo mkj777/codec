@@ -193,26 +193,35 @@ namespace Codec.ViewModels
             try
             {
                 var snapshot = game.CreateHydrationSnapshot();
-                var rawgTask = snapshot.RawgID.HasValue ? _services.RawgDetails.PopulateAsync(snapshot) : Task.CompletedTask;
                 var steamTask = snapshot.SteamID.HasValue ? _services.SteamDetails.PopulateFromSteamAsync(snapshot) : Task.CompletedTask;
-                var hltbTask = _services.Hltb.PopulateAsync(snapshot);
+                var rawgTask = !snapshot.SteamID.HasValue && snapshot.RawgID.HasValue
+                    ? _services.RawgDetails.PopulateAsync(snapshot)
+                    : Task.CompletedTask;
                 var folderSizeTask = FolderSizeService.CalculateAsync(snapshot.FolderLocation);
 
-                await Task.WhenAll(rawgTask, steamTask, hltbTask, folderSizeTask);
+                await Task.WhenAll(steamTask, rawgTask, folderSizeTask);
+
+                if (snapshot.SteamID.HasValue)
+                {
+                    if (!snapshot.IgdbId.HasValue)
+                    {
+                        snapshot.IgdbId = await _services.Igdb.FindIgdbIdBySteamIdAsync(snapshot.SteamID.Value);
+                    }
+                    if (snapshot.IgdbId.HasValue)
+                    {
+                        await _services.Igdb.PopulateFromIgdbAsync(snapshot);
+                    }
+                }
+
                 var displayedAssets = await _services.DisplayedAssets.EnsureDisplayedAssetsAsync(snapshot);
                 ApplyDisplayedAssetHydration(snapshot, displayedAssets);
 
-                if (string.IsNullOrWhiteSpace(snapshot.RawgUrl))
+                if (snapshot.RawgID.HasValue && string.IsNullOrWhiteSpace(snapshot.RawgUrl))
                 {
-                    if (!string.IsNullOrWhiteSpace(snapshot.RawgSlug))
-                        snapshot.RawgUrl = $"https://rawg.io/games/{snapshot.RawgSlug}";
-                    else if (snapshot.RawgID.HasValue)
-                        snapshot.RawgUrl = $"https://rawg.io/games/{snapshot.RawgID.Value}";
-                    else
-                        snapshot.RawgUrl = "https://rawg.io";
+                    snapshot.RawgUrl = !string.IsNullOrWhiteSpace(snapshot.RawgSlug)
+                        ? $"https://rawg.io/games/{snapshot.RawgSlug}"
+                        : $"https://rawg.io/games/{snapshot.RawgID.Value}";
                 }
-                if (string.IsNullOrWhiteSpace(snapshot.HltbUrl))
-                    snapshot.HltbUrl = "https://howlongtobeat.com";
 
                 if (folderSizeTask.IsCompletedSuccessfully && snapshot.FolderSize != folderSizeTask.Result)
                     snapshot.FolderSize = folderSizeTask.Result;

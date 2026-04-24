@@ -49,6 +49,7 @@ namespace Codec.Models
         [ObservableProperty] private int? steamID;
         [ObservableProperty] private int? rawgID;
         [ObservableProperty] private string? rawgSlug;
+        [ObservableProperty] private int? igdbId;
         [ObservableProperty] private int? gridDbId;
 
         // game details
@@ -214,6 +215,7 @@ namespace Codec.Models
         [ObservableProperty] private string? officialWebsiteUrl;
         [ObservableProperty] private string? steamPageUrl;
         [ObservableProperty] private string? rawgUrl;
+        [ObservableProperty] private string? igdbUrl;
         [ObservableProperty] private string? hltbUrl;
 
         // Maps a raw platform string to a canonical key, asset, and fixed display order.
@@ -411,6 +413,7 @@ namespace Codec.Models
                 SteamID = SteamID,
                 RawgID = RawgID,
                 RawgSlug = RawgSlug,
+                IgdbId = IgdbId,
                 GridDbId = GridDbId,
                 Name = Name,
                 Publisher = Publisher,
@@ -441,6 +444,7 @@ namespace Codec.Models
                 OfficialWebsiteUrl = OfficialWebsiteUrl,
                 SteamPageUrl = SteamPageUrl,
                 RawgUrl = RawgUrl,
+                IgdbUrl = IgdbUrl,
                 HltbUrl = HltbUrl,
                 LaunchScript = LaunchScript
             };
@@ -461,6 +465,7 @@ namespace Codec.Models
             SteamID = source.SteamID;
             RawgID = source.RawgID;
             RawgSlug = source.RawgSlug;
+            IgdbId = source.IgdbId;
             GridDbId = source.GridDbId;
             Name = source.Name;
             Publisher = source.Publisher;
@@ -490,6 +495,7 @@ namespace Codec.Models
             OfficialWebsiteUrl = source.OfficialWebsiteUrl;
             SteamPageUrl = source.SteamPageUrl;
             RawgUrl = source.RawgUrl;
+            IgdbUrl = source.IgdbUrl;
             HltbUrl = source.HltbUrl;
             LaunchScript = source.LaunchScript;
             IsFullyImported = source.IsFullyImported;

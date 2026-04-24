@@ -87,7 +87,7 @@ namespace Codec.Services.Resolving
             public float HighConfidenceThreshold { get; init; } = 0.90f;
             public float AcceptableConfidenceThreshold { get; init; } = 0.60f;
             public int MaxSearchVariants { get; init; } = 10;
-            public int MaxSteamResults { get; init; } = 5;
+            public int MaxSteamResults { get; init; } = 15;
             public int ApiTimeoutMs { get; init; } = 8000;
             public int MaxConcurrentApiRequests { get; init; } = 2;
             public bool UseCaching { get; init; } = true;
@@ -192,31 +192,17 @@ namespace Codec.Services.Resolving
 
         public Task<int?> FindRawgIdBySteamIdAsync(int steamId) => _gameDetails.FindRawgIdBySteamIdAsync(steamId);
 
-        public async Task<(int? steamId, int? rawgId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null)
+        public async Task<(int? steamId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null)
         {
             GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint);
 
             // Only assign a Steam ID when confidence is high — acceptable-confidence matches
-            // are unreliable (e.g. "UNREAL LIFE" fuzzy-matching "Fortnite" at 65%) and must
-            // only be used as a RAWG search name hint, never as a final Steam ID.
+            // are unreliable (e.g. "UNREAL LIFE" fuzzy-matching "Fortnite" at 65%).
             bool isHighConfidence = steamMatch != null && steamMatch.ConfidenceScore >= Config.HighConfidenceThreshold;
             int? steamId = isHighConfidence ? (int)steamMatch!.SteamAppId : null;
             string? steamName = isHighConfidence ? steamMatch!.SteamName : null;
-            int? rawgId = null;
 
-            if (steamMatch != null)
-            {
-                Debug.WriteLine($"Using Steam name for RAWG search: {steamMatch.SteamName} (confidence {steamMatch.ConfidenceScore:P0}, Steam ID {(isHighConfidence ? "assigned" : "withheld")})");
-                rawgId = await FindRawgIdByNameAsync(steamMatch.SteamName, RawgValidationMode.SteamBacked);
-            }
-
-            if (!rawgId.HasValue)
-            {
-                Debug.WriteLine("No Steam ID or RAWG lookup failed, using EXE-based names...");
-                rawgId = await FindRawgIdAsync(exePath);
-            }
-
-            return (steamId, rawgId, steamName);
+            return (steamId, steamName);
         }
 
         private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default, string? nameHint = null)
@@ -660,28 +646,22 @@ namespace Codec.Services.Resolving
                                    (float)Math.Max(localName.Length, steamResult.Length);
             score -= lengthPenalty * 0.1f;
 
-            // Subtitle penalty: penalise when Steam result is missing significant words from the
-            // local name (e.g. local="need for speed rivals", steam="need for speed" → missing "rivals")
+            // Penalise token mismatches in both directions — catches series variants where token
+            // counts are equal (e.g. "need for speed rivals" vs "need for speed heat": both 4 tokens,
+            // but "rivals"/"heat" are mutually exclusive significant tokens → -0.40 total).
             var localTokens = localName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var steamTokens = steamResult.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "for", "the", "of", "a", "an", "and", "in", "on", "at", "to" };
-            if (localTokens.Length > steamTokens.Length)
-            {
-                int significantMissing = localTokens
-                    .Where(lt => !stopWords.Contains(lt) && !steamTokens.Any(st => st.Equals(lt, StringComparison.OrdinalIgnoreCase)))
-                    .Count();
-                score -= significantMissing * 0.20f;
-            }
 
-            // Extra-tokens-in-steam penalty: steam result has more significant tokens than local name
-            // Catches sequel/variant inflation (e.g. local="sim city", steam="sim city 4 deluxe")
-            if (steamTokens.Length > localTokens.Length)
-            {
-                int significantExtra = steamTokens
-                    .Where(st => !stopWords.Contains(st) && !localTokens.Any(lt => lt.Equals(st, StringComparison.OrdinalIgnoreCase)))
-                    .Count();
-                score -= significantExtra * 0.20f;
-            }
+            int significantMissing = localTokens
+                .Where(lt => !stopWords.Contains(lt) && !steamTokens.Any(st => st.Equals(lt, StringComparison.OrdinalIgnoreCase)))
+                .Count();
+            score -= significantMissing * 0.20f;
+
+            int significantExtra = steamTokens
+                .Where(st => !stopWords.Contains(st) && !localTokens.Any(lt => lt.Equals(st, StringComparison.OrdinalIgnoreCase)))
+                .Count();
+            score -= significantExtra * 0.20f;
 
             return Math.Clamp(score, 0f, 1f);
         }
@@ -711,7 +691,7 @@ namespace Codec.Services.Resolving
             value = value.Replace('_', ' ').Replace('+', ' ');
             value = CamelCaseRegex.Replace(value, " $1");
             value = RemoveFileExtension(value);
-            value = TrademarkRegex.Replace(value, "");   // strip (TM), (R), ™, ® before splitting on parens
+            value = TrademarkRegex.Replace(value, "");
             value = SpecialCharRegex.Replace(value, " ");
             value = value.Replace("/", " ");
             value = SanitizeUmlauts(value);

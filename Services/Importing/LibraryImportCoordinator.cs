@@ -203,9 +203,21 @@ namespace Codec.Services.Importing
             Debug.WriteLine($"[IMPORT-ENQUEUE] {candidate.GameName} source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath}");
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
 
-            if (librarySnapshot.Any(g => string.Equals(g.Executable, candidate.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
+            bool hasExe = !string.IsNullOrWhiteSpace(candidate.ExecutablePath);
+            string reservationKey = hasExe
+                ? candidate.ExecutablePath
+                : (candidate.SteamAppId.HasValue ? $"steam:{candidate.SteamAppId.Value}" : $"name:{candidate.GameName}");
+
+            if (hasExe && librarySnapshot.Any(g => string.Equals(g.Executable, candidate.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
             {
                 Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (already in library): {candidate.GameName}");
+                IncrementSkipped();
+                return;
+            }
+
+            if (candidate.SteamAppId.HasValue && librarySnapshot.Any(g => g.SteamID == candidate.SteamAppId.Value))
+            {
+                Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (steam id already in library): {candidate.GameName}");
                 IncrementSkipped();
                 return;
             }
@@ -213,7 +225,7 @@ namespace Codec.Services.Importing
             lock (_stateGate)
             {
                 ResetSessionCountsIfIdle_NoLock();
-                if (!_reservedExecutables.Add(candidate.ExecutablePath))
+                if (!_reservedExecutables.Add(reservationKey))
                 {
                     Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (already reserved): {candidate.GameName}");
                     _skippedCount++;
@@ -232,7 +244,8 @@ namespace Codec.Services.Importing
                 candidate.SteamAppId,
                 candidate.RawgId,
                 IsManual: false,
-                candidate.LaunchScriptPath), _disposeCts.Token).ConfigureAwait(false);
+                candidate.LaunchScriptPath,
+                candidate.IgdbId), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
         }
@@ -254,7 +267,7 @@ namespace Codec.Services.Importing
                         lock (_stateGate)
                         {
                             _processingCount = 0;
-                            _reservedExecutables.Remove(request.ExecutablePath);
+                            _reservedExecutables.Remove(GetReservationKey(request));
                         }
 
                         PublishStatus();
@@ -357,7 +370,7 @@ namespace Codec.Services.Importing
                         lock (_stateGate)
                         {
                             _processingCount = 0;
-                            _reservedExecutables.Remove(request.ExecutablePath);
+                            _reservedExecutables.Remove(GetReservationKey(request));
                         }
 
                         PublishStatus();
@@ -369,6 +382,15 @@ namespace Codec.Services.Importing
             {
                 // shutdown
             }
+        }
+
+        private static string GetReservationKey(GameImportRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.ExecutablePath))
+                return request.ExecutablePath;
+            if (request.SteamAppId.HasValue)
+                return $"steam:{request.SteamAppId.Value}";
+            return $"name:{request.NameHint}";
         }
 
         private void IncrementSkipped()

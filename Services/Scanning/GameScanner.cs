@@ -1,3 +1,4 @@
+using Codec.Services.Fetching;
 using Codec.Services.Resolving;
 using Codec.Services.Scanning.Scanners;
 using System;
@@ -24,20 +25,23 @@ namespace Codec.Services.Scanning
         string ImportSource,
         string ExecutablePath,
         string FolderLocation,
-        string? LaunchScriptPath = null);
+        string? LaunchScriptPath = null,
+        int? IgdbId = null);
 
     public class GameScanner
     {
         private readonly List<PlatformScanner> _platformScanners;
         private readonly HeuristicScanner _heuristicScanner;
         private readonly GameNameService _gameName;
+        private readonly IgdbService _igdb;
         private readonly SteamScanner _steamScanner = new();
 
         public string? DetectedSteamClientPath => _steamScanner.DetectedSteamClientPath;
 
-        public GameScanner(GameNameService gameName)
+        public GameScanner(GameNameService gameName, IgdbService igdb)
         {
             _gameName = gameName;
+            _igdb = igdb;
             _platformScanners = new List<PlatformScanner>
             {
                 _steamScanner,
@@ -193,7 +197,8 @@ namespace Codec.Services.Scanning
                         cachedResult.ImportSource,
                         cachedResult.ExecutablePath,
                         cachedResult.FolderPath,
-                        cachedResult.LaunchScriptPath);
+                        cachedResult.LaunchScriptPath,
+                        cachedResult.IgdbId);
                     continue;
                 }
 
@@ -208,11 +213,13 @@ namespace Codec.Services.Scanning
                     exeDetectionCount++;
                     if (string.IsNullOrEmpty(executablePath))
                     {
-                        Debug.WriteLine($"  REJECT '{candidate.Name}' (steam exe-scan {exeSw.ElapsedMilliseconds}ms: no exe at root)");
-                        rejectedNoExe++;
-                        continue;
+                        // Steam games launch via steam:// URI — exe not required.
+                        Debug.WriteLine($"  STEAM-EXE '{candidate.Name}' (no exe at root, launching via steam URI)");
                     }
-                    Debug.WriteLine($"  STEAM-EXE '{candidate.Name}' -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
+                    else
+                    {
+                        Debug.WriteLine($"  STEAM-EXE '{candidate.Name}' -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
+                    }
                 }
                 else
                 {
@@ -249,7 +256,7 @@ namespace Codec.Services.Scanning
                     var steamSw = Stopwatch.StartNew();
                     try
                     {
-                        (int? foundSteamId, int? _, string? _) = await _gameName.FindGameIdsAsync(executablePath);
+                        (int? foundSteamId, string? _) = await _gameName.FindGameIdsAsync(executablePath);
                         steamSw.Stop();
                         steamLookupTotalMs += steamSw.ElapsedMilliseconds;
                         steamLookupCount++;
@@ -272,39 +279,45 @@ namespace Codec.Services.Scanning
                     }
                 }
 
-                // RAWG validation:
-                // Steam launcher candidates → deterministic store-ID lookup (no fuzzy matching)
-                // Heuristic/lookup-found Steam ID → name-based with SteamBacked leniency
-                // No Steam ID → strict name-based
-                var rawgSw = Stopwatch.StartNew();
-                int? rawgId;
-                if (candidate.SteamAppId.HasValue)
+                // Validation funnel:
+                //  - Steam ID present (platform or resolved) → skip all name validation; pipeline will use Steam+IGDB
+                //  - No Steam ID → try IGDB name first; if miss, fall back to RAWG for heuristic candidates
+                int? igdbId = null;
+                int? rawgId = null;
+                var validateSw = Stopwatch.StartNew();
+                bool isFromLauncher = !candidate.Source.Equals("Heuristic Scan", StringComparison.OrdinalIgnoreCase);
+
+                if (!steamId.HasValue && !isRiotSource)
                 {
-                    rawgId = await _gameName.FindRawgIdBySteamIdAsync(candidate.SteamAppId.Value);
-                    rawgSw.Stop();
-                    Debug.WriteLine($"  RAWG-STORE '{candidate.Name}' steam={candidate.SteamAppId} -> rawg={rawgId?.ToString() ?? "none"} ({rawgSw.ElapsedMilliseconds}ms)");
+                    try
+                    {
+                        igdbId = await _igdb.FindIgdbIdByNameAsync(candidate.Name).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"  IGDB-VALIDATE '{candidate.Name}' FAILED: {ex.Message}");
+                    }
+
+                    if (!igdbId.HasValue)
+                    {
+                        rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, RawgValidationMode.Strict);
+                    }
                 }
-                else
-                {
-                    var rawgMode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
-                    rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, rawgMode);
-                    rawgSw.Stop();
-                }
-                rawgValidationTotalMs += rawgSw.ElapsedMilliseconds;
+                validateSw.Stop();
+                rawgValidationTotalMs += validateSw.ElapsedMilliseconds;
                 rawgValidationCount++;
 
-                bool isFromLauncher = !candidate.Source.Equals("Heuristic Scan", StringComparison.OrdinalIgnoreCase);
-                if (!rawgId.HasValue && !isFromLauncher)
+                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isFromLauncher)
                 {
-                    Debug.WriteLine($"  REJECT '{candidate.Name}' (no RAWG match, rawg {rawgSw.ElapsedMilliseconds}ms)");
+                    Debug.WriteLine($"  REJECT '{candidate.Name}' (no IGDB/RAWG match, validate {validateSw.ElapsedMilliseconds}ms)");
                     rejectedNoRawg++;
                     continue;
                 }
 
-                Debug.WriteLine($"  VALIDATED '{candidate.Name}' steam={steamId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"} (rawg {rawgSw.ElapsedMilliseconds}ms, exe {exeSw.ElapsedMilliseconds}ms)");
+                Debug.WriteLine($"  VALIDATED '{candidate.Name}' steam={steamId?.ToString() ?? "-"} igdb={igdbId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"} (validate {validateSw.ElapsedMilliseconds}ms, exe {exeSw.ElapsedMilliseconds}ms)");
                 newValidated++;
-                scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath);
-                yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath, candidate.LaunchScriptPath);
+                scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath, igdbId);
+                yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath, candidate.LaunchScriptPath, igdbId);
             }
 
             phase3Sw.Stop();
@@ -382,7 +395,7 @@ namespace Codec.Services.Scanning
 
             try
             {
-                var skip = new[] { "uninstall", "setup", "install", "vcredist", "vc_redist", "directx", "dxsetup", "crashpad", "crashreport", "redist" };
+                var skip = new[] { "uninstall", "setup", "install", "vcredist", "vc_redist", "directx", "dxsetup", "crashpad", "crashreport", "crashhandler", "unitycrashhandler", "redist" };
                 var exes = Directory.GetFiles(folderPath, "*.exe", SearchOption.TopDirectoryOnly)
                     .Where(f => !skip.Any(s => Path.GetFileNameWithoutExtension(f).Contains(s, StringComparison.OrdinalIgnoreCase)))
                     .OrderByDescending(f => new FileInfo(f).Length)

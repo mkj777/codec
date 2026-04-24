@@ -48,7 +48,7 @@ namespace Codec.Services.Scanning.Scanners
 
             // Development Tools
             "Microsoft Visual Studio", "Python39", "Python310", "Python311", "Git",
-            "Docker", "nodejs", "Java", "JetBrains", "Android Studio", "Postman",
+            "Docker", "nodejs", "Java", "JetBrains", "Android Studio", "Android", "Postman",
 
             // Browsers
             "Google Chrome", "Mozilla Firefox", "Microsoft Edge", "Opera", "Brave",

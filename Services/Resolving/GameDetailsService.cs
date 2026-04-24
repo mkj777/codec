@@ -27,6 +27,8 @@ namespace Codec.Services.Resolving
     /// </summary>
     public class GameDetailsService
     {
+        private static readonly Regex TrademarkRegex = new(@"\(TM\)|\(R\)|™|®|©", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         private readonly MetadataCache _cache;
         private readonly HttpClient _httpClient = new();
         private const string RawgSearchUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
@@ -284,7 +286,8 @@ namespace Codec.Services.Resolving
         /// </summary>
         private string ApplyGameNameOverrides(string gameName)
         {
-            string normalized = gameName.Trim().ToLowerInvariant();
+            gameName = Regex.Replace(TrademarkRegex.Replace(gameName, ""), @"\s+", " ").Trim();
+            string normalized = gameName.ToLowerInvariant();
 
             if (normalized.Contains("fortnite") && !normalized.Contains("battle royale"))
             {

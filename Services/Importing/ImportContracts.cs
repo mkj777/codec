@@ -39,7 +39,8 @@ namespace Codec.Services.Importing
         int? SteamAppId = null,
         int? RawgId = null,
         bool IsManual = false,
-        string? LaunchScriptPath = null);
+        string? LaunchScriptPath = null,
+        int? IgdbId = null);
 
     public enum ImportNotificationSeverity
     {

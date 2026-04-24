@@ -43,7 +43,7 @@ namespace Codec.ViewModels
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             _importCoordinator = new LibraryImportCoordinator(
                 _services.GameImportPipeline,
-                new GameScanner(_services.GameName),
+                new GameScanner(_services.GameName, _services.Igdb),
                 GetLibrarySnapshotAsync,
                 CommitImportedGameAsync);
             _importCoordinator.StatusChanged += ImportCoordinator_StatusChanged;

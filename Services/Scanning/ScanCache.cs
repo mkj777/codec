@@ -98,7 +98,7 @@ namespace Codec.Services.Scanning
             return true;
         }
 
-        public void Upsert(GameCandidate candidate, string resolvedName, string executablePath, int? steamId, int? rawgId, string? launchScriptPath)
+        public void Upsert(GameCandidate candidate, string resolvedName, string executablePath, int? steamId, int? rawgId, string? launchScriptPath, int? igdbId = null)
         {
             long? dirTimestamp = TimestampUtility.GetDirectoryTimestamp(candidate.FolderPath);
             long? exeTimestamp = TimestampUtility.GetFileTimestamp(executablePath);
@@ -114,6 +114,7 @@ namespace Codec.Services.Scanning
                 ImportSource = candidate.Source,
                 SteamAppId = steamId,
                 RawgId = rawgId,
+                IgdbId = igdbId,
                 LaunchScriptPath = launchScriptPath,
                 DirectoryTimestampUtcTicks = dirTimestamp.Value,
                 ExecutableTimestampUtcTicks = exeTimestamp.Value,
@@ -154,6 +155,7 @@ namespace Codec.Services.Scanning
             public required string ImportSource { get; init; }
             public int? SteamAppId { get; init; }
             public int? RawgId { get; init; }
+            public int? IgdbId { get; init; }
             public string? LaunchScriptPath { get; init; }
             public long DirectoryTimestampUtcTicks { get; init; }
             public long ExecutableTimestampUtcTicks { get; init; }

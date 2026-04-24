@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,6 +20,7 @@ namespace Codec.Services.Importing
         private readonly GameDetailsService _gameDetails;
         private readonly SteamDetailsService _steamDetails;
         private readonly RawgDetailsService _rawgDetails;
+        private readonly IgdbService _igdb;
         private readonly HltbService _hltb;
         private readonly DisplayedAssetService _displayedAssets;
 
@@ -27,6 +29,7 @@ namespace Codec.Services.Importing
             GameDetailsService gameDetails,
             SteamDetailsService steamDetails,
             RawgDetailsService rawgDetails,
+            IgdbService igdb,
             HltbService hltb,
             DisplayedAssetService displayedAssets)
         {
@@ -34,6 +37,7 @@ namespace Codec.Services.Importing
             _gameDetails = gameDetails;
             _steamDetails = steamDetails;
             _rawgDetails = rawgDetails;
+            _igdb = igdb;
             _hltb = hltb;
             _displayedAssets = displayedAssets;
         }
@@ -43,53 +47,80 @@ namespace Codec.Services.Importing
             Debug.WriteLine($"[PIPELINE] ENTRY name='{request.NameHint}' source='{request.ImportSource}' exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} rawg={request.RawgId}");
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (string.IsNullOrWhiteSpace(request.ExecutablePath))
+            // Steam-sourced games launch via steam:// URI — exe is optional.
+            bool isSteamSourced = request.SteamAppId.HasValue;
+
+            string normalizedExePath = string.Empty;
+            if (!string.IsNullOrWhiteSpace(request.ExecutablePath))
+            {
+                try
+                {
+                    normalizedExePath = Path.GetFullPath(request.ExecutablePath);
+                }
+                catch
+                {
+                    if (!isSteamSourced)
+                    {
+                        Debug.WriteLine($"[PIPELINE] INVALID (bad path): '{request.ExecutablePath}'");
+                        return GameImportResult.Invalid("The selected executable path is invalid.");
+                    }
+                    Debug.WriteLine($"[PIPELINE] WARN (steam bad exe path, ignoring): '{request.ExecutablePath}'");
+                    normalizedExePath = string.Empty;
+                }
+            }
+            else if (!isSteamSourced)
             {
                 Debug.WriteLine($"[PIPELINE] INVALID (empty exe): '{request.NameHint}'");
                 return GameImportResult.Invalid("No executable was selected.");
             }
 
-            string normalizedExePath;
-            try
+            if (!string.IsNullOrEmpty(normalizedExePath) && !File.Exists(normalizedExePath))
             {
-                normalizedExePath = Path.GetFullPath(request.ExecutablePath);
-            }
-            catch
-            {
-                Debug.WriteLine($"[PIPELINE] INVALID (bad path): '{request.ExecutablePath}'");
-                return GameImportResult.Invalid("The selected executable path is invalid.");
-            }
-
-            if (!File.Exists(normalizedExePath))
-            {
-                Debug.WriteLine($"[PIPELINE] INVALID (exe missing): '{normalizedExePath}'");
-                return GameImportResult.Invalid("The selected executable no longer exists.");
+                if (!isSteamSourced)
+                {
+                    Debug.WriteLine($"[PIPELINE] INVALID (exe missing): '{normalizedExePath}'");
+                    return GameImportResult.Invalid("The selected executable no longer exists.");
+                }
+                Debug.WriteLine($"[PIPELINE] WARN (steam exe missing, ignoring): '{normalizedExePath}'");
+                normalizedExePath = string.Empty;
             }
 
-            if (GameContentHeuristics.PathMatchesUtility(normalizedExePath))
+            if (!string.IsNullOrEmpty(normalizedExePath) && GameContentHeuristics.PathMatchesUtility(normalizedExePath))
             {
-                Debug.WriteLine($"[PIPELINE] INVALID (utility path): '{normalizedExePath}'");
-                return GameImportResult.Invalid("Codec rejected this executable because it looks like a launcher or utility.");
+                if (!isSteamSourced)
+                {
+                    Debug.WriteLine($"[PIPELINE] INVALID (utility path): '{normalizedExePath}'");
+                    return GameImportResult.Invalid("Codec rejected this executable because it looks like a launcher or utility.");
+                }
+                Debug.WriteLine($"[PIPELINE] WARN (steam utility exe, ignoring): '{normalizedExePath}'");
+                normalizedExePath = string.Empty;
             }
 
-            if (librarySnapshot.Any(g => string.Equals(g.Executable, normalizedExePath, StringComparison.OrdinalIgnoreCase)))
+            if (!string.IsNullOrEmpty(normalizedExePath)
+                && librarySnapshot.Any(g => string.Equals(g.Executable, normalizedExePath, StringComparison.OrdinalIgnoreCase)))
             {
                 Debug.WriteLine($"[PIPELINE] DUPLICATE (exe in library): '{normalizedExePath}'");
                 return GameImportResult.Duplicate("This executable is already in your library.");
             }
 
-            string folderLocation = string.IsNullOrWhiteSpace(request.FolderLocation)
-                ? Path.GetDirectoryName(normalizedExePath) ?? string.Empty
-                : request.FolderLocation;
+            string folderLocation = !string.IsNullOrWhiteSpace(request.FolderLocation)
+                ? request.FolderLocation
+                : (!string.IsNullOrEmpty(normalizedExePath) ? Path.GetDirectoryName(normalizedExePath) ?? string.Empty : string.Empty);
 
             string detectedName = string.IsNullOrWhiteSpace(request.NameHint)
-                ? _gameName.GetBestName(normalizedExePath) ?? Path.GetFileNameWithoutExtension(normalizedExePath)
+                ? (!string.IsNullOrEmpty(normalizedExePath)
+                    ? _gameName.GetBestName(normalizedExePath) ?? Path.GetFileNameWithoutExtension(normalizedExePath)
+                    : string.Empty)
                 : request.NameHint.Trim();
 
-            if (string.IsNullOrWhiteSpace(detectedName))
+            if (string.IsNullOrWhiteSpace(detectedName) && !string.IsNullOrEmpty(normalizedExePath))
             {
                 detectedName = Path.GetFileNameWithoutExtension(normalizedExePath);
             }
+
+            // Normalize ASCII trademark notation to unicode for display/storage
+            detectedName = Regex.Replace(detectedName, @"\(TM\)", "™", RegexOptions.IgnoreCase);
+            detectedName = Regex.Replace(detectedName, @"\(R\)", "®", RegexOptions.IgnoreCase);
 
             if (GameContentHeuristics.NameMatchesUtility(detectedName))
             {
@@ -101,32 +132,17 @@ namespace Codec.Services.Importing
             {
                 int? steamId = request.SteamAppId;
                 int? rawgId = request.RawgId;
+                int? igdbId = request.IgdbId;
 
                 bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
-                if (!isRiotSource && !steamId.HasValue && !rawgId.HasValue)
+                // Manual / un-resolved: try Steam first, then IGDB by name, RAWG as last resort
+                if (!steamId.HasValue && !isRiotSource && !rawgId.HasValue && !igdbId.HasValue)
                 {
                     var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath).ConfigureAwait(false);
                     steamId ??= resolvedIds.steamId;
-                    rawgId ??= resolvedIds.rawgId;
                     if (!string.IsNullOrWhiteSpace(resolvedIds.steamName))
                         detectedName = resolvedIds.steamName;
-                }
-
-                if (!rawgId.HasValue)
-                {
-                    if (steamId.HasValue)
-                    {
-                        // Steam game: deterministic store-ID lookup — no name fuzzy-matching
-                        rawgId = await _gameDetails.FindRawgIdBySteamIdAsync(steamId.Value).ConfigureAwait(false);
-                    }
-
-                    if (!rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
-                    {
-                        // Non-Steam or store-lookup miss: fall back to name-based
-                        var mode = steamId.HasValue ? RawgValidationMode.SteamBacked : RawgValidationMode.Strict;
-                        rawgId = await _gameDetails.ValidateGameAsync(detectedName, mode).ConfigureAwait(false);
-                    }
                 }
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
@@ -135,10 +151,26 @@ namespace Codec.Services.Importing
                     return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
                 }
 
+                // Non-Steam path: IGDB name lookup first, RAWG fallback
+                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
+                {
+                    igdbId = await _igdb.FindIgdbIdByNameAsync(detectedName).ConfigureAwait(false);
+                    if (!igdbId.HasValue)
+                    {
+                        rawgId = await _gameDetails.ValidateGameAsync(detectedName, RawgValidationMode.Strict).ConfigureAwait(false);
+                    }
+                }
+
                 if (rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
                 {
                     Debug.WriteLine($"[PIPELINE] DUPLICATE (rawg id {rawgId} in library): '{detectedName}'");
                     return GameImportResult.Duplicate($"A game with RAWG ID {rawgId.Value} already exists in your library.");
+                }
+
+                if (igdbId.HasValue && librarySnapshot.Any(g => g.IgdbId == igdbId.Value))
+                {
+                    Debug.WriteLine($"[PIPELINE] DUPLICATE (igdb id {igdbId} in library): '{detectedName}'");
+                    return GameImportResult.Duplicate($"A game with IGDB ID {igdbId.Value} already exists in your library.");
                 }
 
                 var game = new Game
@@ -149,6 +181,7 @@ namespace Codec.Services.Importing
                     ImportedFrom = request.ImportSource,
                     SteamID = steamId,
                     RawgID = rawgId,
+                    IgdbId = igdbId,
                     LaunchScript = !string.IsNullOrWhiteSpace(request.LaunchScriptPath) && File.Exists(request.LaunchScriptPath)
                         ? request.LaunchScriptPath
                         : null
@@ -168,21 +201,37 @@ namespace Codec.Services.Importing
 
                 if (game.SteamID.HasValue)
                 {
+                    // Steam first (assets, release date), then HLTB (preferred TTB source), then IGDB (fills gaps)
                     await _steamDetails.PopulateFromSteamAsync(game).ConfigureAwait(false);
-                }
+                    await _hltb.PopulateAsync(game).ConfigureAwait(false);
 
-                if (game.RawgID.HasValue)
-                {
-                    await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
+                    game.IgdbId = await _igdb.FindIgdbIdBySteamIdAsync(game.SteamID.Value).ConfigureAwait(false);
+                    if (game.IgdbId.HasValue)
+                    {
+                        await _igdb.PopulateFromIgdbAsync(game).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
-                    await _rawgDetails.TryPopulateRawgFromSearchAsync(game).ConfigureAwait(false);
+                    // Non-Steam: HLTB first (preferred TTB source), then IGDB/RAWG for metadata
+                    await _hltb.PopulateAsync(game).ConfigureAwait(false);
+
+                    if (game.IgdbId.HasValue)
+                    {
+                        await _igdb.PopulateFromIgdbAsync(game).ConfigureAwait(false);
+                    }
+                    else if (game.RawgID.HasValue)
+                    {
+                        await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await _rawgDetails.TryPopulateRawgFromSearchAsync(game).ConfigureAwait(false);
+                    }
                 }
 
                 FinalizeFallbackLinks(game);
 
-                await _hltb.PopulateAsync(game).ConfigureAwait(false);
                 var displayedAssets = await _displayedAssets.EnsureDisplayedAssetsAsync(game).ConfigureAwait(false);
                 ApplyDisplayedAssetHydration(game, displayedAssets);
                 FinalizeFallbackLinks(game);
@@ -209,25 +258,11 @@ namespace Codec.Services.Importing
 
         private static void FinalizeFallbackLinks(Game game)
         {
-            if (string.IsNullOrWhiteSpace(game.RawgUrl))
+            if (game.RawgID.HasValue && string.IsNullOrWhiteSpace(game.RawgUrl))
             {
-                if (!string.IsNullOrWhiteSpace(game.RawgSlug))
-                {
-                    game.RawgUrl = $"https://rawg.io/games/{game.RawgSlug}";
-                }
-                else if (game.RawgID.HasValue)
-                {
-                    game.RawgUrl = $"https://rawg.io/games/{game.RawgID.Value}";
-                }
-                else
-                {
-                    game.RawgUrl = "https://rawg.io";
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(game.HltbUrl))
-            {
-                game.HltbUrl = "https://howlongtobeat.com";
+                game.RawgUrl = !string.IsNullOrWhiteSpace(game.RawgSlug)
+                    ? $"https://rawg.io/games/{game.RawgSlug}"
+                    : $"https://rawg.io/games/{game.RawgID.Value}";
             }
         }
 

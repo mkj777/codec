@@ -20,7 +20,7 @@ namespace Codec.Services.Fetching
             _cache = cache;
         }
 
-        public async Task PopulateAsync(Game game, Microsoft.UI.Dispatching.DispatcherQueue? dispatcher = null)
+        public async Task PopulateAsync(Game game)
         {
             if (game == null)
             {
@@ -80,7 +80,7 @@ namespace Codec.Services.Fetching
                     : null;
                 var best = candidates.OrderByDescending(c => c.Similarity).First();
 
-                var chosen = (exact ?? yearMatch ?? best);
+                var chosen = exact ?? yearMatch ?? best;
 
                 int? mainTime = GetInt(chosen.Element, "mainTime");
                 int? completionist = GetInt(chosen.Element, "completionistTime");
@@ -90,37 +90,20 @@ namespace Codec.Services.Fetching
                 {
                     hltbUrl = $"https://howlongtobeat.com/game/{id}";
                 }
-                else if (chosen.Element.TryGetProperty("imageUrl", out var imgProp) && imgProp.ValueKind == JsonValueKind.String)
+
+                if (mainTime.HasValue)
                 {
-                    // fallback: derive base site
-                    hltbUrl = "https://howlongtobeat.com";
+                    game.TimeToCompleteMainStory = mainTime.Value;
                 }
 
-                void ApplyUpdates()
+                if (completionist.HasValue)
                 {
-                    if (mainTime.HasValue)
-                    {
-                        game.TimeToCompleteMainStory = mainTime.Value;
-                    }
-
-                    if (completionist.HasValue)
-                    {
-                        game.TimeToCompleteCompletionist = completionist.Value;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(hltbUrl))
-                    {
-                        game.HltbUrl = hltbUrl;
-                    }
+                    game.TimeToCompleteCompletionist = completionist.Value;
                 }
 
-                if (dispatcher != null)
+                if (!string.IsNullOrWhiteSpace(hltbUrl))
                 {
-                    dispatcher.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, ApplyUpdates);
-                }
-                else
-                {
-                    ApplyUpdates();
+                    game.HltbUrl = hltbUrl;
                 }
             }
             catch
@@ -190,11 +173,9 @@ namespace Codec.Services.Fetching
                 return string.Empty;
             }
 
-            // Keep only letters, numbers, and spaces for the query.
             string cleaned = Regex.Replace(value, "[^a-zA-Z0-9 ]", " ");
             cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
             return cleaned;
         }
-
     }
 }
