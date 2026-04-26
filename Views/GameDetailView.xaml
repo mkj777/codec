@@ -851,6 +851,11 @@
                                                                 <TextBlock Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
+                                                                <TextBlock Text="{Binding SelectedGame.OriginalReleaseDisplay, FallbackValue=''}"
+                                                                           Visibility="{Binding SelectedGame.HasOriginalReleaseDate, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                                           Opacity="0.72"
+                                                                           FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                           TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Price"

@@ -341,6 +341,12 @@ namespace Codec.Views
                     AddRow("Price Discount", g.PriceDiscount);
                     AddRow("Description", g.Description);
                     AddRow("Release Date", g.ReleaseDate?.ToString());
+                    AddRow("Original Release Date", g.OriginalReleaseDate?.ToString());
+                    AddRow("Original Game Name", g.OriginalGameName);
+                    AddRow("IGDB Version Parent ID", g.IgdbVersionParentId?.ToString());
+                    AddRow("IGDB Category", g.IgdbCategory?.ToString());
+                    AddRow("IGDB Category Name", g.IgdbCategoryName);
+                    AddRow("Is Remake/Remaster", g.IsRemakeOrRemaster.ToString());
                     AddRow("Steam Rating", g.SteamRating?.ToString());
                     AddRow("Steam Review Summary", g.SteamReviewSummary);
                     AddRow("Steam Review Total", g.SteamReviewTotal?.ToString());

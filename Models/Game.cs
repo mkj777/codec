@@ -66,6 +66,19 @@ namespace Codec.Models
         private List<string>? platforms;
 
         [ObservableProperty] private DateTime? releaseDate;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasOriginalReleaseDate))]
+        [NotifyPropertyChangedFor(nameof(OriginalReleaseDisplay))]
+        private DateTime? originalReleaseDate;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(OriginalReleaseDisplay))]
+        private string? originalGameName;
+        [ObservableProperty] private int? igdbVersionParentId;
+        [ObservableProperty] private int? igdbCategory;
+        [ObservableProperty] private string? igdbCategoryName;
+        [ObservableProperty] private string? franchiseName;
+        [ObservableProperty] private int? igdbFranchiseId;
+        [ObservableProperty] private List<FranchiseGameRef>? franchiseGames;
         [ObservableProperty] private double? steamRating;
         [ObservableProperty] private string? steamReviewSummary;
         [ObservableProperty] private int? steamReviewTotal;
@@ -114,6 +127,26 @@ namespace Codec.Models
         public string DisplayCompletionist => FormatCompletionTime(TimeToCompleteCompletionist);
 
         public double CompletionistOpacity => GetAvailabilityOpacity(HasCompletionTime(TimeToCompleteCompletionist));
+
+        public bool IsRemakeOrRemaster => IgdbCategory is 8 or 9;
+
+        public bool HasOriginalReleaseDate => OriginalReleaseDate.HasValue;
+
+        public string OriginalReleaseDisplay
+        {
+            get
+            {
+                if (!OriginalReleaseDate.HasValue)
+                {
+                    return string.Empty;
+                }
+
+                string year = OriginalReleaseDate.Value.Year.ToString();
+                return string.IsNullOrWhiteSpace(OriginalGameName)
+                    ? $"Originally released: {year}"
+                    : $"Originally released: {year} ({OriginalGameName})";
+            }
+        }
 
         // game assets with cache for offline first, effective path resolution
         private static string GetEffectiveAssetPath(string? cachePath, string? url, string placeholder)
@@ -425,6 +458,14 @@ namespace Codec.Models
                 Description = Description,
                 Platforms = Platforms == null ? null : new List<string>(Platforms),
                 ReleaseDate = ReleaseDate,
+                OriginalReleaseDate = OriginalReleaseDate,
+                OriginalGameName = OriginalGameName,
+                IgdbVersionParentId = IgdbVersionParentId,
+                IgdbCategory = IgdbCategory,
+                IgdbCategoryName = IgdbCategoryName,
+                FranchiseName = FranchiseName,
+                IgdbFranchiseId = IgdbFranchiseId,
+                FranchiseGames = FranchiseGames == null ? null : new List<FranchiseGameRef>(FranchiseGames),
                 SteamRating = SteamRating,
                 SteamReviewSummary = SteamReviewSummary,
                 SteamReviewTotal = SteamReviewTotal,
@@ -477,6 +518,14 @@ namespace Codec.Models
             Description = source.Description;
             Platforms = source.Platforms == null ? null : new List<string>(source.Platforms);
             ReleaseDate = source.ReleaseDate;
+            OriginalReleaseDate = source.OriginalReleaseDate;
+            OriginalGameName = source.OriginalGameName;
+            IgdbVersionParentId = source.IgdbVersionParentId;
+            IgdbCategory = source.IgdbCategory;
+            IgdbCategoryName = source.IgdbCategoryName;
+            FranchiseName = source.FranchiseName;
+            IgdbFranchiseId = source.IgdbFranchiseId;
+            FranchiseGames = source.FranchiseGames == null ? null : new List<FranchiseGameRef>(source.FranchiseGames);
             SteamRating = source.SteamRating;
             SteamReviewSummary = source.SteamReviewSummary;
             SteamReviewTotal = source.SteamReviewTotal;
@@ -501,4 +550,12 @@ namespace Codec.Models
             IsFullyImported = source.IsFullyImported;
         }
     }
+
+    public sealed record FranchiseGameRef(
+        int IgdbId,
+        string Name,
+        DateTime? ReleaseDate,
+        DateTime? OriginalReleaseDate,
+        string? CategoryName
+    );
 }

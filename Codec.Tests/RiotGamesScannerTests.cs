@@ -37,7 +37,6 @@ namespace Codec.Tests
             }
             finally
             {
-                DeleteDirectoryIfExists(tempRoot);
             }
         }
 
