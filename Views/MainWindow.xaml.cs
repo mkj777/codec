@@ -65,6 +65,9 @@ namespace Codec.Views
         private void AdminWarningClose_Click(object sender, RoutedEventArgs e)
             => AdminWarningToast.Visibility = Visibility.Collapsed;
 
+        private void RestartToUpdate_Click(object sender, RoutedEventArgs e)
+            => ViewModel.RestartToUpdateCommand.Execute(null);
+
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(ViewModel.IsMediaOverlayOpen) && !ViewModel.IsMediaOverlayOpen)

@@ -48,6 +48,8 @@ namespace Codec.ViewModels
                 CommitImportedGameAsync);
             _importCoordinator.StatusChanged += ImportCoordinator_StatusChanged;
             _importCoordinator.NotificationRaised += ImportCoordinator_NotificationRaised;
+            _services.Updates.UpdateReady += () =>
+                _dispatcherQueue.TryEnqueue(() => IsUpdateBannerVisible = true);
             Games.CollectionChanged += Games_CollectionChanged;
             RefreshSidebarFilteredGames();
         }
@@ -154,6 +156,7 @@ namespace Codec.ViewModels
         [ObservableProperty] private int _importRemainingCount;
         [ObservableProperty] private Game? _sidebarSelectedItem;
         [ObservableProperty] private string _searchText = string.Empty;
+        [ObservableProperty] private bool _isUpdateBannerVisible;
 
         [ObservableProperty]
         private bool _isDebugMode =
@@ -175,6 +178,12 @@ namespace Codec.ViewModels
         // ---------------------------------------------------------------------------------
         // Navigation
         // ---------------------------------------------------------------------------------
+
+        [RelayCommand]
+        private void RestartToUpdate()
+        {
+            _services.Updates.ApplyUpdateAndRestart();
+        }
 
         [RelayCommand]
         private void Back()
@@ -221,6 +230,8 @@ namespace Codec.ViewModels
 
             if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
                 _ = ScanGamesOnStartupAsync();
+
+            _ = _services.Updates.CheckAndDownloadAsync();
         }
 
         public async Task CompleteOnboardingAsync(bool scanOnStartup, bool launchSteamSilent)

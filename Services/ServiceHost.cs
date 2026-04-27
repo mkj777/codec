@@ -29,6 +29,7 @@ namespace Codec.Services
         public GridDbService GridDb { get; }
         public DisplayedAssetService DisplayedAssets { get; }
         public GameImportPipeline GameImportPipeline { get; }
+        public UpdateService Updates { get; }
 
         public ServiceHost()
         {
@@ -47,6 +48,7 @@ namespace Codec.Services
             GridDb = new GridDbService(GameAssets);
             DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb, RawgDetails);
             GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets);
+            Updates = new UpdateService();
         }
     }
 }
