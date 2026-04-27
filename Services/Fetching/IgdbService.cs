@@ -18,7 +18,7 @@ namespace Codec.Services.Fetching
         private const string ProxyBase = "https://codec-api-proxy.vercel.app/api/igdb";
         private const string ExternalGamesEndpoint = ProxyBase + "/external_games";
         private const string GamesEndpoint = ProxyBase + "/games";
-        private const string FranchisesEndpoint = ProxyBase + "/franchises";
+        private const string CollectionsEndpoint = ProxyBase + "/collections";
         private const string TimeToBeatsEndpoint = ProxyBase + "/game_time_to_beats";
         private const string ArtworksEndpoint = ProxyBase + "/artworks";
 
@@ -191,7 +191,7 @@ namespace Codec.Services.Fetching
   version_parent.id,
   version_parent.name,
   version_parent.first_release_date,
-  version_parent.franchises.name,
+  version_parent.collections.name,
   release_dates.date,
   url,
   cover.image_id,
@@ -201,8 +201,8 @@ namespace Codec.Services.Fetching
   videos.name,
   genres.name,
   platforms.name,
-  franchises.id,
-  franchises.name,
+  collections.id,
+  collections.name,
   themes.name,
   involved_companies.company.name,
   involved_companies.developer,
@@ -392,14 +392,14 @@ limit 1;";
                 game.Platforms = platforms;
             }
 
-            // Franchise (first entry wins)
-            if (root.TryGetProperty("franchises", out var franchisesNode) && franchisesNode.ValueKind == JsonValueKind.Array)
+            // Collection (first entry wins) — stored on the same FranchiseName/IgdbFranchiseId fields
+            if (root.TryGetProperty("collections", out var collectionsNode) && collectionsNode.ValueKind == JsonValueKind.Array)
             {
-                var firstFranchise = franchisesNode.EnumerateArray().FirstOrDefault();
-                if (firstFranchise.ValueKind == JsonValueKind.Object)
+                var firstCollection = collectionsNode.EnumerateArray().FirstOrDefault();
+                if (firstCollection.ValueKind == JsonValueKind.Object)
                 {
-                    game.FranchiseName = GetString(firstFranchise, "name");
-                    game.IgdbFranchiseId = TryGetInt(firstFranchise, "id");
+                    game.FranchiseName = GetString(firstCollection, "name");
+                    game.IgdbFranchiseId = TryGetInt(firstCollection, "id");
                 }
             }
 
@@ -667,7 +667,7 @@ limit 1;";
             {
                 // Step 1: get the game IDs in this franchise
                 string franchiseBody = $"fields games, name; where id = {franchiseId}; limit 1;";
-                string franchiseJson = await PostAsync(FranchisesEndpoint, franchiseBody).ConfigureAwait(false);
+                string franchiseJson = await PostAsync(CollectionsEndpoint, franchiseBody).ConfigureAwait(false);
                 Debug.WriteLine($"[IGDB] FetchAndStoreFranchiseGamesAsync: franchise response: {franchiseJson}");
 
                 if (string.IsNullOrWhiteSpace(franchiseJson)) return;
@@ -704,11 +704,14 @@ limit 1;";
   id,
   name,
   first_release_date,
+  game_type,
   game_type.type,
-  version_parent.first_release_date;
+  version_parent.first_release_date,
+  cover.image_id,
+  platforms.name;
 where id = ({idList});
 sort first_release_date asc;
-limit 50;";
+limit 200;";
 
                 string gamesJson = await PostAsync(GamesEndpoint, gamesBody).ConfigureAwait(false);
                 Debug.WriteLine($"[IGDB] FetchAndStoreFranchiseGamesAsync: games response: {gamesJson}");
@@ -730,28 +733,41 @@ limit 50;";
 
                     DateTime? releaseDate = TryGetUnixDate(item, "first_release_date");
 
+                    int? gameTypeId = null;
                     string? gameTypeStr = null;
-                    if (item.TryGetProperty("game_type", out var gtNode) && gtNode.ValueKind == JsonValueKind.Object)
-                        gameTypeStr = GetString(gtNode, "type")?.ToLowerInvariant();
-
-                    // Skip DLC, bundle, mod, episode, season, pack, update — keep main + remakes/remasters/expansions
-                    if (gameTypeStr is "dlc_addon" or "bundle" or "mod" or "episode" or "season" or "pack" or "update")
+                    if (item.TryGetProperty("game_type", out var gtNode))
                     {
-                        Debug.WriteLine($"[IGDB] FetchAndStoreFranchiseGamesAsync: skipping id={entryId} name='{entryName}' type='{gameTypeStr}'");
-                        continue;
+                        if (gtNode.ValueKind == JsonValueKind.Object)
+                        {
+                            gameTypeId = TryGetInt(gtNode, "id");
+                            gameTypeStr = GetString(gtNode, "type")?.ToLowerInvariant();
+                        }
+                        else if (gtNode.ValueKind == JsonValueKind.Number && gtNode.TryGetInt32(out int gtInt))
+                        {
+                            gameTypeId = gtInt;
+                        }
                     }
 
                     DateTime? originalDate = null;
                     if (item.TryGetProperty("version_parent", out var vpNode) && vpNode.ValueKind == JsonValueKind.Object)
                         originalDate = TryGetUnixDate(vpNode, "first_release_date");
 
+                    string? coverImageId = null;
+                    if (item.TryGetProperty("cover", out var coverNode) && coverNode.ValueKind == JsonValueKind.Object)
+                        coverImageId = GetString(coverNode, "image_id");
+
                     Debug.WriteLine($"[IGDB] FetchAndStoreFranchiseGamesAsync: entry id={entryId} name='{entryName}' type='{gameTypeStr}' release={releaseDate:yyyy-MM-dd} originalDate={originalDate:yyyy-MM-dd}");
+                    var entryPlatforms = GetNameList(item, "platforms");
+
                     entries.Add(new FranchiseGameRef(
                         IgdbId: entryId.Value,
                         Name: entryName,
                         ReleaseDate: releaseDate,
                         OriginalReleaseDate: originalDate,
-                        CategoryName: FormatGameTypeName(gameTypeStr)
+                        CategoryName: FormatGameTypeName(gameTypeStr),
+                        CoverUrl: coverImageId != null ? BuildImageUrl(coverImageId, "t_cover_big") : null,
+                        IgdbCategory: gameTypeId ?? MapGameTypeToCategory(gameTypeStr),
+                        Platforms: entryPlatforms.Count > 0 ? entryPlatforms : null
                     ));
                 }
 
@@ -942,9 +958,9 @@ limit 50;";
   version_parent.name,
   version_parent.first_release_date,
   cover.image_id;
-where franchises = ({franchiseId});
+where collections = ({franchiseId});
 sort first_release_date asc;
-limit 50;";
+limit 200;";
 
                 string json = await PostAsync(GamesEndpoint, body).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(json))

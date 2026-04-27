@@ -104,6 +104,26 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isAppSpinnerActive;
         [ObservableProperty] private bool _isGameSettingsOpen;
         [ObservableProperty] private bool _isMediaOverlayOpen;
+        [ObservableProperty] private bool _isFranchiseOverlayOpen;
+        [ObservableProperty] private List<FranchiseTimelineItem>? _franchiseTimelineItems;
+        // 0 = Mainline only, 1 = Extended, 2 = All
+        [ObservableProperty] private int _franchiseFilterMode;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FranchiseMainlineLabel))]
+        private int _franchiseMainlineCount;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FranchiseExtendedLabel))]
+        private int _franchiseExtendedCount;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FranchiseAllLabel))]
+        private int _franchiseAllCount;
+
+        public string FranchiseMainlineLabel => $"Mainline ({FranchiseMainlineCount})";
+        public string FranchiseExtendedLabel => $"Extended ({FranchiseExtendedCount})";
+        public string FranchiseAllLabel => $"All ({FranchiseAllCount})";
         [ObservableProperty] private bool _isSettingsVisible;
         [ObservableProperty] private bool _scanOnStartup;
         [ObservableProperty] private bool _launchSteamSilent;
@@ -162,6 +182,7 @@ namespace Codec.ViewModels
             IsDetailsVisible = false;
             IsGameSettingsOpen = false;
             IsMediaOverlayOpen = false;
+            IsFranchiseOverlayOpen = false;
             SelectedGame = null;
             SidebarSelectedItem = null;
         }
@@ -413,5 +434,24 @@ namespace Codec.ViewModels
         }
 
         private static string NormalizeSearchText(string? value) => value?.Trim() ?? string.Empty;
+    }
+
+    public sealed class FranchiseTimelineItem
+    {
+        public FranchiseGameRef Entry { get; }
+        public bool IsAbove { get; }
+        public bool IsBelow => !IsAbove;
+        public string ReleaseYearDisplay => Entry.ReleaseDate.HasValue
+            ? Entry.ReleaseDate.Value.Year.ToString() : string.Empty;
+        public IEnumerable<string> PlatformLogoUris => Game.GetPlatformLogoUris(Entry.Platforms);
+        // Show badge for everything except main games
+        public string? BadgeText => string.IsNullOrEmpty(Entry.CategoryName) || Entry.CategoryName == "Main Game"
+            ? null : Entry.CategoryName.ToUpperInvariant();
+
+        public FranchiseTimelineItem(FranchiseGameRef entry, bool isAbove)
+        {
+            Entry = entry;
+            IsAbove = isAbove;
+        }
     }
 }

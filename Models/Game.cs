@@ -93,12 +93,15 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private bool hasLogoAssetSource;
 
-        public IEnumerable<string> PlatformLogoUris => (Platforms ?? Enumerable.Empty<string>())
-            .Select(GetPlatformLogo)
-            .Where(platform => platform is not null)
-            .DistinctBy(platform => platform!.Key, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(platform => platform!.Order)
-            .Select(platform => platform!.LogoUri);
+        public IEnumerable<string> PlatformLogoUris => GetPlatformLogoUris(Platforms);
+
+        public static IEnumerable<string> GetPlatformLogoUris(IEnumerable<string>? platforms)
+            => (platforms ?? Enumerable.Empty<string>())
+                .Select(GetPlatformLogo)
+                .Where(p => p is not null)
+                .DistinctBy(p => p!.Key, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(p => p!.Order)
+                .Select(p => p!.LogoUri);
 
         public string DisplayAgeRating => IsUnavailableText(AgeRating, "Not Rated")
             ? NotAvailableText
@@ -142,9 +145,7 @@ namespace Codec.Models
                 }
 
                 string year = OriginalReleaseDate.Value.Year.ToString();
-                return string.IsNullOrWhiteSpace(OriginalGameName)
-                    ? $"Originally released: {year}"
-                    : $"Originally released: {year} ({OriginalGameName})";
+                return $"Originally released: {year}";
             }
         }
 
@@ -556,6 +557,9 @@ namespace Codec.Models
         string Name,
         DateTime? ReleaseDate,
         DateTime? OriginalReleaseDate,
-        string? CategoryName
+        string? CategoryName,
+        string? CoverUrl,
+        int? IgdbCategory,
+        List<string>? Platforms
     );
 }

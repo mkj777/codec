@@ -22,6 +22,48 @@
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter"/>
             <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter"/>
+            <conv:IntEqualsToBoolConverter x:Key="IntEqualsToBoolConverter"/>
+            <Style x:Key="FranchiseFilterRadioButtonStyle" TargetType="RadioButton">
+                <Setter Property="Padding" Value="12,5"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="#44FFFFFF"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{TemplateBinding CornerRadius}"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Foreground="{TemplateBinding Foreground}"
+                                                  FontSize="{TemplateBinding FontSize}"
+                                                  FontWeight="{TemplateBinding FontWeight}"
+                                                  Content="{TemplateBinding Content}"/>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CheckStates">
+                                        <VisualState x:Name="Checked">
+                                            <VisualState.Setters>
+                                                <Setter Target="Root.Background" Value="#66FFFFFF"/>
+                                                <Setter Target="Root.BorderBrush" Value="#AAFFFFFF"/>
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Unchecked"/>
+                                        <VisualState x:Name="Indeterminate"/>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <!-- Softer default blur overlay -->
             <AcrylicBrush x:Key="BlurOverlayBrush"
                           TintColor="#66000000"
@@ -513,6 +555,60 @@
                     </Grid>
                 </Grid>
             </Grid>
+
+            <!-- Franchise Timeline Overlay -->
+            <Grid x:Name="FranchiseOverlay"
+                  Visibility="{Binding IsFranchiseOverlayOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+                <Grid Background="#E0000000"
+                      Tapped="FranchiseScrim_Tapped"/>
+                <Grid HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Margin="48,72,48,48">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header row -->
+                    <Grid Grid.Row="0" HorizontalAlignment="Stretch" Margin="0,0,0,16">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="4"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center">
+                            <RadioButton Content="{Binding FranchiseMainlineLabel}"
+                                         IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=0, Mode=TwoWay}"
+                                         GroupName="FranchiseFilter"
+                                         Style="{StaticResource FranchiseFilterRadioButtonStyle}"/>
+                            <RadioButton Content="{Binding FranchiseExtendedLabel}"
+                                         IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=1, Mode=TwoWay}"
+                                         GroupName="FranchiseFilter"
+                                         Style="{StaticResource FranchiseFilterRadioButtonStyle}"/>
+                            <RadioButton Content="{Binding FranchiseAllLabel}"
+                                         IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsToBoolConverter}, ConverterParameter=2, Mode=TwoWay}"
+                                         GroupName="FranchiseFilter"
+                                         Style="{StaticResource FranchiseFilterRadioButtonStyle}"/>
+                        </StackPanel>
+                        <Button Content="✕"
+                                Command="{Binding CloseFranchiseOverlayCommand}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="24"
+                                FontWeight="Bold"
+                                Foreground="White"/>
+                    </Grid>
+
+                    <!-- Timeline fills remaining vertical space -->
+                    <views:FranchiseTimelineControl Grid.Row="1"
+                                                    Items="{Binding FranchiseTimelineItems}"
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Stretch"/>
+                </Grid>
+            </Grid>
+
         </Grid>
 
         <!-- Onboarding overlay for first launch / empty library -->
@@ -562,15 +658,15 @@
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
                                FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
-                    <CheckBox x:Name="OnboardingScanOnStartupCheckBox"
-                              Content="Scan for games on startup"
-                              IsChecked="True"
-                              Foreground="White"
-                              Margin="0,4,0,0"/>
-                    <CheckBox x:Name="OnboardingLaunchSteamSilentCheckBox"
-                              Content="Launch Steam on startup"
-                              IsChecked="False"
-                              Foreground="White"/>
+                    <ToggleSwitch x:Name="OnboardingScanOnStartupToggle"
+                                  Header="Scan for games on startup"
+                                  IsOn="False"
+                                  Foreground="White"
+                                  Margin="0,4,0,0"/>
+                    <ToggleSwitch x:Name="OnboardingLaunchSteamSilentToggle"
+                                  Header="Launch Steam on startup"
+                                  IsOn="False"
+                                  Foreground="White"/>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8"
                                 Margin="4,0,0,0">

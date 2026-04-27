@@ -154,6 +154,9 @@ namespace Codec.Views
                 ViewModel.CloseMediaOverlayCommand.Execute(null);
         }
 
+        private void FranchiseScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+            => ViewModel.CloseFranchiseOverlayCommand.Execute(null);
+
         private void LibraryTitle_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel.BackCommand.CanExecute(null))
@@ -195,8 +198,8 @@ namespace Codec.Views
 
         private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
         {
-            bool scanOnStartup = OnboardingScanOnStartupCheckBox.IsChecked == true;
-            bool launchSteamSilent = OnboardingLaunchSteamSilentCheckBox.IsChecked == true;
+            bool scanOnStartup = OnboardingScanOnStartupToggle.IsOn;
+            bool launchSteamSilent = OnboardingLaunchSteamSilentToggle.IsOn;
             ViewModel.IsOnboardingVisible = false;
             await ViewModel.CompleteOnboardingAsync(scanOnStartup, launchSteamSilent);
             await ViewModel.ScanGamesCommand.ExecuteAsync(null);

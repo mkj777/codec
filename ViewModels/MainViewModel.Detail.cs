@@ -2,6 +2,7 @@ using Codec.Models;
 using Codec.Services.Storage;
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -37,6 +38,61 @@ namespace Codec.ViewModels
         private void CloseMediaOverlay()
         {
             IsMediaOverlayOpen = false;
+        }
+
+        // Mainline = main game (0) only
+        private const int MainlineFranchiseCategory = 0;
+        // Always exclude: bundle (3), mod (5)
+        private static readonly HashSet<int> ExcludedFranchiseCategories = new() { 3, 5 };
+
+        [RelayCommand]
+        private void OpenFranchiseOverlay()
+        {
+            if (SelectedGame?.FranchiseGames == null) return;
+            FranchiseFilterMode = 0;
+            RebuildFranchiseTimelineItems();
+            IsFranchiseOverlayOpen = true;
+        }
+
+        [RelayCommand]
+        private void CloseFranchiseOverlay() => IsFranchiseOverlayOpen = false;
+
+        // Extended mode: mainline + DLC + expansion + standalone expansion + expanded game + remake + remaster
+        private static readonly HashSet<int> ExtendedFranchiseCategories = new() { 0, 1, 2, 4, 8, 9, 10 };
+
+        partial void OnFranchiseFilterModeChanged(int value) => RebuildFranchiseTimelineItems();
+
+        private void RebuildFranchiseTimelineItems()
+        {
+            if (SelectedGame?.FranchiseGames == null)
+            {
+                FranchiseTimelineItems = null;
+                FranchiseMainlineCount = 0;
+                FranchiseExtendedCount = 0;
+                FranchiseAllCount = 0;
+                return;
+            }
+
+            var base_ = SelectedGame.FranchiseGames
+                .Where(g => g.ReleaseDate.HasValue)
+                .Where(g => !g.IgdbCategory.HasValue || !ExcludedFranchiseCategories.Contains(g.IgdbCategory.Value))
+                .ToList();
+
+            FranchiseMainlineCount = base_.Count(g => g.IgdbCategory == MainlineFranchiseCategory);
+            FranchiseExtendedCount = base_.Count(g => !g.IgdbCategory.HasValue || ExtendedFranchiseCategories.Contains(g.IgdbCategory.Value));
+            FranchiseAllCount = base_.Count;
+
+            IEnumerable<FranchiseGameRef> filtered = FranchiseFilterMode switch
+            {
+                0 => base_.Where(g => g.IgdbCategory == MainlineFranchiseCategory),
+                1 => base_.Where(g => !g.IgdbCategory.HasValue || ExtendedFranchiseCategories.Contains(g.IgdbCategory.Value)),
+                _ => base_
+            };
+
+            FranchiseTimelineItems = filtered
+                .OrderBy(g => g.ReleaseDate)
+                .Select((e, i) => new FranchiseTimelineItem(e, i % 2 == 0))
+                .ToList();
         }
 
         [RelayCommand]

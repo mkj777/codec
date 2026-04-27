@@ -1023,6 +1023,16 @@
                                                                          FontWeight="SemiBold"
                                                                          HorizontalAlignment="Right"
                                                                          Command="{Binding OpenMediaOverlayCommand}"/>
+                                                        <HyperlinkButton Content="Franchise"
+                                                                         Foreground="White"
+                                                                         Margin="0,6,0,0"
+                                                                         Padding="0"
+                                                                         FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
+                                                                         Opacity="0.45"
+                                                                         FontWeight="SemiBold"
+                                                                         HorizontalAlignment="Right"
+                                                                         Command="{Binding OpenFranchiseOverlayCommand}"
+                                                                         Visibility="{Binding SelectedGame.FranchiseGames, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                 </StackPanel>
                                         </StackPanel>
                                 </Grid>

@@ -1,0 +1,208 @@
+<UserControl
+    x:Class="Codec.Views.FranchiseTimelineControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Codec.ViewModels"
+    xmlns:conv="using:Codec.Helpers">
+
+    <UserControl.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Disabled"
+                  HorizontalScrollMode="Enabled"
+                  VerticalScrollMode="Disabled"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+
+        <Grid MinHeight="520">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Continuous horizontal line in center row, drawn behind items -->
+            <Rectangle Grid.Row="1"
+                       Height="2"
+                       Fill="#44FFFFFF"
+                       HorizontalAlignment="Stretch"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False"/>
+
+            <!-- Items span all three rows so each item can position in the same 3-row grid -->
+            <ItemsControl Grid.RowSpan="3"
+                          ItemsSource="{x:Bind Items, Mode=OneWay}"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Stretch">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FranchiseTimelineItem">
+
+                        <Grid Width="190" Margin="20,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- ABOVE content: visible when IsAbove=true -->
+                            <StackPanel Grid.Row="0"
+                                        VerticalAlignment="Bottom"
+                                        HorizontalAlignment="Center"
+                                        Spacing="6"
+                                        Margin="0,0,0,12"
+                                        Visibility="{x:Bind IsAbove, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                                <Border CornerRadius="3"
+                                        Padding="5,2"
+                                        HorizontalAlignment="Center"
+                                        Background="#AA1E1E1E"
+                                        BorderBrush="#44FFFFFF"
+                                        BorderThickness="1"
+                                        Visibility="{x:Bind BadgeText, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <TextBlock Text="{x:Bind BadgeText}"
+                                               FontSize="10"
+                                               FontWeight="Bold"
+                                               Foreground="#FFCC88"
+                                               HorizontalAlignment="Center"/>
+                                </Border>
+
+                                <Border CornerRadius="6"
+                                        Width="140"
+                                        Height="190"
+                                        HorizontalAlignment="Center"
+                                        Background="#22FFFFFF">
+                                    <Image Source="{x:Bind Entry.CoverUrl}"
+                                           Width="140"
+                                           Height="190"
+                                           Stretch="UniformToFill"/>
+                                </Border>
+
+                                <TextBlock Text="{x:Bind Entry.Name}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           MaxLines="2"
+                                           MaxWidth="180"/>
+
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            HorizontalAlignment="Center">
+                                    <TextBlock Text="{x:Bind ReleaseYearDisplay}"
+                                               FontSize="12"
+                                               Foreground="#888888"
+                                               VerticalAlignment="Center"/>
+                                    <ItemsControl ItemsSource="{x:Bind PlatformLogoUris}"
+                                                  VerticalAlignment="Center">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Image Source="{Binding}"
+                                                       Height="14"
+                                                       Stretch="Uniform"
+                                                       Opacity="0.85"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Dot in center row -->
+                            <Ellipse Grid.Row="1"
+                                     Width="14"
+                                     Height="14"
+                                     Fill="White"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"/>
+
+                            <!-- BELOW content: visible when IsBelow=true -->
+                            <StackPanel Grid.Row="2"
+                                        VerticalAlignment="Top"
+                                        HorizontalAlignment="Center"
+                                        Spacing="6"
+                                        Margin="0,12,0,0"
+                                        Visibility="{x:Bind IsBelow, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                                <Border CornerRadius="3"
+                                        Padding="5,2"
+                                        HorizontalAlignment="Center"
+                                        Background="#AA1E1E1E"
+                                        BorderBrush="#44FFFFFF"
+                                        BorderThickness="1"
+                                        Visibility="{x:Bind BadgeText, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <TextBlock Text="{x:Bind BadgeText}"
+                                               FontSize="10"
+                                               FontWeight="Bold"
+                                               Foreground="#FFCC88"
+                                               HorizontalAlignment="Center"/>
+                                </Border>
+
+                                <Border CornerRadius="6"
+                                        Width="140"
+                                        Height="190"
+                                        HorizontalAlignment="Center"
+                                        Background="#22FFFFFF">
+                                    <Image Source="{x:Bind Entry.CoverUrl}"
+                                           Width="140"
+                                           Height="190"
+                                           Stretch="UniformToFill"/>
+                                </Border>
+
+                                <TextBlock Text="{x:Bind Entry.Name}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           MaxLines="2"
+                                           MaxWidth="180"/>
+
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            HorizontalAlignment="Center">
+                                    <TextBlock Text="{x:Bind ReleaseYearDisplay}"
+                                               FontSize="12"
+                                               Foreground="#888888"
+                                               VerticalAlignment="Center"/>
+                                    <ItemsControl ItemsSource="{x:Bind PlatformLogoUris}"
+                                                  VerticalAlignment="Center">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="4"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Image Source="{Binding}"
+                                                       Height="14"
+                                                       Stretch="Uniform"
+                                                       Opacity="0.85"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

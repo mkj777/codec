@@ -42,7 +42,7 @@ namespace Codec.Tests
             Assert.Equal("Remaster", game.IgdbCategoryName);
             Assert.True(game.IsRemakeOrRemaster);
             Assert.True(game.HasOriginalReleaseDate);
-            Assert.Equal("Originally released: 1994 (Doom)", game.OriginalReleaseDisplay);
+            Assert.Equal("Originally released: 1994", game.OriginalReleaseDisplay);
         }
 
         [Fact]
@@ -263,7 +263,7 @@ namespace Codec.Tests
                   "name": "Half-Life 2",
                   "first_release_date": {{UnixDate(2004, 11, 16)}},
                   "game_type": { "type": "main_game" },
-                  "franchises": [{ "id": 42, "name": "Half-Life" }]
+                  "collections": [{ "id": 42, "name": "Half-Life" }]
                 }]
                 """);
             });
@@ -310,7 +310,7 @@ namespace Codec.Tests
                 if (uri.Contains("/game_time_to_beats", StringComparison.OrdinalIgnoreCase))
                     return JsonResponse("[]");
 
-                if (uri.Contains("/franchises", StringComparison.OrdinalIgnoreCase))
+                if (uri.Contains("/collections", StringComparison.OrdinalIgnoreCase))
                 {
                     return JsonResponse("""
                     [{ "id": 5, "name": "BioShock", "games": [273, 409710] }]
@@ -345,7 +345,7 @@ namespace Codec.Tests
                   "name": "BioShock",
                   "first_release_date": {{UnixDate(2007, 8, 21)}},
                   "game_type": { "type": "main_game" },
-                  "franchises": [{ "id": 5, "name": "BioShock" }]
+                  "collections": [{ "id": 5, "name": "BioShock" }]
                 }]
                 """);
             });
