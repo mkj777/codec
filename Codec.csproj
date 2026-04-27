@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+	<Version>0.7.4</Version>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -48,6 +49,10 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260416003" />
     <PackageReference Include="SteamKit2" Version="3.4.0" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.7" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Assets\Square150x150Logo.scale-200.png">
