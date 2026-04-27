@@ -28,6 +28,8 @@ namespace Codec
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            _ = Services.Updates.CheckAndDownloadAsync();
+
             _window = new MainWindow();
             _window.Activate();
         }
