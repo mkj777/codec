@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Codec.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -150,67 +151,16 @@ namespace Codec.Models
         }
 
         // game assets with cache for offline first, effective path resolution
-        private static string GetEffectiveAssetPath(string? cachePath, string? url, string placeholder)
-        {
-            if (TryGetLocalAssetUri(cachePath, out var localAssetUri))
-            {
-                return localAssetUri;
-            }
-
-            if (!string.IsNullOrWhiteSpace(url))
-            {
-                return url;
-            }
-
-            return placeholder;
-        }
-
-        private static bool TryGetLocalAssetUri(string? cachePath, out string localAssetUri)
-        {
-            localAssetUri = string.Empty;
-            if (string.IsNullOrWhiteSpace(cachePath))
-            {
-                return false;
-            }
-
-            try
-            {
-                if (Uri.TryCreate(cachePath, UriKind.Absolute, out var parsed) && parsed.IsFile)
-                {
-                    if (File.Exists(parsed.LocalPath))
-                    {
-                        localAssetUri = parsed.AbsoluteUri;
-                        return true;
-                    }
-
-                    return false;
-                }
-
-                if (File.Exists(cachePath))
-                {
-                    localAssetUri = new Uri(cachePath).AbsoluteUri;
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-
-            return false;
-        }
-        // placeholders
-        private const string PlaceholderCapsule = "https://placehold.co/600x900/1c1c1c/ffffff?text=Capsule";
-        private const string PlaceholderHero = "https://placehold.co/1920x620/1c1c1c/ffffff?text=Hero";
-        private const string PlaceholderLogo = "https://placehold.co/1280x260/1c1c1c/ffffff?text=Logo";
-
+        private static string? GetEffectiveAssetPath(string? cachePath, string? url, string? placeholderRelativePath = null)
+            => AssetUriResolver.ResolveImageSource(cachePath, url, placeholderRelativePath);
         // capsule
         [ObservableProperty][NotifyPropertyChangedFor(nameof(LibCapsule))] private string? libCapsuleUrl;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibCapsule))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private string? libCapsuleCache;
-        public string LibCapsule => GetEffectiveAssetPath(LibCapsuleCache, LibCapsuleUrl, PlaceholderCapsule);
+        private const string PlaceholderCapsuleRelativePath = "Assets/noCover.png";
+        public string LibCapsule => GetEffectiveAssetPath(LibCapsuleCache, LibCapsuleUrl, PlaceholderCapsuleRelativePath)!;
 
         // hero
         [ObservableProperty]
@@ -220,7 +170,7 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(LibHero))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private string? libHeroCache;
-        public string LibHero => GetEffectiveAssetPath(LibHeroCache, LibHeroUrl, PlaceholderHero);
+        public string? LibHero => GetEffectiveAssetPath(LibHeroCache, LibHeroUrl);
 
         // logo
         [ObservableProperty]
@@ -232,18 +182,13 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(HasLogo))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         private string? libLogoCache;
-        public string LibLogo => GetEffectiveAssetPath(LibLogoCache, LibLogoUrl, PlaceholderLogo);
+        public string? LibLogo => GetEffectiveAssetPath(LibLogoCache, LibLogoUrl);
         public bool HasLogo => !string.IsNullOrWhiteSpace(LibLogoUrl) || !string.IsNullOrWhiteSpace(LibLogoCache);
         public bool DisplayedAssetsReady => HasRequiredDisplayedAssetsCached();
 
         // media
         [ObservableProperty]
-        private List<string> media = new()
-        {
-            "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+1",
-            "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+2",
-            "https://placehold.co/1920x1080/1c1c1c/ffffff?text=Media+3"
-        };
+        private List<string> media = new();
 
         // external links
         [ObservableProperty] private string? officialWebsiteUrl;
@@ -264,42 +209,42 @@ namespace Codec.Models
 
             if (normalized.Contains("pc") || normalized.Contains("windows"))
             {
-                return CreatePlatformLogo("windows", "ms-appx:///Assets/platforms/windows_logo.png");
+                return CreatePlatformLogo("windows", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/windows_logo.png"));
             }
 
             if (normalized.Contains("playstation"))
             {
-                return CreatePlatformLogo("playstation", "ms-appx:///Assets/platforms/playstation_logo.png");
+                return CreatePlatformLogo("playstation", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/playstation_logo.png"));
             }
 
             if (normalized.Contains("xbox"))
             {
-                return CreatePlatformLogo("xbox", "ms-appx:///Assets/platforms/xbox_logo.png");
+                return CreatePlatformLogo("xbox", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/xbox_logo.png"));
             }
 
             if (normalized.Contains("nintendo") || normalized.Contains("switch"))
             {
-                return CreatePlatformLogo("nintendo-switch", "ms-appx:///Assets/platforms/NintendoSwitch_logo.png");
+                return CreatePlatformLogo("nintendo-switch", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/NintendoSwitch_logo.png"));
             }
 
             if (normalized.Contains("mac"))
             {
-                return CreatePlatformLogo("macos", "ms-appx:///Assets/platforms/MacOS_logo.png");
+                return CreatePlatformLogo("macos", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/MacOS_logo.png"));
             }
 
             if (normalized.Contains("linux"))
             {
-                return CreatePlatformLogo("linux", "ms-appx:///Assets/platforms/linux_logo.png");
+                return CreatePlatformLogo("linux", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/linux_logo.png"));
             }
 
             if (normalized.Contains("ios"))
             {
-                return CreatePlatformLogo("ios", "ms-appx:///Assets/platforms/iOS_logo.png");
+                return CreatePlatformLogo("ios", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/iOS_logo.png"));
             }
 
             if (normalized.Contains("android"))
             {
-                return CreatePlatformLogo("android", "ms-appx:///Assets/platforms/android_logo.png");
+                return CreatePlatformLogo("android", AssetUriResolver.ResolveBundledAssetUri("Assets/Platforms/android_logo.png"));
             }
 
             return null;

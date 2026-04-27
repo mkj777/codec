@@ -236,7 +236,6 @@ namespace Codec.ViewModels
         {
             SelectedGame = game;
             IsDetailsVisible = true;
-            _ = RefreshGameMetadataAsync(game);
         }
 
         private async Task RefreshGameMetadataAsync(Game game)

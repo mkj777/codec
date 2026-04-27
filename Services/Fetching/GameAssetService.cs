@@ -88,6 +88,16 @@ namespace Codec.Services.Fetching
                     return filePath;
                 }
 
+                string? headerImageUrl = await FetchSteamHeaderImageUrlAsync(steamId).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(headerImageUrl))
+                {
+                    string? fallbackPath = await CacheImageAsync("Capsules", $"steam_{steamId}_header_image", headerImageUrl, force).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(fallbackPath))
+                    {
+                        return fallbackPath;
+                    }
+                }
+
                 Debug.WriteLine($"No Steam cover found for {steamId} across known variants.");
                 return null;
             }
@@ -165,6 +175,47 @@ namespace Codec.Services.Fetching
                 Debug.WriteLine($"GridDB cover download failed for {gridDbId}: {ex.Message}");
                 return null;
             }
+        }
+
+        public async Task<string?> FetchSteamHeaderImageUrlAsync(int steamId)
+        {
+            try
+            {
+                string json = await _http.GetStringAsync($"https://store.steampowered.com/api/appdetails?appids={steamId}").ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement.GetProperty(steamId.ToString());
+                if (!root.TryGetProperty("success", out var success) || !success.GetBoolean())
+                    return null;
+                if (!root.TryGetProperty("data", out var data))
+                    return null;
+                if (!data.TryGetProperty("header_image", out var headerProp))
+                    return null;
+                return headerProp.GetString();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Steam appdetails fetch failed for {steamId}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<string?> ResolveSteamHeaderFallbackUrlAsync(int steamId)
+        {
+            var variants = new[]
+            {
+                $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/header_2x.jpg",
+                $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/header.jpg"
+            };
+
+            foreach (string url in variants)
+            {
+                if (await IsReachableImageAsync(url).ConfigureAwait(false))
+                {
+                    return url;
+                }
+            }
+
+            return null;
         }
 
         public async Task<string?> CacheImageAsync(string assetType, string stableKey, string sourceUrl, bool force = false)
@@ -255,6 +306,37 @@ namespace Codec.Services.Fetching
             }
 
             return false;
+        }
+
+        private async Task<bool> IsReachableImageAsync(string url)
+        {
+            try
+            {
+                using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
+                using var headResponse = await _http.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                if (headResponse.IsSuccessStatusCode && headResponse.Content.Headers.ContentType?.MediaType?.Contains("image", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    return true;
+                }
+
+                if ((int)headResponse.StatusCode == 404)
+                {
+                    return false;
+                }
+
+                using var getResponse = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                if (!getResponse.IsSuccessStatusCode)
+                {
+                    return false;
+                }
+
+                string? mediaType = getResponse.Content.Headers.ContentType?.MediaType;
+                return mediaType?.Contains("image", StringComparison.OrdinalIgnoreCase) == true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static string SanitizeFileName(string value)

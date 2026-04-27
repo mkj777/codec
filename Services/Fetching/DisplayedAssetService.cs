@@ -48,11 +48,13 @@ namespace Codec.Services.Fetching
 
         private readonly GameAssetService _gameAssets;
         private readonly GridDbService _gridDb;
+        private readonly RawgDetailsService _rawgDetails;
 
-        public DisplayedAssetService(GameAssetService gameAssets, GridDbService gridDb)
+        public DisplayedAssetService(GameAssetService gameAssets, GridDbService gridDb, RawgDetailsService rawgDetails)
         {
             _gameAssets = gameAssets;
             _gridDb = gridDb;
+            _rawgDetails = rawgDetails;
         }
 
         public async Task<DisplayedAssetHydrationResult> EnsureDisplayedAssetsAsync(Game game, bool force = false)
@@ -86,17 +88,6 @@ namespace Codec.Services.Fetching
                 capsuleCachePath = gridResult.CoverCachePath;
             }
 
-            bool hasHeroSource = !string.IsNullOrWhiteSpace(game.LibHeroUrl);
-            string? heroCachePath = game.LibHeroCache;
-            if (!string.IsNullOrWhiteSpace(game.LibHeroUrl))
-            {
-                var heroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "hero"), game.LibHeroUrl, force).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(heroPath))
-                {
-                    heroCachePath = heroPath;
-                }
-            }
-
             bool hasLogoSource = !string.IsNullOrWhiteSpace(game.LibLogoUrl);
             string? logoCachePath = game.LibLogoCache;
             if (!string.IsNullOrWhiteSpace(game.LibLogoUrl))
@@ -105,6 +96,81 @@ namespace Codec.Services.Fetching
                 if (!string.IsNullOrWhiteSpace(logoPath))
                 {
                     logoCachePath = logoPath;
+                }
+            }
+
+            bool hasHeroSource = !string.IsNullOrWhiteSpace(game.LibHeroUrl);
+            string? heroCachePath = game.LibHeroCache;
+            bool needsSteamHeroFallback = false;
+            bool preferSteamHeaderImage = false;
+
+            if (!string.IsNullOrWhiteSpace(game.LibHeroUrl))
+            {
+                var heroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "hero"), game.LibHeroUrl, force).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(heroPath))
+                {
+                    heroCachePath = heroPath;
+                }
+                else if (game.SteamID.HasValue)
+                {
+                    needsSteamHeroFallback = true;
+                }
+            }
+            else if (game.SteamID.HasValue)
+            {
+                needsSteamHeroFallback = true;
+            }
+
+            // Logo 404 fallback for Steam games: clear broken logo and let hero fall back to Steam headers / RAWG.
+            if (game.SteamID.HasValue && hasLogoSource && logoCachePath == null)
+            {
+                needsSteamHeroFallback = true;
+                preferSteamHeaderImage = true;
+                hasLogoSource = false;
+                logoCachePath = null;
+            }
+
+            if (game.SteamID.HasValue && needsSteamHeroFallback)
+            {
+                string? steamHeaderUrl = null;
+
+                if (preferSteamHeaderImage)
+                {
+                    steamHeaderUrl = await _gameAssets.FetchSteamHeaderImageUrlAsync(game.SteamID.Value).ConfigureAwait(false);
+                }
+
+                if (string.IsNullOrWhiteSpace(steamHeaderUrl))
+                {
+                    steamHeaderUrl = await _gameAssets.ResolveSteamHeaderFallbackUrlAsync(game.SteamID.Value).ConfigureAwait(false);
+                }
+
+                if (!string.IsNullOrWhiteSpace(steamHeaderUrl))
+                {
+                    var fallbackPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "header"), steamHeaderUrl, force).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(fallbackPath))
+                    {
+                        hasHeroSource = true;
+                        heroCachePath = fallbackPath;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(heroCachePath))
+                {
+                    await _rawgDetails.TryPopulateRawgFromSearchAsync(game).ConfigureAwait(false);
+                    if (game.RawgID.HasValue)
+                    {
+                        await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(game.LibHeroUrl))
+                    {
+                        var rawgHeroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "rawg_hero"), game.LibHeroUrl, force).ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(rawgHeroPath))
+                        {
+                            hasHeroSource = true;
+                            heroCachePath = rawgHeroPath;
+                        }
+                    }
                 }
             }
 

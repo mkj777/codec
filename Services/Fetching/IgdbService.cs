@@ -433,8 +433,7 @@ limit 1;";
             }
 
             // Media: videos (YouTube) + screenshots — only if Steam didn't supply any
-            bool mediaIsPlaceholder = game.Media == null || game.Media.Count == 0 || game.Media.All(m => m.Contains("placehold.co", StringComparison.OrdinalIgnoreCase));
-            if (mediaIsPlaceholder)
+            if (game.Media == null || game.Media.Count == 0)
             {
                 var media = new List<string>();
                 if (root.TryGetProperty("videos", out var videosNode) && videosNode.ValueKind == JsonValueKind.Array)

@@ -45,7 +45,7 @@ namespace Codec.Services
             Hltb = new HltbService(Cache);
             GameAssets = new GameAssetService();
             GridDb = new GridDbService(GameAssets);
-            DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb);
+            DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb, RawgDetails);
             GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets);
         }
     }

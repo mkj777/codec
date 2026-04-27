@@ -1,3 +1,4 @@
+using Codec.Helpers;
 using Codec.Models;
 using System;
 using System.Collections.Generic;
@@ -175,7 +176,9 @@ namespace Codec.ViewModels
         // ---------------------------------------------------------------------------------
 
         private static bool IsPlaceholder(string? uri) =>
-            string.IsNullOrWhiteSpace(uri) || uri.StartsWith("https://placehold.co/", StringComparison.OrdinalIgnoreCase);
+            string.IsNullOrWhiteSpace(uri) ||
+            uri.StartsWith("https://placehold.co/", StringComparison.OrdinalIgnoreCase) ||
+            AssetUriResolver.IsBundledAssetReference(uri, "Assets/noCover.png");
 
         private static bool LocalFileMissing(string? uri)
         {
