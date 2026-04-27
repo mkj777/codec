@@ -132,9 +132,18 @@
                                 <SolidColorBrush x:Key="ButtonBorderBrush"
                                                  Color="Transparent"/>
                             </Button.Resources>
-                            <TextBlock Text="Codec."
-                                       FontSize="18"
-                                       FontWeight="Bold"/>
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Spacing="6">
+                                <TextBlock Text="Codec"
+                                           FontSize="18"
+                                           FontWeight="Bold"/>
+                                <TextBlock Text="{x:Bind AppVersion}"
+                                           FontSize="11"
+                                           Foreground="#888888"
+                                           VerticalAlignment="Bottom"
+                                           Margin="0,0,0,2"/>
+                            </StackPanel>
                         </Button>
                         <TextBox Grid.Row="1"
                                  Margin="0,0,0,0"

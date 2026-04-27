@@ -41,6 +41,10 @@ namespace Codec.Views
 
         public MainViewModel ViewModel { get; }
 
+        public string AppVersion { get; } =
+            $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?"}";
+
+
         public MainWindow()
         {
             InitializeComponent();
