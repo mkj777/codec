@@ -17,7 +17,7 @@ Adding Launch Scripts
 
 ### Installation
 Download it from the Website: [Codec](https://codeclibrary.vercel.app/)  
-or the latest release "Codec_Installer_x.x.x.exe" from the [Releases](https://github.com/mkj777/codec-releases/releases) section  
+or the installer "Codec-win-Setup.exe" from the [Releases](https://github.com/mkj777/codec-releases/releases) section  
 
 
 ### Requirements
