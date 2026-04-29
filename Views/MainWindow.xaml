@@ -507,52 +507,6 @@
                              Value="{Binding ScanProgressValue}"/>
             </StackPanel>
 
-            <!-- Update available banner -->
-            <Border Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Margin="0,0,16,16"
-                    Background="#1C1C1C"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    MinWidth="260">
-                <Grid ColumnSpacing="14">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <FontIcon Grid.Column="0"
-                              Glyph="&#xE777;"
-                              FontSize="22"
-                              Foreground="#64B5F6"
-                              VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1"
-                                Spacing="2"
-                                VerticalAlignment="Center">
-                        <TextBlock Text="Update available"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="#999999"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
-                        <TextBlock Text="Downloaded and ready to install"
-                                   FontSize="12"
-                                   Foreground="#CCCCCC"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
-                    </StackPanel>
-                    <Button Grid.Column="2"
-                            Content="Restart"
-                            VerticalAlignment="Center"
-                            Click="RestartToUpdate_Click"
-                            Background="#1976D2"
-                            Foreground="White"
-                            FontSize="12"
-                            FontWeight="SemiBold"
-                            Padding="12,6"
-                            CornerRadius="6"/>
-                </Grid>
-            </Border>
-
             <ProgressRing IsActive="{Binding IsAppSpinnerActive}"
                           Visibility="{Binding IsAppSpinnerActive, Converter={StaticResource BoolToVisibilityConverter}}"
                           Width="48"
@@ -854,6 +808,222 @@
             <Border.RenderTransform>
                 <CompositeTransform/>
             </Border.RenderTransform>
+        </Border>
+
+        <!-- ===== Update toasts (above StartupOverlay so visible during launch) ===== -->
+
+        <!-- Update: checking toast -->
+        <Border Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Visibility="{Binding IsUpdateCheckingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,16"
+                Background="#1C1C1C"
+                BorderBrush="#333333"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12,10">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="10"
+                        VerticalAlignment="Center">
+                <ProgressRing IsActive="True"
+                              Width="16"
+                              Height="16"
+                              VerticalAlignment="Center"/>
+                <TextBlock Text="Checking for updates..."
+                           FontSize="13"
+                           Foreground="#CCCCCC"
+                           VerticalAlignment="Center"
+                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Update: downloading toast -->
+        <Border Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Visibility="{Binding IsUpdateDownloadingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,16"
+                Background="#1C1C1C"
+                BorderBrush="#333333"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="16,14"
+                MinWidth="260">
+            <StackPanel Spacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <FontIcon Glyph="&#xE896;"
+                              FontSize="16"
+                              Foreground="#64B5F6"
+                              VerticalAlignment="Center"/>
+                    <TextBlock Text="Downloading update"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#CCCCCC"
+                               VerticalAlignment="Center"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                    <TextBlock Text="{Binding UpdateDownloadProgress}"
+                               FontSize="13"
+                               Foreground="#888888"
+                               VerticalAlignment="Center"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                    <TextBlock Text="%"
+                               FontSize="13"
+                               Foreground="#888888"
+                               VerticalAlignment="Center"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                </StackPanel>
+                <ProgressBar Value="{Binding UpdateDownloadProgress}"
+                             Minimum="0"
+                             Maximum="100"
+                             Width="228"
+                             Height="4"
+                             HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Update: error toast -->
+        <Border Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Visibility="{Binding IsUpdateErrorVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,16"
+                Background="#1C1C1C"
+                BorderBrush="#552222"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="16,14"
+                MinWidth="260"
+                MaxWidth="360">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <FontIcon Grid.Column="0"
+                          Glyph="&#xE783;"
+                          FontSize="20"
+                          Foreground="#E57373"
+                          VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="Update failed"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#E57373"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                    <TextBlock Text="{Binding UpdateErrorMessage}"
+                               FontSize="11"
+                               Foreground="#CCCCCC"
+                               TextWrapping="Wrap"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                </StackPanel>
+                <Button Grid.Column="2"
+                        Content="✕"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="#888888"
+                        FontSize="12"
+                        Padding="4,0"
+                        VerticalAlignment="Top"
+                        Click="UpdateErrorClose_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Update: no update found toast -->
+        <Border Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Visibility="{Binding IsUpdateNoUpdateVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,16"
+                Background="#1C1C1C"
+                BorderBrush="#333333"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="16,14"
+                MinWidth="220">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <FontIcon Grid.Column="0"
+                          Glyph="&#xE73E;"
+                          FontSize="20"
+                          Foreground="#4CAF50"
+                          VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1"
+                           Text="You're on the latest version"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="#CCCCCC"
+                           VerticalAlignment="Center"
+                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                <Button Grid.Column="2"
+                        Content="✕"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="#888888"
+                        FontSize="12"
+                        Padding="4,0"
+                        VerticalAlignment="Top"
+                        Click="UpdateNoUpdateClose_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Update: ready banner -->
+        <Border Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,16"
+                Background="#1C1C1C"
+                BorderBrush="#333333"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="16,14"
+                MinWidth="260">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <FontIcon Grid.Column="0"
+                          Glyph="&#xE777;"
+                          FontSize="22"
+                          Foreground="#64B5F6"
+                          VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1"
+                            Spacing="2"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="Update available"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#999999"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                    <TextBlock Text="Downloaded and ready to install"
+                               FontSize="12"
+                               Foreground="#CCCCCC"
+                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                </StackPanel>
+                <Button Grid.Column="2"
+                        Content="Restart"
+                        VerticalAlignment="Center"
+                        Click="RestartToUpdate_Click"
+                        Background="#1976D2"
+                        Foreground="White"
+                        FontSize="12"
+                        FontWeight="SemiBold"
+                        Padding="12,6"
+                        CornerRadius="6"/>
+            </Grid>
         </Border>
 
         <!-- Loading overlay for initial load or scanning -->

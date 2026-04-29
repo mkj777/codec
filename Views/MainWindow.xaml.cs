@@ -72,6 +72,12 @@ namespace Codec.Views
         private void RestartToUpdate_Click(object sender, RoutedEventArgs e)
             => ViewModel.RestartToUpdateCommand.Execute(null);
 
+        private void UpdateErrorClose_Click(object sender, RoutedEventArgs e)
+            => ViewModel.IsUpdateErrorVisible = false;
+
+        private void UpdateNoUpdateClose_Click(object sender, RoutedEventArgs e)
+            => ViewModel.IsUpdateNoUpdateVisible = false;
+
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(ViewModel.IsMediaOverlayOpen) && !ViewModel.IsMediaOverlayOpen)

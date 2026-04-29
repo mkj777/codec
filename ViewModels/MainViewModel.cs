@@ -48,8 +48,8 @@ namespace Codec.ViewModels
                 CommitImportedGameAsync);
             _importCoordinator.StatusChanged += ImportCoordinator_StatusChanged;
             _importCoordinator.NotificationRaised += ImportCoordinator_NotificationRaised;
-            _services.Updates.UpdateReady += () =>
-                _dispatcherQueue.TryEnqueue(() => IsUpdateBannerVisible = true);
+            _services.Updates.StatusChanged += OnUpdateStatusChanged;
+            OnUpdateStatusChanged(); // sync current state immediately (race-safe)
             Games.CollectionChanged += Games_CollectionChanged;
             RefreshSidebarFilteredGames();
         }
@@ -157,6 +157,12 @@ namespace Codec.ViewModels
         [ObservableProperty] private Game? _sidebarSelectedItem;
         [ObservableProperty] private string _searchText = string.Empty;
         [ObservableProperty] private bool _isUpdateBannerVisible;
+        [ObservableProperty] private bool _isUpdateCheckingVisible;
+        [ObservableProperty] private bool _isUpdateDownloadingVisible;
+        [ObservableProperty] private int _updateDownloadProgress;
+        [ObservableProperty] private bool _isUpdateErrorVisible;
+        [ObservableProperty] private string _updateErrorMessage = string.Empty;
+        [ObservableProperty] private bool _isUpdateNoUpdateVisible;
 
         [ObservableProperty]
         private bool _isDebugMode =
@@ -183,6 +189,21 @@ namespace Codec.ViewModels
         private void RestartToUpdate()
         {
             _services.Updates.ApplyUpdateAndRestart();
+        }
+
+        private void OnUpdateStatusChanged()
+        {
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                var s = _services.Updates;
+                IsUpdateCheckingVisible = s.Status == UpdateStatus.Checking;
+                IsUpdateDownloadingVisible = s.Status == UpdateStatus.Downloading;
+                IsUpdateBannerVisible = s.Status == UpdateStatus.Ready;
+                IsUpdateNoUpdateVisible = s.Status == UpdateStatus.NoUpdateFound;
+                IsUpdateErrorVisible = s.Status == UpdateStatus.Error;
+                UpdateDownloadProgress = s.DownloadProgress;
+                UpdateErrorMessage = s.ErrorMessage ?? string.Empty;
+            });
         }
 
         [RelayCommand]
