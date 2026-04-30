@@ -23,12 +23,6 @@ namespace Codec.Services.Scanning.Scanners
             "Program Files",
             "Program Files (x86)",
             "Games",
-            "XboxGames",
-            "Epic Games",
-            "GOG Games",
-            @"Ubisoft Game Launcher\games",
-            "EA Games",
-            "Riot Games",
         };
 
         private static readonly HashSet<string> DirectoryBlacklist = new(StringComparer.OrdinalIgnoreCase)
