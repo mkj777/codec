@@ -10,6 +10,7 @@ Hopefully a place for everything you need.
    
 ---
 ### Features
+Works together with Steam
 Scanning your PC for all your Games  
 Launching them through Codec  
 Viewing Details about your Games  
@@ -27,6 +28,7 @@ Windows 10 or later
 Codec is a C# WinUI 3 Project using .NET 9.0  
 and Inno Setup Compiler to create the installer  
 
+thanks to [SteamKit2](https://github.com/SteamRE/SteamKit) for the Steam integration to fetch better assets for Steam Games
 thanks to [Leon Terme](https://github.com/LeMIT2427) for the idea and help with the concept  
 thanks to [Stefan Gabriel Craescu](https://github.com/Deadlock-too) for [howlongtobeat-ts](https://github.com/Deadlock-too/howlongtobeat-ts) to integrate HowLongToBeat  
 

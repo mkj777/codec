@@ -20,7 +20,7 @@ namespace Codec.ViewModels
         {
             foreach (var g in games)
             {
-                bool needsCover = IsPlaceholder(g.LibCapsule) || LocalFileMissing(g.LibCapsule);
+                bool needsCover = IsPlaceholder(g.LibraryCapsule) || LocalFileMissing(g.LibraryCapsule);
 
                 if (g.SteamID.HasValue && needsCover)
                 {
@@ -29,7 +29,7 @@ namespace Codec.ViewModels
                         Debug.WriteLine($"Fetching cover for {g.Name} (SteamID {g.SteamID})");
                         var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value);
                         if (!string.IsNullOrEmpty(cover))
-                            g.LibCapsuleCache = cover;
+                            g.LibraryCapsuleCache = cover;
                     }
                     catch (Exception ex)
                     {
@@ -59,7 +59,7 @@ namespace Codec.ViewModels
                 {
                     var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
                     if (!string.IsNullOrEmpty(cover))
-                        g.LibCapsuleCache = cover;
+                        g.LibraryCapsuleCache = cover;
                     await Task.Delay(75);
                 }
                 else

@@ -14,10 +14,12 @@ namespace Codec.Services.Fetching
     {
         private readonly HttpClient _http = new();
         private readonly MetadataCache _cache;
+        private readonly SteamKitService _steamKit;
 
-        public SteamDetailsService(MetadataCache cache)
+        public SteamDetailsService(MetadataCache cache, SteamKitService steamKit)
         {
             _cache = cache;
+            _steamKit = steamKit;
         }
 
         private async Task<string?> ResolveAssetUrlAsync(string primaryUrl, string fallbackUrl)
@@ -220,15 +222,29 @@ namespace Codec.Services.Fetching
                     game.Media = media;
                 }
 
-                // Hero image with fallback to non-2x
-                var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero.jpg";
-                var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero_2x.jpg";
-                game.LibHeroUrl = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
+                // Hero + logo via SteamKit PICS hash lookup; legacy URL probe as fallback.
+                var picsAssets = await _steamKit.GetLibraryAssetsAsync((uint)game.SteamID.Value).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(picsAssets?.HeroUrl))
+                {
+                    game.LibraryHeroUrl = picsAssets.HeroUrl;
+                }
+                else
+                {
+                    var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero.jpg";
+                    var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero_2x.jpg";
+                    game.LibraryHeroUrl = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
+                }
 
-                // Logo with fallback to non-2x
-                var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo.png";
-                var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo_2x.png";
-                game.LibLogoUrl = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
+                if (!string.IsNullOrEmpty(picsAssets?.LogoUrl))
+                {
+                    game.LibraryLogoUrl = picsAssets.LogoUrl;
+                }
+                else
+                {
+                    var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo.png";
+                    var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo_2x.png";
+                    game.LibraryLogoUrl = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
+                }
 
                 // Links
                 if (data.TryGetProperty("website", out var site) && site.ValueKind == JsonValueKind.String)

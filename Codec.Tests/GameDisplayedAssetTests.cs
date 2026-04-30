@@ -6,7 +6,7 @@ namespace Codec.Tests
     public sealed class GameDisplayedAssetTests
     {
         [Fact]
-        public void HeroCacheChange_RaisesLibHeroNotification()
+        public void HeroCacheChange_RaisesLibraryHeroNotification()
         {
             var game = new Game();
             var changes = new List<string>();
@@ -22,9 +22,9 @@ namespace Codec.Tests
                     }
                 };
 
-                game.LibHeroCache = heroPath;
+                game.LibraryHeroCache = heroPath;
 
-                Assert.Contains(nameof(Game.LibHero), changes);
+                Assert.Contains(nameof(Game.LibraryHero), changes);
                 Assert.Contains(nameof(Game.DisplayedAssetsReady), changes);
             }
             finally
@@ -34,7 +34,7 @@ namespace Codec.Tests
         }
 
         [Fact]
-        public void LogoCacheChange_RaisesLibLogoNotification()
+        public void LogoCacheChange_RaisesLibraryLogoNotification()
         {
             var game = new Game();
             var changes = new List<string>();
@@ -51,9 +51,9 @@ namespace Codec.Tests
                 };
 
                 game.HasLogoAssetSource = true;
-                game.LibLogoCache = logoPath;
+                game.LibraryLogoCache = logoPath;
 
-                Assert.Contains(nameof(Game.LibLogo), changes);
+                Assert.Contains(nameof(Game.LibraryLogo), changes);
                 Assert.Contains(nameof(Game.DisplayedAssetsReady), changes);
             }
             finally
@@ -72,8 +72,8 @@ namespace Codec.Tests
             {
                 var game = new Game
                 {
-                    LibCapsuleCache = coverPath,
-                    LibHeroCache = heroPath,
+                    LibraryCapsuleCache = coverPath,
+                    LibraryHeroCache = heroPath,
                     HasHeroAssetSource = true,
                     HasLogoAssetSource = false
                 };
@@ -97,8 +97,8 @@ namespace Codec.Tests
             {
                 var game = new Game
                 {
-                    LibCapsuleCache = missingCoverPath,
-                    LibHeroCache = heroPath,
+                    LibraryCapsuleCache = missingCoverPath,
+                    LibraryHeroCache = heroPath,
                     HasHeroAssetSource = true
                 };
 

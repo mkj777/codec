@@ -217,7 +217,7 @@
                         <Grid>
                             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                     CornerRadius="8">
-                                <Image Source="{x:Bind LibCapsule}"
+                                <Image Source="{x:Bind LibraryCapsule}"
                                        Stretch="UniformToFill"/>
                             </Border>
                         </Grid>

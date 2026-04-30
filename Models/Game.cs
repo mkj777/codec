@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Codec.Models
 {
@@ -153,37 +154,49 @@ namespace Codec.Models
         // game assets with cache for offline first, effective path resolution
         private static string? GetEffectiveAssetPath(string? cachePath, string? url, string? placeholderRelativePath = null)
             => AssetUriResolver.ResolveImageSource(cachePath, url, placeholderRelativePath);
-        // capsule
-        [ObservableProperty][NotifyPropertyChangedFor(nameof(LibCapsule))] private string? libCapsuleUrl;
+        // library_capsule
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LibCapsule))]
+        [NotifyPropertyChangedFor(nameof(LibraryCapsule))]
+        [property: JsonPropertyName("LibCapsuleUrl")]
+        private string? libraryCapsuleUrl;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibraryCapsule))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
-        private string? libCapsuleCache;
-        private const string PlaceholderCapsuleRelativePath = "Assets/noCover.png";
-        public string LibCapsule => GetEffectiveAssetPath(LibCapsuleCache, LibCapsuleUrl, PlaceholderCapsuleRelativePath)!;
+        [property: JsonPropertyName("LibCapsuleCache")]
+        private string? libraryCapsuleCache;
+        private const string PlaceholderLibraryCapsuleRelativePath = "Assets/noCover.png";
+        [JsonIgnore]
+        public string LibraryCapsule => GetEffectiveAssetPath(LibraryCapsuleCache, LibraryCapsuleUrl, PlaceholderLibraryCapsuleRelativePath)!;
 
-        // hero
+        // library_hero
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LibHero))]
-        private string? libHeroUrl;
+        [NotifyPropertyChangedFor(nameof(LibraryHero))]
+        [property: JsonPropertyName("LibHeroUrl")]
+        private string? libraryHeroUrl;
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LibHero))]
+        [NotifyPropertyChangedFor(nameof(LibraryHero))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
-        private string? libHeroCache;
-        public string? LibHero => GetEffectiveAssetPath(LibHeroCache, LibHeroUrl);
+        [property: JsonPropertyName("LibHeroCache")]
+        private string? libraryHeroCache;
+        [JsonIgnore]
+        public string? LibraryHero => GetEffectiveAssetPath(LibraryHeroCache, LibraryHeroUrl);
 
-        // logo
+        // library_logo
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LibLogo))]
+        [NotifyPropertyChangedFor(nameof(LibraryLogo))]
         [NotifyPropertyChangedFor(nameof(HasLogo))]
-        private string? libLogoUrl;
+        [property: JsonPropertyName("LibLogoUrl")]
+        private string? libraryLogoUrl;
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LibLogo))]
+        [NotifyPropertyChangedFor(nameof(LibraryLogo))]
         [NotifyPropertyChangedFor(nameof(HasLogo))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
-        private string? libLogoCache;
-        public string? LibLogo => GetEffectiveAssetPath(LibLogoCache, LibLogoUrl);
-        public bool HasLogo => !string.IsNullOrWhiteSpace(LibLogoUrl) || !string.IsNullOrWhiteSpace(LibLogoCache);
+        [property: JsonPropertyName("LibLogoCache")]
+        private string? libraryLogoCache;
+        [JsonIgnore]
+        public string? LibraryLogo => GetEffectiveAssetPath(LibraryLogoCache, LibraryLogoUrl);
+        [JsonIgnore]
+        public bool HasLogo => !string.IsNullOrWhiteSpace(LibraryLogoUrl) || !string.IsNullOrWhiteSpace(LibraryLogoCache);
         public bool DisplayedAssetsReady => HasRequiredDisplayedAssetsCached();
 
         // media
@@ -259,9 +272,9 @@ namespace Codec.Models
 
         private bool HasRequiredDisplayedAssetsCached()
         {
-            bool hasCover = HasLocalAsset(LibCapsuleCache);
-            bool hasHero = HasLocalAsset(LibHeroCache);
-            bool hasLogo = !HasLogoAssetSource || HasLocalAsset(LibLogoCache);
+            bool hasCover = HasLocalAsset(LibraryCapsuleCache);
+            bool hasHero = HasLocalAsset(LibraryHeroCache);
+            bool hasLogo = !HasLogoAssetSource || HasLocalAsset(LibraryLogoCache);
             return hasCover && hasHero && hasLogo;
         }
 
@@ -421,12 +434,12 @@ namespace Codec.Models
                 IsFullyImported = IsFullyImported,
                 HasHeroAssetSource = HasHeroAssetSource,
                 HasLogoAssetSource = HasLogoAssetSource,
-                LibCapsuleUrl = LibCapsuleUrl,
-                LibCapsuleCache = LibCapsuleCache,
-                LibHeroUrl = LibHeroUrl,
-                LibHeroCache = LibHeroCache,
-                LibLogoUrl = LibLogoUrl,
-                LibLogoCache = LibLogoCache,
+                LibraryCapsuleUrl = LibraryCapsuleUrl,
+                LibraryCapsuleCache = LibraryCapsuleCache,
+                LibraryHeroUrl = LibraryHeroUrl,
+                LibraryHeroCache = LibraryHeroCache,
+                LibraryLogoUrl = LibraryLogoUrl,
+                LibraryLogoCache = LibraryLogoCache,
                 Media = new List<string>(Media),
                 OfficialWebsiteUrl = OfficialWebsiteUrl,
                 SteamPageUrl = SteamPageUrl,
@@ -480,12 +493,12 @@ namespace Codec.Models
             TimeToCompleteCompletionist = source.TimeToCompleteCompletionist;
             HasHeroAssetSource = source.HasHeroAssetSource;
             HasLogoAssetSource = source.HasLogoAssetSource;
-            LibCapsuleUrl = source.LibCapsuleUrl;
-            LibCapsuleCache = source.LibCapsuleCache;
-            LibHeroUrl = source.LibHeroUrl;
-            LibHeroCache = source.LibHeroCache;
-            LibLogoUrl = source.LibLogoUrl;
-            LibLogoCache = source.LibLogoCache;
+            LibraryCapsuleUrl = source.LibraryCapsuleUrl;
+            LibraryCapsuleCache = source.LibraryCapsuleCache;
+            LibraryHeroUrl = source.LibraryHeroUrl;
+            LibraryHeroCache = source.LibraryHeroCache;
+            LibraryLogoUrl = source.LibraryLogoUrl;
+            LibraryLogoCache = source.LibraryLogoCache;
             Media = new List<string>(source.Media);
             OfficialWebsiteUrl = source.OfficialWebsiteUrl;
             SteamPageUrl = source.SteamPageUrl;

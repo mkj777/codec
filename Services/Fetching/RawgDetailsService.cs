@@ -197,9 +197,9 @@ namespace Codec.Services.Fetching
                     hero = NormalizeHero(heroSource) ?? heroSource;
                 }
 
-                if (!string.IsNullOrWhiteSpace(hero) && (IsPlaceholder(game.LibHero) || !game.SteamID.HasValue))
+                if (!string.IsNullOrWhiteSpace(hero) && (IsPlaceholder(game.LibraryHero) || !game.SteamID.HasValue))
                 {
-                    game.LibHeroUrl = hero;
+                    game.LibraryHeroUrl = hero;
                 }
             }
             catch (Exception ex)

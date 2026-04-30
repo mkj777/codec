@@ -300,13 +300,13 @@ namespace Codec.ViewModels
         private static void ApplyDisplayedAssetHydration(Game game, Services.Fetching.DisplayedAssetService.DisplayedAssetHydrationResult hydration)
         {
             game.GridDbId = hydration.GridDbId ?? game.GridDbId;
-            game.LibCapsuleCache = hydration.CapsuleCachePath;
+            game.LibraryCapsuleCache = hydration.CapsuleCachePath;
             game.HasHeroAssetSource = hydration.HasHeroSource;
-            game.LibHeroUrl = hydration.HeroUrl;
-            game.LibHeroCache = hydration.HeroCachePath;
+            game.LibraryHeroUrl = hydration.HeroUrl;
+            game.LibraryHeroCache = hydration.HeroCachePath;
             game.HasLogoAssetSource = hydration.HasLogoSource;
-            game.LibLogoUrl = hydration.LogoUrl;
-            game.LibLogoCache = hydration.LogoCachePath;
+            game.LibraryLogoUrl = hydration.LogoUrl;
+            game.LibraryLogoCache = hydration.LogoCachePath;
         }
     }
 }

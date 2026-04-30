@@ -274,8 +274,8 @@ namespace Codec.Tests
                 FolderLocation = request.FolderLocation,
                 ImportedFrom = request.ImportSource,
                 IsFullyImported = true,
-                LibCapsuleCache = coverPath,
-                LibHeroCache = heroPath,
+                LibraryCapsuleCache = coverPath,
+                LibraryHeroCache = heroPath,
                 HasLogoAssetSource = false
             };
         }

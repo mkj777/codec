@@ -369,9 +369,9 @@ namespace Codec.Views
                     AddRow("Age Rating", g.AgeRating);
                     AddRow("Main Story (sec)", g.TimeToCompleteMainStory?.ToString());
                     AddRow("Completionist (sec)", g.TimeToCompleteCompletionist?.ToString());
-                    AddRow("Capsule", g.LibCapsule);
-                    AddRow("Hero", g.LibHero);
-                    AddRow("Logo", g.LibLogo);
+                    AddRow("Capsule", g.LibraryCapsule);
+                    AddRow("Hero", g.LibraryHero);
+                    AddRow("Logo", g.LibraryLogo);
                     AddRow("Media", FormatList(g.Media));
                     AddRow("Official Website", g.OfficialWebsiteUrl);
                     AddRow("Steam Page", g.SteamPageUrl);

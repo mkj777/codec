@@ -70,7 +70,7 @@ namespace Codec.Services.Fetching
                 return bundled;
             }
 
-            string? capsuleCachePath = game.LibCapsuleCache;
+            string? capsuleCachePath = game.LibraryCapsuleCache;
             int? gridDbId = game.GridDbId;
 
             if (game.SteamID.HasValue)
@@ -83,30 +83,30 @@ namespace Codec.Services.Fetching
             }
             else
             {
-                var gridResult = await _gridDb.ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibCapsuleCache, forceCoverDownload: force).ConfigureAwait(false);
+                var gridResult = await _gridDb.ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibraryCapsuleCache, forceCoverDownload: force).ConfigureAwait(false);
                 gridDbId = gridResult.GridDbId;
                 capsuleCachePath = gridResult.CoverCachePath;
             }
 
-            bool hasLogoSource = !string.IsNullOrWhiteSpace(game.LibLogoUrl);
-            string? logoCachePath = game.LibLogoCache;
-            if (!string.IsNullOrWhiteSpace(game.LibLogoUrl))
+            bool hasLogoSource = !string.IsNullOrWhiteSpace(game.LibraryLogoUrl);
+            string? logoCachePath = game.LibraryLogoCache;
+            if (!string.IsNullOrWhiteSpace(game.LibraryLogoUrl))
             {
-                var logoPath = await _gameAssets.CacheImageAsync("Logos", BuildAssetKey(game, "logo"), game.LibLogoUrl, force).ConfigureAwait(false);
+                var logoPath = await _gameAssets.CacheImageAsync("Logos", BuildAssetKey(game, "library_logo"), game.LibraryLogoUrl, force).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(logoPath))
                 {
                     logoCachePath = logoPath;
                 }
             }
 
-            bool hasHeroSource = !string.IsNullOrWhiteSpace(game.LibHeroUrl);
-            string? heroCachePath = game.LibHeroCache;
+            bool hasHeroSource = !string.IsNullOrWhiteSpace(game.LibraryHeroUrl);
+            string? heroCachePath = game.LibraryHeroCache;
             bool needsSteamHeroFallback = false;
             bool preferSteamHeaderImage = false;
 
-            if (!string.IsNullOrWhiteSpace(game.LibHeroUrl))
+            if (!string.IsNullOrWhiteSpace(game.LibraryHeroUrl))
             {
-                var heroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "hero"), game.LibHeroUrl, force).ConfigureAwait(false);
+                var heroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "library_hero"), game.LibraryHeroUrl, force).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(heroPath))
                 {
                     heroCachePath = heroPath;
@@ -162,9 +162,9 @@ namespace Codec.Services.Fetching
                         await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(game.LibHeroUrl))
+                    if (!string.IsNullOrWhiteSpace(game.LibraryHeroUrl))
                     {
-                        var rawgHeroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "rawg_hero"), game.LibHeroUrl, force).ConfigureAwait(false);
+                        var rawgHeroPath = await _gameAssets.CacheImageAsync("Heroes", BuildAssetKey(game, "rawg_hero"), game.LibraryHeroUrl, force).ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(rawgHeroPath))
                         {
                             hasHeroSource = true;
@@ -185,10 +185,10 @@ namespace Codec.Services.Fetching
                 gridDbId,
                 capsuleCachePath,
                 hasHeroSource,
-                game.LibHeroUrl,
+                game.LibraryHeroUrl,
                 heroCachePath,
                 hasLogoSource,
-                game.LibLogoUrl,
+                game.LibraryLogoUrl,
                 logoCachePath);
         }
 
@@ -196,13 +196,13 @@ namespace Codec.Services.Fetching
         {
             return new DisplayedAssetHydrationResult(
                 game.GridDbId,
-                game.LibCapsuleCache,
-                game.HasHeroAssetSource || !string.IsNullOrWhiteSpace(game.LibHeroUrl),
-                game.LibHeroUrl,
-                game.LibHeroCache,
-                game.HasLogoAssetSource || !string.IsNullOrWhiteSpace(game.LibLogoUrl),
-                game.LibLogoUrl,
-                game.LibLogoCache);
+                game.LibraryCapsuleCache,
+                game.HasHeroAssetSource || !string.IsNullOrWhiteSpace(game.LibraryHeroUrl),
+                game.LibraryHeroUrl,
+                game.LibraryHeroCache,
+                game.HasLogoAssetSource || !string.IsNullOrWhiteSpace(game.LibraryLogoUrl),
+                game.LibraryLogoUrl,
+                game.LibraryLogoCache);
         }
 
         private static readonly Dictionary<string, string> EpicBundledLogos = new(StringComparer.OrdinalIgnoreCase)

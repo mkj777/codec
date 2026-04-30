@@ -13,6 +13,12 @@ namespace Codec.Services.Fetching
     public class GameAssetService
     {
         private readonly HttpClient _http = new();
+        private readonly SteamKitService? _steamKit;
+
+        public GameAssetService(SteamKitService? steamKit = null)
+        {
+            _steamKit = steamKit;
+        }
 
         private string GetCapsulesDir()
         {
@@ -51,6 +57,42 @@ namespace Codec.Services.Fetching
         {
             try
             {
+                string dir = GetCapsulesDir();
+
+                // Preferred path: PICS-resolved library_capsule hash URL.
+                if (_steamKit != null)
+                {
+                    var assets = await _steamKit.GetLibraryAssetsAsync((uint)steamId).ConfigureAwait(false);
+                    if (!string.IsNullOrEmpty(assets?.CapsuleUrl) && !string.IsNullOrEmpty(assets.CapsuleHash))
+                    {
+                        string hashShort = assets.CapsuleHash.Length > 12 ? assets.CapsuleHash[..12] : assets.CapsuleHash;
+                        string fileName = $"steam_{steamId}_library_capsule_{hashShort}.jpg";
+                        string filePath = Path.Combine(dir, fileName);
+
+                        if (File.Exists(filePath) && !force)
+                        {
+                            return filePath;
+                        }
+
+                        try
+                        {
+                            using var picsResponse = await _http.GetAsync(assets.CapsuleUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                            if (picsResponse.IsSuccessStatusCode)
+                            {
+                                if (File.Exists(filePath)) { try { File.Delete(filePath); } catch { } }
+                                await using var remote = await picsResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                                await using var local = File.Create(filePath);
+                                await remote.CopyToAsync(local).ConfigureAwait(false);
+                                return filePath;
+                            }
+                        }
+                        catch (Exception picsEx)
+                        {
+                            Debug.WriteLine($"PICS capsule download failed for {steamId}: {picsEx.Message}");
+                        }
+                    }
+                }
+
                 var variants = new (string Url, string FileName)[]
                 {
                     ($"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/library_600x900.jpg", $"steam_{steamId}_library_600x900.jpg"),
@@ -58,8 +100,6 @@ namespace Codec.Services.Fetching
                     ($"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/capsule_616x353.jpg", $"steam_{steamId}_capsule_616x353.jpg"),
                     ($"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/header.jpg", $"steam_{steamId}_header.jpg"),
                 };
-
-                string dir = GetCapsulesDir();
 
                 foreach (var (url, fileName) in variants)
                 {

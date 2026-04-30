@@ -34,14 +34,14 @@ namespace Codec.Services.Fetching
                 return false;
             }
 
-            var resolution = await ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibCapsuleCache, forceCoverDownload);
+            var resolution = await ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibraryCapsuleCache, forceCoverDownload);
             if (!resolution.GridDbId.HasValue || string.IsNullOrWhiteSpace(resolution.CoverCachePath))
             {
                 return false;
             }
 
             game.GridDbId = resolution.GridDbId;
-            game.LibCapsuleCache = resolution.CoverCachePath;
+            game.LibraryCapsuleCache = resolution.CoverCachePath;
             return true;
         }
 

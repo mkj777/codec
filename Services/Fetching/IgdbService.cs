@@ -158,12 +158,12 @@ namespace Codec.Services.Fetching
             }
 
             // Artworks: only if Steam didn't provide a hero (non-Steam path)
-            if (!game.SteamID.HasValue && (string.IsNullOrWhiteSpace(game.LibHeroUrl) || IsPlaceholder(game.LibHeroUrl)))
+            if (!game.SteamID.HasValue && (string.IsNullOrWhiteSpace(game.LibraryHeroUrl) || IsPlaceholder(game.LibraryHeroUrl)))
             {
                 string? artworkUrl = await FetchFirstArtworkAsync(igdbId).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(artworkUrl))
                 {
-                    game.LibHeroUrl = artworkUrl;
+                    game.LibraryHeroUrl = artworkUrl;
                     Debug.WriteLine($"[IGDB] Artwork set: {artworkUrl}");
                 }
                 else
