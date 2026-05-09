@@ -6,6 +6,12 @@
 
 # Claude Settings
 .claude
+
+# Agent Markdowns
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+
 # Inno Setup Output
 Output/
 
