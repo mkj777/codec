@@ -2,12 +2,354 @@ using Codec.Models;
 using Codec.Services.Fetching;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using Xunit;
 
 namespace Codec.Tests
 {
     public sealed class IgdbServiceTests
     {
+        [Fact]
+        public async Task FindSteamIdByIgdbIdAsync_UsesExternalGamesUid()
+        {
+            string? capturedUri = null;
+            string? capturedBody = null;
+            var service = CreateService((uri, body) =>
+            {
+                capturedUri = uri;
+                capturedBody = body;
+                return JsonResponse("""
+                [{
+                  "id": 2035022,
+                  "game": 2074,
+                  "name": "Need for Speed Rivals",
+                  "uid": "1262600"
+                }]
+                """);
+            });
+
+            int? steamId = await service.FindSteamIdByIgdbIdAsync(2074);
+
+            Assert.Equal(1262600, steamId);
+            Assert.Contains("/external_games", capturedUri);
+            Assert.Contains("fields game, name, uid;", capturedBody);
+            Assert.Contains("where game = 2074 & external_game_source = 1;", capturedBody);
+        }
+
+        [Fact]
+        public async Task FindSteamIdByIgdbIdAsync_ReturnsNullWhenNoSteamExternalGameExists()
+        {
+            var service = CreateService((_, _) => JsonResponse("[]"));
+
+            int? steamId = await service.FindSteamIdByIgdbIdAsync(2074);
+
+            Assert.Null(steamId);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_SkipsReleaseYearMismatches()
+        {
+            string? capturedBody = null;
+            var service = CreateService((_, body) =>
+            {
+                capturedBody = body;
+                return JsonResponse($$"""
+                [
+                  {
+                    "id": 24780,
+                    "name": "SimCity 4 Deluxe Edition",
+                    "first_release_date": {{UnixDate(2010, 7, 20)}}
+                  },
+                  {
+                    "id": 1234,
+                    "name": "SimCity",
+                    "first_release_date": {{UnixDate(2013, 3, 5)}}
+                  }
+                ]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("SimCity", new HashSet<int> { 2013 });
+
+            Assert.Equal(1234, match.Id);
+            Assert.Equal(2013, match.ReleaseYear);
+            Assert.Contains("limit 10;", capturedBody);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_PrefersNewestSteamBackedExactName()
+        {
+            string? capturedExternalBody = null;
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    capturedExternalBody = body;
+                    return JsonResponse("""
+                    [
+                      { "game": 10, "name": "Resident Evil 2", "uid": "999999" },
+                      { "game": 20, "name": "Resident Evil 2", "uid": "883710" }
+                    ]
+                    """);
+                }
+
+                return JsonResponse($$"""
+                [
+                  {
+                    "id": 10,
+                    "name": "Resident Evil 2",
+                    "first_release_date": {{UnixDate(1998, 1, 21)}}
+                  },
+                  {
+                    "id": 20,
+                    "name": "Resident Evil 2",
+                    "first_release_date": {{UnixDate(2019, 1, 25)}}
+                  },
+                  {
+                    "id": 30,
+                    "name": "Resident Evil 2: Extra DLC",
+                    "first_release_date": {{UnixDate(2020, 1, 1)}}
+                  }
+                ]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("Resident Evil 2", allowedReleaseYears: null);
+
+            Assert.Equal(20, match.Id);
+            Assert.Equal(2019, match.ReleaseYear);
+            Assert.Contains("where game = (10, 20, 30) & external_game_source = 1;", capturedExternalBody);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_NormalizesTrademarkAndCachesSingleSteamId()
+        {
+            string? capturedGamesBody = null;
+            string? capturedExternalBody = null;
+            int externalCalls = 0;
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    externalCalls++;
+                    capturedExternalBody = body;
+                    return JsonResponse("""
+                    [{
+                      "id": 2035022,
+                      "game": 2074,
+                      "name": "Need for Speed Rivals",
+                      "uid": "1262600"
+                    }]
+                    """);
+                }
+
+                capturedGamesBody = body;
+                return JsonResponse($$"""
+                [{
+                  "id": 2074,
+                  "name": "Need for Speed Rivals",
+                  "first_release_date": {{UnixDate(2013, 11, 15)}}
+                }]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("Need for SpeedTM Rivals", allowedReleaseYears: null);
+            int? steamId = await service.FindSteamIdByIgdbIdAsync(2074);
+
+            Assert.Equal(2074, match.Id);
+            Assert.Equal(2013, match.ReleaseYear);
+            Assert.Equal(1262600, steamId);
+            Assert.Equal(1, externalCalls);
+            Assert.NotNull(capturedGamesBody);
+            Assert.Contains("search \"Need for Speed Rivals\";", capturedGamesBody!);
+            Assert.DoesNotContain("SpeedTM", capturedGamesBody!);
+            Assert.Contains("where game = 2074 & external_game_source = 1;", capturedExternalBody);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_PrefersRemakeOverRemasterWithDisambiguatedSteamName()
+        {
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("""
+                    [
+                      { "game": 19686, "name": "RESIDENT EVIL 2 / BIOHAZARD RE:2", "uid": "883710" },
+                      { "game": 396728, "name": "Resident Evil 2 (1998)", "uid": "4249110" }
+                    ]
+                    """);
+                }
+
+                return JsonResponse($$"""
+                [
+                  {
+                    "id": 19686,
+                    "name": "Resident Evil 2",
+                    "first_release_date": {{UnixDate(2019, 1, 25)}},
+                    "game_type": { "type": "remake" }
+                  },
+                  {
+                    "id": 396728,
+                    "name": "Resident Evil 2",
+                    "first_release_date": {{UnixDate(2024, 8, 27)}},
+                    "game_type": { "type": "remaster" }
+                  }
+                ]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("Resident Evil 2", allowedReleaseYears: null);
+
+            Assert.Equal(19686, match.Id);
+            Assert.Equal(2019, match.ReleaseYear);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_RetriesWithStrippedSuffixWhenPrimaryMatchIsWeak()
+        {
+            int gamesCalls = 0;
+            string? secondGamesBody = null;
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("""
+                    [
+                      { "game": 8254, "name": "Resident Evil / biohazard HD REMASTER", "uid": "304240" }
+                    ]
+                    """);
+                }
+
+                gamesCalls++;
+                if (gamesCalls == 1)
+                {
+                    return JsonResponse($$"""
+                    [{
+                      "id": 41858,
+                      "name": "Resident Evil 6 Remastered",
+                      "first_release_date": {{UnixDate(2016, 3, 29)}},
+                      "game_type": { "type": "remaster" }
+                    }]
+                    """);
+                }
+
+                secondGamesBody = body;
+                return JsonResponse($$"""
+                [
+                  {
+                    "id": 424,
+                    "name": "Resident Evil",
+                    "first_release_date": {{UnixDate(1996, 3, 22)}},
+                    "game_type": { "type": "main_game" }
+                  },
+                  {
+                    "id": 8254,
+                    "name": "Resident Evil",
+                    "first_release_date": {{UnixDate(2014, 11, 27)}},
+                    "game_type": { "type": "remaster" }
+                  }
+                ]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("Resident Evil HD Remaster", allowedReleaseYears: null);
+
+            Assert.Equal(8254, match.Id);
+            Assert.Equal(2014, match.ReleaseYear);
+            Assert.Equal(2, gamesCalls);
+            Assert.NotNull(secondGamesBody);
+            Assert.Contains("search \"Resident Evil\";", secondGamesBody!);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_AcceptsCopyrightYearMatchAgainstPlatformReleaseDate()
+        {
+            var service = CreateService((uri, _) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("[]");
+                }
+
+                return JsonResponse($$"""
+                [{
+                  "id": 1942,
+                  "name": "God of War",
+                  "first_release_date": {{UnixDate(2018, 4, 20)}},
+                  "release_dates": [
+                    { "date": {{UnixDate(2018, 4, 20)}} },
+                    { "date": {{UnixDate(2022, 1, 14)}} }
+                  ],
+                  "game_type": { "type": "main_game" }
+                }]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("God of War", new HashSet<int> { 2021 });
+
+            Assert.Equal(1942, match.Id);
+            Assert.Equal(2018, match.ReleaseYear);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_AllowsOneYearCopyrightTolerance()
+        {
+            var service = CreateService((uri, _) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("[]");
+                }
+
+                return JsonResponse($$"""
+                [{
+                  "id": 1234,
+                  "name": "SimCity",
+                  "first_release_date": {{UnixDate(2012, 12, 31)}}
+                }]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("SimCity", new HashSet<int> { 2013 });
+
+            Assert.Equal(1234, match.Id);
+            Assert.Equal(2012, match.ReleaseYear);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_ReturnsNullWhenCopyrightYearCannotMatch()
+        {
+            var service = CreateService((_, _) => JsonResponse($$"""
+            [{
+              "id": 24780,
+              "name": "SimCity 4 Deluxe Edition",
+              "first_release_date": {{UnixDate(2010, 7, 20)}}
+            }]
+            """));
+
+            var match = await service.FindIgdbMatchByNameAsync("SimCity", new HashSet<int> { 2013 });
+
+            Assert.Null(match.Id);
+            Assert.Null(match.ReleaseYear);
+        }
+
+        [Fact]
+        public async Task FindIgdbMatchByNameAsync_ReturnsNullWhenCopyrightYearExistsButReleaseDateMissing()
+        {
+            var service = CreateService((_, _) => JsonResponse("""
+            [{
+              "id": 999,
+              "name": "SimCity"
+            }]
+            """));
+
+            var match = await service.FindIgdbMatchByNameAsync("SimCity", new HashSet<int> { 2013 });
+
+            Assert.Null(match.Id);
+            Assert.Null(match.ReleaseYear);
+        }
+
         [Fact]
         public async Task PopulateFromIgdbAsync_ForVersionRecord_StoresOriginalReleaseMetadata()
         {
@@ -218,6 +560,7 @@ namespace Codec.Tests
         {
             var source = new Game
             {
+                IgdbId = 2074,
                 OriginalReleaseDate = new DateTime(1994, 1, 1),
                 OriginalGameName = "Doom",
                 IgdbVersionParentId = 10,
@@ -231,6 +574,7 @@ namespace Codec.Tests
             var target = new Game();
             target.ApplyHydrationSnapshot(snapshot);
 
+            Assert.Equal(source.IgdbId, snapshot.IgdbId);
             Assert.Equal(source.OriginalReleaseDate, snapshot.OriginalReleaseDate);
             Assert.Equal(source.OriginalGameName, snapshot.OriginalGameName);
             Assert.Equal(source.IgdbVersionParentId, snapshot.IgdbVersionParentId);
@@ -239,6 +583,7 @@ namespace Codec.Tests
             Assert.Equal(source.IsRemakeOrRemaster, snapshot.IsRemakeOrRemaster);
             Assert.Equal(source.FranchiseName, snapshot.FranchiseName);
             Assert.Equal(source.IgdbFranchiseId, snapshot.IgdbFranchiseId);
+            Assert.Equal(source.IgdbId, target.IgdbId);
             Assert.Equal(source.OriginalReleaseDate, target.OriginalReleaseDate);
             Assert.Equal(source.OriginalGameName, target.OriginalGameName);
             Assert.Equal(source.IgdbVersionParentId, target.IgdbVersionParentId);
@@ -247,6 +592,28 @@ namespace Codec.Tests
             Assert.Equal(source.IsRemakeOrRemaster, target.IsRemakeOrRemaster);
             Assert.Equal(source.FranchiseName, target.FranchiseName);
             Assert.Equal(source.IgdbFranchiseId, target.IgdbFranchiseId);
+        }
+
+        [Fact]
+        public void GameJsonSerialization_PreservesIgdbId()
+        {
+            var game = new Game
+            {
+                Name = "Need for Speed Rivals",
+                Executable = @"E:\Games\Need for SpeedTM Rivals\NFS14.exe",
+                FolderLocation = @"E:\Games\Need for SpeedTM Rivals",
+                ImportedFrom = "Heuristic Scan",
+                SteamID = 1262600,
+                IgdbId = 2074
+            };
+
+            string json = JsonSerializer.Serialize(game);
+            var roundTrip = JsonSerializer.Deserialize<Game>(json);
+
+            Assert.Contains("\"IgdbId\":2074", json);
+            Assert.NotNull(roundTrip);
+            Assert.Equal(2074, roundTrip!.IgdbId);
+            Assert.Equal(1262600, roundTrip.SteamID);
         }
 
         [Fact]

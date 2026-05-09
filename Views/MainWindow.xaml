@@ -667,15 +667,6 @@
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
                                FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
-                    <ToggleSwitch x:Name="OnboardingScanOnStartupToggle"
-                                  Header="Scan for games on startup"
-                                  IsOn="False"
-                                  Foreground="White"
-                                  Margin="0,4,0,0"/>
-                    <ToggleSwitch x:Name="OnboardingLaunchSteamSilentToggle"
-                                  Header="Launch Steam on startup"
-                                  IsOn="False"
-                                  Foreground="White"/>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8"
                                 Margin="4,0,0,0">

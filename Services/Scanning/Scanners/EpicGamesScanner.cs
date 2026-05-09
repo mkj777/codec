@@ -16,9 +16,23 @@ namespace Codec.Services.Scanning.Scanners
 
         public override string PlatformName => "Epic Games Store";
 
+        private static readonly string[] LauncherInstallDirs =
+        {
+            @"C:\Program Files (x86)\Epic Games\Launcher",
+            @"C:\Program Files\Epic Games\Launcher"
+        };
+
         public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
         {
             var candidates = new List<GameCandidate>();
+
+            foreach (var dir in LauncherInstallDirs)
+            {
+                if (Directory.Exists(dir))
+                {
+                    _knownLibraryPaths.Add(dir);
+                }
+            }
 
             if (!Directory.Exists(EpicManifestsPath))
             {

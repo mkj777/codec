@@ -51,6 +51,7 @@ namespace Codec.Models
         [ObservableProperty] private int? steamID;
         [ObservableProperty] private int? rawgID;
         [ObservableProperty] private string? rawgSlug;
+        [property: JsonPropertyName("IgdbId")]
         [ObservableProperty] private int? igdbId;
         [ObservableProperty] private int? gridDbId;
 

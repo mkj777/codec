@@ -12,7 +12,8 @@ namespace Codec.Services.Scanning.Scanners
         string FolderPath,
         string Source,
         int? SteamAppId = null,
-        string? LaunchScriptPath = null
+        string? LaunchScriptPath = null,
+        bool HasStrongGameSignals = false
     );
 
     /// <summary>

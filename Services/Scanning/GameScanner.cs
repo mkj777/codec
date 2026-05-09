@@ -71,6 +71,7 @@ namespace Codec.Services.Scanning
             long dedupFilterMs;
             int cacheHits = 0;
             int newValidated = 0;
+            int earlySteamYielded = 0;
             int rejectedNoExe = 0;
             int rejectedNoRawg = 0;
             int skippedUtility = 0;
@@ -94,28 +95,77 @@ namespace Codec.Services.Scanning
             // PHASE 1: High-Reliability Launcher Integration
             Debug.WriteLine("\n=== PHASE 1: LAUNCHER INTEGRATION ===");
             var phase1Sw = Stopwatch.StartNew();
-            foreach (var scanner in _platformScanners)
+            var steamScan = await ScanPlatformScannerAsync(_steamScanner, progress, cancellationToken).ConfigureAwait(false);
+            var steamCandidates = steamScan.Candidates;
+            phase1Timings.Add((_steamScanner.PlatformName, steamScan.ElapsedMs, steamScan.Count));
+
+            var steamLibraryPaths = _steamScanner.KnownLibraryPaths
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            _heuristicScanner.SetExcludedPaths(steamLibraryPaths);
+            Debug.WriteLine($"  Steam library paths collected: {steamLibraryPaths.Count}");
+
+            // PHASE 2 starts as soon as Steam library paths are known, so local disk
+            // scanning can overlap launcher scans and Steam asset imports.
+            Debug.WriteLine("\n=== PHASE 2: HEURISTIC SCANNING ===");
+            var phase2Sw = Stopwatch.StartNew();
+            progress?.Report("Scanning standard installation directories...");
+            var heuristicTask = _heuristicScanner.ScanAsync(progress);
+
+            var remainingPlatformTasks = _platformScanners
+                .Where(scanner => !ReferenceEquals(scanner, _steamScanner))
+                .Select(scanner => ScanPlatformScannerAsync(scanner, progress, cancellationToken))
+                .ToList();
+
+            if (steamCandidates.Count > 0)
             {
-                var scannerSw = Stopwatch.StartNew();
-                int count = 0;
-                try
+                progress?.Report($"Queueing {steamCandidates.Count} Steam games while local scan continues...");
+                foreach (var candidate in steamCandidates)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    progress?.Report($"Scanning {scanner.PlatformName}...");
-                    var candidates = await scanner.ScanAsync(progress);
-                    count = candidates.Count;
-                    allCandidates.AddRange(candidates);
-                    scannerSw.Stop();
-                    Debug.WriteLine($"  {scanner.PlatformName}: {count} games in {scannerSw.ElapsedMilliseconds}ms");
+
+                    if (GameContentHeuristics.ShouldIgnoreCandidate(candidate.Name, candidate.FolderPath, candidate.Source, candidate.SteamAppId.HasValue))
+                    {
+                        Debug.WriteLine($"  SKIP '{candidate.Name}' (utility/non-game heuristic)");
+                        skippedUtility++;
+                        continue;
+                    }
+
+                    var exeSw = Stopwatch.StartNew();
+                    string executablePath = TryGetSteamGameExe(candidate.FolderPath);
+                    exeSw.Stop();
+                    exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                    exeDetectionCount++;
+
+                    if (string.IsNullOrEmpty(executablePath))
+                    {
+                        Debug.WriteLine($"  STEAM-EARLY '{candidate.Name}' queued via steam URI (no root exe, {exeSw.ElapsedMilliseconds}ms)");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"  STEAM-EARLY '{candidate.Name}' -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
+                    }
+
+                    earlySteamYielded++;
+                    scanCache.Upsert(candidate, candidate.Name, executablePath, candidate.SteamAppId, null, candidate.LaunchScriptPath);
+                    yield return new ValidatedScanCandidate(
+                        candidate.SteamAppId,
+                        candidate.Name,
+                        null,
+                        candidate.Source,
+                        executablePath,
+                        candidate.FolderPath,
+                        candidate.LaunchScriptPath);
                 }
-                catch (Exception ex)
-                {
-                    scannerSw.Stop();
-                    Debug.WriteLine($"  {scanner.PlatformName} FAILED in {scannerSw.ElapsedMilliseconds}ms: {ex.Message}");
-                    progress?.Report($"Warning: {scanner.PlatformName} scan failed");
-                }
-                phase1Timings.Add((scanner.PlatformName, scannerSw.ElapsedMilliseconds, count));
             }
+
+            var remainingPlatformScans = await Task.WhenAll(remainingPlatformTasks).ConfigureAwait(false);
+            foreach (var scan in remainingPlatformScans)
+            {
+                phase1Timings.Add((scan.Scanner.PlatformName, scan.ElapsedMs, scan.Count));
+                allCandidates.AddRange(scan.Candidates);
+            }
+
             phase1Sw.Stop();
 
             var allLibraryPaths = _platformScanners
@@ -125,14 +175,10 @@ namespace Codec.Services.Scanning
             _heuristicScanner.SetExcludedPaths(allLibraryPaths);
             Debug.WriteLine($"  Platform library paths collected: {allLibraryPaths.Count}");
 
-            // PHASE 2: Heuristic Environmental Scanning
-            Debug.WriteLine("\n=== PHASE 2: HEURISTIC SCANNING ===");
-            var phase2Sw = Stopwatch.StartNew();
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                progress?.Report("Scanning standard installation directories...");
-                var heuristicCandidates = await _heuristicScanner.ScanAsync(progress);
+                var heuristicCandidates = await heuristicTask.ConfigureAwait(false);
                 phase2Count = heuristicCandidates.Count;
                 allCandidates.AddRange(heuristicCandidates);
                 Debug.WriteLine($"  Heuristic: {phase2Count} potential games");
@@ -190,18 +236,41 @@ namespace Codec.Services.Scanning
 
                 if (scanCache.TryGetValid(candidate, out var cachedResult))
                 {
-                    Debug.WriteLine($"  CACHE-HIT '{candidate.Name}' (cached {cachedResult.CachedAtUtc:u})");
-                    cacheHits++;
-                    yield return new ValidatedScanCandidate(
-                        cachedResult.SteamAppId,
-                        cachedResult.GameName,
-                        cachedResult.RawgId,
-                        cachedResult.ImportSource,
-                        cachedResult.ExecutablePath,
-                        cachedResult.FolderPath,
-                        cachedResult.LaunchScriptPath,
-                        cachedResult.IgdbId);
-                    continue;
+                    bool cachedIsSteamSource = string.Equals(candidate.Source, "Steam", StringComparison.OrdinalIgnoreCase);
+                    var cachedCopyrightYears = !string.IsNullOrEmpty(cachedResult.ExecutablePath)
+                        ? _gameName.TryGetExeCopyrightYears(cachedResult.ExecutablePath)
+                        : new HashSet<int>();
+
+                    if (!cachedIsSteamSource && !cachedResult.IgdbId.HasValue && cachedCopyrightYears.Count > 0)
+                    {
+                        Debug.WriteLine($"  CACHE-STALE '{candidate.Name}' missing IGDB year validation");
+                        scanCache.Invalidate(candidate.FolderPath);
+                    }
+                    else
+                    {
+                        if (cachedResult.SteamAppId.HasValue &&
+                            !cachedIsSteamSource &&
+                            !await _gameName.SteamAppMatchesLocalGameAsync(cachedResult.SteamAppId.Value, candidate.Name, cachedResult.ExecutablePath))
+                        {
+                            Debug.WriteLine($"  CACHE-STALE '{candidate.Name}' rejected cached steam={cachedResult.SteamAppId}");
+                            scanCache.Invalidate(candidate.FolderPath);
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"  CACHE-HIT '{candidate.Name}' (cached {cachedResult.CachedAtUtc:u})");
+                            cacheHits++;
+                            yield return new ValidatedScanCandidate(
+                                cachedResult.SteamAppId,
+                                cachedResult.GameName,
+                                cachedResult.RawgId,
+                                cachedResult.ImportSource,
+                                cachedResult.ExecutablePath,
+                                cachedResult.FolderPath,
+                                cachedResult.LaunchScriptPath,
+                                cachedResult.IgdbId);
+                            continue;
+                        }
+                    }
                 }
 
                 // EXE detection: Steam games → simple root scan; others → full heuristic funnel
@@ -249,41 +318,18 @@ namespace Codec.Services.Scanning
                     }
                 }
 
-                // Steam ID: existing, or lookup (skip for Riot — not on Steam, avoids fuzzy false matches)
+                var executableCopyright = !string.IsNullOrEmpty(executablePath)
+                    ? _gameName.TryGetExeCopyrightInfo(executablePath)
+                    : GameNameService.ExeCopyrightInfo.Empty;
+                LogExecutableCopyright(candidate.Name, executablePath, executableCopyright);
+                IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
+
                 int? steamId = candidate.SteamAppId;
                 bool isRiotSource = string.Equals(candidate.Source, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
-                if (!steamId.HasValue && !isRiotSource)
-                {
-                    var steamSw = Stopwatch.StartNew();
-                    try
-                    {
-                        (int? foundSteamId, string? _) = await _gameName.FindGameIdsAsync(executablePath);
-                        steamSw.Stop();
-                        steamLookupTotalMs += steamSw.ElapsedMilliseconds;
-                        steamLookupCount++;
-                        if (foundSteamId.HasValue)
-                        {
-                            steamId = foundSteamId;
-                            Debug.WriteLine($"  STEAM-LOOKUP '{candidate.Name}' -> id={steamId} ({steamSw.ElapsedMilliseconds}ms)");
-                        }
-                        else
-                        {
-                            Debug.WriteLine($"  STEAM-LOOKUP '{candidate.Name}' -> none ({steamSw.ElapsedMilliseconds}ms)");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        steamSw.Stop();
-                        steamLookupTotalMs += steamSw.ElapsedMilliseconds;
-                        steamLookupCount++;
-                        Debug.WriteLine($"  STEAM-LOOKUP '{candidate.Name}' FAILED ({steamSw.ElapsedMilliseconds}ms): {ex.Message}");
-                    }
-                }
-
                 // Validation funnel:
-                //  - Steam ID present (platform or resolved) → skip all name validation; pipeline will use Steam+IGDB
-                //  - No Steam ID → try IGDB name first; if miss, fall back to RAWG for heuristic candidates
+                //  - Steam platform ID present → trusted; pipeline will use Steam+IGDB
+                //  - Non-Steam → IGDB first; Steam search is only a fallback when no EXE copyright year exists
                 int? igdbId = null;
                 int? rawgId = null;
                 var validateSw = Stopwatch.StartNew();
@@ -293,7 +339,22 @@ namespace Codec.Services.Scanning
                 {
                     try
                     {
-                        igdbId = await _igdb.FindIgdbIdByNameAsync(candidate.Name).ConfigureAwait(false);
+                        var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(candidate.Name, executableCopyrightYears).ConfigureAwait(false);
+                        if (foundIgdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
+                        {
+                            Debug.WriteLine($"  IGDB-YEAR '{candidate.Name}' exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
+                        }
+                        igdbId = foundIgdbId;
+
+                        if (igdbId.HasValue)
+                        {
+                            int? igdbSteamId = await _igdb.FindSteamIdByIgdbIdAsync(igdbId.Value).ConfigureAwait(false);
+                            if (igdbSteamId.HasValue)
+                            {
+                                steamId = igdbSteamId;
+                                Debug.WriteLine($"  IGDB-STEAM '{candidate.Name}' igdb={igdbId} -> steam={steamId}");
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -302,14 +363,59 @@ namespace Codec.Services.Scanning
 
                     if (!igdbId.HasValue)
                     {
-                        rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, RawgValidationMode.Strict);
+                        if (executableCopyrightYears.Count > 0)
+                        {
+                            Debug.WriteLine($"  REJECT '{candidate.Name}' (no IGDB release-year match for exe©{string.Join("/", executableCopyrightYears.Order())})");
+                            rejectedNoRawg++;
+                            continue;
+                        }
+                        else
+                        {
+                            var steamSw = Stopwatch.StartNew();
+                            try
+                            {
+                                (int? foundSteamId, string? _) = await _gameName.FindGameIdsAsync(executablePath, nameHint: candidate.Name);
+                                steamSw.Stop();
+                                steamLookupTotalMs += steamSw.ElapsedMilliseconds;
+                                steamLookupCount++;
+                                if (foundSteamId.HasValue)
+                                {
+                                    bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(foundSteamId.Value, candidate.Name, executablePath);
+                                    if (steamNameMatches)
+                                    {
+                                        steamId = foundSteamId;
+                                        Debug.WriteLine($"  STEAM-FALLBACK '{candidate.Name}' -> id={steamId} ({steamSw.ElapsedMilliseconds}ms)");
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine($"  STEAM-FALLBACK '{candidate.Name}' rejected id={foundSteamId} after appdetails name check ({steamSw.ElapsedMilliseconds}ms)");
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.WriteLine($"  STEAM-FALLBACK '{candidate.Name}' -> none ({steamSw.ElapsedMilliseconds}ms)");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                steamSw.Stop();
+                                steamLookupTotalMs += steamSw.ElapsedMilliseconds;
+                                steamLookupCount++;
+                                Debug.WriteLine($"  STEAM-FALLBACK '{candidate.Name}' FAILED ({steamSw.ElapsedMilliseconds}ms): {ex.Message}");
+                            }
+
+                            if (!steamId.HasValue)
+                            {
+                                rawgId = await ValidateAndFetchRawgIdAsync(candidate.Name, RawgValidationMode.Strict);
+                            }
+                        }
                     }
                 }
                 validateSw.Stop();
                 rawgValidationTotalMs += validateSw.ElapsedMilliseconds;
                 rawgValidationCount++;
 
-                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isFromLauncher)
+                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isFromLauncher && !candidate.HasStrongGameSignals)
                 {
                     Debug.WriteLine($"  REJECT '{candidate.Name}' (no IGDB/RAWG match, validate {validateSw.ElapsedMilliseconds}ms)");
                     rejectedNoRawg++;
@@ -335,7 +441,7 @@ namespace Codec.Services.Scanning
                 totalStopwatch.Stop();
 
             // Summary
-            int totalFound = cacheHits + newValidated;
+            int totalFound = cacheHits + newValidated + earlySteamYielded;
             int totalRejected = rejectedNoExe + rejectedNoRawg + skippedUtility;
             string phase1Breakdown = string.Join(", ",
                 phase1Timings
@@ -346,6 +452,7 @@ namespace Codec.Services.Scanning
             Debug.WriteLine($"Scan time:        {totalStopwatch.Elapsed.TotalSeconds:0.0}s");
             Debug.WriteLine($"Candidates:       {allCandidates.Count} unique (dedup removed {duplicateCount}, catalog removed {catalogFiltered})");
             Debug.WriteLine($"Games yielded:    {totalFound}");
+            Debug.WriteLine($"  Steam early:    {earlySteamYielded}");
             Debug.WriteLine($"  Cache hits:     {cacheHits}");
             Debug.WriteLine($"  New validated:  {newValidated}");
             Debug.WriteLine($"Rejected:         {totalRejected} (no-exe: {rejectedNoExe}, no-rawg: {rejectedNoRawg}, utility: {skippedUtility})");
@@ -374,6 +481,40 @@ namespace Codec.Services.Scanning
             return results;
         }
 
+        private static async Task<(PlatformScanner Scanner, List<GameCandidate> Candidates, long ElapsedMs, int Count)> ScanPlatformScannerAsync(
+            PlatformScanner scanner,
+            IProgress<string>? progress,
+            CancellationToken cancellationToken)
+        {
+            var scannerSw = Stopwatch.StartNew();
+            int count = 0;
+            var candidates = new List<GameCandidate>();
+
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report($"Scanning {scanner.PlatformName}...");
+                candidates = await scanner.ScanAsync(progress).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                count = candidates.Count;
+                scannerSw.Stop();
+                Debug.WriteLine($"  {scanner.PlatformName}: {count} games in {scannerSw.ElapsedMilliseconds}ms");
+            }
+            catch (OperationCanceledException)
+            {
+                scannerSw.Stop();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                scannerSw.Stop();
+                Debug.WriteLine($"  {scanner.PlatformName} FAILED in {scannerSw.ElapsedMilliseconds}ms: {ex.Message}");
+                progress?.Report($"Warning: {scanner.PlatformName} scan failed");
+            }
+
+            return (scanner, candidates, scannerSw.ElapsedMilliseconds, count);
+        }
+
         private async Task<int?> ValidateAndFetchRawgIdAsync(string gameName, RawgValidationMode mode)
         {
             try
@@ -385,6 +526,31 @@ namespace Codec.Services.Scanning
                 Debug.WriteLine($"  ? RAWG validation failed: {ex.Message}");
                 return null;
             }
+        }
+
+        private static void LogExecutableCopyright(string gameName, string executablePath, GameNameService.ExeCopyrightInfo copyright)
+        {
+            string exeName = string.IsNullOrWhiteSpace(executablePath)
+                ? "-"
+                : Path.GetFileName(executablePath);
+            string years = copyright.Years.Count > 0
+                ? string.Join("/", copyright.Years.Order())
+                : "-";
+            string text = string.IsNullOrWhiteSpace(copyright.Text)
+                ? "-"
+                : TruncateForDebug(copyright.Text!, 260);
+
+            Debug.WriteLine($"  EXE-COPYRIGHT '{gameName}' exe='{exeName}' source={copyright.Source} years={years} text=\"{text}\"");
+        }
+
+        private static string TruncateForDebug(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            {
+                return value;
+            }
+
+            return value.Substring(0, maxLength).TrimEnd() + "...";
         }
 
         /// <summary>

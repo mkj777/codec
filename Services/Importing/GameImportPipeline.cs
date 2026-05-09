@@ -133,32 +133,83 @@ namespace Codec.Services.Importing
                 int? steamId = request.SteamAppId;
                 int? rawgId = request.RawgId;
                 int? igdbId = request.IgdbId;
+                var executableCopyright = !string.IsNullOrEmpty(normalizedExePath)
+                    ? _gameName.TryGetExeCopyrightInfo(normalizedExePath)
+                    : GameNameService.ExeCopyrightInfo.Empty;
+                LogExecutableCopyright(detectedName, normalizedExePath, executableCopyright);
+                IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
 
                 bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
+                bool isSteamLauncherSource = string.Equals(request.ImportSource, "Steam", StringComparison.OrdinalIgnoreCase);
 
-                // Manual / un-resolved: try Steam first, then IGDB by name, RAWG as last resort
-                if (!steamId.HasValue && !isRiotSource && !rawgId.HasValue && !igdbId.HasValue)
+                // Non-Steam path: IGDB is the primary authority. If EXE copyright years exist,
+                // they are compared only against IGDB release years.
+                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
                 {
-                    var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath).ConfigureAwait(false);
+                    var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(detectedName, executableCopyrightYears).ConfigureAwait(false);
+                    igdbId = foundIgdbId;
+                    if (igdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
+                    {
+                        Debug.WriteLine($"[PIPELINE] IGDB-YEAR name='{detectedName}' exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
+                    }
+                    else if (!igdbId.HasValue && executableCopyrightYears.Count > 0 && !isRiotSource)
+                    {
+                        Debug.WriteLine($"[PIPELINE] INVALID (no IGDB release-year match): name='{detectedName}' exe©{string.Join("/", executableCopyrightYears.Order())}");
+                        return GameImportResult.Invalid($"Codec rejected '{detectedName}' because its executable copyright year did not match an IGDB release year.");
+                    }
+                }
+
+                if (!steamId.HasValue && igdbId.HasValue && !isRiotSource)
+                {
+                    steamId = await _igdb.FindSteamIdByIgdbIdAsync(igdbId.Value).ConfigureAwait(false);
+                    if (steamId.HasValue)
+                    {
+                        Debug.WriteLine($"[PIPELINE] IGDB-STEAM name='{detectedName}' igdb={igdbId} -> steam={steamId}");
+                        bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
+                        if (!steamNameMatches)
+                        {
+                            Debug.WriteLine($"[PIPELINE] DROP-IGDB-STEAM-ID name='{detectedName}' igdb={igdbId} steam={steamId}");
+                            steamId = null;
+                        }
+                        else if (librarySnapshot.Any(g => g.SteamID == steamId.Value))
+                        {
+                            Debug.WriteLine($"[PIPELINE] DUPLICATE (igdb-derived steam id {steamId} in library): '{detectedName}'");
+                            return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
+                        }
+                    }
+                }
+
+                // Steam search is a fallback only when IGDB could not resolve and no local copyright
+                // year exists to validate against IGDB.
+                if (!steamId.HasValue && !isRiotSource && !rawgId.HasValue && !igdbId.HasValue && executableCopyrightYears.Count == 0)
+                {
+                    var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath, nameHint: detectedName).ConfigureAwait(false);
                     steamId ??= resolvedIds.steamId;
                     if (!string.IsNullOrWhiteSpace(resolvedIds.steamName))
                         detectedName = resolvedIds.steamName;
+                }
+
+                if (steamId.HasValue && !isSteamLauncherSource)
+                {
+                    bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
+                    if (!steamNameMatches)
+                    {
+                        Debug.WriteLine($"[PIPELINE] DROP-STEAM-ID name='{detectedName}' source='{request.ImportSource}' steam={steamId}");
+                        steamId = null;
+                        rawgId = null;
+                        igdbId = null;
+                    }
+                }
+
+                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isRiotSource && executableCopyrightYears.Count == 0)
+                {
+                    rawgId = await _gameDetails.ValidateGameAsync(detectedName, RawgValidationMode.Strict).ConfigureAwait(false);
                 }
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
                 {
                     Debug.WriteLine($"[PIPELINE] DUPLICATE (steam id {steamId} in library): '{detectedName}'");
                     return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
-                }
-
-                // Non-Steam path: IGDB name lookup first, RAWG fallback
-                if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
-                {
-                    igdbId = await _igdb.FindIgdbIdByNameAsync(detectedName).ConfigureAwait(false);
-                    if (!igdbId.HasValue)
-                    {
-                        rawgId = await _gameDetails.ValidateGameAsync(detectedName, RawgValidationMode.Strict).ConfigureAwait(false);
-                    }
                 }
 
                 if (rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
@@ -205,7 +256,9 @@ namespace Codec.Services.Importing
                     await _steamDetails.PopulateFromSteamAsync(game).ConfigureAwait(false);
                     await _hltb.PopulateAsync(game).ConfigureAwait(false);
 
-                    var igdbIdTask = _igdb.FindIgdbIdBySteamIdAsync(game.SteamID.Value);
+                    var igdbIdTask = game.IgdbId.HasValue
+                        ? Task.FromResult<int?>(game.IgdbId.Value)
+                        : _igdb.FindIgdbIdBySteamIdAsync(game.SteamID.Value);
                     var rawgIdTask = _gameDetails.FindRawgIdBySteamIdAsync(game.SteamID.Value);
                     await Task.WhenAll(igdbIdTask, rawgIdTask).ConfigureAwait(false);
 
@@ -259,7 +312,7 @@ namespace Codec.Services.Importing
                 }
 
                 game.IsFullyImported = true;
-                Debug.WriteLine($"[PIPELINE] ADDED: '{game.Name}' steam={game.SteamID} rawg={game.RawgID} lnk={game.LaunchScript}");
+                Debug.WriteLine($"[PIPELINE] ADDED: '{game.Name}' steam={game.SteamID} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
                 return GameImportResult.Added(game, $"{game.Name} was added to your library.");
             }
             catch (Exception ex)
@@ -289,6 +342,31 @@ namespace Codec.Services.Importing
             game.HasLogoAssetSource = hydration.HasLogoSource;
             game.LibraryLogoUrl = hydration.LogoUrl;
             game.LibraryLogoCache = hydration.LogoCachePath;
+        }
+
+        private static void LogExecutableCopyright(string gameName, string executablePath, GameNameService.ExeCopyrightInfo copyright)
+        {
+            string exeName = string.IsNullOrWhiteSpace(executablePath)
+                ? "-"
+                : Path.GetFileName(executablePath);
+            string years = copyright.Years.Count > 0
+                ? string.Join("/", copyright.Years.Order())
+                : "-";
+            string text = string.IsNullOrWhiteSpace(copyright.Text)
+                ? "-"
+                : TruncateForDebug(copyright.Text!, 260);
+
+            Debug.WriteLine($"[PIPELINE] EXE-COPYRIGHT name='{gameName}' exe='{exeName}' source={copyright.Source} years={years} text=\"{text}\"");
+        }
+
+        private static string TruncateForDebug(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= maxLength)
+            {
+                return value;
+            }
+
+            return value.Substring(0, maxLength).TrimEnd() + "...";
         }
     }
 }

@@ -86,21 +86,11 @@ namespace Codec.Services.Scanning
         private static readonly string[] VendorTokens =
         {
             "anticheat",
-            "driver",
-            "runtime",
             "redistributable",
-            "launcher",
             "updater",
-            "maintenance",
-            "vpn",
-            "studio",
-            "cloud plugin",
-            "browser",
-            "desktop",
             "sdk",
-            "service",
+            "cloud plugin",
             "vanguard",
-            "utility"
         };
 
         private static readonly string[] PathIndicators =
@@ -124,6 +114,7 @@ namespace Codec.Services.Scanning
             "\\overwolf",
             "\\radmin vpn",
             "\\epic games launcher",
+            "\\epic games\\launcher",
             "\\gog galaxy",
             "\\system volume information"
         };

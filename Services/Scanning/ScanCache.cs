@@ -98,6 +98,14 @@ namespace Codec.Services.Scanning
             return true;
         }
 
+        public void Invalidate(string folderPath)
+        {
+            if (!string.IsNullOrWhiteSpace(folderPath))
+            {
+                _entries.Remove(folderPath);
+            }
+        }
+
         public void Upsert(GameCandidate candidate, string resolvedName, string executablePath, int? steamId, int? rawgId, string? launchScriptPath, int? igdbId = null)
         {
             long? dirTimestamp = TimestampUtility.GetDirectoryTimestamp(candidate.FolderPath);

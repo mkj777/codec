@@ -211,10 +211,8 @@ namespace Codec.Views
 
         private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
         {
-            bool scanOnStartup = OnboardingScanOnStartupToggle.IsOn;
-            bool launchSteamSilent = OnboardingLaunchSteamSilentToggle.IsOn;
             ViewModel.IsOnboardingVisible = false;
-            await ViewModel.CompleteOnboardingAsync(scanOnStartup, launchSteamSilent);
+            await ViewModel.CompleteOnboardingAsync(false, false);
             await ViewModel.ScanGamesCommand.ExecuteAsync(null);
         }
 

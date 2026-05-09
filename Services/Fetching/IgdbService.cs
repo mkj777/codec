@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace Codec.Services.Fetching
         private const string ArtworksEndpoint = ProxyBase + "/artworks";
 
         private readonly HttpClient _http;
+        private readonly ConcurrentDictionary<int, int> _steamIdByIgdbIdCache = new();
 
         public IgdbService()
             : this(new HttpClient())
@@ -42,7 +44,7 @@ namespace Codec.Services.Fetching
                 return null;
             }
 
-            name = Regex.Replace(TrademarkRegex.Replace(name, ""), @"\s+", " ").Trim();
+            name = NormalizeIgdbSearchName(name);
             Debug.WriteLine($"[IGDB] FindIgdbIdByNameAsync: searching for '{name}'");
 
             try
@@ -82,6 +84,174 @@ namespace Codec.Services.Fetching
             }
         }
 
+        public Task<(int? Id, int? ReleaseYear)> FindIgdbMatchByNameAsync(string name)
+            => FindIgdbMatchByNameAsync(name, allowedReleaseYears: null);
+
+        public async Task<(int? Id, int? ReleaseYear)> FindIgdbMatchByNameAsync(string name, IReadOnlySet<int>? allowedReleaseYears)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return (null, null);
+
+            name = NormalizeIgdbSearchName(name);
+            Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: searching for '{name}'");
+
+            try
+            {
+                var candidates = await SearchAndParseCandidatesAsync(name, name, allowedReleaseYears).ConfigureAwait(false);
+
+                int bestPrimaryScore = candidates.Count > 0 ? candidates.Max(c => c.NameScore) : 0;
+                if (bestPrimaryScore < 60)
+                {
+                    string stripped = StripRemasterSuffix(name);
+                    if (!string.IsNullOrWhiteSpace(stripped) &&
+                        !stripped.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: weak primary (score={bestPrimaryScore}); retry with stripped='{stripped}'");
+                        var fallback = await SearchAndParseCandidatesAsync(stripped, name, allowedReleaseYears).ConfigureAwait(false);
+                        int bestFallbackScore = fallback.Count > 0 ? fallback.Max(c => c.NameScore) : 0;
+                        if (bestFallbackScore > bestPrimaryScore)
+                        {
+                            candidates = fallback;
+                        }
+                    }
+                }
+
+                if (candidates.Count == 0)
+                {
+                    Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: no acceptable release-year match for '{name}' allowed={FormatYears(allowedReleaseYears)}");
+                    return (null, null);
+                }
+
+                IReadOnlyDictionary<int, (int SteamId, string? SteamName)> steamLookup =
+                    await FindSteamIdsByIgdbIdsAsync(candidates.Select(c => c.Id)).ConfigureAwait(false);
+                candidates = candidates
+                    .Select(c => steamLookup.TryGetValue(c.Id, out var info)
+                        ? c with { SteamId = info.SteamId, SteamName = info.SteamName }
+                        : c)
+                    .ToList();
+
+                IgdbNameCandidate best = candidates
+                    .OrderByDescending(c => c.NameScore)
+                    .ThenByDescending(c => GameTypeRank(c.GameType))
+                    .ThenByDescending(c => c.SteamId.HasValue)
+                    .ThenBy(c => SteamNameContainsYear(c.SteamName))
+                    .ThenByDescending(c => c.ReleaseYear ?? 0)
+                    .ThenBy(c => c.SearchOrder)
+                    .First();
+
+                Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: id={best.Id} name='{best.Name}' year={best.ReleaseYear?.ToString() ?? "?"} type='{best.GameType ?? "-"}' steam={best.SteamId?.ToString() ?? "-"} steamName='{best.SteamName ?? "-"}' score={best.NameScore} for '{name}'");
+                return (best.Id, best.ReleaseYear);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: EXCEPTION for '{name}': {ex.Message}");
+                return (null, null);
+            }
+        }
+
+        private async Task<List<IgdbNameCandidate>> SearchAndParseCandidatesAsync(
+            string queryName,
+            string scoringName,
+            IReadOnlySet<int>? allowedReleaseYears)
+        {
+            string escaped = queryName.Replace("\"", "\\\"");
+            string body = $"search \"{escaped}\"; fields id, name, first_release_date, release_dates.date, game_type.type; limit 10;";
+            string json = await PostAsync(GamesEndpoint, body).ConfigureAwait(false);
+
+            var candidates = new List<IgdbNameCandidate>();
+            if (string.IsNullOrWhiteSpace(json))
+                return candidates;
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return candidates;
+
+            int searchOrder = 0;
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                int? id = TryGetInt(item, "id");
+                if (!id.HasValue)
+                {
+                    continue;
+                }
+
+                string? foundName = GetString(item, "name");
+                int? releaseYear = null;
+                if (item.TryGetProperty("first_release_date", out var tsProp) && tsProp.ValueKind == JsonValueKind.Number)
+                    releaseYear = DateTimeOffset.FromUnixTimeSeconds(tsProp.GetInt64()).Year;
+
+                var candidateYears = new HashSet<int>();
+                if (releaseYear.HasValue) candidateYears.Add(releaseYear.Value);
+                if (item.TryGetProperty("release_dates", out var rdArr) && rdArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var rd in rdArr.EnumerateArray())
+                    {
+                        if (rd.ValueKind == JsonValueKind.Object &&
+                            rd.TryGetProperty("date", out var dProp) &&
+                            dProp.ValueKind == JsonValueKind.Number &&
+                            dProp.TryGetInt64(out long dSecs) && dSecs > 0)
+                        {
+                            candidateYears.Add(DateTimeOffset.FromUnixTimeSeconds(dSecs).Year);
+                        }
+                    }
+                }
+
+                string? gameType = null;
+                if (item.TryGetProperty("game_type", out var gtProp) && gtProp.ValueKind == JsonValueKind.Object)
+                {
+                    gameType = GetString(gtProp, "type")?.ToLowerInvariant();
+                }
+
+                if (!ReleaseYearMatches(allowedReleaseYears, candidateYears))
+                {
+                    Debug.WriteLine($"[IGDB] SearchAndParseCandidatesAsync: rejected id={id} name='{foundName}' years={FormatYears(candidateYears)} allowed={FormatYears(allowedReleaseYears)} for query '{queryName}'");
+                    continue;
+                }
+
+                candidates.Add(new IgdbNameCandidate(
+                    id.Value,
+                    foundName ?? string.Empty,
+                    releaseYear,
+                    CalculateIgdbNameScore(scoringName, foundName),
+                    searchOrder++,
+                    SteamId: null,
+                    SteamName: null,
+                    GameType: gameType));
+            }
+
+            return candidates;
+        }
+
+        private static readonly Regex SteamNameYearRegex =
+            new(@"\b(19[7-9]\d|20\d{2})\b", RegexOptions.Compiled);
+
+        private static bool SteamNameContainsYear(string? steamName)
+            => !string.IsNullOrWhiteSpace(steamName) && SteamNameYearRegex.IsMatch(steamName);
+
+        private sealed record IgdbNameCandidate(
+            int Id,
+            string Name,
+            int? ReleaseYear,
+            int NameScore,
+            int SearchOrder,
+            int? SteamId,
+            string? SteamName,
+            string? GameType);
+
+        private static int GameTypeRank(string? gameType) => gameType switch
+        {
+            "main_game" or "remake" or "remaster" => 3,
+            "port" or "expanded_game" or "standalone_expansion" => 2,
+            "bundle" or "pack" or "dlc_addon" or "expansion" or "mod"
+                or "episode" or "season" or "update" or "fork" => 1,
+            _ => 0
+        };
+
         public async Task<int?> FindIgdbIdBySteamIdAsync(int steamId)
         {
             Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: looking up steam={steamId}");
@@ -119,6 +289,208 @@ namespace Codec.Services.Fetching
                 return null;
             }
         }
+
+        public async Task<int?> FindSteamIdByIgdbIdAsync(int igdbId)
+        {
+            if (igdbId <= 0)
+            {
+                return null;
+            }
+
+            if (_steamIdByIgdbIdCache.TryGetValue(igdbId, out int cachedSteamId))
+            {
+                Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: cache igdb={igdbId} -> steam={cachedSteamId}");
+                return cachedSteamId;
+            }
+
+            Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: looking up igdb={igdbId}");
+            try
+            {
+                string body = $"fields game, name, uid; where game = {igdbId} & external_game_source = 1; limit 10;";
+                string json = await PostAsync(ExternalGamesEndpoint, body).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: empty response for igdb={igdbId}");
+                    return null;
+                }
+
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: non-array response for igdb={igdbId}: {json}");
+                    return null;
+                }
+
+                foreach (var entry in doc.RootElement.EnumerateArray())
+                {
+                    if (entry.ValueKind != JsonValueKind.Object)
+                    {
+                        continue;
+                    }
+
+                    int? steamId = TryGetSteamUid(entry);
+
+                    if (steamId.HasValue && steamId.Value > 0)
+                    {
+                        string? name = GetString(entry, "name");
+                        _steamIdByIgdbIdCache[igdbId] = steamId.Value;
+                        Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: igdb={igdbId} -> steam={steamId} name='{name}'");
+                        return steamId;
+                    }
+                }
+
+                Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: no steam external game for igdb={igdbId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[IGDB] FindSteamIdByIgdbIdAsync: EXCEPTION for igdb={igdbId}: {ex.Message}");
+                return null;
+            }
+        }
+
+        private async Task<IReadOnlyDictionary<int, (int SteamId, string? SteamName)>> FindSteamIdsByIgdbIdsAsync(IEnumerable<int> igdbIds)
+        {
+            int[] ids = igdbIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToArray();
+
+            var results = new Dictionary<int, (int SteamId, string? SteamName)>();
+            var missing = new List<int>();
+            foreach (int id in ids)
+            {
+                if (_steamIdByIgdbIdCache.TryGetValue(id, out int cachedSteamId))
+                {
+                    results[id] = (cachedSteamId, null);
+                }
+                else
+                {
+                    missing.Add(id);
+                }
+            }
+
+            if (missing.Count == 0)
+            {
+                return results;
+            }
+
+            try
+            {
+                string idPredicate = missing.Count == 1
+                    ? $"game = {missing[0]}"
+                    : $"game = ({string.Join(", ", missing)})";
+                int limit = Math.Max(10, missing.Count * 2);
+                string body = $"fields game, name, uid; where {idPredicate} & external_game_source = 1; limit {limit};";
+                string json = await PostAsync(ExternalGamesEndpoint, body).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return results;
+                }
+
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    Debug.WriteLine($"[IGDB] FindSteamIdsByIgdbIdsAsync: non-array response: {json}");
+                    return results;
+                }
+
+                foreach (var entry in doc.RootElement.EnumerateArray())
+                {
+                    if (entry.ValueKind != JsonValueKind.Object)
+                    {
+                        continue;
+                    }
+
+                    int? gameId = TryGetInt(entry, "game");
+                    int? steamId = TryGetSteamUid(entry);
+                    string? steamName = GetString(entry, "name");
+                    if (gameId.HasValue && steamId.HasValue && gameId.Value > 0 && steamId.Value > 0)
+                    {
+                        results[gameId.Value] = (steamId.Value, steamName);
+                        _steamIdByIgdbIdCache[gameId.Value] = steamId.Value;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[IGDB] FindSteamIdsByIgdbIdsAsync: EXCEPTION: {ex.Message}");
+            }
+
+            return results;
+        }
+
+        private static int? TryGetSteamUid(JsonElement entry)
+        {
+            string? uid = GetString(entry, "uid");
+            return int.TryParse(uid, out int parsedUid)
+                ? parsedUid
+                : TryGetInt(entry, "uid");
+        }
+
+        private static int CalculateIgdbNameScore(string query, string? candidateName)
+        {
+            string normalizedQuery = NormalizeIgdbLookupName(query);
+            string normalizedCandidate = NormalizeIgdbLookupName(candidateName);
+            if (string.IsNullOrWhiteSpace(normalizedQuery) || string.IsNullOrWhiteSpace(normalizedCandidate))
+            {
+                return 0;
+            }
+
+            if (string.Equals(normalizedQuery, normalizedCandidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return 100;
+            }
+
+            var queryTokens = TokenizeIgdbName(normalizedQuery);
+            var candidateTokens = TokenizeIgdbName(normalizedCandidate);
+            if (queryTokens.Count == 0 || candidateTokens.Count == 0)
+            {
+                return 0;
+            }
+
+            int overlap = queryTokens.Intersect(candidateTokens, StringComparer.OrdinalIgnoreCase).Count();
+            if (overlap == 0)
+            {
+                return 0;
+            }
+
+            if (overlap == queryTokens.Count)
+            {
+                int extraTokens = Math.Max(0, candidateTokens.Count - queryTokens.Count);
+                return Math.Max(60, 85 - extraTokens * 5);
+            }
+
+            int union = queryTokens.Union(candidateTokens, StringComparer.OrdinalIgnoreCase).Count();
+            return union == 0 ? 0 : (int)Math.Round(overlap / (double)union * 60);
+        }
+
+        private static string NormalizeIgdbLookupName(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            string normalized = TrademarkRegex.Replace(name, " ");
+            normalized = Regex.Replace(normalized, @"(?<=[a-z])(?=[A-Z])", " ");
+            normalized = Regex.Replace(normalized, @"\b(tm|r)\b", " ", RegexOptions.IgnoreCase);
+            normalized = Regex.Replace(normalized, @"[^A-Za-z0-9]+", " ");
+            return Regex.Replace(normalized, @"\s+", " ").Trim().ToLowerInvariant();
+        }
+
+        private static string NormalizeIgdbSearchName(string name)
+        {
+            string normalized = TrademarkRegex.Replace(name, " ");
+            normalized = Regex.Replace(normalized, @"(?<=[a-z])(?=[A-Z])", " ");
+            normalized = Regex.Replace(normalized, @"\b(tm|r)\b", " ", RegexOptions.IgnoreCase);
+            return Regex.Replace(normalized, @"\s+", " ").Trim();
+        }
+
+        private static IReadOnlySet<string> TokenizeIgdbName(string normalizedName)
+            => normalizedName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         public async Task PopulateFromIgdbAsync(Game game)
         {
@@ -851,6 +1223,31 @@ limit 200;";
             }
 
             return null;
+        }
+
+        private static bool ReleaseYearMatches(IReadOnlySet<int>? allowedReleaseYears, IReadOnlySet<int> candidateYears)
+        {
+            if (allowedReleaseYears is null || allowedReleaseYears.Count == 0)
+            {
+                return true;
+            }
+
+            if (candidateYears.Count == 0)
+            {
+                return false;
+            }
+
+            return candidateYears.Any(cy => allowedReleaseYears.Any(ay => Math.Abs(cy - ay) <= 1));
+        }
+
+        private static string FormatYears(IReadOnlySet<int>? years)
+        {
+            if (years is null || years.Count == 0)
+            {
+                return "?";
+            }
+
+            return string.Join("/", years.Order());
         }
 
         private static string? FormatGameTypeName(string? gameType) => gameType switch

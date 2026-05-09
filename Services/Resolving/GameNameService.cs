@@ -63,8 +63,9 @@ namespace Codec.Services.Resolving
 
         private readonly Regex MultiSpaceRegex = new("\\s+", RegexOptions.Compiled);
         private readonly Regex CamelCaseRegex = new("(?<=[a-z0-9])([A-Z])", RegexOptions.Compiled);
-        private readonly Regex SpecialCharRegex = new("[()\\[\\]{},-:;!?]", RegexOptions.Compiled);
+        private readonly Regex SpecialCharRegex = new("[()\\[\\]{},:;!?-]", RegexOptions.Compiled);
         private readonly Regex TrademarkRegex = new(@"\(TM\)|\(R\)|™|®|©", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private readonly Regex BareTrademarkTokenRegex = new(@"\btm\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly object RateLimitGate = new();
         private DateTime _lastSteamRequestUtc = DateTime.MinValue;
@@ -106,6 +107,13 @@ namespace Codec.Services.Resolving
             public string? Version { get; init; }
             public string MetadataSource { get; init; } = "folder";
             public int? CopyrightYear { get; init; }
+            public IReadOnlySet<int> CopyrightYears { get; init; } = new HashSet<int>();
+            public IReadOnlySet<int> ExpectedSeriesNumbers { get; init; } = new HashSet<int>();
+        }
+
+        public sealed record ExeCopyrightInfo(string? Text, IReadOnlySet<int> Years, string Source)
+        {
+            public static ExeCopyrightInfo Empty { get; } = new(null, new HashSet<int>(), "none");
         }
 
         public record SearchCandidate
@@ -150,6 +158,7 @@ namespace Codec.Services.Resolving
             public required string MatchedSearchTerm { get; init; }
             public required LocalGameCandidate LocalData { get; init; }
             public required MatchMethod Method { get; init; }
+            public int? SteamReleaseYear { get; init; }
         }
 
         private sealed record CachedSearchEntry(DateTime Timestamp, List<SteamSearchResult> Results);
@@ -198,7 +207,297 @@ namespace Codec.Services.Resolving
             return null;
         }
 
+        public int? TryGetExeCopyrightYear(string exePath)
+        {
+            var years = TryGetExeCopyrightYears(exePath);
+            return years.Count > 0 ? years.Max() : null;
+        }
+
+        public IReadOnlySet<int> TryGetExeCopyrightYears(string exePath)
+        {
+            return TryGetExeCopyrightInfo(exePath).Years;
+        }
+
+        public ExeCopyrightInfo TryGetExeCopyrightInfo(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+            {
+                return ExeCopyrightInfo.Empty;
+            }
+
+            string? legalCopyright = CleanCopyrightText(GetVersionInfoValue(exePath, "LegalCopyright"));
+            if (!string.IsNullOrWhiteSpace(legalCopyright))
+            {
+                return BuildCopyrightInfo(legalCopyright, "version-resource");
+            }
+
+            legalCopyright = CleanCopyrightText(TryGetFileVersionCopyright(exePath));
+            if (!string.IsNullOrWhiteSpace(legalCopyright))
+            {
+                return BuildCopyrightInfo(legalCopyright, "file-version-info");
+            }
+
+            string? muiPath = FindMuiFile(exePath);
+            if (!string.IsNullOrEmpty(muiPath))
+            {
+                legalCopyright = CleanCopyrightText(GetVersionInfoValue(muiPath, "LegalCopyright"));
+                if (!string.IsNullOrWhiteSpace(legalCopyright))
+                {
+                    return BuildCopyrightInfo(legalCopyright, "mui-version-resource");
+                }
+
+                legalCopyright = CleanCopyrightText(TryGetFileVersionCopyright(muiPath));
+                if (!string.IsNullOrWhiteSpace(legalCopyright))
+                {
+                    return BuildCopyrightInfo(legalCopyright, "mui-file-version-info");
+                }
+            }
+
+            legalCopyright = TryFindCopyrightStringInBinary(exePath);
+            if (!string.IsNullOrWhiteSpace(legalCopyright))
+            {
+                return BuildCopyrightInfo(legalCopyright, "binary-string-scan");
+            }
+
+            return ExeCopyrightInfo.Empty;
+        }
+
+        private static ExeCopyrightInfo BuildCopyrightInfo(string text, string source) =>
+            new(text, ExtractCopyrightYears(text), source);
+
+        private static string? TryGetFileVersionCopyright(string path)
+        {
+            try { return FileVersionInfo.GetVersionInfo(path).LegalCopyright; }
+            catch { return null; }
+        }
+
+        private static string? TryFindCopyrightStringInBinary(string exePath)
+        {
+            const long maxScanBytes = 32L * 1024 * 1024;
+
+            try
+            {
+                var file = new FileInfo(exePath);
+                if (!file.Exists || file.Length > maxScanBytes)
+                {
+                    return null;
+                }
+
+                byte[] bytes = File.ReadAllBytes(exePath);
+                return FindCopyrightSnippet(Encoding.Latin1.GetString(bytes))
+                    ?? FindCopyrightSnippet(Encoding.Unicode.GetString(bytes));
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static readonly string[] MiddlewareCopyrightAuthors =
+        {
+            "jean-loup gailly", "mark adler",
+            "glenn randers-pehrson",
+            "the openssl project", "openssl software",
+            "sam leffler", "silicon graphics",
+            "the freetype project",
+            "the icu project", "international business machines",
+            "the chromium authors",
+            "skia"
+        };
+
+        private static string? FindCopyrightSnippet(string value)
+        {
+            var match = Regex.Match(
+                value,
+                @"(?i)(copyright|\(c\)|\u00a9).{0,160}?\b(19[7-9]\d|20\d{2})\b.{0,120}");
+
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            string? cleaned = CleanCopyrightText(match.Value);
+            if (cleaned is null)
+            {
+                return null;
+            }
+
+            if (MiddlewareCopyrightAuthors.Any(author =>
+                cleaned.Contains(author, StringComparison.OrdinalIgnoreCase)))
+            {
+                return null;
+            }
+
+            return cleaned;
+        }
+
+        private static string? CleanCopyrightText(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            string cleaned = Regex.Replace(value, @"[\u0000-\u001F]+", " ");
+            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+            return string.IsNullOrWhiteSpace(cleaned) ? null : cleaned;
+        }
+
+        public static IReadOnlySet<int> ExtractCopyrightYears(string? copyrightText)
+        {
+            if (string.IsNullOrWhiteSpace(copyrightText))
+            {
+                return new HashSet<int>();
+            }
+
+            int maxReasonableYear = DateTime.UtcNow.Year + 1;
+            return Regex.Matches(copyrightText, @"\b(19[7-9]\d|20\d{2})\b")
+                .Select(match => int.Parse(match.Value))
+                .Where(year => year <= maxReasonableYear)
+                .ToHashSet();
+        }
+
+        public static bool ReleaseYearMatchesCopyrightYears(IReadOnlySet<int>? copyrightYears, int? releaseYear)
+        {
+            if (copyrightYears is null || copyrightYears.Count == 0)
+            {
+                return true;
+            }
+
+            return releaseYear.HasValue && copyrightYears.Contains(releaseYear.Value);
+        }
+
+        private static string FormatYears(IReadOnlySet<int>? years)
+        {
+            if (years is null || years.Count == 0)
+            {
+                return "?";
+            }
+
+            return string.Join("/", years.Order());
+        }
+
         public Task<int?> FindRawgIdBySteamIdAsync(int steamId) => _gameDetails.FindRawgIdBySteamIdAsync(steamId);
+
+        public async Task<bool> SteamAppMatchesNameAsync(int steamId, string nameHint)
+            => await SteamAppMatchesLocalGameAsync(steamId, nameHint, executablePath: null).ConfigureAwait(false);
+
+        public async Task<bool> SteamAppMatchesLocalGameAsync(int steamId, string nameHint, string? executablePath)
+        {
+            if (steamId <= 0 || string.IsNullOrWhiteSpace(nameHint))
+            {
+                return false;
+            }
+
+            var appSummary = await GetSteamAppSummaryAsync(steamId);
+            if (string.IsNullOrWhiteSpace(appSummary.Name) || !SteamNameMatchesLocalName(nameHint, appSummary.Name))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool SteamNameMatchesLocalName(string localName, string steamName)
+        {
+            string normalizedLocal = NormalizeName(localName);
+            string normalizedSteam = NormalizeName(steamName);
+            var localSeriesNumbers = ExtractSeriesNumbers(normalizedLocal);
+            var steamSeriesNumbers = ExtractSeriesNumbers(normalizedSteam);
+            if (!SeriesNumbersMatch(localSeriesNumbers, steamSeriesNumbers))
+            {
+                return false;
+            }
+
+            var candidate = new LocalGameCandidate
+            {
+                DetectedName = localName,
+                FullPath = string.Empty,
+                ExecutableName = string.Empty,
+                MetadataSource = "name_validation",
+                ExpectedSeriesNumbers = localSeriesNumbers
+            };
+
+            if (CalculateMatchScore(normalizedLocal, normalizedSteam, candidate) >= Config.AcceptableConfidenceThreshold)
+            {
+                return true;
+            }
+
+            // Local folder often carries trailing edition tokens (HD, Remaster, etc.) that
+            // Steam drops from its canonical title — e.g. local "Resident Evil HD Remaster"
+            // vs Steam appdetails name "Resident Evil" (appid 304240).
+            string strippedLocal = StripTrailingEditionTokens(normalizedLocal);
+            if (!string.Equals(strippedLocal, normalizedLocal, StringComparison.Ordinal) &&
+                strippedLocal.Length > 0 &&
+                CalculateMatchScore(strippedLocal, normalizedSteam, candidate) >= Config.AcceptableConfidenceThreshold)
+            {
+                return true;
+            }
+
+            // Capcom-style "<English> / <JP> <shared edition suffix>" titles
+            // (e.g. "Resident Evil / biohazard HD REMASTER" for local "Resident Evil HD Remaster").
+            // Try recombining the primary segment with any trailing edition tokens.
+            foreach (string altSteam in EnumerateAltTitleVariants(steamName))
+            {
+                if (CalculateMatchScore(normalizedLocal, NormalizeName(altSteam), candidate) >= Config.AcceptableConfidenceThreshold)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string StripTrailingEditionTokens(string normalizedName)
+        {
+            var tokens = normalizedName.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+            while (tokens.Count > 1 && EditionSuffixTokens.Contains(tokens[^1]))
+            {
+                tokens.RemoveAt(tokens.Count - 1);
+            }
+            return string.Join(' ', tokens);
+        }
+
+        private static readonly HashSet<string> EditionSuffixTokens = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "hd", "remaster", "remastered", "edition", "definitive", "complete",
+            "anniversary", "deluxe", "ultimate", "gold", "goty", "enhanced",
+            "redux"
+        };
+
+        private static readonly string[] BundleMarkers =
+            { "bundle", "pack", "collection", "anthology", "megapack", "compilation" };
+
+        private static IEnumerable<string> EnumerateAltTitleVariants(string steamName)
+        {
+            int sepIndex = steamName.IndexOfAny(new[] { '/', '|' });
+            if (sepIndex < 0) yield break;
+
+            if (BundleMarkers.Any(m => steamName.Contains(m, StringComparison.OrdinalIgnoreCase)))
+                yield break;
+
+            string primary = steamName[..sepIndex].Trim();
+            string rest = steamName[(sepIndex + 1)..].Trim();
+            if (primary.Length == 0 || rest.Length == 0) yield break;
+
+            yield return primary;
+            yield return rest;
+
+            string[] restTokens = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            int trailingStart = restTokens.Length;
+            for (int i = restTokens.Length - 1; i >= 0; i--)
+            {
+                if (EditionSuffixTokens.Contains(restTokens[i]))
+                    trailingStart = i;
+                else
+                    break;
+            }
+            if (trailingStart > 0 && trailingStart < restTokens.Length)
+            {
+                string suffix = string.Join(' ', restTokens, trailingStart, restTokens.Length - trailingStart);
+                yield return $"{primary} {suffix}";
+            }
+        }
 
         public async Task<(int? steamId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null, bool skipFuzzySearch = false)
         {
@@ -225,8 +524,8 @@ namespace Codec.Services.Resolving
             int? steamAppId = GetSteamAppIdFromFile(exePath);
             if (steamAppId.HasValue)
             {
-                string? steamGameName = await GetSteamGameNameAsync(steamAppId.Value);
-                string fallbackName = steamGameName ?? Path.GetFileNameWithoutExtension(exePath);
+                SteamAppSummary appSummary = await GetSteamAppSummaryAsync(steamAppId.Value).ConfigureAwait(false);
+                string fallbackName = appSummary.Name ?? Path.GetFileNameWithoutExtension(exePath);
 
                 return new GameMatch
                 {
@@ -236,13 +535,14 @@ namespace Codec.Services.Resolving
                     ConfidenceScore = 1.0f,
                     MatchedSearchTerm = "steam_appid.txt",
                     Method = MatchMethod.SteamAppIdFile,
+                    SteamReleaseYear = appSummary.ReleaseYear,
                     LocalData = new LocalGameCandidate
                     {
                         DetectedName = fallbackName,
                         FullPath = exePath,
                         ExecutableName = Path.GetFileNameWithoutExtension(exePath),
                         MetadataSource = "steam_appid",
-                        FileMetadataProductName = steamGameName,
+                        FileMetadataProductName = appSummary.Name,
                         Version = null
                     }
                 };
@@ -257,7 +557,7 @@ namespace Codec.Services.Resolving
                 return null;
             }
 
-            GameMatch? bestMatch = null;
+            var possibleMatches = new Dictionary<uint, GameMatch>();
 
             foreach (LocalGameCandidate candidate in candidates)
             {
@@ -275,83 +575,120 @@ namespace Codec.Services.Resolving
                         continue;
                     }
 
-                    foreach (SteamSearchResult result in steamResults.Take(Config.MaxSteamResults))
+                    foreach (var searchMatch in SelectSteamSearchMatches(steamResults, searchCandidate))
                     {
-                        if (result.AppId == 0 || string.IsNullOrWhiteSpace(result.Name))
+                        if (!possibleMatches.TryGetValue(searchMatch.SteamAppId, out var existingMatch) ||
+                            searchMatch.ConfidenceScore > existingMatch.ConfidenceScore)
                         {
-                            continue;
+                            possibleMatches[searchMatch.SteamAppId] = searchMatch;
                         }
 
-                        string normalizedSteamName = NormalizeName(result.Name);
-                        float score = CalculateMatchScore(searchCandidate.NormalizedLocalName, normalizedSteamName, searchCandidate.Source);
-                        if (score <= 0f)
+                        if (searchMatch.ConfidenceScore >= Config.HighConfidenceThreshold)
                         {
-                            continue;
-                        }
-
-                        var match = new GameMatch
-                        {
-                            SteamAppId = result.AppId,
-                            SteamName = result.Name,
-                            LocalPath = exePath,
-                            ConfidenceScore = score,
-                            MatchedSearchTerm = searchCandidate.SearchTerm,
-                            Method = MatchMethod.FuzzySearch,
-                            LocalData = searchCandidate.Source
-                        };
-
-                        if (bestMatch is null || match.ConfidenceScore > bestMatch.ConfidenceScore)
-                        {
-                            bestMatch = match;
-                        }
-
-                        if (match.ConfidenceScore >= Config.HighConfidenceThreshold)
-                        {
-                            Debug.WriteLine($"  ✓ High-confidence Steam match: {match.SteamName} ({match.SteamAppId}) via '{match.MatchedSearchTerm}' [{match.ConfidenceScore:P0}]");
+                            Debug.WriteLine($"  ✓ High-confidence Steam match: {searchMatch.SteamName} ({searchMatch.SteamAppId}) via '{searchMatch.MatchedSearchTerm}' [{searchMatch.ConfidenceScore:P0}]");
                         }
                     }
                 }
             }
 
-            if (bestMatch != null && bestMatch.ConfidenceScore >= Config.AcceptableConfidenceThreshold)
+            var validatedMatches = new List<GameMatch>();
+            foreach (var candidateMatch in possibleMatches.Values
+                .Where(match => match.ConfidenceScore >= Config.AcceptableConfidenceThreshold)
+                .OrderByDescending(match => match.ConfidenceScore)
+                .Take(6))
             {
-                // The SearchApps API can return a truncated/shortened name (e.g. "SimCity" for
-                // "SimCity™ 4 Deluxe Edition", appid 24780). Re-score against the authoritative
-                // appdetails name so the numeric-series penalty and token checks fire on the real title.
-                var appSummary = await GetSteamAppSummaryAsync((int)bestMatch.SteamAppId);
-                if (!string.IsNullOrWhiteSpace(appSummary.Name))
+                var validatedMatch = await ValidateSteamMatchAgainstAppDetailsAsync(candidateMatch).ConfigureAwait(false);
+                if (validatedMatch is null)
                 {
-                    string normalizedAuth = NormalizeName(appSummary.Name);
-                    string normalizedLocal = NormalizeName(bestMatch.LocalData.DetectedName);
-                    float authScore = CalculateMatchScore(normalizedLocal, normalizedAuth, bestMatch.LocalData);
-                    if (authScore < Config.AcceptableConfidenceThreshold)
-                    {
-                        Debug.WriteLine($"  ✗ Rejected: auth name '{appSummary.Name}' rescored {authScore:P0} < threshold (search API returned '{bestMatch.SteamName}')");
-                        return null;
-                    }
-
-                    // Year guard: copyright year on the local exe vs Steam release year.
-                    // "SimCity" exe © 2013, Steam app 24780 released 2003 → 10 year gap → wrong game.
-                    if (bestMatch.LocalData.CopyrightYear.HasValue && appSummary.ReleaseYear.HasValue)
-                    {
-                        int yearDiff = Math.Abs(bestMatch.LocalData.CopyrightYear.Value - appSummary.ReleaseYear.Value);
-                        if (yearDiff > 7)
-                        {
-                            Debug.WriteLine($"  ✗ Rejected: year mismatch local=©{bestMatch.LocalData.CopyrightYear} steam={appSummary.ReleaseYear} (gap={yearDiff})");
-                            return null;
-                        }
-                    }
-
-                    bestMatch = bestMatch with { SteamName = appSummary.Name, ConfidenceScore = authScore };
+                    continue;
                 }
 
-                string confidence = bestMatch.ConfidenceScore >= Config.HighConfidenceThreshold ? "High-confidence" : "Acceptable";
-                Debug.WriteLine($"  ✓ {confidence} Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) [{bestMatch.ConfidenceScore:P0}]");
+                string confidence = validatedMatch.ConfidenceScore >= Config.HighConfidenceThreshold ? "High-confidence" : "Acceptable";
+                Debug.WriteLine($"  ✓ {confidence} Steam match: {validatedMatch.SteamName} ({validatedMatch.SteamAppId}) [{validatedMatch.ConfidenceScore:P0}]");
+                validatedMatches.Add(validatedMatch);
+            }
+
+            GameMatch? bestMatch = SelectBestSteamMatch(validatedMatches);
+            if (bestMatch is not null)
+            {
+                Debug.WriteLine($"  ✓ Selected Steam match: {bestMatch.SteamName} ({bestMatch.SteamAppId}) release={bestMatch.SteamReleaseYear?.ToString() ?? "?"} [{bestMatch.ConfidenceScore:P0}]");
                 return bestMatch;
             }
 
             Debug.WriteLine("  ✗ No Steam match reached acceptable confidence threshold");
             return null;
+        }
+
+        private static GameMatch? SelectBestSteamMatch(IEnumerable<GameMatch> matches)
+            => matches
+                .OrderByDescending(match => match.ConfidenceScore)
+                .ThenByDescending(match => match.SteamReleaseYear ?? 0)
+                .ThenBy(match => match.SteamAppId)
+                .FirstOrDefault();
+
+        private async Task<GameMatch?> ValidateSteamMatchAgainstAppDetailsAsync(GameMatch match)
+        {
+            // The SearchApps API can return a truncated/shortened name (e.g. "SimCity" for
+            // "SimCity™ 4 Deluxe Edition", appid 24780). Re-score against the authoritative
+            // appdetails name so the numeric-series penalty and token checks fire on the real title.
+            var appSummary = await GetSteamAppSummaryAsync((int)match.SteamAppId).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(appSummary.Name))
+            {
+                return match;
+            }
+
+            string normalizedAuth = NormalizeName(appSummary.Name);
+            string normalizedLocal = NormalizeName(match.LocalData.DetectedName);
+            float authScore = CalculateMatchScore(normalizedLocal, normalizedAuth, match.LocalData);
+            if (authScore < Config.AcceptableConfidenceThreshold)
+            {
+                Debug.WriteLine($"  ✗ Rejected: auth name '{appSummary.Name}' rescored {authScore:P0} < threshold (search API returned '{match.SteamName}')");
+                return null;
+            }
+
+            return match with
+            {
+                SteamName = appSummary.Name,
+                ConfidenceScore = authScore,
+                SteamReleaseYear = appSummary.ReleaseYear
+            };
+        }
+
+        private IReadOnlyList<GameMatch> SelectSteamSearchMatches(IReadOnlyList<SteamSearchResult> steamResults, SearchCandidate searchCandidate)
+        {
+            var matches = new List<GameMatch>();
+
+            foreach (SteamSearchResult result in steamResults.Take(Config.MaxSteamResults))
+            {
+                if (result.AppId == 0 || string.IsNullOrWhiteSpace(result.Name))
+                {
+                    continue;
+                }
+
+                string normalizedSteamName = NormalizeName(result.Name);
+                float score = CalculateMatchScore(searchCandidate.NormalizedLocalName, normalizedSteamName, searchCandidate.Source);
+                if (score <= 0f)
+                {
+                    continue;
+                }
+
+                var match = new GameMatch
+                {
+                    SteamAppId = result.AppId,
+                    SteamName = result.Name,
+                    LocalPath = searchCandidate.Source.FullPath,
+                    ConfidenceScore = score,
+                    MatchedSearchTerm = searchCandidate.SearchTerm,
+                    Method = MatchMethod.FuzzySearch,
+                    LocalData = searchCandidate.Source
+                };
+
+                matches.Add(match);
+            }
+
+            return matches
+                .OrderByDescending(match => match.ConfidenceScore)
+                .ToList();
         }
 
         private record SteamAppSummary(string? Name, int? ReleaseYear);
@@ -374,7 +711,7 @@ namespace Codec.Services.Resolving
                     if (data.TryGetProperty("release_date", out var relDate) &&
                         relDate.TryGetProperty("date", out var dateProp))
                     {
-                        var m = Regex.Match(dateProp.GetString() ?? string.Empty, @"\b(2\d{3})\b");
+                        var m = Regex.Match(dateProp.GetString() ?? string.Empty, @"\b(19[7-9]\d|20\d{2})\b");
                         if (m.Success) releaseYear = int.Parse(m.Value);
                     }
 
@@ -421,14 +758,10 @@ namespace Codec.Services.Resolving
                 legalCopyright ??= GetVersionInfoValue(muiPath, "LegalCopyright");
             }
 
-            // Extract the most recent year starting with 2 from the copyright string (e.g. "© 2013 EA")
-            int? copyrightYear = null;
-            if (!string.IsNullOrWhiteSpace(legalCopyright))
-            {
-                var yearMatches = Regex.Matches(legalCopyright, @"\b(2\d{3})\b");
-                if (yearMatches.Count > 0)
-                    copyrightYear = yearMatches.Max(m => int.Parse(m.Value));
-            }
+            var copyrightYears = ExtractCopyrightYears(legalCopyright);
+            int? copyrightYear = copyrightYears.Count > 0 ? copyrightYears.Max() : null;
+
+            var expectedSeriesNumbers = GetExpectedSeriesNumbers(nameHint, folderName, executableName);
 
             void AddCandidate(string? name, string source)
             {
@@ -441,7 +774,9 @@ namespace Codec.Services.Resolving
                     FileMetadataProductName = productName,
                     Version = productVersion,
                     MetadataSource = source,
-                    CopyrightYear = copyrightYear
+                    CopyrightYear = copyrightYear,
+                    CopyrightYears = copyrightYears,
+                    ExpectedSeriesNumbers = expectedSeriesNumbers
                 });
             }
 
@@ -691,19 +1026,25 @@ namespace Codec.Services.Resolving
 
             var localTokens = localName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var steamTokens = steamResult.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var localSeriesNumbers = ExtractSeriesNumbers(localName);
+            var steamSeriesNumbers = ExtractSeriesNumbers(steamResult);
+            var effectiveLocalSeriesNumbers = localSeriesNumbers.Count > 0
+                ? localSeriesNumbers
+                : source.ExpectedSeriesNumbers;
 
-            // Hard guard: a series number present on one side but absent on the other is a
-            // disqualifying mismatch. "sim city" must never match "sim city 4" regardless of
-            // how well the rest of the string compares. Numbers that appear on both sides are
-            // symmetric and do not trigger this (e.g. "witcher 3" vs "witcher 3 wild hunt").
-            bool steamHasAsymmetricNumber = steamTokens.Any(st =>
-                int.TryParse(st, out int n) && n > 0 && n <= 100 &&
-                !localTokens.Any(lt => lt.Equals(st, StringComparison.OrdinalIgnoreCase)));
-            bool localHasAsymmetricNumber = localTokens.Any(lt =>
-                int.TryParse(lt, out int n) && n > 0 && n <= 100 &&
-                !steamTokens.Any(st => st.Equals(lt, StringComparison.OrdinalIgnoreCase)));
-            if (steamHasAsymmetricNumber || localHasAsymmetricNumber)
+            // Hard guard: series numbers must agree. This also understands roman numerals and
+            // compact exe abbreviations such as re2.exe, so a local RE2 signal cannot match RE4.
+            if (!SeriesNumbersMatch(effectiveLocalSeriesNumbers, steamSeriesNumbers))
                 return 0f;
+
+            // If a launcher/folder hint carried a series number, apply that context to every
+            // metadata/executable candidate as well. This prevents generic PE metadata like
+            // "Resident Evil" from bypassing the local "Resident Evil 2" folder signal.
+            if (source.ExpectedSeriesNumbers.Count > 0 &&
+                (steamSeriesNumbers.Count == 0 || !SetEquals(source.ExpectedSeriesNumbers, steamSeriesNumbers)))
+            {
+                return 0f;
+            }
 
             if (localName.Equals(steamResult, StringComparison.OrdinalIgnoreCase))
                 return 1.0f;
@@ -748,6 +1089,87 @@ namespace Codec.Services.Resolving
             return Math.Clamp(score, 0f, 1f);
         }
 
+        private IReadOnlySet<int> GetExpectedSeriesNumbers(string? nameHint, string folderName, string executableName)
+        {
+            var fromHint = ExtractSeriesNumbers(NormalizeName(nameHint));
+            if (fromHint.Count > 0)
+            {
+                return fromHint;
+            }
+
+            if (!DeprioritizedTerms.Any(term => folderName.Contains(term, StringComparison.OrdinalIgnoreCase)))
+            {
+                var fromFolder = ExtractSeriesNumbers(NormalizeName(folderName));
+                if (fromFolder.Count > 0)
+                {
+                    return fromFolder;
+                }
+            }
+
+            return ExtractSeriesNumbers(NormalizeName(executableName));
+        }
+
+        private bool SeriesNumbersMatch(IReadOnlySet<int> localNumbers, IReadOnlySet<int> steamNumbers)
+        {
+            if (localNumbers.Count == 0 && steamNumbers.Count == 0)
+            {
+                return true;
+            }
+
+            return localNumbers.Count == steamNumbers.Count && SetEquals(localNumbers, steamNumbers);
+        }
+
+        private static bool SetEquals(IReadOnlySet<int> left, IReadOnlySet<int> right) =>
+            left.Count == right.Count && left.All(right.Contains);
+
+        private IReadOnlySet<int> ExtractSeriesNumbers(string? normalizedName)
+        {
+            var numbers = new HashSet<int>();
+            if (string.IsNullOrWhiteSpace(normalizedName))
+            {
+                return numbers;
+            }
+
+            var nonSeriesCompactTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "x64", "x86", "win64", "win32", "dx11", "dx12"
+            };
+
+            foreach (string token in normalizedName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (int.TryParse(token, out int numeric))
+                {
+                    AddSeriesNumber(numbers, numeric);
+                    continue;
+                }
+
+                if (TryParseRoman(token, out int roman))
+                {
+                    AddSeriesNumber(numbers, roman);
+                    continue;
+                }
+
+                if (!nonSeriesCompactTokens.Contains(token))
+                {
+                    var compactMatch = Regex.Match(token, @"^[a-z]{1,5}(\d{1,2})$", RegexOptions.IgnoreCase);
+                    if (compactMatch.Success && int.TryParse(compactMatch.Groups[1].Value, out int compact))
+                    {
+                        AddSeriesNumber(numbers, compact);
+                    }
+                }
+            }
+
+            return numbers;
+        }
+
+        private static void AddSeriesNumber(HashSet<int> numbers, int value)
+        {
+            if (value > 0 && value <= 100)
+            {
+                numbers.Add(value);
+            }
+        }
+
         private float CalculateTokenOverlap(string s1, string s2)
         {
             var tokens1 = s1.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -774,6 +1196,7 @@ namespace Codec.Services.Resolving
             value = CamelCaseRegex.Replace(value, " $1");
             value = RemoveFileExtension(value);
             value = TrademarkRegex.Replace(value, "");
+            value = BareTrademarkTokenRegex.Replace(value, " ");
             value = SpecialCharRegex.Replace(value, " ");
             value = value.Replace("/", " ");
             value = SanitizeUmlauts(value);
