@@ -17,7 +17,7 @@ namespace Codec.Services.Scanning
     public sealed class ScanCache
     {
         private const string CacheFileName = "scan-cache.json";
-        private const int CurrentCacheVersion = 2;
+        private const int CurrentCacheVersion = 3;
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
@@ -75,13 +75,19 @@ namespace Codec.Services.Scanning
                 return false;
             }
 
+            if (!string.Equals(entry.EpicAppId, candidate.EpicAppId, StringComparison.OrdinalIgnoreCase))
+            {
+                _entries.Remove(candidate.FolderPath);
+                return false;
+            }
+
             bool hasExecutable = !string.IsNullOrWhiteSpace(entry.ExecutablePath);
             bool hasLaunchScript = !string.IsNullOrWhiteSpace(entry.LaunchScriptPath)
                 && File.Exists(entry.LaunchScriptPath);
 
             if (!Directory.Exists(entry.FolderPath) ||
                 (hasExecutable && !File.Exists(entry.ExecutablePath)) ||
-                (!hasExecutable && !hasLaunchScript && !CanTrustMissingExecutable(entry.ImportSource)))
+                (!hasExecutable && !hasLaunchScript && !CanTrustMissingExecutable(entry)))
             {
                 _entries.Remove(candidate.FolderPath);
                 return false;
@@ -135,6 +141,7 @@ namespace Codec.Services.Scanning
                 GameName = resolvedName,
                 ImportSource = candidate.Source,
                 SteamAppId = steamId,
+                EpicAppId = candidate.EpicAppId,
                 RawgId = rawgId,
                 IgdbId = igdbId,
                 LaunchScriptPath = launchScriptPath,
@@ -177,6 +184,7 @@ namespace Codec.Services.Scanning
             public required string GameName { get; init; }
             public required string ImportSource { get; init; }
             public int? SteamAppId { get; init; }
+            public string? EpicAppId { get; init; }
             public int? RawgId { get; init; }
             public int? IgdbId { get; init; }
             public string? LaunchScriptPath { get; init; }
@@ -185,9 +193,11 @@ namespace Codec.Services.Scanning
             public DateTime CachedAtUtc { get; init; }
         }
 
-        private static bool CanTrustMissingExecutable(string? source) =>
-            string.Equals(source, "Riot Games", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(source, "Steam", StringComparison.OrdinalIgnoreCase);
+        private static bool CanTrustMissingExecutable(CachedScanResult entry) =>
+            entry.SteamAppId.HasValue ||
+            !string.IsNullOrWhiteSpace(entry.EpicAppId) ||
+            string.Equals(entry.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(entry.ImportSource, "Steam", StringComparison.OrdinalIgnoreCase);
 
         private static class TimestampUtility
         {

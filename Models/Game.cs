@@ -49,6 +49,7 @@ namespace Codec.Models
 
         // external IDs
         [ObservableProperty] private int? steamID;
+        [ObservableProperty] private string? epicAppId;
         [ObservableProperty] private int? rawgID;
         [ObservableProperty] private string? rawgSlug;
         [property: JsonPropertyName("IgdbId")]
@@ -404,6 +405,7 @@ namespace Codec.Models
                 FolderSize = FolderSize,
                 ImportedFrom = ImportedFrom,
                 SteamID = SteamID,
+                EpicAppId = EpicAppId,
                 RawgID = RawgID,
                 RawgSlug = RawgSlug,
                 IgdbId = IgdbId,
@@ -464,6 +466,7 @@ namespace Codec.Models
             FolderSize = source.FolderSize;
             ImportedFrom = source.ImportedFrom;
             SteamID = source.SteamID;
+            EpicAppId = source.EpicAppId;
             RawgID = source.RawgID;
             RawgSlug = source.RawgSlug;
             IgdbId = source.IgdbId;

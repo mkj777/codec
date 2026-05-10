@@ -155,6 +155,8 @@ namespace Codec.ViewModels
             {
                 bool isSteamGame = SelectedGame.SteamID.HasValue
                     && string.Equals(SelectedGame.ImportedFrom, "Steam", StringComparison.OrdinalIgnoreCase);
+                bool isEpicGame = !string.IsNullOrWhiteSpace(SelectedGame.EpicAppId)
+                    && string.Equals(SelectedGame.ImportedFrom, "Epic Games", StringComparison.OrdinalIgnoreCase);
 
                 if (isSteamGame)
                 {
@@ -165,6 +167,14 @@ namespace Codec.ViewModels
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = $"steam://rungameid/{SelectedGame.SteamID!.Value}",
+                        UseShellExecute = true
+                    });
+                }
+                else if (isEpicGame)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = BuildEpicLaunchUri(SelectedGame.EpicAppId!),
                         UseShellExecute = true
                     });
                 }
@@ -196,6 +206,9 @@ namespace Codec.ViewModels
                 Debug.WriteLine($"Failed to launch {SelectedGame.Name}: {ex.Message}");
             }
         }
+
+        internal static string BuildEpicLaunchUri(string epicAppId) =>
+            $"com.epicgames.launcher://apps/{Uri.EscapeDataString(epicAppId)}?action=launch&silent=true";
 
         [RelayCommand]
         private void OpenGameFolder()

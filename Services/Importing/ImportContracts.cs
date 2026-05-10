@@ -42,6 +42,7 @@ namespace Codec.Services.Importing
         bool IsManual = false,
         string? LaunchScriptPath = null,
         int? IgdbId = null,
+        string? EpicAppId = null,
         ScanLogBatch? LogBatch = null);
 
     public enum ImportNotificationSeverity

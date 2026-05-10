@@ -36,6 +36,7 @@ namespace Codec.Services.Importing
         private int _lastCompletedSessionTotal;
 
         public string? DetectedSteamClientPath => _scanner.DetectedSteamClientPath;
+        public string? DetectedEpicLauncherPath => _scanner.DetectedEpicLauncherPath;
 
         public event EventHandler<GameImportStatusSnapshot>? StatusChanged;
         public event EventHandler<ImportNotification>? NotificationRaised;
@@ -213,13 +214,11 @@ namespace Codec.Services.Importing
             }
 
             var batch = candidate.LogBatch;
-            batch?.Log($"ENQUEUE source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath}");
+            batch?.Log($"ENQUEUE source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath} epic={candidate.EpicAppId}");
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
 
             bool hasExe = !string.IsNullOrWhiteSpace(candidate.ExecutablePath);
-            string reservationKey = hasExe
-                ? candidate.ExecutablePath
-                : (candidate.SteamAppId.HasValue ? $"steam:{candidate.SteamAppId.Value}" : $"name:{candidate.GameName}");
+            string reservationKey = GetReservationKey(candidate);
 
             if (hasExe && librarySnapshot.Any(g => string.Equals(g.Executable, candidate.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
             {
@@ -231,6 +230,14 @@ namespace Codec.Services.Importing
             if (candidate.SteamAppId.HasValue && librarySnapshot.Any(g => g.SteamID == candidate.SteamAppId.Value))
             {
                 batch?.Flush("✗ DENIED", $"steam id {candidate.SteamAppId} already in library");
+                IncrementSkipped();
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(candidate.EpicAppId) &&
+                librarySnapshot.Any(g => string.Equals(g.EpicAppId, candidate.EpicAppId, StringComparison.OrdinalIgnoreCase)))
+            {
+                batch?.Flush("✗ DENIED", $"epic id {candidate.EpicAppId} already in library");
                 IncrementSkipped();
                 return;
             }
@@ -259,6 +266,7 @@ namespace Codec.Services.Importing
                 IsManual: false,
                 candidate.LaunchScriptPath,
                 candidate.IgdbId,
+                candidate.EpicAppId,
                 LogBatch: batch), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
@@ -398,11 +406,24 @@ namespace Codec.Services.Importing
 
         private static string GetReservationKey(GameImportRequest request)
         {
-            if (!string.IsNullOrWhiteSpace(request.ExecutablePath))
-                return request.ExecutablePath;
             if (request.SteamAppId.HasValue)
                 return $"steam:{request.SteamAppId.Value}";
+            if (!string.IsNullOrWhiteSpace(request.EpicAppId))
+                return $"epic:{request.EpicAppId}";
+            if (!string.IsNullOrWhiteSpace(request.ExecutablePath))
+                return request.ExecutablePath;
             return $"name:{request.NameHint}";
+        }
+
+        private static string GetReservationKey(ValidatedScanCandidate candidate)
+        {
+            if (candidate.SteamAppId.HasValue)
+                return $"steam:{candidate.SteamAppId.Value}";
+            if (!string.IsNullOrWhiteSpace(candidate.EpicAppId))
+                return $"epic:{candidate.EpicAppId}";
+            if (!string.IsNullOrWhiteSpace(candidate.ExecutablePath))
+                return candidate.ExecutablePath;
+            return $"name:{candidate.GameName}";
         }
 
         private void IncrementSkipped()

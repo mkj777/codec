@@ -42,10 +42,23 @@ namespace Codec.ViewModels
                 if (!snapshot.IsActive)
                 {
                     IsStartupScanToastVisible = false;
-                    string? detected = _importCoordinator.DetectedSteamClientPath;
-                    if (!string.IsNullOrEmpty(detected) && detected != _appSettings.SteamClientPath)
+                    bool settingsChanged = false;
+                    string? detectedSteam = _importCoordinator.DetectedSteamClientPath;
+                    if (!string.IsNullOrEmpty(detectedSteam) && detectedSteam != _appSettings.SteamClientPath)
                     {
-                        _appSettings.SteamClientPath = detected;
+                        _appSettings.SteamClientPath = detectedSteam;
+                        settingsChanged = true;
+                    }
+
+                    string? detectedEpic = _importCoordinator.DetectedEpicLauncherPath;
+                    if (!string.IsNullOrEmpty(detectedEpic) && detectedEpic != _appSettings.EpicLauncherPath)
+                    {
+                        _appSettings.EpicLauncherPath = detectedEpic;
+                        settingsChanged = true;
+                    }
+
+                    if (settingsChanged)
+                    {
                         _ = _services.AppSettings.SaveAsync(_appSettings);
                     }
 

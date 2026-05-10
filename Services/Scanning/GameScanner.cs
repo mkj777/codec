@@ -28,6 +28,7 @@ namespace Codec.Services.Scanning
         string FolderLocation,
         string? LaunchScriptPath = null,
         int? IgdbId = null,
+        string? EpicAppId = null,
         ScanLogBatch? LogBatch = null);
 
     public class GameScanner
@@ -37,8 +38,10 @@ namespace Codec.Services.Scanning
         private readonly GameNameService _gameName;
         private readonly IgdbService _igdb;
         private readonly SteamScanner _steamScanner = new();
+        private readonly EpicGamesScanner _epicScanner = new();
 
         public string? DetectedSteamClientPath => _steamScanner.DetectedSteamClientPath;
+        public string? DetectedEpicLauncherPath => _epicScanner.DetectedEpicLauncherPath;
 
         public GameScanner(GameNameService gameName, IgdbService igdb)
         {
@@ -47,7 +50,7 @@ namespace Codec.Services.Scanning
             _platformScanners = new List<PlatformScanner>
             {
                 _steamScanner,
-                new EpicGamesScanner(),
+                _epicScanner,
                 new RiotGamesScanner()
             };
             _heuristicScanner = new HeuristicScanner();
@@ -161,6 +164,7 @@ namespace Codec.Services.Scanning
                         candidate.FolderPath,
                         candidate.LaunchScriptPath,
                         IgdbId: null,
+                        EpicAppId: candidate.EpicAppId,
                         LogBatch: batch);
                 }
             }
@@ -278,6 +282,7 @@ namespace Codec.Services.Scanning
                                 cachedResult.FolderPath,
                                 cachedResult.LaunchScriptPath,
                                 cachedResult.IgdbId,
+                                cachedResult.EpicAppId,
                                 LogBatch: batch);
                             continue;
                         }
@@ -303,6 +308,22 @@ namespace Codec.Services.Scanning
                     else
                     {
                         batch.Log($"STEAM-EXE -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(candidate.EpicAppId))
+                {
+                    executablePath = TryGetExecutableHint(candidate);
+                    exeSw.Stop();
+                    exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                    exeDetectionCount++;
+
+                    if (string.IsNullOrEmpty(executablePath))
+                    {
+                        batch.Log($"EPIC-LAUNCH app='{candidate.EpicAppId}' (no executable hint)");
+                    }
+                    else
+                    {
+                        batch.Log($"EPIC-EXE -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
                     }
                 }
                 else if (ShouldUseFullExecutableDetection(candidate))
@@ -339,7 +360,7 @@ namespace Codec.Services.Scanning
 
                     bool hasLaunchScript = !string.IsNullOrWhiteSpace(candidate.LaunchScriptPath)
                         && File.Exists(candidate.LaunchScriptPath);
-                    if (!hasLaunchScript && !CanTrustMissingExecutable(candidate.Source))
+                    if (!hasLaunchScript && !CanTrustMissingExecutable(candidate))
                     {
                         batch.Flush("✗ REJECTED", "no platform launch target");
                         rejectedNoExe++;
@@ -462,10 +483,20 @@ namespace Codec.Services.Scanning
                     continue;
                 }
 
-                batch.Log($"VALIDATED steam={steamId?.ToString() ?? "-"} igdb={igdbId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"} (validate {validateSw.ElapsedMilliseconds}ms, exe {exeSw.ElapsedMilliseconds}ms)");
+                batch.Log($"VALIDATED steam={steamId?.ToString() ?? "-"} epic={candidate.EpicAppId ?? "-"} igdb={igdbId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"} (validate {validateSw.ElapsedMilliseconds}ms, exe {exeSw.ElapsedMilliseconds}ms)");
                 newValidated++;
                 scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath, igdbId);
-                yield return new ValidatedScanCandidate(steamId, candidate.Name, rawgId, candidate.Source, executablePath, candidate.FolderPath, candidate.LaunchScriptPath, igdbId, LogBatch: batch);
+                yield return new ValidatedScanCandidate(
+                    steamId,
+                    candidate.Name,
+                    rawgId,
+                    candidate.Source,
+                    executablePath,
+                    candidate.FolderPath,
+                    candidate.LaunchScriptPath,
+                    igdbId,
+                    candidate.EpicAppId,
+                    LogBatch: batch);
             }
 
             phase3Sw.Stop();
@@ -528,7 +559,14 @@ namespace Codec.Services.Scanning
         }
 
         internal static bool ShouldUseFullExecutableDetection(GameCandidate candidate) =>
-            !candidate.SteamAppId.HasValue && IsHeuristicSource(candidate.Source);
+            !candidate.SteamAppId.HasValue &&
+            string.IsNullOrWhiteSpace(candidate.EpicAppId) &&
+            IsHeuristicSource(candidate.Source);
+
+        internal static bool CanTrustMissingExecutable(GameCandidate candidate) =>
+            candidate.SteamAppId.HasValue ||
+            !string.IsNullOrWhiteSpace(candidate.EpicAppId) ||
+            string.Equals(candidate.Source, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
         internal static bool CanTrustMissingExecutable(string? source) =>
             string.Equals(source, "Riot Games", StringComparison.OrdinalIgnoreCase);
@@ -606,6 +644,24 @@ namespace Codec.Services.Scanning
             }
 
             return value.Substring(0, maxLength).TrimEnd() + "...";
+        }
+
+        private static string TryGetExecutableHint(GameCandidate candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate.ExecutableHintPath))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                string normalized = Path.GetFullPath(candidate.ExecutableHintPath);
+                return File.Exists(normalized) ? normalized : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         /// <summary>

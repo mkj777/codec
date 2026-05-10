@@ -47,7 +47,7 @@ namespace Codec.Services.Importing
         {
             var batch = request.LogBatch ?? new ScanLogBatch(request.NameHint, request.ImportSource);
 
-            batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} rawg={request.RawgId}");
+            batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} epic={request.EpicAppId} rawg={request.RawgId}");
             cancellationToken.ThrowIfCancellationRequested();
 
             bool hasLaunchScript = !string.IsNullOrWhiteSpace(request.LaunchScriptPath)
@@ -220,6 +220,13 @@ namespace Codec.Services.Importing
                     return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
                 }
 
+                if (!string.IsNullOrWhiteSpace(request.EpicAppId) &&
+                    librarySnapshot.Any(g => string.Equals(g.EpicAppId, request.EpicAppId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    batch.Flush("⤼ DUPLICATE", $"epic id {request.EpicAppId} already in library");
+                    return GameImportResult.Duplicate($"A game with Epic ID {request.EpicAppId} already exists in your library.");
+                }
+
                 if (rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
                 {
                     batch.Flush("⤼ DUPLICATE", $"rawg id {rawgId} already in library");
@@ -239,6 +246,7 @@ namespace Codec.Services.Importing
                     FolderLocation = folderLocation,
                     ImportedFrom = request.ImportSource,
                     SteamID = steamId,
+                    EpicAppId = string.IsNullOrWhiteSpace(request.EpicAppId) ? null : request.EpicAppId,
                     RawgID = rawgId,
                     IgdbId = igdbId,
                     LaunchScript = hasLaunchScript
@@ -320,7 +328,7 @@ namespace Codec.Services.Importing
                 }
 
                 game.IsFullyImported = true;
-                batch.Flush("✓ ADDED", $"steam={game.SteamID} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
+                batch.Flush("✓ ADDED", $"steam={game.SteamID} epic={game.EpicAppId} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
                 return GameImportResult.Added(game, $"{game.Name} was added to your library.");
             }
             catch (Exception ex)
@@ -356,6 +364,7 @@ namespace Codec.Services.Importing
 
         internal static bool AllowsMissingExecutable(GameImportRequest request, bool hasLaunchScript) =>
             request.SteamAppId.HasValue ||
+            !string.IsNullOrWhiteSpace(request.EpicAppId) ||
             hasLaunchScript ||
             string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
 

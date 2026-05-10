@@ -12,6 +12,7 @@ namespace Codec.Services.Storage
         public bool ScanOnStartup { get; set; }
         public bool LaunchSteamSilent { get; set; }
         public string? SteamClientPath { get; set; }
+        public string? EpicLauncherPath { get; set; }
     }
 
     public class AppSettingsService

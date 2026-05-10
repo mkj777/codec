@@ -343,6 +343,7 @@ namespace Codec.Views
                     AddRow("Folder Location", g.FolderLocation);
                     AddRow("Folder Size (bytes)", g.FolderSize.ToString());
                     AddRow("Steam ID", g.SteamID?.ToString());
+                    AddRow("Epic ID", g.EpicAppId);
                     AddRow("RAWG ID", g.RawgID?.ToString());
                     AddRow("RAWG Slug", g.RawgSlug);
                     AddRow("GridDB ID", g.GridDbId?.ToString());
