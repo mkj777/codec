@@ -1,21 +1,42 @@
 using Codec.Services.Storage;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Codec.Services.Logging
 {
     public static class ScanLogFile
     {
-        private static readonly object _gate = new();
-        private static StreamWriter? _addedWriter;
-        private static StreamWriter? _rejectedWriter;
-        private static string? _addedPath;
-        private static string? _rejectedPath;
+        private const int MaxLogFiles = 10;
 
-        public static string? AddedPath => _addedPath;
-        public static string? RejectedPath => _rejectedPath;
+        private static readonly object _gate = new();
+        private static readonly List<string> _rejectedEntries = new();
+        private static StreamWriter? _writer;
+        private static string? _logPath;
+        private static string? _baseDirectoryOverride;
+        private static bool _isSessionActive;
+
+        public static string? LogPath
+        {
+            get
+            {
+                lock (_gate) { return _logPath; }
+            }
+        }
+
+        public static string? AddedPath => LogPath;
+        public static string? RejectedPath => LogPath;
+
+        public static bool IsSessionActive
+        {
+            get
+            {
+                lock (_gate) { return _isSessionActive; }
+            }
+        }
 
         public static void BeginSession()
         {
@@ -25,53 +46,61 @@ namespace Codec.Services.Logging
 
                 try
                 {
-                    string dir = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        LibraryStorageService.AppDataFolderName);
+                    string dir = GetLogDirectory();
                     Directory.CreateDirectory(dir);
 
                     string stamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
-                    _addedPath = Path.Combine(dir, $"scan-added-{stamp}.log");
-                    _rejectedPath = Path.Combine(dir, $"scan-rejected-{stamp}.log");
+                    _logPath = GetUniqueLogPath(dir, $"scan-{stamp}", ".log");
 
-                    _addedWriter = new StreamWriter(_addedPath, append: false, Encoding.UTF8) { AutoFlush = true };
-                    _rejectedWriter = new StreamWriter(_rejectedPath, append: false, Encoding.UTF8) { AutoFlush = true };
+                    _writer = new StreamWriter(_logPath, append: false, Encoding.UTF8) { AutoFlush = true };
+                    _isSessionActive = true;
 
                     string header = $"=== Scan log started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===";
-                    _addedWriter.WriteLine(header);
-                    _rejectedWriter.WriteLine(header);
+                    _writer.WriteLine(header);
+                    _writer.WriteLine();
+                    _writer.WriteLine("=== ADDED ===");
+
+                    EnforceRetention_NoLock(dir, _logPath);
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"ScanLogFile: failed to begin session: {ex.Message}");
-                    _addedWriter = null;
-                    _rejectedWriter = null;
-                    _addedPath = null;
-                    _rejectedPath = null;
+                    try { _writer?.Dispose(); } catch { /* ignored */ }
+                    _writer = null;
+                    _logPath = null;
+                    _isSessionActive = false;
+                    _rejectedEntries.Clear();
                 }
             }
         }
 
-        /// <summary>Write to both added + rejected logs (used for session-wide context like phase headers).</summary>
+        /// <summary>Write session-wide context into the first section of the scan log.</summary>
         public static void WriteSession(string text)
         {
             lock (_gate)
             {
-                TryWrite(_addedWriter, text);
-                TryWrite(_rejectedWriter, text);
+                TryWrite(_writer, text);
             }
         }
 
-        /// <summary>Write to the added-games log only.</summary>
+        /// <summary>Write to the added-games section.</summary>
         public static void WriteAdded(string text)
         {
-            lock (_gate) { TryWrite(_addedWriter, text); }
+            lock (_gate) { TryWrite(_writer, text); }
         }
 
-        /// <summary>Write to the rejected/denied/failed log only.</summary>
+        /// <summary>Buffer rejected/denied/failed entries so they can be appended after added games.</summary>
         public static void WriteRejected(string text)
         {
-            lock (_gate) { TryWrite(_rejectedWriter, text); }
+            lock (_gate)
+            {
+                if (!_isSessionActive)
+                {
+                    return;
+                }
+
+                _rejectedEntries.Add(text);
+            }
         }
 
         public static void EndSession()
@@ -94,12 +123,109 @@ namespace Codec.Services.Logging
 
         private static void EndSession_NoLock()
         {
-            try { _addedWriter?.Dispose(); } catch { /* ignored */ }
-            try { _rejectedWriter?.Dispose(); } catch { /* ignored */ }
-            _addedWriter = null;
-            _rejectedWriter = null;
-            _addedPath = null;
-            _rejectedPath = null;
+            if (_writer != null)
+            {
+                try
+                {
+                    _writer.WriteLine();
+                    _writer.WriteLine("=== REJECTED / SKIPPED / FAILED ===");
+
+                    if (_rejectedEntries.Count == 0)
+                    {
+                        _writer.WriteLine("(none)");
+                    }
+                    else
+                    {
+                        foreach (string entry in _rejectedEntries)
+                        {
+                            _writer.WriteLine(entry);
+                        }
+                    }
+
+                    _writer.WriteLine();
+                    _writer.WriteLine($"=== Scan log ended {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ScanLogFile: finalize failed: {ex.Message}");
+                }
+            }
+
+            try { _writer?.Dispose(); } catch { /* ignored */ }
+            _writer = null;
+            _logPath = null;
+            _isSessionActive = false;
+            _rejectedEntries.Clear();
+        }
+
+        private static string GetBaseDirectory()
+        {
+            return _baseDirectoryOverride
+                ?? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    LibraryStorageService.AppDataFolderName);
+        }
+
+        private static string GetLogDirectory()
+        {
+            return Path.Combine(GetBaseDirectory(), "Logs");
+        }
+
+        private static string GetUniqueLogPath(string directory, string fileNameWithoutExtension, string extension)
+        {
+            string path = Path.Combine(directory, fileNameWithoutExtension + extension);
+            for (int i = 1; File.Exists(path); i++)
+            {
+                path = Path.Combine(directory, $"{fileNameWithoutExtension}-{i}{extension}");
+            }
+
+            return path;
+        }
+
+        private static void EnforceRetention_NoLock(string directory, string currentPath)
+        {
+            try
+            {
+                string normalizedCurrentPath = Path.GetFullPath(currentPath);
+                var oldFiles = Directory.EnumerateFiles(directory, "*.log")
+                    .Select(path => new FileInfo(path))
+                    .Where(file => !string.Equals(Path.GetFullPath(file.FullName), normalizedCurrentPath, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(file => file.LastWriteTimeUtc)
+                    .ThenBy(file => file.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                int totalCount = oldFiles.Count + 1;
+                foreach (FileInfo file in oldFiles)
+                {
+                    if (totalCount <= MaxLogFiles)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        file.Delete();
+                        totalCount--;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"ScanLogFile: failed to delete old log '{file.FullName}': {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ScanLogFile: retention failed: {ex.Message}");
+            }
+        }
+
+        internal static void SetBaseDirectoryForTests(string? baseDirectory)
+        {
+            lock (_gate)
+            {
+                EndSession_NoLock();
+                _baseDirectoryOverride = baseDirectory;
+            }
         }
     }
 }

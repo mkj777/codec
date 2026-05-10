@@ -425,6 +425,18 @@ namespace Codec.Services.Importing
 
             if (snapshot.AddedCount <= 0 && snapshot.SkippedCount <= 0 && snapshot.FailedCount <= 0)
             {
+                if (ScanLogFile.IsSessionActive)
+                {
+                    var activeSw = _clickStopwatch;
+                    if (activeSw != null && activeSw.IsRunning)
+                    {
+                        activeSw.Stop();
+                        GameScanner.LogSession($"=== TOTAL TIME (scan + pipeline): {activeSw.Elapsed.TotalSeconds:0.0}s ===");
+                    }
+
+                    ScanLogFile.EndSession();
+                }
+
                 return;
             }
 
