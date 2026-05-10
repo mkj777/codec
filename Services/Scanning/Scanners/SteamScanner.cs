@@ -52,10 +52,35 @@ namespace Codec.Services.Scanning.Scanners
             foreach (var game in installedGames)
             {
                 string gameFolderPath = System.IO.Path.Combine(game.LibraryPath, "steamapps", "common", game.InstallDir);
+                if (!IsInstallFolderPopulated(gameFolderPath))
+                {
+                    Debug.WriteLine($"[SteamScanner] SKIP '{game.Name}' (appid={game.AppId}): install folder missing or empty at {gameFolderPath}");
+                    continue;
+                }
                 candidates.Add(new GameCandidate(game.Name, gameFolderPath, PlatformName, game.AppId));
             }
 
             return candidates;
+        }
+
+        /// <summary>
+        /// Returns false when Steam left the install dir behind after uninstall — directory missing,
+        /// or present but contains no files at any depth. Walks lazily; bails on the first file found.
+        /// </summary>
+        private static bool IsInstallFolderPopulated(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+                return false;
+
+            try
+            {
+                return Directory.EnumerateFiles(folderPath, "*", SearchOption.AllDirectories).Any();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SteamScanner] IsInstallFolderPopulated failed for {folderPath}: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
