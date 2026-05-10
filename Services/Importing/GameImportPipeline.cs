@@ -1,11 +1,11 @@
 using Codec.Models;
 using Codec.Services.Fetching;
+using Codec.Services.Logging;
 using Codec.Services.Resolving;
 using Codec.Services.Scanning;
 using Codec.Services.Storage;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -44,7 +44,9 @@ namespace Codec.Services.Importing
 
         public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
         {
-            Debug.WriteLine($"[PIPELINE] ENTRY name='{request.NameHint}' source='{request.ImportSource}' exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} rawg={request.RawgId}");
+            var batch = request.LogBatch ?? new ScanLogBatch(request.NameHint, request.ImportSource);
+
+            batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} rawg={request.RawgId}");
             cancellationToken.ThrowIfCancellationRequested();
 
             // Steam-sourced games launch via steam:// URI — exe is optional.
@@ -61,16 +63,16 @@ namespace Codec.Services.Importing
                 {
                     if (!isSteamSourced)
                     {
-                        Debug.WriteLine($"[PIPELINE] INVALID (bad path): '{request.ExecutablePath}'");
+                        batch.Flush("✗ INVALID", $"bad path: '{request.ExecutablePath}'");
                         return GameImportResult.Invalid("The selected executable path is invalid.");
                     }
-                    Debug.WriteLine($"[PIPELINE] WARN (steam bad exe path, ignoring): '{request.ExecutablePath}'");
+                    batch.Log($"PIPELINE WARN (steam bad exe path, ignoring): '{request.ExecutablePath}'");
                     normalizedExePath = string.Empty;
                 }
             }
             else if (!isSteamSourced)
             {
-                Debug.WriteLine($"[PIPELINE] INVALID (empty exe): '{request.NameHint}'");
+                batch.Flush("✗ INVALID", $"empty exe (name='{request.NameHint}')");
                 return GameImportResult.Invalid("No executable was selected.");
             }
 
@@ -78,10 +80,10 @@ namespace Codec.Services.Importing
             {
                 if (!isSteamSourced)
                 {
-                    Debug.WriteLine($"[PIPELINE] INVALID (exe missing): '{normalizedExePath}'");
+                    batch.Flush("✗ INVALID", $"exe missing: '{normalizedExePath}'");
                     return GameImportResult.Invalid("The selected executable no longer exists.");
                 }
-                Debug.WriteLine($"[PIPELINE] WARN (steam exe missing, ignoring): '{normalizedExePath}'");
+                batch.Log($"PIPELINE WARN (steam exe missing, ignoring): '{normalizedExePath}'");
                 normalizedExePath = string.Empty;
             }
 
@@ -89,17 +91,17 @@ namespace Codec.Services.Importing
             {
                 if (!isSteamSourced)
                 {
-                    Debug.WriteLine($"[PIPELINE] INVALID (utility path): '{normalizedExePath}'");
+                    batch.Flush("✗ INVALID", $"utility path: '{normalizedExePath}'");
                     return GameImportResult.Invalid("Codec rejected this executable because it looks like a launcher or utility.");
                 }
-                Debug.WriteLine($"[PIPELINE] WARN (steam utility exe, ignoring): '{normalizedExePath}'");
+                batch.Log($"PIPELINE WARN (steam utility exe, ignoring): '{normalizedExePath}'");
                 normalizedExePath = string.Empty;
             }
 
             if (!string.IsNullOrEmpty(normalizedExePath)
                 && librarySnapshot.Any(g => string.Equals(g.Executable, normalizedExePath, StringComparison.OrdinalIgnoreCase)))
             {
-                Debug.WriteLine($"[PIPELINE] DUPLICATE (exe in library): '{normalizedExePath}'");
+                batch.Flush("⤼ DUPLICATE", $"exe already in library: '{normalizedExePath}'");
                 return GameImportResult.Duplicate("This executable is already in your library.");
             }
 
@@ -124,7 +126,7 @@ namespace Codec.Services.Importing
 
             if (GameContentHeuristics.NameMatchesUtility(detectedName))
             {
-                Debug.WriteLine($"[PIPELINE] INVALID (utility name): '{detectedName}'");
+                batch.Flush("✗ INVALID", $"utility name: '{detectedName}'");
                 return GameImportResult.Invalid($"Codec rejected '{detectedName}' because it looks like a launcher or utility.");
             }
 
@@ -136,7 +138,7 @@ namespace Codec.Services.Importing
                 var executableCopyright = !string.IsNullOrEmpty(normalizedExePath)
                     ? _gameName.TryGetExeCopyrightInfo(normalizedExePath)
                     : GameNameService.ExeCopyrightInfo.Empty;
-                LogExecutableCopyright(detectedName, normalizedExePath, executableCopyright);
+                LogExecutableCopyright(batch, normalizedExePath, executableCopyright);
                 IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
 
                 bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
@@ -150,11 +152,11 @@ namespace Codec.Services.Importing
                     igdbId = foundIgdbId;
                     if (igdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
                     {
-                        Debug.WriteLine($"[PIPELINE] IGDB-YEAR name='{detectedName}' exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
+                        batch.Log($"PIPELINE IGDB-YEAR exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
                     }
                     else if (!igdbId.HasValue && executableCopyrightYears.Count > 0 && !isRiotSource)
                     {
-                        Debug.WriteLine($"[PIPELINE] INVALID (no IGDB release-year match): name='{detectedName}' exe©{string.Join("/", executableCopyrightYears.Order())}");
+                        batch.Flush("✗ INVALID", $"no IGDB release-year match (exe©{string.Join("/", executableCopyrightYears.Order())})");
                         return GameImportResult.Invalid($"Codec rejected '{detectedName}' because its executable copyright year did not match an IGDB release year.");
                     }
                 }
@@ -164,16 +166,16 @@ namespace Codec.Services.Importing
                     steamId = await _igdb.FindSteamIdByIgdbIdAsync(igdbId.Value).ConfigureAwait(false);
                     if (steamId.HasValue)
                     {
-                        Debug.WriteLine($"[PIPELINE] IGDB-STEAM name='{detectedName}' igdb={igdbId} -> steam={steamId}");
+                        batch.Log($"PIPELINE IGDB-STEAM igdb={igdbId} -> steam={steamId}");
                         bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
                         if (!steamNameMatches)
                         {
-                            Debug.WriteLine($"[PIPELINE] DROP-IGDB-STEAM-ID name='{detectedName}' igdb={igdbId} steam={steamId}");
+                            batch.Log($"PIPELINE DROP-IGDB-STEAM-ID igdb={igdbId} steam={steamId}");
                             steamId = null;
                         }
                         else if (librarySnapshot.Any(g => g.SteamID == steamId.Value))
                         {
-                            Debug.WriteLine($"[PIPELINE] DUPLICATE (igdb-derived steam id {steamId} in library): '{detectedName}'");
+                            batch.Flush("⤼ DUPLICATE", $"igdb-derived steam id {steamId} already in library");
                             return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
                         }
                     }
@@ -194,7 +196,7 @@ namespace Codec.Services.Importing
                     bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
                     if (!steamNameMatches)
                     {
-                        Debug.WriteLine($"[PIPELINE] DROP-STEAM-ID name='{detectedName}' source='{request.ImportSource}' steam={steamId}");
+                        batch.Log($"PIPELINE DROP-STEAM-ID source='{request.ImportSource}' steam={steamId}");
                         steamId = null;
                         rawgId = null;
                         igdbId = null;
@@ -208,19 +210,19 @@ namespace Codec.Services.Importing
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
                 {
-                    Debug.WriteLine($"[PIPELINE] DUPLICATE (steam id {steamId} in library): '{detectedName}'");
+                    batch.Flush("⤼ DUPLICATE", $"steam id {steamId} already in library");
                     return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
                 }
 
                 if (rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
                 {
-                    Debug.WriteLine($"[PIPELINE] DUPLICATE (rawg id {rawgId} in library): '{detectedName}'");
+                    batch.Flush("⤼ DUPLICATE", $"rawg id {rawgId} already in library");
                     return GameImportResult.Duplicate($"A game with RAWG ID {rawgId.Value} already exists in your library.");
                 }
 
                 if (igdbId.HasValue && librarySnapshot.Any(g => g.IgdbId == igdbId.Value))
                 {
-                    Debug.WriteLine($"[PIPELINE] DUPLICATE (igdb id {igdbId} in library): '{detectedName}'");
+                    batch.Flush("⤼ DUPLICATE", $"igdb id {igdbId} already in library");
                     return GameImportResult.Duplicate($"A game with IGDB ID {igdbId.Value} already exists in your library.");
                 }
 
@@ -246,7 +248,7 @@ namespace Codec.Services.Importing
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Folder size lookup failed for {game.Name}: {ex.Message}");
+                        batch.Log($"PIPELINE folder size lookup failed: {ex.Message}");
                     }
                 }
 
@@ -307,17 +309,19 @@ namespace Codec.Services.Importing
 
                 if (!displayedAssets.AreRequiredAssetsReady && !isFromPlatformScanner)
                 {
-                    Debug.WriteLine($"[PIPELINE] FAILED (assets not ready, manual/heuristic): '{game.Name}' cover={displayedAssets.IsCoverCached} hero={displayedAssets.IsHeroCached}/{displayedAssets.HasHeroSource} logo={displayedAssets.IsLogoCached}/{displayedAssets.HasLogoSource}");
+                    batch.Flush("✗ FAILED", $"assets not ready (cover={displayedAssets.IsCoverCached} hero={displayedAssets.IsHeroCached}/{displayedAssets.HasHeroSource} logo={displayedAssets.IsLogoCached}/{displayedAssets.HasLogoSource})");
                     return GameImportResult.Failed($"Codec could not finish downloading the required artwork for {game.Name}.");
                 }
 
                 game.IsFullyImported = true;
-                Debug.WriteLine($"[PIPELINE] ADDED: '{game.Name}' steam={game.SteamID} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
+                batch.Flush("✓ ADDED", $"steam={game.SteamID} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
                 return GameImportResult.Added(game, $"{game.Name} was added to your library.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[PIPELINE] FAILED (exception) '{normalizedExePath}': {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                batch.Log($"PIPELINE EXCEPTION {ex.GetType().Name}: {ex.Message}");
+                batch.Log(ex.StackTrace ?? string.Empty);
+                batch.Flush("✗ FAILED", $"exception: {ex.GetType().Name}: {ex.Message}");
                 return GameImportResult.Failed("Codec could not finish importing this game.");
             }
         }
@@ -344,7 +348,7 @@ namespace Codec.Services.Importing
             game.LibraryLogoCache = hydration.LogoCachePath;
         }
 
-        private static void LogExecutableCopyright(string gameName, string executablePath, GameNameService.ExeCopyrightInfo copyright)
+        private static void LogExecutableCopyright(ScanLogBatch batch, string executablePath, GameNameService.ExeCopyrightInfo copyright)
         {
             string exeName = string.IsNullOrWhiteSpace(executablePath)
                 ? "-"
@@ -356,7 +360,7 @@ namespace Codec.Services.Importing
                 ? "-"
                 : TruncateForDebug(copyright.Text!, 260);
 
-            Debug.WriteLine($"[PIPELINE] EXE-COPYRIGHT name='{gameName}' exe='{exeName}' source={copyright.Source} years={years} text=\"{text}\"");
+            batch.Log($"PIPELINE EXE-COPYRIGHT exe='{exeName}' source={copyright.Source} years={years} text=\"{text}\"");
         }
 
         private static string TruncateForDebug(string value, int maxLength)

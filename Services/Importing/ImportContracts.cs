@@ -1,4 +1,5 @@
 using Codec.Models;
+using Codec.Services.Logging;
 
 namespace Codec.Services.Importing
 {
@@ -40,7 +41,8 @@ namespace Codec.Services.Importing
         int? RawgId = null,
         bool IsManual = false,
         string? LaunchScriptPath = null,
-        int? IgdbId = null);
+        int? IgdbId = null,
+        ScanLogBatch? LogBatch = null);
 
     public enum ImportNotificationSeverity
     {

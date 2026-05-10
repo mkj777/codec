@@ -1,4 +1,5 @@
 using Codec.Models;
+using Codec.Services.Logging;
 using Codec.Services.Scanning;
 using System;
 using System.Collections.Generic;
@@ -78,6 +79,8 @@ namespace Codec.Services.Importing
                 _isScanRunning = true;
             }
 
+            ScanLogFile.BeginSession();
+
             PublishStatus();
             RaiseNotification(new ImportNotification(
                 "Library Import",
@@ -127,7 +130,7 @@ namespace Codec.Services.Importing
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Background scan failed: {ex.Message}");
+                GameScanner.LogSession($"Background scan failed: {ex.Message}");
                 RaiseNotification(new ImportNotification(
                     "Library Import",
                     "The background scan stopped because of an error.",
@@ -188,12 +191,14 @@ namespace Codec.Services.Importing
 
             string folder = Path.GetDirectoryName(normalizedPath) ?? string.Empty;
             string nameHint = Path.GetFileNameWithoutExtension(normalizedPath);
+            var manualBatch = new ScanLogBatch(nameHint, "Added manually");
             await _queue.Writer.WriteAsync(new GameImportRequest(
                 normalizedPath,
                 folder,
                 nameHint,
                 "Added manually",
-                IsManual: true), _disposeCts.Token).ConfigureAwait(false);
+                IsManual: true,
+                LogBatch: manualBatch), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
             return new ImportEnqueueResult(ImportEnqueueResultStatus.Accepted, "Game queued for background import.");
@@ -202,9 +207,13 @@ namespace Codec.Services.Importing
         private async Task TryEnqueueScanCandidateAsync(ValidatedScanCandidate candidate)
         {
             if (_drainQueue)
+            {
+                candidate.LogBatch?.Flush("– SKIPPED", "scan cancelled / draining queue");
                 return;
+            }
 
-            Debug.WriteLine($"[IMPORT-ENQUEUE] {candidate.GameName} source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath}");
+            var batch = candidate.LogBatch;
+            batch?.Log($"ENQUEUE source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath}");
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
 
             bool hasExe = !string.IsNullOrWhiteSpace(candidate.ExecutablePath);
@@ -214,14 +223,14 @@ namespace Codec.Services.Importing
 
             if (hasExe && librarySnapshot.Any(g => string.Equals(g.Executable, candidate.ExecutablePath, StringComparison.OrdinalIgnoreCase)))
             {
-                Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (already in library): {candidate.GameName}");
+                batch?.Flush("✗ DENIED", "already in library (exe match)");
                 IncrementSkipped();
                 return;
             }
 
             if (candidate.SteamAppId.HasValue && librarySnapshot.Any(g => g.SteamID == candidate.SteamAppId.Value))
             {
-                Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (steam id already in library): {candidate.GameName}");
+                batch?.Flush("✗ DENIED", $"steam id {candidate.SteamAppId} already in library");
                 IncrementSkipped();
                 return;
             }
@@ -231,7 +240,7 @@ namespace Codec.Services.Importing
                 ResetSessionCountsIfIdle_NoLock();
                 if (!_reservedExecutables.Add(reservationKey))
                 {
-                    Debug.WriteLine($"[IMPORT-ENQUEUE] SKIP (already reserved): {candidate.GameName}");
+                    batch?.Flush("✗ DENIED", $"already reserved (key={reservationKey})");
                     _skippedCount++;
                     PublishStatus_NoLock();
                     return;
@@ -249,7 +258,8 @@ namespace Codec.Services.Importing
                 candidate.RawgId,
                 IsManual: false,
                 candidate.LaunchScriptPath,
-                candidate.IgdbId), _disposeCts.Token).ConfigureAwait(false);
+                candidate.IgdbId,
+                LogBatch: batch), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
         }
@@ -281,8 +291,6 @@ namespace Codec.Services.Importing
                     PublishStatus();
                     var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
                     var result = await _pipeline.ImportAsync(request, librarySnapshot, _disposeCts.Token).ConfigureAwait(false);
-
-                    Debug.WriteLine($"[IMPORT-RESULT] {request.NameHint} status={result.Status} msg='{result.Message}' fullyImported={result.Game?.IsFullyImported} assetsReady={result.Game?.DisplayedAssetsReady}");
 
                     try
                     {
@@ -358,7 +366,7 @@ namespace Codec.Services.Importing
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Commit failed for '{request.ExecutablePath}': {ex.Message}");
+                        GameScanner.LogSession($"Commit failed for '{request.ExecutablePath}': {ex.Message}");
                         lock (_stateGate)
                         {
                             _failedCount++;
@@ -435,8 +443,10 @@ namespace Codec.Services.Importing
             if (sw != null && sw.IsRunning)
             {
                 sw.Stop();
-                Debug.WriteLine($"=== TOTAL TIME (scan + pipeline): {sw.Elapsed.TotalSeconds:0.0}s ===");
+                GameScanner.LogSession($"=== TOTAL TIME (scan + pipeline): {sw.Elapsed.TotalSeconds:0.0}s ===");
             }
+
+            ScanLogFile.EndSession();
 
             RaiseNotification(new ImportNotification(
                 "Library Import",
