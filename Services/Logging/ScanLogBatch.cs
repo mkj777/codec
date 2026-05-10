@@ -42,7 +42,14 @@ namespace Codec.Services.Logging
 
             string text = sb.ToString();
             Debug.WriteLine(text);
-            ScanLogFile.Write(text);
+
+            if (IsAddedOutcome(outcomeSymbol))
+                ScanLogFile.WriteAdded(text);
+            else
+                ScanLogFile.WriteRejected(text);
         }
+
+        private static bool IsAddedOutcome(string symbol) =>
+            !string.IsNullOrEmpty(symbol) && symbol.StartsWith("✓");
     }
 }

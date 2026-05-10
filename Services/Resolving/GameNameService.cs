@@ -384,18 +384,28 @@ namespace Codec.Services.Resolving
 
         public async Task<bool> SteamAppMatchesLocalGameAsync(int steamId, string nameHint, string? executablePath)
         {
+            var (matches, _) = await TrySteamAppMatchLocalGameAsync(steamId, nameHint, executablePath).ConfigureAwait(false);
+            return matches;
+        }
+
+        /// <summary>
+        /// Same as <see cref="SteamAppMatchesLocalGameAsync"/> but also returns the Steam app name
+        /// that was checked, so callers can log the rejected name without a second API call.
+        /// </summary>
+        public async Task<(bool Matches, string? SteamName)> TrySteamAppMatchLocalGameAsync(int steamId, string nameHint, string? executablePath)
+        {
             if (steamId <= 0 || string.IsNullOrWhiteSpace(nameHint))
             {
-                return false;
+                return (false, null);
             }
 
             var appSummary = await GetSteamAppSummaryAsync(steamId);
             if (string.IsNullOrWhiteSpace(appSummary.Name) || !SteamNameMatchesLocalName(nameHint, appSummary.Name))
             {
-                return false;
+                return (false, appSummary.Name);
             }
 
-            return true;
+            return (true, appSummary.Name);
         }
 
         public bool SteamNameMatchesLocalName(string localName, string steamName)

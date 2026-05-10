@@ -389,15 +389,15 @@ namespace Codec.Services.Scanning
                                 steamLookupCount++;
                                 if (foundSteamId.HasValue)
                                 {
-                                    bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(foundSteamId.Value, candidate.Name, executablePath);
+                                    var (steamNameMatches, fallbackSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(foundSteamId.Value, candidate.Name, executablePath);
                                     if (steamNameMatches)
                                     {
                                         steamId = foundSteamId;
-                                        batch.Log($"STEAM-FALLBACK -> id={steamId} ({steamSw.ElapsedMilliseconds}ms)");
+                                        batch.Log($"STEAM-FALLBACK -> id={steamId} steamName='{fallbackSteamName ?? "?"}' ({steamSw.ElapsedMilliseconds}ms)");
                                     }
                                     else
                                     {
-                                        batch.Log($"STEAM-FALLBACK rejected id={foundSteamId} after appdetails name check ({steamSw.ElapsedMilliseconds}ms)");
+                                        batch.Log($"STEAM-FALLBACK rejected id={foundSteamId} reason=name-mismatch local='{candidate.Name}' steamName='{fallbackSteamName ?? "(not found)"}' ({steamSw.ElapsedMilliseconds}ms)");
                                     }
                                 }
                                 else
@@ -482,7 +482,7 @@ namespace Codec.Services.Scanning
         internal static void LogSession(string line)
         {
             Debug.WriteLine(line);
-            ScanLogFile.Write(line);
+            ScanLogFile.WriteSession(line);
         }
 
         public async Task<List<ValidatedScanCandidate>> ScanAllGamesAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)

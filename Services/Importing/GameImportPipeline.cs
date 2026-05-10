@@ -167,10 +167,10 @@ namespace Codec.Services.Importing
                     if (steamId.HasValue)
                     {
                         batch.Log($"PIPELINE IGDB-STEAM igdb={igdbId} -> steam={steamId}");
-                        bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
+                        var (steamNameMatches, igdbDerivedSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
                         if (!steamNameMatches)
                         {
-                            batch.Log($"PIPELINE DROP-IGDB-STEAM-ID igdb={igdbId} steam={steamId}");
+                            batch.Log($"PIPELINE DROP-IGDB-STEAM-ID igdb={igdbId} steam={steamId} reason=name-mismatch local='{detectedName}' steamName='{igdbDerivedSteamName ?? "(not found)"}'");
                             steamId = null;
                         }
                         else if (librarySnapshot.Any(g => g.SteamID == steamId.Value))
@@ -193,10 +193,10 @@ namespace Codec.Services.Importing
 
                 if (steamId.HasValue && !isSteamLauncherSource)
                 {
-                    bool steamNameMatches = await _gameName.SteamAppMatchesLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
+                    var (steamNameMatches, droppedSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
                     if (!steamNameMatches)
                     {
-                        batch.Log($"PIPELINE DROP-STEAM-ID source='{request.ImportSource}' steam={steamId}");
+                        batch.Log($"PIPELINE DROP-STEAM-ID source='{request.ImportSource}' steam={steamId} reason=name-mismatch local='{detectedName}' steamName='{droppedSteamName ?? "(not found)"}'");
                         steamId = null;
                         rawgId = null;
                         igdbId = null;
