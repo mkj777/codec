@@ -19,7 +19,7 @@ namespace Codec.ViewModels
         {
             var snapshot = await RunOnUiThreadAsync(() =>
             {
-                InsertGameAlphabetically(game);
+                InsertGameSorted(game);
                 IsOnboardingVisible = false;
                 return Games.ToList();
             });

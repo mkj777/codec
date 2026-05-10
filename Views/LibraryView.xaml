@@ -9,6 +9,50 @@
     mc:Ignorable="d">
 
     <UserControl.Resources>
+        <Style x:Key="SortOptionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="UseSystemFocusVisuals" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid CornerRadius="6">
+                            <Border x:Name="HoverBorder"
+                                    CornerRadius="6"
+                                    Background="Transparent"/>
+                            <ContentPresenter Padding="{TemplateBinding Padding}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="Center"
+                                              FontSize="{TemplateBinding FontSize}"
+                                              FontWeight="{TemplateBinding FontWeight}"
+                                              Foreground="{TemplateBinding Foreground}"/>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="HoverBorder.Background" Value="#252525"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="HoverBorder.Background" Value="#2E2E2E"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled"/>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="LibraryCoverButtonStyle"
                TargetType="Button">
             <Setter Property="Background"
@@ -186,45 +230,118 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer x:Name="LibraryScroller"
-                  HorizontalAlignment="Stretch"
-                  VerticalAlignment="Stretch"
-                  Padding="0"
-                  VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
-        <ItemsRepeater x:Name="LibraryItemsRepeater"
-                       Width="{x:Bind LibraryScroller.ViewportWidth, Mode=OneWay}"
-                       ItemsSource="{Binding Games}"
-                       HorizontalAlignment="Stretch">
-            <ItemsRepeater.Layout>
-                <UniformGridLayout x:Name="LibraryItemsLayout"
-                                   MinItemWidth="210"
-                                   MinItemHeight="315"
-                                   MinColumnSpacing="12"
-                                   MinRowSpacing="12"
-                                   ItemsStretch="Uniform"/>
-            </ItemsRepeater.Layout>
-            <ItemsRepeater.ItemTemplate>
-                <DataTemplate x:DataType="local:Game">
-                    <Button Click="LibraryItem_Click"
-                            Style="{StaticResource LibraryCoverButtonStyle}"
-                            ClickMode="Press"
-                            Tag="{x:Bind}"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
-                            HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Stretch">
-                        <Grid>
-                            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                    CornerRadius="8">
-                                <Image Source="{x:Bind LibraryCapsule}"
-                                       Stretch="UniformToFill"/>
-                            </Border>
-                        </Grid>
-                    </Button>
-                </DataTemplate>
-            </ItemsRepeater.ItemTemplate>
-        </ItemsRepeater>
-    </ScrollViewer>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Sort bar -->
+        <Grid Grid.Row="0" Margin="0,-20,0,8">
+            <Button x:Name="SortButton"
+                    HorizontalAlignment="Left"
+                    Background="#252525"
+                    BorderBrush="#383838"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12,8">
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2E2E2E"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#333333"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#484848"/>
+                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#505050"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#CCCCCC"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#AAAAAA"/>
+                </Button.Resources>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding SortLabel}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#AAAAAA"
+                               VerticalAlignment="Center"/>
+                    <FontIcon Glyph="&#xE70D;"
+                              FontSize="9"
+                              Foreground="#555555"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button.Flyout>
+                    <Flyout x:Name="SortFlyout" Placement="Bottom">
+                        <Flyout.FlyoutPresenterStyle>
+                            <Style TargetType="FlyoutPresenter">
+                                <Setter Property="Background" Value="#1C1C1C"/>
+                                <Setter Property="BorderBrush" Value="#383838"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Setter Property="CornerRadius" Value="10"/>
+                                <Setter Property="Padding" Value="6"/>
+                                <Setter Property="MinWidth" Value="160"/>
+                            </Style>
+                        </Flyout.FlyoutPresenterStyle>
+                        <StackPanel Spacing="2">
+                            <Button x:Name="SortAlphaButton"
+                                    Content="Alphabetic"
+                                    Tag="0"
+                                    Foreground="#FFFFFF"
+                                    Style="{StaticResource SortOptionButtonStyle}"
+                                    Click="SortOption_Click"/>
+                            <Button x:Name="SortFolderSizeButton"
+                                    Content="Folder Size"
+                                    Tag="1"
+                                    Foreground="#888888"
+                                    Style="{StaticResource SortOptionButtonStyle}"
+                                    Click="SortOption_Click"/>
+                            <Button x:Name="SortDateAddedButton"
+                                    Content="Date Added"
+                                    Tag="2"
+                                    Foreground="#888888"
+                                    Style="{StaticResource SortOptionButtonStyle}"
+                                    Click="SortOption_Click"/>
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1"
+                      x:Name="LibraryScroller"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      Padding="0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsRepeater x:Name="LibraryItemsRepeater"
+                           Width="{x:Bind LibraryScroller.ViewportWidth, Mode=OneWay}"
+                           ItemsSource="{Binding Games}"
+                           HorizontalAlignment="Stretch">
+                <ItemsRepeater.Layout>
+                    <UniformGridLayout x:Name="LibraryItemsLayout"
+                                       MinItemWidth="210"
+                                       MinItemHeight="315"
+                                       MinColumnSpacing="12"
+                                       MinRowSpacing="12"
+                                       ItemsStretch="Uniform"/>
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="local:Game">
+                        <Button Click="LibraryItem_Click"
+                                Style="{StaticResource LibraryCoverButtonStyle}"
+                                ClickMode="Press"
+                                Tag="{x:Bind}"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch">
+                            <Grid>
+                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                        CornerRadius="8">
+                                    <Image Source="{x:Bind LibraryCapsule}"
+                                           Stretch="UniformToFill"/>
+                                </Border>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+        </ScrollViewer>
+    </Grid>
 
 </UserControl>

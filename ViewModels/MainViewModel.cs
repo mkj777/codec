@@ -173,6 +173,17 @@ namespace Codec.ViewModels
             false;
 #endif
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SortLabel))]
+        private int _selectedSortIndex = 0; // 0=Alphabetic, 1=FolderSize desc, 2=DateAdded desc
+
+        public string SortLabel => _selectedSortIndex switch
+        {
+            1 => "Folder Size",
+            2 => "Date Added",
+            _ => "Alphabetic",
+        };
+
         public void SetLoadingState(bool isVisible, string? title = null, string? subtitle = null)
         {
             if (!string.IsNullOrWhiteSpace(title))
@@ -234,10 +245,7 @@ namespace Codec.ViewModels
 
             var saved = await _services.LibraryStorage.LoadAsync();
             await EnsureCoversAsync(saved);
-            var sortedSavedGames = saved
-                .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
-                .ThenBy(game => game.Id)
-                .ToList();
+            var sortedSavedGames = GetSortedGames(saved).ToList();
 
             Games.Clear();
             foreach (var g in sortedSavedGames)
@@ -445,13 +453,40 @@ namespace Codec.ViewModels
             return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
         }
 
-        private void InsertGameAlphabetically(Game game)
-        {
-            int insertIndex = 0;
+        partial void OnSelectedSortIndexChanged(int value) => ApplySortToGames();
 
+        private IEnumerable<Game> GetSortedGames(IEnumerable<Game> source) => _selectedSortIndex switch
+        {
+            1 => source.OrderByDescending(g => g.FolderSize).ThenBy(g => g.Id),
+            2 => source.OrderByDescending(g => g.DateAdded).ThenBy(g => g.Id),
+            _ => source.OrderBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
+        };
+
+        private void ApplySortToGames()
+        {
+            Games.CollectionChanged -= Games_CollectionChanged;
+            var sorted = GetSortedGames(Games).ToList();
+            Games.Clear();
+            foreach (var g in sorted)
+                Games.Add(g);
+            Games.CollectionChanged += Games_CollectionChanged;
+            OnPropertyChanged(nameof(HasGames));
+            OnPropertyChanged(nameof(IsEmptyLibrary));
+            OnPropertyChanged(nameof(IsLibraryVisible));
+            RefreshSidebarFilteredGames();
+        }
+
+        private void InsertGameSorted(Game game)
+        {
+            if (_selectedSortIndex != 0)
+            {
+                Games.Add(game);
+                ApplySortToGames();
+                return;
+            }
+            int insertIndex = 0;
             while (insertIndex < Games.Count && CompareGamesByName(Games[insertIndex], game) <= 0)
                 insertIndex++;
-
             Games.Insert(insertIndex, game);
         }
 
