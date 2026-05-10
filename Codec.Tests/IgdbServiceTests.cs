@@ -122,6 +122,44 @@ namespace Codec.Tests
         }
 
         [Fact]
+        public async Task FindIgdbMatchByNameAsync_PrefersMainGameHasteOverOlderMod()
+        {
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("""
+                    [
+                      { "game": 228918, "name": "HASTE: Broken Worlds", "uid": "1796470" }
+                    ]
+                    """);
+                }
+
+                return JsonResponse($$"""
+                [
+                  {
+                    "id": 221845,
+                    "name": "Haste",
+                    "first_release_date": {{UnixDate(2021, 9, 22)}},
+                    "game_type": { "type": "Mod" }
+                  },
+                  {
+                    "id": 228918,
+                    "name": "Haste",
+                    "first_release_date": {{UnixDate(2025, 4, 1)}},
+                    "game_type": { "type": "Main Game" }
+                  }
+                ]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("Haste", allowedReleaseYears: null);
+
+            Assert.Equal(228918, match.Id);
+            Assert.Equal(2025, match.ReleaseYear);
+        }
+
+        [Fact]
         public async Task FindIgdbMatchByNameAsync_NormalizesTrademarkAndCachesSingleSteamId()
         {
             string? capturedGamesBody = null;

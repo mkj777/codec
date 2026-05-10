@@ -185,6 +185,27 @@ namespace Codec.Tests
         }
 
         [Fact]
+        public void TryGetExeCopyrightInfo_DropsUnityCopyrightFromBinaryScan()
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"codec-unity-{Guid.NewGuid():N}.exe");
+            File.WriteAllText(path, "binary blob Copyright (c) 2005-2025 Unity Technologies. All rights reserved. more bytes");
+
+            try
+            {
+                var service = new GameNameService(new GameDetailsService(new MetadataCache()));
+                var info = service.TryGetExeCopyrightInfo(path);
+
+                Assert.Equal("none", info.Source);
+                Assert.Empty(info.Years);
+                Assert.Null(info.Text);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
         public void BuildCopyrightInfo_DropsUnityVersionResourceCopyright()
         {
             var method = typeof(GameNameService).GetMethod(

@@ -234,6 +234,8 @@ namespace Codec.Services.Scanning
                 progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
 
                 var batch = new ScanLogBatch(candidate.Name, candidate.Source);
+                bool isHeuristicSource = IsHeuristicSource(candidate.Source);
+                bool isFromLauncher = !isHeuristicSource;
 
                 if (GameContentHeuristics.ShouldIgnoreCandidate(candidate.Name, candidate.FolderPath, candidate.Source, candidate.SteamAppId.HasValue))
                 {
@@ -282,7 +284,9 @@ namespace Codec.Services.Scanning
                     }
                 }
 
-                // EXE detection: Steam games → simple root scan; others → full heuristic funnel
+                // EXE detection: Steam games get a cheap root check; only heuristic scan
+                // candidates run the local executable funnel. Launcher/platform scanners
+                // provide their own launch target and should not be rejected by exe detect.
                 var exeSw = Stopwatch.StartNew();
                 string executablePath;
                 if (candidate.SteamAppId.HasValue)
@@ -301,7 +305,7 @@ namespace Codec.Services.Scanning
                         batch.Log($"STEAM-EXE -> {Path.GetFileName(executablePath)} ({exeSw.ElapsedMilliseconds}ms)");
                     }
                 }
-                else
+                else if (ShouldUseFullExecutableDetection(candidate))
                 {
                     try
                     {
@@ -326,6 +330,26 @@ namespace Codec.Services.Scanning
                         continue;
                     }
                 }
+                else
+                {
+                    executablePath = string.Empty;
+                    exeSw.Stop();
+                    exeDetectionTotalMs += exeSw.ElapsedMilliseconds;
+                    exeDetectionCount++;
+
+                    bool hasLaunchScript = !string.IsNullOrWhiteSpace(candidate.LaunchScriptPath)
+                        && File.Exists(candidate.LaunchScriptPath);
+                    if (!hasLaunchScript && !CanTrustMissingExecutable(candidate.Source))
+                    {
+                        batch.Flush("✗ REJECTED", "no platform launch target");
+                        rejectedNoExe++;
+                        continue;
+                    }
+
+                    batch.Log(hasLaunchScript
+                        ? $"PLATFORM-LAUNCH lnk='{candidate.LaunchScriptPath}' (no exe scan)"
+                        : $"PLATFORM-LAUNCH source='{candidate.Source}' (no exe scan)");
+                }
 
                 if (GameContentHeuristics.IsBlockedExecutable(executablePath))
                 {
@@ -348,8 +372,6 @@ namespace Codec.Services.Scanning
                 int? igdbId = null;
                 int? rawgId = null;
                 var validateSw = Stopwatch.StartNew();
-                bool isFromLauncher = !candidate.Source.Equals("Heuristic Scan", StringComparison.OrdinalIgnoreCase);
-
                 if (!steamId.HasValue && !isRiotSource)
                 {
                     try
@@ -386,37 +408,40 @@ namespace Codec.Services.Scanning
                         }
                         else
                         {
-                            var steamSw = Stopwatch.StartNew();
-                            try
+                            if (isHeuristicSource)
                             {
-                                (int? foundSteamId, string? _) = await _gameName.FindGameIdsAsync(executablePath, nameHint: candidate.Name);
-                                steamSw.Stop();
-                                steamLookupTotalMs += steamSw.ElapsedMilliseconds;
-                                steamLookupCount++;
-                                if (foundSteamId.HasValue)
+                                var steamSw = Stopwatch.StartNew();
+                                try
                                 {
-                                    var (steamNameMatches, fallbackSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(foundSteamId.Value, candidate.Name, executablePath);
-                                    if (steamNameMatches)
+                                    (int? foundSteamId, string? _) = await _gameName.FindGameIdsAsync(executablePath, nameHint: candidate.Name);
+                                    steamSw.Stop();
+                                    steamLookupTotalMs += steamSw.ElapsedMilliseconds;
+                                    steamLookupCount++;
+                                    if (foundSteamId.HasValue)
                                     {
-                                        steamId = foundSteamId;
-                                        batch.Log($"STEAM-FALLBACK -> id={steamId} steamName='{fallbackSteamName ?? "?"}' ({steamSw.ElapsedMilliseconds}ms)");
+                                        var (steamNameMatches, fallbackSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(foundSteamId.Value, candidate.Name, executablePath);
+                                        if (steamNameMatches)
+                                        {
+                                            steamId = foundSteamId;
+                                            batch.Log($"STEAM-FALLBACK -> id={steamId} steamName='{fallbackSteamName ?? "?"}' ({steamSw.ElapsedMilliseconds}ms)");
+                                        }
+                                        else
+                                        {
+                                            batch.Log($"STEAM-FALLBACK rejected id={foundSteamId} reason=name-mismatch local='{candidate.Name}' steamName='{fallbackSteamName ?? "(not found)"}' ({steamSw.ElapsedMilliseconds}ms)");
+                                        }
                                     }
                                     else
                                     {
-                                        batch.Log($"STEAM-FALLBACK rejected id={foundSteamId} reason=name-mismatch local='{candidate.Name}' steamName='{fallbackSteamName ?? "(not found)"}' ({steamSw.ElapsedMilliseconds}ms)");
+                                        batch.Log($"STEAM-FALLBACK -> none ({steamSw.ElapsedMilliseconds}ms)");
                                     }
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    batch.Log($"STEAM-FALLBACK -> none ({steamSw.ElapsedMilliseconds}ms)");
+                                    steamSw.Stop();
+                                    steamLookupTotalMs += steamSw.ElapsedMilliseconds;
+                                    steamLookupCount++;
+                                    batch.Log($"STEAM-FALLBACK FAILED ({steamSw.ElapsedMilliseconds}ms): {ex.Message}");
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                steamSw.Stop();
-                                steamLookupTotalMs += steamSw.ElapsedMilliseconds;
-                                steamLookupCount++;
-                                batch.Log($"STEAM-FALLBACK FAILED ({steamSw.ElapsedMilliseconds}ms): {ex.Message}");
                             }
 
                             if (!steamId.HasValue)
@@ -501,6 +526,15 @@ namespace Codec.Services.Scanning
 
             return results;
         }
+
+        internal static bool ShouldUseFullExecutableDetection(GameCandidate candidate) =>
+            !candidate.SteamAppId.HasValue && IsHeuristicSource(candidate.Source);
+
+        internal static bool CanTrustMissingExecutable(string? source) =>
+            string.Equals(source, "Riot Games", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsHeuristicSource(string? source) =>
+            string.Equals(source, "Heuristic Scan", StringComparison.OrdinalIgnoreCase);
 
         private static async Task<(PlatformScanner Scanner, List<GameCandidate> Candidates, long ElapsedMs, int Count)> ScanPlatformScannerAsync(
             PlatformScanner scanner,

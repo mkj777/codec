@@ -13,7 +13,7 @@ namespace Codec.Services.Scanning
             "works", "manager", "daemon", "patch", "repair", "diagnostic", "viewer",
             "framework", "middleware", "sdk", "studio", "setup", "install", "installer",
             "uninstall", "unins", "config", "utility", "update", "crashhandler", "vc runtime",
-            "dxsetup", "redist", "vcredist", "host", "monitor", "assistant"
+            "dxsetup", "redist", "vcredist", "host", "monitor"
         };
 
         // Known Steam/Valve infrastructure executables that are never games.

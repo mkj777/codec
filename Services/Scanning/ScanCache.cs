@@ -17,6 +17,7 @@ namespace Codec.Services.Scanning
     public sealed class ScanCache
     {
         private const string CacheFileName = "scan-cache.json";
+        private const int CurrentCacheVersion = 2;
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
@@ -68,7 +69,19 @@ namespace Codec.Services.Scanning
                 return false;
             }
 
-            if (!Directory.Exists(entry.FolderPath) || !File.Exists(entry.ExecutablePath))
+            if (entry.CacheVersion != CurrentCacheVersion)
+            {
+                _entries.Remove(candidate.FolderPath);
+                return false;
+            }
+
+            bool hasExecutable = !string.IsNullOrWhiteSpace(entry.ExecutablePath);
+            bool hasLaunchScript = !string.IsNullOrWhiteSpace(entry.LaunchScriptPath)
+                && File.Exists(entry.LaunchScriptPath);
+
+            if (!Directory.Exists(entry.FolderPath) ||
+                (hasExecutable && !File.Exists(entry.ExecutablePath)) ||
+                (!hasExecutable && !hasLaunchScript && !CanTrustMissingExecutable(entry.ImportSource)))
             {
                 _entries.Remove(candidate.FolderPath);
                 return false;
@@ -116,6 +129,7 @@ namespace Codec.Services.Scanning
 
             _entries[candidate.FolderPath] = new CachedScanResult
             {
+                CacheVersion = CurrentCacheVersion,
                 FolderPath = candidate.FolderPath,
                 ExecutablePath = executablePath,
                 GameName = resolvedName,
@@ -157,6 +171,7 @@ namespace Codec.Services.Scanning
 
         public sealed class CachedScanResult
         {
+            public int CacheVersion { get; init; }
             public required string FolderPath { get; init; }
             public required string ExecutablePath { get; init; }
             public required string GameName { get; init; }
@@ -169,6 +184,10 @@ namespace Codec.Services.Scanning
             public long ExecutableTimestampUtcTicks { get; init; }
             public DateTime CachedAtUtc { get; init; }
         }
+
+        private static bool CanTrustMissingExecutable(string? source) =>
+            string.Equals(source, "Riot Games", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(source, "Steam", StringComparison.OrdinalIgnoreCase);
 
         private static class TimestampUtility
         {

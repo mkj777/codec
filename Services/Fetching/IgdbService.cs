@@ -134,9 +134,9 @@ namespace Codec.Services.Fetching
                 IgdbNameCandidate best = candidates
                     .OrderByDescending(c => c.NameScore)
                     .ThenByDescending(c => GameTypeRank(c.GameType))
-                    .ThenByDescending(c => c.SteamId.HasValue)
                     .ThenBy(c => SteamNameContainsYear(c.SteamName))
                     .ThenByDescending(c => c.ReleaseYear ?? 0)
+                    .ThenByDescending(c => c.SteamId.HasValue)
                     .ThenBy(c => c.SearchOrder)
                     .First();
 
@@ -205,7 +205,7 @@ namespace Codec.Services.Fetching
                 string? gameType = null;
                 if (item.TryGetProperty("game_type", out var gtProp) && gtProp.ValueKind == JsonValueKind.Object)
                 {
-                    gameType = GetString(gtProp, "type")?.ToLowerInvariant();
+                    gameType = NormalizeGameType(GetString(gtProp, "type"));
                 }
 
                 if (!ReleaseYearMatches(allowedReleaseYears, candidateYears))
@@ -244,7 +244,7 @@ namespace Codec.Services.Fetching
             string? SteamName,
             string? GameType);
 
-        private static int GameTypeRank(string? gameType) => gameType switch
+        private static int GameTypeRank(string? gameType) => NormalizeGameType(gameType) switch
         {
             "main_game" or "remake" or "remaster" => 3,
             "port" or "expanded_game" or "standalone_expansion" => 2,
@@ -252,6 +252,21 @@ namespace Codec.Services.Fetching
                 or "episode" or "season" or "update" or "fork" => 1,
             _ => 0
         };
+
+        private static string? NormalizeGameType(string? gameType)
+        {
+            if (string.IsNullOrWhiteSpace(gameType))
+            {
+                return null;
+            }
+
+            string normalized = Regex.Replace(gameType.Trim().ToLowerInvariant(), @"[^a-z0-9]+", "_").Trim('_');
+            return normalized switch
+            {
+                "dlc_add_on" => "dlc_addon",
+                _ => normalized
+            };
+        }
 
         public async Task<int?> FindIgdbIdBySteamIdAsync(int steamId)
         {
@@ -869,11 +884,11 @@ limit 1;";
                 return;
             }
 
-            // game_type is a relation object: { "type": "Remaster" } — normalize to lowercase
+            // game_type is a relation object: { "type": "Remaster" }.
             string? gameTypeStr = null;
             if (root.TryGetProperty("game_type", out var gameTypeNode) && gameTypeNode.ValueKind == JsonValueKind.Object)
             {
-                gameTypeStr = GetString(gameTypeNode, "type")?.ToLowerInvariant();
+                gameTypeStr = NormalizeGameType(GetString(gameTypeNode, "type"));
                 Debug.WriteLine($"[IGDB] ApplyVersionMetadataAsync: game_type.type='{gameTypeStr}'");
             }
             else
@@ -1114,7 +1129,7 @@ limit 200;";
                         if (gtNode.ValueKind == JsonValueKind.Object)
                         {
                             gameTypeId = TryGetInt(gtNode, "id");
-                            gameTypeStr = GetString(gtNode, "type")?.ToLowerInvariant();
+                            gameTypeStr = NormalizeGameType(GetString(gtNode, "type"));
                         }
                         else if (gtNode.ValueKind == JsonValueKind.Number && gtNode.TryGetInt32(out int gtInt))
                         {
@@ -1253,27 +1268,31 @@ limit 200;";
             return string.Join("/", years.Order());
         }
 
-        private static string? FormatGameTypeName(string? gameType) => gameType switch
+        private static string? FormatGameTypeName(string? gameType)
         {
-            "main_game" => "Main Game",
-            "dlc_addon" => "DLC/Add-on",
-            "expansion" => "Expansion",
-            "bundle" => "Bundle",
-            "standalone_expansion" => "Standalone Expansion",
-            "mod" => "Mod",
-            "episode" => "Episode",
-            "season" => "Season",
-            "remake" => "Remake",
-            "remaster" => "Remaster",
-            "expanded_game" => "Expanded Game",
-            "port" => "Port",
-            "fork" => "Fork",
-            "pack" => "Pack",
-            "update" => "Update",
-            _ => gameType
-        };
+            string? normalized = NormalizeGameType(gameType);
+            return normalized switch
+            {
+                "main_game" => "Main Game",
+                "dlc_addon" => "DLC/Add-on",
+                "expansion" => "Expansion",
+                "bundle" => "Bundle",
+                "standalone_expansion" => "Standalone Expansion",
+                "mod" => "Mod",
+                "episode" => "Episode",
+                "season" => "Season",
+                "remake" => "Remake",
+                "remaster" => "Remaster",
+                "expanded_game" => "Expanded Game",
+                "port" => "Port",
+                "fork" => "Fork",
+                "pack" => "Pack",
+                "update" => "Update",
+                _ => gameType
+            };
+        }
 
-        private static int? MapGameTypeToCategory(string? gameType) => gameType switch
+        private static int? MapGameTypeToCategory(string? gameType) => NormalizeGameType(gameType) switch
         {
             "main_game" => 0,
             "dlc_addon" => 1,
@@ -1385,7 +1404,7 @@ limit 200;";
 
                     string? gameTypeStr = null;
                     if (item.TryGetProperty("game_type", out var gtNode) && gtNode.ValueKind == JsonValueKind.Object)
-                        gameTypeStr = GetString(gtNode, "type")?.ToLowerInvariant();
+                        gameTypeStr = NormalizeGameType(GetString(gtNode, "type"));
 
                     int? igdbCategory = MapGameTypeToCategory(gameTypeStr);
 

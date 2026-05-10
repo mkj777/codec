@@ -50,8 +50,12 @@ namespace Codec.Services.Importing
             batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} rawg={request.RawgId}");
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Steam-sourced games launch via steam:// URI — exe is optional.
-            bool isSteamSourced = request.SteamAppId.HasValue;
+            bool hasLaunchScript = !string.IsNullOrWhiteSpace(request.LaunchScriptPath)
+                && File.Exists(request.LaunchScriptPath);
+
+            // Steam and Riot launcher games do not require a directly detected exe.
+            bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
+            bool allowsMissingExecutable = AllowsMissingExecutable(request, hasLaunchScript);
 
             string normalizedExePath = string.Empty;
             if (!string.IsNullOrWhiteSpace(request.ExecutablePath))
@@ -62,16 +66,16 @@ namespace Codec.Services.Importing
                 }
                 catch
                 {
-                    if (!isSteamSourced)
+                    if (!allowsMissingExecutable)
                     {
                         batch.Flush("✗ INVALID", $"bad path: '{request.ExecutablePath}'");
                         return GameImportResult.Invalid("The selected executable path is invalid.");
                     }
-                    batch.Log($"PIPELINE WARN (steam bad exe path, ignoring): '{request.ExecutablePath}'");
+                    batch.Log($"PIPELINE WARN (bad exe path ignored due to launcher target): '{request.ExecutablePath}'");
                     normalizedExePath = string.Empty;
                 }
             }
-            else if (!isSteamSourced)
+            else if (!allowsMissingExecutable)
             {
                 batch.Flush("✗ INVALID", $"empty exe (name='{request.NameHint}')");
                 return GameImportResult.Invalid("No executable was selected.");
@@ -79,23 +83,23 @@ namespace Codec.Services.Importing
 
             if (!string.IsNullOrEmpty(normalizedExePath) && !File.Exists(normalizedExePath))
             {
-                if (!isSteamSourced)
+                if (!allowsMissingExecutable)
                 {
                     batch.Flush("✗ INVALID", $"exe missing: '{normalizedExePath}'");
                     return GameImportResult.Invalid("The selected executable no longer exists.");
                 }
-                batch.Log($"PIPELINE WARN (steam exe missing, ignoring): '{normalizedExePath}'");
+                batch.Log($"PIPELINE WARN (exe missing, launcher target will be used): '{normalizedExePath}'");
                 normalizedExePath = string.Empty;
             }
 
             if (!string.IsNullOrEmpty(normalizedExePath) && GameContentHeuristics.PathMatchesUtility(normalizedExePath))
             {
-                if (!isSteamSourced)
+                if (!allowsMissingExecutable)
                 {
                     batch.Flush("✗ INVALID", $"utility path: '{normalizedExePath}'");
                     return GameImportResult.Invalid("Codec rejected this executable because it looks like a launcher or utility.");
                 }
-                batch.Log($"PIPELINE WARN (steam utility exe, ignoring): '{normalizedExePath}'");
+                batch.Log($"PIPELINE WARN (utility exe ignored due to launcher target): '{normalizedExePath}'");
                 normalizedExePath = string.Empty;
             }
 
@@ -144,7 +148,6 @@ namespace Codec.Services.Importing
                 LogExecutableCopyright(batch, normalizedExePath, executableCopyright);
                 IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
 
-                bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
                 bool isSteamLauncherSource = string.Equals(request.ImportSource, "Steam", StringComparison.OrdinalIgnoreCase);
 
                 // Non-Steam path: IGDB is the primary authority. If EXE copyright years exist,
@@ -238,7 +241,7 @@ namespace Codec.Services.Importing
                     SteamID = steamId,
                     RawgID = rawgId,
                     IgdbId = igdbId,
-                    LaunchScript = !string.IsNullOrWhiteSpace(request.LaunchScriptPath) && File.Exists(request.LaunchScriptPath)
+                    LaunchScript = hasLaunchScript
                         ? request.LaunchScriptPath
                         : null
                 };
@@ -350,6 +353,11 @@ namespace Codec.Services.Importing
             game.LibraryLogoUrl = hydration.LogoUrl;
             game.LibraryLogoCache = hydration.LogoCachePath;
         }
+
+        internal static bool AllowsMissingExecutable(GameImportRequest request, bool hasLaunchScript) =>
+            request.SteamAppId.HasValue ||
+            hasLaunchScript ||
+            string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
 
         private static void LogExecutableCopyright(ScanLogBatch batch, string executablePath, GameNameService.ExeCopyrightInfo copyright)
         {
