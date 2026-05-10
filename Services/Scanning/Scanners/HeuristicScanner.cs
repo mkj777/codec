@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Codec.Services;
 
 namespace Codec.Services.Scanning.Scanners
 {
@@ -300,8 +301,9 @@ namespace Codec.Services.Scanning.Scanners
                 if (hasGameSignals)
                     Debug.WriteLine($"  [GAME SIGNALS] Strong game content (score={gameScore}): {dirName}");
 
-                Debug.WriteLine($"  [PASSED] Candidate added: {dirName} (score={gameScore}, {dir})");
-                candidates.Add(new GameCandidate(dirName, dir, "Heuristic Scan", HasStrongGameSignals: hasGameSignals));
+                string candidateName = GameNameCleaner.RemoveTrailingDomainTag(dirName);
+                Debug.WriteLine($"  [PASSED] Candidate added: {candidateName} (score={gameScore}, {dir})");
+                candidates.Add(new GameCandidate(candidateName, dir, "Heuristic Scan", HasStrongGameSignals: hasGameSignals));
             }
             catch (Exception ex)
             {

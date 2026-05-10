@@ -263,7 +263,9 @@ namespace Codec.Services.Resolving
         }
 
         private static ExeCopyrightInfo BuildCopyrightInfo(string text, string source) =>
-            new(text, ExtractCopyrightYears(text), source);
+            MiddlewareCopyrightAuthors.Any(author => text.Contains(author, StringComparison.OrdinalIgnoreCase))
+                ? ExeCopyrightInfo.Empty
+                : new(text, ExtractCopyrightYears(text), source);
 
         private static string? TryGetFileVersionCopyright(string path)
         {
@@ -302,7 +304,9 @@ namespace Codec.Services.Resolving
             "the freetype project",
             "the icu project", "international business machines",
             "the chromium authors",
-            "skia"
+            "skia",
+            "unity technologies",
+            "jordan russell", "inno setup"
         };
 
         private static string? FindCopyrightSnippet(string value)
@@ -1201,7 +1205,7 @@ namespace Codec.Services.Resolving
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
 
-            string value = raw.Trim();
+            string value = GameNameCleaner.RemoveTrailingDomainTag(raw);
             value = value.Replace('_', ' ').Replace('+', ' ');
             value = CamelCaseRegex.Replace(value, " $1");
             value = RemoveFileExtension(value);
@@ -1377,8 +1381,9 @@ namespace Codec.Services.Resolving
 
         public async Task<int?> FindRawgIdByNameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
         {
-            if (string.IsNullOrWhiteSpace(gameName)) return null;
-            return await _gameDetails.ValidateGameAsync(gameName, mode);
+            string cleanedName = GameNameCleaner.RemoveTrailingDomainTag(gameName);
+            if (string.IsNullOrWhiteSpace(cleanedName)) return null;
+            return await _gameDetails.ValidateGameAsync(cleanedName, mode);
         }
 
         private bool TryParseRoman(string token, out int value)

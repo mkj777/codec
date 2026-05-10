@@ -47,6 +47,8 @@ namespace Codec.Tests
         [InlineData("Resident Evil 0", "Resident Evil 0 / biohazard 0 HD REMASTER", true)]
         [InlineData("BioShock", "BioShock / BioShock Infinite Bundle", false)]
         [InlineData("Mortal Kombat 11 Aftermath Edition", "Mortal Kombat 11", false)]
+        [InlineData("CloverPit-SteamGG.NET", "CloverPit", true)]
+        [InlineData("LoveChoice-Steamrip.com", "LoveChoice", true)]
         public void SteamNameMatchesLocalName_RejectsWrongSteamAppTitles(string localName, string steamName, bool expected)
         {
             var service = new GameNameService(new GameDetailsService(new MetadataCache()));
@@ -159,6 +161,44 @@ namespace Codec.Tests
             {
                 File.Delete(path);
             }
+        }
+
+        [Fact]
+        public void TryGetExeCopyrightInfo_DropsInnoSetupCopyrightFromBinaryScan()
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"codec-inno-{Guid.NewGuid():N}.exe");
+            File.WriteAllText(path, "binary blob Copyright (C) 1997-2021 Jordan Russell more bytes");
+
+            try
+            {
+                var service = new GameNameService(new GameDetailsService(new MetadataCache()));
+                var info = service.TryGetExeCopyrightInfo(path);
+
+                Assert.Equal("none", info.Source);
+                Assert.Empty(info.Years);
+                Assert.Null(info.Text);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void BuildCopyrightInfo_DropsUnityVersionResourceCopyright()
+        {
+            var method = typeof(GameNameService).GetMethod(
+                "BuildCopyrightInfo",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.NotNull(method);
+            var info = (GameNameService.ExeCopyrightInfo)method.Invoke(
+                null,
+                new object[] { "(c) 2005-2025 Unity Technologies. All rights reserved.", "version-resource" })!;
+
+            Assert.Equal("none", info.Source);
+            Assert.Empty(info.Years);
+            Assert.Null(info.Text);
         }
 
         [Fact]

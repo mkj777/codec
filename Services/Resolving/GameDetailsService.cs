@@ -55,7 +55,13 @@ namespace Codec.Services.Resolving
                 return null;
             }
 
-            string searchName = ApplyGameNameOverrides(gameName);
+            string cleanedName = GameNameCleaner.RemoveTrailingDomainTag(gameName);
+            if (string.IsNullOrWhiteSpace(cleanedName))
+            {
+                return null;
+            }
+
+            string searchName = ApplyGameNameOverrides(cleanedName);
             var settings = RawgValidationSettings.FromMode(mode);
 
             try
@@ -312,7 +318,7 @@ namespace Codec.Services.Resolving
                 return string.Empty;
             }
 
-            name = name.ToLowerInvariant();
+            name = GameNameCleaner.RemoveTrailingDomainTag(name).ToLowerInvariant();
 
             var removeWords = new[]
             {

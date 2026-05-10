@@ -70,7 +70,7 @@ namespace Codec.Services.Scanning
 
             var excludedKeywords = new[]
             {
-                "uninstall", "setup", "redist", "dxsetup", "vcredist", "dotnet",
+                "uninstall", "unins", "setup", "redist", "dxsetup", "vcredist", "dotnet",
                 "crashreporter", "crashhandler", "unitycrashhandler", "crashpad",
                 "activation", "support", "easyanticheat_setup",
                 "eaanticheat.installer", "prereq", "directx", "battleye"

@@ -1,3 +1,4 @@
+using Codec.Services.Scanning;
 using Codec.Services.Scanning.Scanners;
 using System.Collections.Concurrent;
 using System.Reflection;
@@ -103,6 +104,48 @@ namespace Codec.Tests
 
                 Assert.Single(candidates);
                 Assert.Equal("SimCity 2013", candidates.Single().Name);
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(gameDir);
+            }
+        }
+
+        [Fact]
+        public void TryAddCandidate_CleansTrailingDomainTagButKeepsFolderPath()
+        {
+            string gameDir = CreateTempDirectory(Path.Combine("Games", "CloverPit-SteamGG.NET"));
+
+            try
+            {
+                File.WriteAllText(Path.Combine(gameDir, "steam_appid.txt"), "3299120");
+                File.WriteAllText(Path.Combine(gameDir, "CloverPit.exe"), "stub");
+
+                var candidates = TryAddCandidate(gameDir);
+                var candidate = Assert.Single(candidates);
+
+                Assert.Equal("CloverPit", candidate.Name);
+                Assert.Equal(gameDir, candidate.FolderPath);
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(gameDir);
+            }
+        }
+
+        [Fact]
+        public void ExecuteDetectionFunnel_IgnoresInnoSetupUninstaller()
+        {
+            string gameDir = CreateTempDirectory(Path.Combine("Games", "LoveChoice-Steamrip.com"));
+
+            try
+            {
+                File.WriteAllText(Path.Combine(gameDir, "LoveChoice.exe"), "game");
+                File.WriteAllText(Path.Combine(gameDir, "unins000.exe"), new string('x', 1024));
+
+                string selected = ExecutableDetector.ExecuteDetectionFunnel(gameDir, "LoveChoice");
+
+                Assert.Equal("LoveChoice.exe", Path.GetFileName(selected));
             }
             finally
             {

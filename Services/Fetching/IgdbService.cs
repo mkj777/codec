@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Codec.Models;
+using Codec.Services;
 
 namespace Codec.Services.Fetching
 {
@@ -472,7 +473,8 @@ namespace Codec.Services.Fetching
                 return string.Empty;
             }
 
-            string normalized = TrademarkRegex.Replace(name, " ");
+            string normalized = GameNameCleaner.RemoveTrailingDomainTag(name);
+            normalized = TrademarkRegex.Replace(normalized, " ");
             normalized = Regex.Replace(normalized, @"(?<=[a-z])(?=[A-Z])", " ");
             normalized = Regex.Replace(normalized, @"\b(tm|r)\b", " ", RegexOptions.IgnoreCase);
             normalized = Regex.Replace(normalized, @"[^A-Za-z0-9]+", " ");
@@ -481,7 +483,8 @@ namespace Codec.Services.Fetching
 
         private static string NormalizeIgdbSearchName(string name)
         {
-            string normalized = TrademarkRegex.Replace(name, " ");
+            string normalized = GameNameCleaner.RemoveTrailingDomainTag(name);
+            normalized = TrademarkRegex.Replace(normalized, " ");
             normalized = Regex.Replace(normalized, @"(?<=[a-z])(?=[A-Z])", " ");
             normalized = Regex.Replace(normalized, @"\b(tm|r)\b", " ", RegexOptions.IgnoreCase);
             return Regex.Replace(normalized, @"\s+", " ").Trim();

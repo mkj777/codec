@@ -167,6 +167,36 @@ namespace Codec.Tests
         }
 
         [Fact]
+        public async Task FindIgdbMatchByNameAsync_StripsTrailingDomainTagBeforeSearch()
+        {
+            string? capturedGamesBody = null;
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("[]");
+                }
+
+                capturedGamesBody = body;
+                return JsonResponse($$"""
+                [{
+                  "id": 3299120,
+                  "name": "CloverPit",
+                  "first_release_date": {{UnixDate(2025, 9, 26)}}
+                }]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("CloverPit-SteamGG.NET", allowedReleaseYears: null);
+
+            Assert.Equal(3299120, match.Id);
+            Assert.NotNull(capturedGamesBody);
+            Assert.Contains("search \"Clover Pit\";", capturedGamesBody!);
+            Assert.DoesNotContain("SteamGG", capturedGamesBody!);
+            Assert.DoesNotContain(".NET", capturedGamesBody!, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public async Task FindIgdbMatchByNameAsync_PrefersRemakeOverRemasterWithDisambiguatedSteamName()
         {
             var service = CreateService((uri, body) =>

@@ -12,7 +12,7 @@ namespace Codec.Services.Scanning
             "launcher", "service", "codec", "editor", "tool", "tools", "benchmark",
             "works", "manager", "daemon", "patch", "repair", "diagnostic", "viewer",
             "framework", "middleware", "sdk", "studio", "setup", "install", "installer",
-            "uninstall", "config", "utility", "update", "crashhandler", "vc runtime",
+            "uninstall", "unins", "config", "utility", "update", "crashhandler", "vc runtime",
             "dxsetup", "redist", "vcredist", "host", "monitor", "assistant"
         };
 
@@ -34,7 +34,7 @@ namespace Codec.Services.Scanning
             "redistributable", "redist", "dotnet", "vcredist", "commonredist", "prereq",
             "tools", "tool", "utilities", "utility", "updater", "updaters", "launcher",
             "anticheat", "eac", "battleye", "crashhandler", "unrealengine", "engine",
-            "benchmark", "firmware"
+            "benchmark", "firmware", "unins"
         };
 
         private static readonly string[] TrustedGamePathMarkers =

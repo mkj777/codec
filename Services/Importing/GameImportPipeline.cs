@@ -3,6 +3,7 @@ using Codec.Services.Fetching;
 using Codec.Services.Logging;
 using Codec.Services.Resolving;
 using Codec.Services.Scanning;
+using Codec.Services;
 using Codec.Services.Storage;
 using System;
 using System.Collections.Generic;
@@ -119,6 +120,8 @@ namespace Codec.Services.Importing
             {
                 detectedName = Path.GetFileNameWithoutExtension(normalizedExePath);
             }
+
+            detectedName = GameNameCleaner.RemoveTrailingDomainTag(detectedName);
 
             // Normalize ASCII trademark notation to unicode for display/storage
             detectedName = Regex.Replace(detectedName, @"\(TM\)", "™", RegexOptions.IgnoreCase);
