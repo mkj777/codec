@@ -443,6 +443,9 @@ namespace Codec.ViewModels
 
             if (SidebarSelectedItem != null && !filteredGames.Contains(SidebarSelectedItem))
                 SidebarSelectedItem = null;
+
+            if (!string.IsNullOrEmpty(_appliedSearchText) && filteredGames.Count > 0)
+                SidebarSelectedItem = filteredGames[0];
         }
 
         private bool MatchesSidebarSearch(Game game)
