@@ -16,6 +16,18 @@ namespace Codec.Services.Scanning
             "dxsetup", "redist", "vcredist", "host", "monitor", "assistant"
         };
 
+        // Known Steam/Valve infrastructure executables that are never games.
+        private static readonly string[] BlockedExeNames =
+        {
+            "steamservice.exe",
+            "steamcmd.exe",
+            "steam.exe",
+            "gameoverlayui.exe",
+            "steamwebhelper.exe",
+            "steamerrorreporter.exe",
+            "steamcrashhandler.exe",
+        };
+
         private static readonly string[] UtilityPathKeywords =
         {
             "driver", "drivers", "support", "supportassist", "intel", "nvidia", "amd",
@@ -41,6 +53,13 @@ namespace Codec.Services.Scanning
             "windowsapps",
             "riot games"
         };
+
+        public static bool IsBlockedExecutable(string? executablePath)
+        {
+            if (string.IsNullOrWhiteSpace(executablePath)) return false;
+            string fileName = System.IO.Path.GetFileName(executablePath);
+            return BlockedExeNames.Any(blocked => fileName.Equals(blocked, StringComparison.OrdinalIgnoreCase));
+        }
 
         public static bool ShouldIgnoreCandidate(string? displayName, string? folderPath, string source, bool hasSteamAppId)
         {

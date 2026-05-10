@@ -327,6 +327,12 @@ namespace Codec.Services.Scanning
                     }
                 }
 
+                if (GameContentHeuristics.IsBlockedExecutable(executablePath))
+                {
+                    batch.Flush("– SKIPPED", $"blocked exe '{Path.GetFileName(executablePath)}'");
+                    continue;
+                }
+
                 var executableCopyright = !string.IsNullOrEmpty(executablePath)
                     ? _gameName.TryGetExeCopyrightInfo(executablePath)
                     : GameNameService.ExeCopyrightInfo.Empty;
