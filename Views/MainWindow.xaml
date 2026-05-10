@@ -757,6 +757,152 @@
             </Border>
         </Grid>
 
+        <!-- Reset confirmation overlay -->
+        <Grid x:Name="ResetConfirmOverlay"
+              Grid.RowSpan="2"
+              Grid.ColumnSpan="2"
+              Visibility="{Binding IsResetConfirmVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+              IsHitTestVisible="True">
+            <Grid Background="#CC000000"
+                  Tapped="ResetScrim_Tapped"/>
+            <Border Background="#1C1C1C"
+                    CornerRadius="14"
+                    Padding="28"
+                    Width="360"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel Spacing="20">
+
+                    <!-- Header -->
+                    <Grid>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,0,0">
+                            <Border BorderBrush="#44FF6B6B"
+                                    BorderThickness="0"
+                                    CornerRadius="6"
+                                    Padding="0">
+                                <FontIcon Glyph="&#xE7BA;"
+                                          FontFamily="Segoe MDL2 Assets"
+                                          FontSize="14"
+                                          Foreground="#FF6B6B"/>
+                            </Border>
+                            <TextBlock Text="Reset Codec"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
+                                       Foreground="White"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Content="✕"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="13"
+                                Padding="7,2,6,4"
+                                Foreground="#666666"
+                                Click="ResetCancel_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#22FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#33FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#999999"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#666666"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
+
+                    <!-- Body -->
+                    <StackPanel Spacing="10">
+                        <StackPanel Spacing="2">
+                                <TextBlock Text="THIS WILL DELETE"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="#444444"
+                                           CharacterSpacing="100"/>
+                                <TextBlock Text="Game library Data · Cached artwork · App settings"
+                                           FontSize="12"
+                                           FontWeight="Normal"
+                                           Foreground="#666666"
+                                           TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Spacing="2">
+                        <TextBlock Text="THIS WONT DELETE"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#444444"
+                                       CharacterSpacing="100"/>
+                            <TextBlock Text="Your Games · Your game files or saves."
+                                       FontSize="12"
+                                       FontWeight="Normal"
+                                       Foreground="#666666"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Buttons -->
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Cancel -->
+                        <Button Grid.Column="0"
+                                Content="Cancel"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,11"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Background="#252525"
+                                BorderBrush="#383838"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Foreground="#AAAAAA"
+                                Click="ResetCancel_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2E2E2E"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#333333"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#484848"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#505050"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#CCCCCC"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#AAAAAA"/>
+                            </Button.Resources>
+                        </Button>
+
+                        <!-- Delete -->
+                        <Button Grid.Column="1"
+                                Content="Delete Everything"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,11"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Background="#33FF6B6B"
+                                BorderBrush="#66FF6B6B"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Foreground="#FF6B6B"
+                                Click="ResetConfirm_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#4DFF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#66FF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#99FF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#BBFF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FF8A8A"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FF6B6B"/>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
+
+                </StackPanel>
+            </Border>
+        </Grid>
+
         <!-- Fire reset animation overlay -->
         <Grid x:Name="FireOverlay"
               Grid.RowSpan="2"

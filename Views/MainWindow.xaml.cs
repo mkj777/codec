@@ -445,21 +445,25 @@ namespace Codec.Views
             }
         }
 
-        private async void ResetApp_Click(object sender, RoutedEventArgs e)
+        private void ResetApp_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.IsSettingsVisible = false;
-            var confirmationDialog = new ContentDialog
-            {
-                Title = "Reset Codec",
-                Content = "This will delete all saved data and cached files. Continue?",
-                PrimaryButtonText = "Delete Data",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Close,
-                XamlRoot = Content.XamlRoot
-            };
+            ViewModel.IsResetConfirmVisible = true;
+        }
 
-            if (await confirmationDialog.ShowAsync() != ContentDialogResult.Primary)
-                return;
+        private void ResetScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ViewModel.IsResetConfirmVisible = false;
+        }
+
+        private void ResetCancel_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsResetConfirmVisible = false;
+        }
+
+        private async void ResetConfirm_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsResetConfirmVisible = false;
 
             ViewModel.IsUiEnabled = false;
             ViewModel.CancelImport();
