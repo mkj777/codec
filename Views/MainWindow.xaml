@@ -785,23 +785,23 @@
                   Tapped="SettingsScrim_Tapped"/>
             <Border Background="#1C1C1C"
                     CornerRadius="14"
-                    Padding="28"
-                    Width="360"
+                    Padding="22"
+                    Width="340"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-                <StackPanel Spacing="20">
+                <StackPanel Spacing="14">
                     <Grid>
                         <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
+                                    Spacing="8"
                                     VerticalAlignment="Center">
                             <FontIcon Glyph="&#xE713;"
                                       FontFamily="Segoe MDL2 Assets"
                                       FontSize="14"
                                       Foreground="#AAAAAA"/>
                             <TextBlock Text="Settings"
-                                       FontSize="18"
-                                       FontWeight="Bold"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable Display"
                                        Foreground="White"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
@@ -811,6 +811,7 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 FontSize="13"
+                                FontFamily="Segoe UI Variable Text"
                                 Padding="7,2,6,4"
                                 Foreground="#666666"
                                 Click="SettingsClose_Click">
@@ -831,89 +832,97 @@
                         </Button>
                     </Grid>
 
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="7">
                         <TextBlock Text="STARTUP"
-                                   FontSize="12"
+                                   FontSize="11"
                                    FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable Text"
                                    Foreground="#444444"
-                                   CharacterSpacing="100"/>
+                                   CharacterSpacing="40"/>
 
                         <Border Background="#252525"
                                 BorderBrush="#383838"
                                 BorderThickness="1"
                                 CornerRadius="8"
-                                Padding="12,10">
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Spacing="2"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="Scan for games"
-                                               FontSize="13"
-                                               FontWeight="SemiBold"
-                                               Foreground="#CCCCCC"/>
-                                    <TextBlock Text="Run a library scan when Codec starts."
-                                               FontSize="12"
-                                               FontWeight="Normal"
-                                               Foreground="#666666"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <ToggleSwitch Grid.Column="1"
-                                              IsOn="{Binding ScanOnStartup, Mode=TwoWay}"
-                                              OnContent=""
-                                              OffContent=""
-                                              VerticalAlignment="Center"
-                                              MinWidth="64"/>
-                            </Grid>
-                        </Border>
+                                Padding="10,2">
+                            <StackPanel Spacing="0">
+                                <Grid ColumnSpacing="10"
+                                      Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="1"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="Scan for games"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="Segoe UI Variable Text"
+                                                   Foreground="#CCCCCC"/>
+                                        <TextBlock Text="Run a library scan when Codec starts."
+                                                   FontSize="11.5"
+                                                   FontWeight="Normal"
+                                                   FontFamily="Segoe UI Variable Text"
+                                                   Foreground="#666666"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  IsOn="{Binding ScanOnStartup, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  MinWidth="56"/>
+                                </Grid>
 
-                        <Border Background="#252525"
-                                BorderBrush="#383838"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="12,10">
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Spacing="2"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="Launch Steam"
-                                               FontSize="13"
-                                               FontWeight="SemiBold"
-                                               Foreground="#CCCCCC"/>
-                                    <TextBlock Text="Start Steam silently with Codec."
-                                               FontSize="12"
-                                               FontWeight="Normal"
-                                               Foreground="#666666"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <ToggleSwitch Grid.Column="1"
-                                              IsOn="{Binding LaunchSteamSilent, Mode=TwoWay}"
-                                              OnContent=""
-                                              OffContent=""
-                                              VerticalAlignment="Center"
-                                              MinWidth="64"/>
-                            </Grid>
+                                <Border Height="1"
+                                        Background="#383838"/>
+
+                                <Grid ColumnSpacing="10"
+                                      Margin="0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="1"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="Launch Steam"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="Segoe UI Variable Text"
+                                                   Foreground="#CCCCCC"/>
+                                        <TextBlock Text="Start Steam silently with Codec."
+                                                   FontSize="11.5"
+                                                   FontWeight="Normal"
+                                                   FontFamily="Segoe UI Variable Text"
+                                                   Foreground="#666666"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  IsOn="{Binding LaunchSteamSilent, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  VerticalAlignment="Center"
+                                                  MinWidth="56"/>
+                                </Grid>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
 
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="7">
                         <TextBlock Text="MAINTENANCE"
-                                   FontSize="12"
+                                   FontSize="11"
                                    FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable Text"
                                    Foreground="#444444"
-                                   CharacterSpacing="100"/>
+                                   CharacterSpacing="40"/>
 
                         <Button Content="Reset Codec"
                                 HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
-                                Padding="0,11"
+                                Padding="0,9"
                                 FontSize="13"
                                 FontWeight="SemiBold"
+                                FontFamily="Segoe UI Variable Text"
                                 Background="#33FF6B6B"
                                 BorderBrush="#66FF6B6B"
                                 BorderThickness="1"
@@ -943,9 +952,10 @@
                             Visibility="{Binding IsDebugMode, Converter={StaticResource BoolToVisibilityConverter}}"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Padding="0,11"
+                            Padding="0,9"
                             FontSize="13"
                             FontWeight="SemiBold"
+                            FontFamily="Segoe UI Variable Text"
                             Background="#252525"
                             BorderBrush="#383838"
                             BorderThickness="1"
