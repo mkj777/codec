@@ -87,6 +87,31 @@
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
             </Style>
+            <Style x:Key="SidebarUtilityButtonStyle"
+                   TargetType="Button">
+                <Setter Property="Height"
+                        Value="32"/>
+                <Setter Property="Padding"
+                        Value="10,0"/>
+                <Setter Property="FontSize"
+                        Value="12"/>
+                <Setter Property="FontWeight"
+                        Value="SemiBold"/>
+                <Setter Property="Foreground"
+                        Value="White"/>
+                <Setter Property="Background"
+                        Value="#A0363636"/>
+                <Setter Property="BorderBrush"
+                        Value="#A9363636"/>
+                <Setter Property="BorderThickness"
+                        Value="1"/>
+                <Setter Property="CornerRadius"
+                        Value="6"/>
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Center"/>
+                <Setter Property="VerticalContentAlignment"
+                        Value="Center"/>
+            </Style>
         </Grid.Resources>
 
         <Grid.RenderTransform>
@@ -229,18 +254,60 @@
                                   Margin="0,0,0,8">
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
                                        Stretch="Uniform"/>
-                                <Button x:Name="SidebarAddButton"
-                                        Content="Settings"
-                                        IsEnabled="{Binding IsUiEnabled}"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,105,4"
-                                        Padding="12,6"
-                                        FontSize="12"
-                                        FontWeight="Medium"
-                                        Background="#A0363636"
-                                        BorderBrush="#A9363636"
-                                        Click="ManageButton_Click"/>
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0,0,0,4"
+                                            Spacing="6">
+                                    <Button x:Name="SidebarSettingsButton"
+                                            Style="{StaticResource SidebarUtilityButtonStyle}"
+                                            Width="34"
+                                            Padding="0"
+                                            IsEnabled="{Binding IsUiEnabled}"
+                                            Click="ManageButton_Click"
+                                            ToolTipService.ToolTip="Settings">
+                                        <FontIcon Glyph="&#xE713;"
+                                                  FontFamily="Segoe MDL2 Assets"
+                                                  FontSize="14"/>
+                                    </Button>
+                                    <Button x:Name="SidebarAddExecutableButton"
+                                            Style="{StaticResource SidebarUtilityButtonStyle}"
+                                            MinWidth="72"
+                                            Click="AddGame_Click"
+                                            ToolTipService.ToolTip="Add by executable">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6"
+                                                    VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE710;"
+                                                      FontFamily="Segoe MDL2 Assets"
+                                                      FontSize="11"
+                                                      VerticalAlignment="Center"/>
+                                            <TextBlock Text="Add"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="SidebarScanButton"
+                                            Style="{StaticResource SidebarUtilityButtonStyle}"
+                                            MinWidth="78"
+                                            IsEnabled="{Binding CanStartScan}"
+                                            Click="SidebarAddGames_Click"
+                                            ToolTipService.ToolTip="Scan for games">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6"
+                                                    VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE721;"
+                                                      FontFamily="Segoe MDL2 Assets"
+                                                      FontSize="11"
+                                                      VerticalAlignment="Center"/>
+                                            <TextBlock Text="Scan"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </StackPanel>
                     </Grid>
@@ -748,13 +815,6 @@
                                   Margin="0,-8,0,-8"/>
                     <Border Height="1"
                             Background="#333333"/>
-                    <Button Content="Scan for Games"
-                            HorizontalAlignment="Stretch"
-                            IsEnabled="{Binding CanStartScan}"
-                            Click="SidebarAddGames_Click"/>
-                    <Button Content="Add by Executable"
-                            HorizontalAlignment="Stretch"
-                            Click="AddGame_Click"/>
                     <Button Content="Reset App"
                             HorizontalAlignment="Stretch"
                             Foreground="#FF6B6B"

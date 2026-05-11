@@ -24,12 +24,14 @@ namespace Codec.ViewModels
     public partial class MainViewModel : ObservableObject
     {
         private const int SidebarSearchDebounceDelayMs = 300;
+        private const int UpdateNotificationDismissDelayMs = 5000;
         private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly ServiceHost _services;
         private readonly LibraryImportCoordinator _importCoordinator;
         private CancellationTokenSource? _sidebarSearchDebounceCts;
+        private int _updateNotificationDismissVersion;
         private string _appliedSearchText = string.Empty;
         private AppSettings _appSettings = new();
         private bool _suppressSettingsSave = false;
@@ -215,6 +217,33 @@ namespace Codec.ViewModels
                 IsUpdateErrorVisible = s.Status == UpdateStatus.Error;
                 UpdateDownloadProgress = s.DownloadProgress;
                 UpdateErrorMessage = s.ErrorMessage ?? string.Empty;
+
+                if (s.Status is UpdateStatus.Error or UpdateStatus.NoUpdateFound)
+                    ScheduleUpdateNotificationDismissal(s.Status);
+                else
+                    Interlocked.Increment(ref _updateNotificationDismissVersion);
+            });
+        }
+
+        private void ScheduleUpdateNotificationDismissal(UpdateStatus status)
+        {
+            int version = Interlocked.Increment(ref _updateNotificationDismissVersion);
+            _ = DismissUpdateNotificationAsync(status, version);
+        }
+
+        private async Task DismissUpdateNotificationAsync(UpdateStatus status, int version)
+        {
+            await Task.Delay(UpdateNotificationDismissDelayMs).ConfigureAwait(false);
+
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                if (version != _updateNotificationDismissVersion || _services.Updates.Status != status)
+                    return;
+
+                if (status == UpdateStatus.Error)
+                    IsUpdateErrorVisible = false;
+                else if (status == UpdateStatus.NoUpdateFound)
+                    IsUpdateNoUpdateVisible = false;
             });
         }
 
