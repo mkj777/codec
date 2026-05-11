@@ -85,15 +85,15 @@
                                 <VisualState x:Name="SettingsComfortableState">
                                         <VisualState.Setters>
                                                 <Setter Target="SettingsPanelBorder.Width"
-                                                        Value="380"/>
+                                                        Value="340"/>
                                                 <Setter Target="SettingsPanelBorder.Margin"
-                                                        Value="0,64,0,64"/>
-                                                <Setter Target="SettingsPanelBorder.Padding"
-                                                        Value="22,16,12,16"/>
-                                                <Setter Target="SettingsRootGrid.RowSpacing"
                                                         Value="24"/>
+                                                <Setter Target="SettingsPanelBorder.Padding"
+                                                        Value="22"/>
+                                                <Setter Target="SettingsRootGrid.RowSpacing"
+                                                        Value="14"/>
                                                 <Setter Target="SettingsContentGrid.RowSpacing"
-                                                        Value="20"/>
+                                                        Value="0"/>
                                                 <Setter Target="SettingsContentGrid.ColumnSpacing"
                                                         Value="0"/>
                                                 <Setter Target="SettingsPrimaryColumn.Width"
@@ -101,25 +101,25 @@
                                                 <Setter Target="SettingsSecondaryColumn.Width"
                                                         Value="0"/>
                                                 <Setter Target="SettingsHeaderText.FontSize"
-                                                        Value="22"/>
+                                                        Value="17"/>
                                                 <Setter Target="FolderSizeLabel.FontSize"
-                                                        Value="12"/>
+                                                        Value="11"/>
                                                 <Setter Target="LaunchScriptLabel.FontSize"
-                                                        Value="12"/>
+                                                        Value="11"/>
                                                 <Setter Target="DeleteSectionLabel.FontSize"
-                                                        Value="12"/>
+                                                        Value="11"/>
                                                 <Setter Target="FolderSizeValue.FontSize"
-                                                        Value="16"/>
+                                                        Value="13"/>
                                                 <Setter Target="LaunchScriptValue.FontSize"
-                                                        Value="14"/>
+                                                        Value="12"/>
                                                 <Setter Target="LaunchScriptValue.MaxLines"
-                                                        Value="3"/>
+                                                        Value="2"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
-                                                        Value="4"/>
+                                                        Value="1"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
-                                                        Value="8"/>
+                                                        Value="6"/>
                                                 <Setter Target="DeleteSection.Spacing"
-                                                        Value="8"/>
+                                                        Value="7"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Row)"
                                                         Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Column)"
@@ -138,23 +138,23 @@
                                 <VisualState x:Name="SettingsCompactState">
                                         <VisualState.Setters>
                                                 <Setter Target="SettingsPanelBorder.Width"
-                                                        Value="352"/>
+                                                        Value="326"/>
                                                 <Setter Target="SettingsPanelBorder.Margin"
-                                                        Value="0,36,0,36"/>
-                                                <Setter Target="SettingsPanelBorder.Padding"
-                                                        Value="20,14,10,14"/>
-                                                <Setter Target="SettingsRootGrid.RowSpacing"
                                                         Value="18"/>
+                                                <Setter Target="SettingsPanelBorder.Padding"
+                                                        Value="20"/>
+                                                <Setter Target="SettingsRootGrid.RowSpacing"
+                                                        Value="12"/>
                                                 <Setter Target="SettingsContentGrid.RowSpacing"
-                                                        Value="16"/>
+                                                        Value="0"/>
                                                 <Setter Target="SettingsContentGrid.ColumnSpacing"
-                                                        Value="14"/>
+                                                        Value="0"/>
                                                 <Setter Target="SettingsPrimaryColumn.Width"
-                                                        Value="2*"/>
-                                                <Setter Target="SettingsSecondaryColumn.Width"
                                                         Value="*"/>
+                                                <Setter Target="SettingsSecondaryColumn.Width"
+                                                        Value="0"/>
                                                 <Setter Target="SettingsHeaderText.FontSize"
-                                                        Value="21"/>
+                                                        Value="16"/>
                                                 <Setter Target="FolderSizeLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="LaunchScriptLabel.FontSize"
@@ -162,17 +162,17 @@
                                                 <Setter Target="DeleteSectionLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="FolderSizeValue.FontSize"
-                                                        Value="15"/>
-                                                <Setter Target="LaunchScriptValue.FontSize"
                                                         Value="13"/>
+                                                <Setter Target="LaunchScriptValue.FontSize"
+                                                        Value="12"/>
                                                 <Setter Target="LaunchScriptValue.MaxLines"
                                                         Value="2"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
-                                                        Value="4"/>
+                                                        Value="1"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
                                                         Value="6"/>
                                                 <Setter Target="DeleteSection.Spacing"
-                                                        Value="6"/>
+                                                        Value="7"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Row)"
                                                         Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Column)"
@@ -191,23 +191,23 @@
                                 <VisualState x:Name="SettingsTightState">
                                         <VisualState.Setters>
                                                 <Setter Target="SettingsPanelBorder.Width"
-                                                        Value="320"/>
+                                                        Value="310"/>
                                                 <Setter Target="SettingsPanelBorder.Margin"
-                                                        Value="0,20,0,20"/>
-                                                <Setter Target="SettingsPanelBorder.Padding"
-                                                        Value="16,12,8,12"/>
-                                                <Setter Target="SettingsRootGrid.RowSpacing"
                                                         Value="14"/>
-                                                <Setter Target="SettingsContentGrid.RowSpacing"
-                                                        Value="12"/>
-                                                <Setter Target="SettingsContentGrid.ColumnSpacing"
+                                                <Setter Target="SettingsPanelBorder.Padding"
+                                                        Value="18"/>
+                                                <Setter Target="SettingsRootGrid.RowSpacing"
                                                         Value="10"/>
+                                                <Setter Target="SettingsContentGrid.RowSpacing"
+                                                        Value="0"/>
+                                                <Setter Target="SettingsContentGrid.ColumnSpacing"
+                                                        Value="0"/>
                                                 <Setter Target="SettingsPrimaryColumn.Width"
-                                                        Value="2*"/>
-                                                <Setter Target="SettingsSecondaryColumn.Width"
                                                         Value="*"/>
+                                                <Setter Target="SettingsSecondaryColumn.Width"
+                                                        Value="0"/>
                                                 <Setter Target="SettingsHeaderText.FontSize"
-                                                        Value="19"/>
+                                                        Value="16"/>
                                                 <Setter Target="FolderSizeLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="LaunchScriptLabel.FontSize"
@@ -215,17 +215,17 @@
                                                 <Setter Target="DeleteSectionLabel.FontSize"
                                                         Value="11"/>
                                                 <Setter Target="FolderSizeValue.FontSize"
-                                                        Value="14"/>
+                                                        Value="13"/>
                                                 <Setter Target="LaunchScriptValue.FontSize"
                                                         Value="12"/>
                                                 <Setter Target="LaunchScriptValue.MaxLines"
                                                         Value="1"/>
                                                 <Setter Target="FolderSizeSection.Spacing"
-                                                        Value="2"/>
+                                                        Value="1"/>
                                                 <Setter Target="LaunchScriptSection.Spacing"
                                                         Value="4"/>
                                                 <Setter Target="DeleteSection.Spacing"
-                                                        Value="4"/>
+                                                        Value="6"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Row)"
                                                         Value="0"/>
                                                 <Setter Target="FolderSizeSection.(Grid.Column)"
@@ -627,23 +627,23 @@
 
                         <Grid x:Name="SettingsOverlay"
                               Visibility="{Binding IsGameSettingsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <Grid Background="#80000000"
-                                      Margin="-20,0,0,0"
+                                <Grid Background="#CC000000"
                                       Tapped="Scrim_Tapped"/>
 
                                 <Border x:Name="SettingsPanelBorder"
-                                        Width="380"
-                                        MinWidth="320"
+                                        Width="340"
+                                        MinWidth="300"
                                         MinHeight="100"
-                                        MaxHeight="360"
-                                        HorizontalAlignment="Right"
-                                        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-                                        BorderBrush="#33FFFFFF"
-                                        BorderThickness="1,0,0,0"
-                                        Margin="0,64,0,64"
-                                        CornerRadius="14,0,0,14">
+                                        MaxHeight="390"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Background="#1C1C1C"
+                                        Margin="24"
+                                        Padding="22"
+                                        CornerRadius="14">
 
-                                        <Grid x:Name="SettingsRootGrid">
+                                        <Grid x:Name="SettingsRootGrid"
+                                              RowSpacing="14">
                                                 <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="*"/>
@@ -651,25 +651,54 @@
                                                 </Grid.RowDefinitions>
 
                                                 <Grid Grid.Row="0">
-                                                        <TextBlock x:Name="SettingsHeaderText"
-                                                                   Text="Game Settings"
-                                                                   Margin="0,-8,0,0"
-                                                                   FontSize="22"
-                                                                   FontWeight="Bold"
-                                                                   VerticalAlignment="Center"/>
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Spacing="8"
+                                                                    VerticalAlignment="Center">
+                                                                <FontIcon Glyph="&#xE713;"
+                                                                          FontFamily="Segoe MDL2 Assets"
+                                                                          FontSize="14"
+                                                                          Foreground="#AAAAAA"/>
+                                                                <TextBlock x:Name="SettingsHeaderText"
+                                                                           Text="Game Settings"
+                                                                           FontSize="17"
+                                                                           FontWeight="SemiBold"
+                                                                           FontFamily="Segoe UI Variable Display"
+                                                                           Foreground="White"
+                                                                           VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                         <Button Content="✕"
                                                                 Command="{Binding CloseGameSettingsCommand}"
                                                                 HorizontalAlignment="Right"
+                                                                VerticalAlignment="Center"
                                                                 Background="Transparent"
                                                                 BorderThickness="0"
-                                                                FontSize="18"/>
+                                                                FontSize="13"
+                                                                FontFamily="Segoe UI Variable Text"
+                                                                Padding="6,1,5,3"
+                                                                Foreground="#666666">
+                                                                <Button.Resources>
+                                                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                         Color="#22FFFFFF"/>
+                                                                        <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                         Color="#33FFFFFF"/>
+                                                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                         Color="#999999"/>
+                                                                        <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                         Color="#666666"/>
+                                                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                         Color="Transparent"/>
+                                                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                         Color="Transparent"/>
+                                                                </Button.Resources>
+                                                        </Button>
                                                 </Grid>
 
                                                 <Grid x:Name="SettingsContentGrid"
-                                                      Grid.Row="1">
+                                                      Grid.Row="1"
+                                                      RowSpacing="0">
                                                         <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition x:Name="SettingsPrimaryColumn"
-                                                                                  Width="*"/>
+                                                                                   Width="*"/>
                                                                 <ColumnDefinition x:Name="SettingsSecondaryColumn"
                                                                                   Width="0"/>
                                                         </Grid.ColumnDefinitions>
@@ -678,59 +707,131 @@
                                                                 <RowDefinition Height="Auto"/>
                                                         </Grid.RowDefinitions>
 
-                                                        <StackPanel x:Name="FolderSizeSection"
-                                                                    Grid.Row="0"
-                                                                    Margin="0,-10,0,0"
-                                                                    Grid.Column="0"
-                                                                    Spacing="4">
-                                                                <TextBlock x:Name="FolderSizeLabel"
-                                                                           Text="FOLDER SIZE"
-                                                                           Opacity="0.5"
-                                                                           FontSize="12"/>
-                                                                <TextBlock x:Name="FolderSizeValue"
-                                                                           Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
-                                                                           FontWeight="SemiBold"
-                                                                           FontSize="16"/>
-                                                        </StackPanel>
+                                                        <Border Grid.Row="0"
+                                                                Grid.RowSpan="2"
+                                                                Grid.Column="0"
+                                                                Background="#252525"
+                                                                BorderBrush="#383838"
+                                                                BorderThickness="1"
+                                                                CornerRadius="8"
+                                                                Padding="10,2">
+                                                                <StackPanel Spacing="0">
+                                                                        <StackPanel x:Name="FolderSizeSection"
+                                                                                    Margin="0,8"
+                                                                                    Spacing="1">
+                                                                                <TextBlock x:Name="FolderSizeLabel"
+                                                                                           Text="FOLDER SIZE"
+                                                                                           FontSize="11"
+                                                                                           FontWeight="SemiBold"
+                                                                                           FontFamily="Segoe UI Variable Text"
+                                                                                           Foreground="#444444"
+                                                                                           CharacterSpacing="40"/>
+                                                                                <TextBlock x:Name="FolderSizeValue"
+                                                                                           Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
+                                                                                           FontWeight="SemiBold"
+                                                                                           FontFamily="Segoe UI Variable Text"
+                                                                                           Foreground="#CCCCCC"
+                                                                                           FontSize="13"/>
+                                                                        </StackPanel>
 
-                                                        <StackPanel x:Name="LaunchScriptSection"
-                                                                    Grid.Row="1"
-                                                                    Grid.Column="0"
-                                                                    Spacing="8">
-                                                                <TextBlock x:Name="LaunchScriptLabel"
-                                                                           Text="CUSTOM LAUNCH SCRIPT"
-                                                                           Opacity="0.5"
-                                                                           FontSize="12"/>
+                                                                        <Border Height="1"
+                                                                                Background="#383838"/>
 
-                                                                <TextBlock x:Name="LaunchScriptValue"
-                                                                           Text="{Binding SelectedGame.LaunchScript, TargetNullValue='No script selected', FallbackValue='No script selected'}"
-                                                                           TextWrapping="Wrap"
-                                                                           TextTrimming="CharacterEllipsis"
-                                                                           MaxLines="3"
-                                                                           Margin="0,-4,0,0"
-                                                                           Padding="0"
-                                                                           Foreground="#A0A0A0"
-                                                                           FontSize="14"/>
+                                                                        <StackPanel x:Name="LaunchScriptSection"
+                                                                                    Margin="0,8"
+                                                                                    Spacing="6">
+                                                                                <StackPanel Spacing="1">
+                                                                                        <TextBlock x:Name="LaunchScriptLabel"
+                                                                                                   Text="CUSTOM LAUNCH SCRIPT"
+                                                                                                   FontSize="11"
+                                                                                                   FontWeight="SemiBold"
+                                                                                                   FontFamily="Segoe UI Variable Text"
+                                                                                                   Foreground="#444444"
+                                                                                                   CharacterSpacing="40"/>
 
-                                                                <StackPanel Orientation="Horizontal"
-                                                                            Spacing="8">
-                                                                        <Button Content="Browse"
-                                                                                Click="SelectScriptButton_Click"/>
+                                                                                        <TextBlock x:Name="LaunchScriptValue"
+                                                                                                   Text="{Binding SelectedGame.LaunchScript, TargetNullValue='No script selected', FallbackValue='No script selected'}"
+                                                                                                   TextWrapping="Wrap"
+                                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                                   MaxLines="2"
+                                                                                                   Padding="0"
+                                                                                                   Foreground="#666666"
+                                                                                                   FontFamily="Segoe UI Variable Text"
+                                                                                                   FontSize="12"/>
+                                                                                </StackPanel>
 
-                                                                        <Button Content="Clear"
-                                                                                Command="{Binding ClearLaunchScriptCommand}"
-                                                                                Visibility="{Binding SelectedGame.LaunchScript, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                                                <StackPanel Orientation="Horizontal"
+                                                                                            Spacing="8">
+                                                                                        <Button Content="Browse"
+                                                                                                Click="SelectScriptButton_Click"
+                                                                                                Padding="14,7"
+                                                                                                FontSize="12"
+                                                                                                FontWeight="SemiBold"
+                                                                                                FontFamily="Segoe UI Variable Text"
+                                                                                                Background="#252525"
+                                                                                                BorderBrush="#383838"
+                                                                                                BorderThickness="1"
+                                                                                                CornerRadius="8"
+                                                                                                Foreground="#AAAAAA">
+                                                                                                <Button.Resources>
+                                                                                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                                                         Color="#2E2E2E"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                                                         Color="#333333"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                                                         Color="#484848"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                                                         Color="#505050"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                                                         Color="#CCCCCC"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                                                         Color="#AAAAAA"/>
+                                                                                                </Button.Resources>
+                                                                                        </Button>
+
+                                                                                        <Button Content="Clear"
+                                                                                                Command="{Binding ClearLaunchScriptCommand}"
+                                                                                                Visibility="{Binding SelectedGame.LaunchScript, Converter={StaticResource NullToVisibilityConverter}}"
+                                                                                                Padding="14,7"
+                                                                                                FontSize="12"
+                                                                                                FontWeight="SemiBold"
+                                                                                                FontFamily="Segoe UI Variable Text"
+                                                                                                Background="#252525"
+                                                                                                BorderBrush="#383838"
+                                                                                                BorderThickness="1"
+                                                                                                CornerRadius="8"
+                                                                                                Foreground="#AAAAAA">
+                                                                                                <Button.Resources>
+                                                                                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                                                         Color="#2E2E2E"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                                                         Color="#333333"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                                                         Color="#484848"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                                                         Color="#505050"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                                                         Color="#CCCCCC"/>
+                                                                                                        <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                                                         Color="#AAAAAA"/>
+                                                                                                </Button.Resources>
+                                                                                        </Button>
+                                                                                </StackPanel>
+                                                                        </StackPanel>
                                                                 </StackPanel>
-                                                        </StackPanel>
+                                                        </Border>
                                                 </Grid>
 
                                                 <StackPanel x:Name="DeleteSection"
                                                             Grid.Row="2"
-                                                            Spacing="8">
+                                                            Spacing="7">
                                                         <TextBlock x:Name="DeleteSectionLabel"
                                                                    Text="LIBRARY"
-                                                                   Opacity="0.5"
-                                                                   FontSize="12"/>
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"
+                                                                   FontFamily="Segoe UI Variable Text"
+                                                                   Foreground="#444444"
+                                                                   CharacterSpacing="40"/>
                                                         <Grid ColumnSpacing="8">
                                                                 <Grid.ColumnDefinitions>
                                                                         <ColumnDefinition Width="*"/>
@@ -739,19 +840,67 @@
                                                                 <Button Content="Open Folder"
                                                                         Grid.Column="0"
                                                                         Command="{Binding OpenGameFolderCommand}"
-                                                                        HorizontalAlignment="Stretch"/>
+                                                                        HorizontalAlignment="Stretch"
+                                                                        HorizontalContentAlignment="Center"
+                                                                        Padding="0,9"
+                                                                        FontSize="13"
+                                                                        FontWeight="SemiBold"
+                                                                        FontFamily="Segoe UI Variable Text"
+                                                                        Background="#252525"
+                                                                        BorderBrush="#383838"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="8"
+                                                                        Foreground="#AAAAAA">
+                                                                        <Button.Resources>
+                                                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                                 Color="#2E2E2E"/>
+                                                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                                 Color="#333333"/>
+                                                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                                 Color="#484848"/>
+                                                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                                 Color="#505050"/>
+                                                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                                 Color="#CCCCCC"/>
+                                                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                                 Color="#AAAAAA"/>
+                                                                        </Button.Resources>
+                                                                </Button>
                                                                 <Button Content="Delete from Library"
                                                                         Grid.Column="1"
                                                                         Click="DeleteSelectedGameButton_Click"
                                                                         HorizontalAlignment="Stretch"
-                                                                        Foreground="#FFFFC7C7"
-                                                                        BorderBrush="#99FF7A7A"
-                                                                        Background="#66A11F1F"/>
+                                                                        HorizontalContentAlignment="Center"
+                                                                        Padding="0,9"
+                                                                        FontSize="13"
+                                                                        FontWeight="SemiBold"
+                                                                        FontFamily="Segoe UI Variable Text"
+                                                                        Background="#33FF6B6B"
+                                                                        BorderBrush="#66FF6B6B"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="8"
+                                                                        Foreground="#FF6B6B">
+                                                                        <Button.Resources>
+                                                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                                 Color="#4DFF6B6B"/>
+                                                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                                 Color="#66FF6B6B"/>
+                                                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                                 Color="#99FF6B6B"/>
+                                                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                                 Color="#BBFF6B6B"/>
+                                                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                                 Color="#FF8A8A"/>
+                                                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                                 Color="#FF6B6B"/>
+                                                                        </Button.Resources>
+                                                                </Button>
                                                         </Grid>
                                                         <TextBlock x:Name="DeleteSectionHelperText"
                                                                    Text="Removes this game from Codec. Files stay on disk."
                                                                    TextWrapping="Wrap"
-                                                                   Foreground="#A0A0A0"
+                                                                   Foreground="#666666"
+                                                                   FontFamily="Segoe UI Variable Text"
                                                                    FontSize="12"/>
                                                 </StackPanel>
                                         </Grid>
