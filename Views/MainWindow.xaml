@@ -781,50 +781,190 @@
               Grid.ColumnSpan="2"
               Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               IsHitTestVisible="True">
-            <Grid Background="#BF000000"
+            <Grid Background="#CC000000"
                   Tapped="SettingsScrim_Tapped"/>
             <Border Background="#1C1C1C"
-                    CornerRadius="12"
-                    Padding="32"
-                    MinWidth="320"
-                    MaxWidth="400"
+                    CornerRadius="14"
+                    Padding="28"
+                    Width="360"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-                <StackPanel Spacing="16">
+                <StackPanel Spacing="20">
                     <Grid>
-                        <TextBlock Text="Settings"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
-                                   VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE713;"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      FontSize="14"
+                                      Foreground="#AAAAAA"/>
+                            <TextBlock Text="Settings"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
+                                       Foreground="White"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
                         <Button Content="✕"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                FontSize="14"
-                                FontWeight="Bold"
-                                Padding="8,4"
-                                Click="SettingsClose_Click"/>
+                                FontSize="13"
+                                Padding="7,2,6,4"
+                                Foreground="#666666"
+                                Click="SettingsClose_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                 Color="#22FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                 Color="#33FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                 Color="#999999"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                 Color="#666666"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                 Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                 Color="Transparent"/>
+                            </Button.Resources>
+                        </Button>
                     </Grid>
-                    <ToggleSwitch Header="Scan for games on startup"
-                                  IsOn="{Binding ScanOnStartup, Mode=TwoWay}"
-                                  Margin="0,-8,0,-8"/>
-                    <ToggleSwitch Header="Launch Steam on startup"
-                                  IsOn="{Binding LaunchSteamSilent, Mode=TwoWay}"
-                                  Margin="0,-8,0,-8"/>
-                    <Border Height="1"
-                            Background="#333333"/>
-                    <Button Content="Reset App"
-                            HorizontalAlignment="Stretch"
-                            Foreground="#FF6B6B"
-                            Click="ResetApp_Click"/>
+
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="STARTUP"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#444444"
+                                   CharacterSpacing="100"/>
+
+                        <Border Background="#252525"
+                                BorderBrush="#383838"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="Scan for games"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="#CCCCCC"/>
+                                    <TextBlock Text="Run a library scan when Codec starts."
+                                               FontSize="12"
+                                               FontWeight="Normal"
+                                               Foreground="#666666"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsOn="{Binding ScanOnStartup, Mode=TwoWay}"
+                                              OnContent=""
+                                              OffContent=""
+                                              VerticalAlignment="Center"
+                                              MinWidth="64"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Background="#252525"
+                                BorderBrush="#383838"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12,10">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="Launch Steam"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="#CCCCCC"/>
+                                    <TextBlock Text="Start Steam silently with Codec."
+                                               FontSize="12"
+                                               FontWeight="Normal"
+                                               Foreground="#666666"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsOn="{Binding LaunchSteamSilent, Mode=TwoWay}"
+                                              OnContent=""
+                                              OffContent=""
+                                              VerticalAlignment="Center"
+                                              MinWidth="64"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="MAINTENANCE"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#444444"
+                                   CharacterSpacing="100"/>
+
+                        <Button Content="Reset Codec"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="0,11"
+                                FontSize="13"
+                                FontWeight="SemiBold"
+                                Background="#33FF6B6B"
+                                BorderBrush="#66FF6B6B"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Foreground="#FF6B6B"
+                                Click="ResetApp_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                 Color="#4DFF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                 Color="#66FF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                 Color="#99FF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                 Color="#BBFF6B6B"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                 Color="#FF8A8A"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                 Color="#FF6B6B"/>
+                            </Button.Resources>
+                        </Button>
+                    </StackPanel>
+
                     <Button x:Name="SidebarDebugButton"
                             Content="Debug"
                             IsEnabled="{Binding IsUiEnabled}"
                             Visibility="{Binding IsDebugMode, Converter={StaticResource BoolToVisibilityConverter}}"
                             HorizontalAlignment="Stretch"
-                            FontWeight="SemiBold">
+                            HorizontalContentAlignment="Center"
+                            Padding="0,11"
+                            FontSize="13"
+                            FontWeight="SemiBold"
+                            Background="#252525"
+                            BorderBrush="#383838"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Foreground="#AAAAAA">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                             Color="#2E2E2E"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                             Color="#333333"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                             Color="#484848"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                             Color="#505050"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                             Color="#CCCCCC"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                             Color="#AAAAAA"/>
+                        </Button.Resources>
                         <Button.Flyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem Text="Debug Data"
