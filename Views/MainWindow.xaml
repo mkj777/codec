@@ -17,7 +17,8 @@
           MinWidth="420"
           MinHeight="520">
         <Grid.Resources>
-            <x:Double x:Key="SidebarGameRowHeight">40</x:Double>
+            <x:Double x:Key="SidebarSearchRowHeight">40</x:Double>
+            <x:Double x:Key="SidebarGameRowHeight">30</x:Double>
             <conv:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <conv:MediaTypeToVisibilityConverter x:Key="MediaTypeToVisibilityConverter"/>
@@ -185,7 +186,7 @@
                         </Button>
                         <TextBox Grid.Row="1"
                                  Margin="0,0,0,0"
-                                 Height="{StaticResource SidebarGameRowHeight}"
+                                 Height="{StaticResource SidebarSearchRowHeight}"
                                  Padding="14,10,10,10"
                                  Background="#222222"
                                  BorderThickness="0"
@@ -195,7 +196,7 @@
                                  PlaceholderForeground="#FF9A9A9A"
                                  HorizontalAlignment="Stretch"
                                  VerticalContentAlignment="Center"
-                                 PlaceholderText="Search games"
+                                 PlaceholderText="Search"
                                  IsEnabled="{Binding IsUiEnabled}"
                                  Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                             <TextBox.Resources>
@@ -232,8 +233,10 @@
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Height"
                                             Value="{StaticResource SidebarGameRowHeight}"/>
+                                    <Setter Property="MinHeight"
+                                            Value="0"/>
                                     <Setter Property="Padding"
-                                            Value="12,0,14,0"/>
+                                            Value="18,0,18,0"/>
                                     <Setter Property="Margin"
                                             Value="-4,-2,-4,-2"/>
                                     <Setter Property="VerticalContentAlignment"
