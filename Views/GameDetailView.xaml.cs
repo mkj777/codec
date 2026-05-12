@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Windows.Foundation;
 
 namespace Codec.Views
 {
@@ -56,6 +57,10 @@ namespace Codec.Views
         private const double DetailsCompactBreakpoint = 680d;
         private const double DetailsMetricMinWidth = 520d;
         private const double DetailsMetricMaxWidth = 1180d;
+        private const double RemoveGameConfirmationPopoverWidth = 240d;
+        private const double RemoveGameConfirmationPopoverLeftNudge = 28d;
+        private const double RemoveGameConfirmationPopoverVerticalGap = 8d;
+        private const double RemoveGameConfirmationPopoverEdgePadding = 12d;
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
@@ -99,6 +104,16 @@ namespace Codec.Views
 
         private void Scrim_Tapped(object sender, TappedRoutedEventArgs e)
         {
+            HideRemoveGameConfirmationPopover();
+
+            if (ViewModel?.CloseGameSettingsCommand.CanExecute(null) == true)
+                ViewModel.CloseGameSettingsCommand.Execute(null);
+        }
+
+        private void CloseGameSettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideRemoveGameConfirmationPopover();
+
             if (ViewModel?.CloseGameSettingsCommand.CanExecute(null) == true)
                 ViewModel.CloseGameSettingsCommand.Execute(null);
         }
@@ -154,28 +169,61 @@ namespace Codec.Views
             }
         }
 
-        private async void DeleteSelectedGameButton_Click(object sender, RoutedEventArgs e)
+        private void RemoveGameButton_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel?.SelectedGame == null)
                 return;
 
-            var dialog = new ContentDialog
-            {
-                Title = "Delete Game",
-                Content = $"Remove '{ViewModel.SelectedGame.Name}' from your library? This won't delete any files from disk.",
-                PrimaryButtonText = "Delete",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Close,
-                XamlRoot = XamlRoot
-            };
+            var buttonPosition = RemoveGameButton
+                .TransformToVisual(SettingsPopoverLayer)
+                .TransformPoint(new Point(0, 0));
 
-            var result = await dialog.ShowAsync();
-            if (result != ContentDialogResult.Primary)
+            RemoveGameConfirmationPopover.Visibility = Visibility.Visible;
+            RemoveGameConfirmationPopover.Measure(new Size(RemoveGameConfirmationPopoverWidth, double.PositiveInfinity));
+
+            double popoverHeight = RemoveGameConfirmationPopover.DesiredSize.Height;
+            if (popoverHeight <= 0)
+            {
+                RemoveGameConfirmationPopover.UpdateLayout();
+                popoverHeight = RemoveGameConfirmationPopover.ActualHeight;
+            }
+
+            if (popoverHeight <= 0)
+                popoverHeight = 112d;
+
+            double overlayWidth = SettingsPopoverLayer.ActualWidth > 0 ? SettingsPopoverLayer.ActualWidth : ActualWidth;
+            double maxLeft = Math.Max(
+                RemoveGameConfirmationPopoverEdgePadding,
+                overlayWidth - RemoveGameConfirmationPopoverWidth - RemoveGameConfirmationPopoverEdgePadding);
+            double anchorX = buttonPosition.X
+                + RemoveGameButton.ActualWidth
+                - RemoveGameConfirmationPopoverWidth
+                - RemoveGameConfirmationPopoverLeftNudge;
+            anchorX = Math.Min(Math.Max(RemoveGameConfirmationPopoverEdgePadding, anchorX), maxLeft);
+
+            double anchorY = buttonPosition.Y - popoverHeight - RemoveGameConfirmationPopoverVerticalGap;
+            anchorY = Math.Max(RemoveGameConfirmationPopoverEdgePadding, anchorY);
+
+            Canvas.SetLeft(RemoveGameConfirmationPopover, anchorX);
+            Canvas.SetTop(RemoveGameConfirmationPopover, anchorY);
+        }
+
+        private void CancelDeleteSelectedGameButton_Click(object sender, RoutedEventArgs e)
+            => HideRemoveGameConfirmationPopover();
+
+        private async void ConfirmDeleteSelectedGameButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel?.SelectedGame == null)
                 return;
+
+            HideRemoveGameConfirmationPopover();
 
             if (ViewModel.DeleteSelectedGameCommand.CanExecute(null))
                 await ViewModel.DeleteSelectedGameCommand.ExecuteAsync(null);
         }
+
+        private void HideRemoveGameConfirmationPopover()
+            => RemoveGameConfirmationPopover.Visibility = Visibility.Collapsed;
 
         private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
             => UpdateResponsiveLayoutState();

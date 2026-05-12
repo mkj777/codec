@@ -669,7 +669,7 @@
                                                                            VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                         <Button Content="✕"
-                                                                Command="{Binding CloseGameSettingsCommand}"
+                                                                Click="CloseGameSettingsButton_Click"
                                                                 HorizontalAlignment="Right"
                                                                 VerticalAlignment="Center"
                                                                 Background="Transparent"
@@ -868,9 +868,10 @@
                                                                                                  Color="#AAAAAA"/>
                                                                         </Button.Resources>
                                                                 </Button>
-                                                                <Button Content="Remove"
+                                                                <Button x:Name="RemoveGameButton"
+                                                                        Content="Remove"
                                                                         Grid.Column="1"
-                                                                        Click="DeleteSelectedGameButton_Click"
+                                                                        Click="RemoveGameButton_Click"
                                                                         HorizontalAlignment="Stretch"
                                                                         HorizontalContentAlignment="Center"
                                                                         Padding="0,9"
@@ -1183,6 +1184,100 @@
                                 </Grid>
                         </ScrollViewer>
                 </Grid>
+
+                <Canvas x:Name="SettingsPopoverLayer"
+                        Grid.RowSpan="2"
+                        Visibility="{Binding IsGameSettingsOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+                        IsHitTestVisible="True"
+                        Canvas.ZIndex="10">
+                        <Border x:Name="RemoveGameConfirmationPopover"
+                                Width="240"
+                                Visibility="Collapsed"
+                                Background="#1C1C1C"
+                                BorderBrush="#4A3434"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="12">
+                                <StackPanel Spacing="10">
+                                        <StackPanel Spacing="2">
+                                                <TextBlock Text="Are you sure?"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           FontFamily="Segoe UI Variable Text"
+                                                           Foreground="#FFFFFF"/>
+                                                <TextBlock Text="This removes the game from your library. Files stay on disk."
+                                                           TextWrapping="Wrap"
+                                                           FontSize="12"
+                                                           FontFamily="Segoe UI Variable Text"
+                                                           Foreground="#8A8A8A"/>
+                                        </StackPanel>
+                                        <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button Content="No"
+                                                        Grid.Column="0"
+                                                        Click="CancelDeleteSelectedGameButton_Click"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Center"
+                                                        Padding="0,7"
+                                                        FontSize="12"
+                                                        FontWeight="SemiBold"
+                                                        FontFamily="Segoe UI Variable Text"
+                                                        Background="#252525"
+                                                        BorderBrush="#383838"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        Foreground="#AAAAAA">
+                                                        <Button.Resources>
+                                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                 Color="#2E2E2E"/>
+                                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                 Color="#333333"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                 Color="#484848"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                 Color="#505050"/>
+                                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                 Color="#CCCCCC"/>
+                                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                 Color="#AAAAAA"/>
+                                                        </Button.Resources>
+                                                </Button>
+                                                <Button Content="Yes"
+                                                        Grid.Column="1"
+                                                        Click="ConfirmDeleteSelectedGameButton_Click"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Center"
+                                                        Padding="0,7"
+                                                        FontSize="12"
+                                                        FontWeight="SemiBold"
+                                                        FontFamily="Segoe UI Variable Text"
+                                                        Background="#33FF6B6B"
+                                                        BorderBrush="#66FF6B6B"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        Foreground="#FF6B6B">
+                                                        <Button.Resources>
+                                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                 Color="#4DFF6B6B"/>
+                                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                 Color="#66FF6B6B"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                 Color="#99FF6B6B"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                 Color="#BBFF6B6B"/>
+                                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                 Color="#FF8A8A"/>
+                                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                 Color="#FF6B6B"/>
+                                                        </Button.Resources>
+                                                </Button>
+                                        </Grid>
+                                </StackPanel>
+                        </Border>
+                </Canvas>
         </Grid>
 
 </UserControl>
