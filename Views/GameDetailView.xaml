@@ -87,7 +87,7 @@
                                                 <Setter Target="SettingsPanelBorder.Width"
                                                         Value="340"/>
                                                 <Setter Target="SettingsPanelBorder.Margin"
-                                                        Value="24"/>
+                                                        Value="0,24,0,24"/>
                                                 <Setter Target="SettingsPanelBorder.Padding"
                                                         Value="22"/>
                                                 <Setter Target="SettingsRootGrid.RowSpacing"
@@ -140,7 +140,7 @@
                                                 <Setter Target="SettingsPanelBorder.Width"
                                                         Value="326"/>
                                                 <Setter Target="SettingsPanelBorder.Margin"
-                                                        Value="18"/>
+                                                        Value="0,18,0,18"/>
                                                 <Setter Target="SettingsPanelBorder.Padding"
                                                         Value="20"/>
                                                 <Setter Target="SettingsRootGrid.RowSpacing"
@@ -193,7 +193,7 @@
                                                 <Setter Target="SettingsPanelBorder.Width"
                                                         Value="310"/>
                                                 <Setter Target="SettingsPanelBorder.Margin"
-                                                        Value="14"/>
+                                                        Value="0,14,0,14"/>
                                                 <Setter Target="SettingsPanelBorder.Padding"
                                                         Value="18"/>
                                                 <Setter Target="SettingsRootGrid.RowSpacing"
@@ -578,8 +578,8 @@
                                                                            Text="PLAY"
                                                                            FontSize="16"
                                                                            FontWeight="Bold"
-                                                           CharacterSpacing="120"
-                                                           Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
+                                                                           CharacterSpacing="120"
+                                                                           Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
                                                         </StackPanel>
                                                 </Grid>
                                         </Border>
@@ -631,16 +631,18 @@
                                       Tapped="Scrim_Tapped"/>
 
                                 <Border x:Name="SettingsPanelBorder"
-                                        Width="340"
-                                        MinWidth="300"
-                                        MinHeight="100"
-                                        MaxHeight="390"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
+                                        MinWidth="250"
+                                        MaxWidth="300"
+                                        MinHeight="250"
+                                        MaxHeight="320"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Stretch"
                                         Background="#1C1C1C"
-                                        Margin="24"
+                                        BorderBrush="#383838"
+                                        BorderThickness="1,0,0,1"
+                                        Margin="0,24,0,24"
                                         Padding="22"
-                                        CornerRadius="14">
+                                        CornerRadius="14,0,0,14">
 
                                         <Grid x:Name="SettingsRootGrid"
                                               RowSpacing="14">
@@ -698,7 +700,7 @@
                                                       RowSpacing="0">
                                                         <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition x:Name="SettingsPrimaryColumn"
-                                                                                   Width="*"/>
+                                                                                  Width="*"/>
                                                                 <ColumnDefinition x:Name="SettingsSecondaryColumn"
                                                                                   Width="0"/>
                                                         </Grid.ColumnDefinitions>
@@ -866,7 +868,7 @@
                                                                                                  Color="#AAAAAA"/>
                                                                         </Button.Resources>
                                                                 </Button>
-                                                                <Button Content="Delete from Library"
+                                                                <Button Content="Remove"
                                                                         Grid.Column="1"
                                                                         Click="DeleteSelectedGameButton_Click"
                                                                         HorizontalAlignment="Stretch"
@@ -896,12 +898,6 @@
                                                                         </Button.Resources>
                                                                 </Button>
                                                         </Grid>
-                                                        <TextBlock x:Name="DeleteSectionHelperText"
-                                                                   Text="Removes this game from Codec. Files stay on disk."
-                                                                   TextWrapping="Wrap"
-                                                                   Foreground="#666666"
-                                                                   FontFamily="Segoe UI Variable Text"
-                                                                   FontSize="12"/>
                                                 </StackPanel>
                                         </Grid>
                                 </Border>
@@ -950,9 +946,9 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <StackPanel x:Name="DetailsInfoPrimarySection"
-                                                      Grid.Row="0"
-                                                      Grid.Column="0"
-                                                      Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
+                                                            Grid.Row="0"
+                                                            Grid.Column="0"
+                                                            Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Publisher"
                                                                            Opacity="0.4"
@@ -1014,8 +1010,8 @@
                                                                            TextWrapping="Wrap">
                                         <Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
                                         <Run Text="{Binding SelectedGame.PriceDiscount, FallbackValue=''}"
-                                                                                FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
-                                                                                Foreground="#B3FFFFFF"/>
+                                                                        FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                        Foreground="#B3FFFFFF"/>
                                                                 </TextBlock>
                                                         </StackPanel>
                                                 </StackPanel>
