@@ -1,3 +1,4 @@
+using Codec.Helpers;
 using Codec.Models;
 using System;
 using System.Collections.Generic;
@@ -72,7 +73,13 @@ namespace Codec.Services.Storage
 
                 await using var fs = File.OpenRead(path);
                 var data = await JsonSerializer.DeserializeAsync<List<Game>>(fs, _jsonOptions);
-                return data ?? new List<Game>();
+                var games = data ?? new List<Game>();
+                foreach (var game in games)
+                {
+                    game.ImportedFrom = PlatformSourceNames.NormalizeImportSource(game.ImportedFrom);
+                }
+
+                return games;
             }
             catch (Exception ex)
             {

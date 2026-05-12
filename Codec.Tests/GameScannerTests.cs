@@ -18,7 +18,7 @@ namespace Codec.Tests
                 new GameCandidate("Legends of Runeterra", @"E:\Riot Games\LoR", "Riot Games", LaunchScriptPath: @"C:\LoR.lnk")));
 
             Assert.False(GameScanner.ShouldUseFullExecutableDetection(
-                new GameCandidate("Epic Game", @"E:\Epic\Epic Game", "Epic Games Store", EpicAppId: "EpicGame")));
+                new GameCandidate("Epic Game", @"E:\Epic\Epic Game", "Epic Games", EpicAppId: "EpicGame")));
 
             Assert.False(GameScanner.ShouldUseFullExecutableDetection(
                 new GameCandidate("Steam Game", @"E:\Steam\steamapps\common\Steam Game", "Steam", SteamAppId: 123)));
@@ -30,9 +30,9 @@ namespace Codec.Tests
             Assert.True(GameScanner.CanTrustMissingExecutable(
                 new GameCandidate("Legends of Runeterra", @"E:\Riot Games\LoR", "Riot Games")));
             Assert.True(GameScanner.CanTrustMissingExecutable(
-                new GameCandidate("Fortnite", @"E:\Epic Games\Fortnite", "Epic Games Store", EpicAppId: "FortniteGame")));
+                new GameCandidate("Fortnite", @"E:\Epic Games\Fortnite", "Epic Games", EpicAppId: "FortniteGame")));
             Assert.False(GameScanner.CanTrustMissingExecutable(
-                new GameCandidate("Epic Game", @"E:\Epic Games\Epic Game", "Epic Games Store")));
+                new GameCandidate("Epic Game", @"E:\Epic Games\Epic Game", "Epic Games")));
             Assert.False(GameScanner.CanTrustMissingExecutable(
                 new GameCandidate("Haste", @"E:\Games\Haste", "Heuristic Scan")));
         }
@@ -54,7 +54,7 @@ namespace Codec.Tests
             {
                 FolderLocation = @"E:\Epic Games\Fortnite",
                 NameHint = "Fortnite",
-                ImportSource = "Epic Games Store",
+                ImportSource = "Epic Games",
                 EpicAppId = "FortniteGame"
             };
             var epicSourceOnlyRequest = epicRequest with

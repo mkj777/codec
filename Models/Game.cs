@@ -49,10 +49,21 @@ namespace Codec.Models
         private string importedFrom;
 
         // Display-only property that shows just the platform name without the path
-        public string ImportedFromDisplay =>
-            string.IsNullOrWhiteSpace(ImportedFrom)
-                ? string.Empty
-                : ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase) ? "Steam" : ImportedFrom;
+        public string ImportedFromDisplay
+        {
+            get
+            {
+                string normalized = PlatformSourceNames.NormalizeImportSource(ImportedFrom);
+                if (string.IsNullOrWhiteSpace(normalized))
+                {
+                    return string.Empty;
+                }
+
+                return normalized.StartsWith(PlatformSourceNames.Steam, StringComparison.OrdinalIgnoreCase)
+                    ? PlatformSourceNames.Steam
+                    : normalized;
+            }
+        }
 
         // external IDs
         [ObservableProperty]
@@ -351,8 +362,7 @@ namespace Codec.Models
         [JsonIgnore]
         public bool IsEpicLaunchTarget =>
             !string.IsNullOrWhiteSpace(EpicAppId) &&
-            !string.IsNullOrWhiteSpace(ImportedFrom) &&
-            ImportedFrom.StartsWith("Epic Games", StringComparison.OrdinalIgnoreCase);
+            PlatformSourceNames.IsEpicGames(ImportedFrom);
 
         [JsonIgnore]
         public bool IsRiotLaunchTarget =>

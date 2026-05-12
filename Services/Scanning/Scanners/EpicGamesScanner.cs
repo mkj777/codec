@@ -1,3 +1,4 @@
+using Codec.Helpers;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 namespace Codec.Services.Scanning.Scanners
 {
     /// <summary>
-    /// Epic Games Store launcher integration - JSON manifest parsing.
+    /// Epic Games launcher integration - JSON manifest parsing.
     /// </summary>
     public class EpicGamesScanner : PlatformScanner
     {
@@ -28,7 +29,7 @@ namespace Codec.Services.Scanning.Scanners
         private readonly Func<string?> _launcherPathProvider;
         private readonly IReadOnlyList<string> _launcherInstallDirs;
 
-        public override string PlatformName => "Epic Games Store";
+        public override string PlatformName => PlatformSourceNames.EpicGames;
         public string? DetectedEpicLauncherPath { get; private set; }
 
         public EpicGamesScanner()

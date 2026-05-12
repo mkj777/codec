@@ -1,3 +1,4 @@
+using Codec.Helpers;
 using Codec.Models;
 using Codec.Services.Fetching;
 using Codec.Services.Logging;
@@ -45,7 +46,8 @@ namespace Codec.Services.Importing
 
         public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
         {
-            var batch = request.LogBatch ?? new ScanLogBatch(request.NameHint, request.ImportSource);
+            string normalizedImportSource = PlatformSourceNames.NormalizeImportSource(request.ImportSource);
+            var batch = request.LogBatch ?? new ScanLogBatch(request.NameHint, normalizedImportSource);
 
             batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} epic={request.EpicAppId} rawg={request.RawgId}");
             cancellationToken.ThrowIfCancellationRequested();
@@ -54,7 +56,7 @@ namespace Codec.Services.Importing
                 && File.Exists(request.LaunchScriptPath);
 
             // Steam and Riot launcher games do not require a directly detected exe.
-            bool isRiotSource = string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
+            bool isRiotSource = string.Equals(normalizedImportSource, PlatformSourceNames.RiotGames, StringComparison.OrdinalIgnoreCase);
             bool allowsMissingExecutable = AllowsMissingExecutable(request, hasLaunchScript);
 
             string normalizedExePath = string.Empty;
@@ -148,7 +150,7 @@ namespace Codec.Services.Importing
                 LogExecutableCopyright(batch, normalizedExePath, executableCopyright);
                 IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
 
-                bool isSteamLauncherSource = string.Equals(request.ImportSource, "Steam", StringComparison.OrdinalIgnoreCase);
+                bool isSteamLauncherSource = string.Equals(normalizedImportSource, PlatformSourceNames.Steam, StringComparison.OrdinalIgnoreCase);
 
                 // Non-Steam path: IGDB is the primary authority. If EXE copyright years exist,
                 // they are compared only against IGDB release years.
@@ -244,7 +246,7 @@ namespace Codec.Services.Importing
                     Name = detectedName,
                     Executable = normalizedExePath,
                     FolderLocation = folderLocation,
-                    ImportedFrom = request.ImportSource,
+                    ImportedFrom = normalizedImportSource,
                     SteamID = steamId,
                     EpicAppId = string.IsNullOrWhiteSpace(request.EpicAppId) ? null : request.EpicAppId,
                     RawgID = rawgId,
@@ -318,7 +320,7 @@ namespace Codec.Services.Importing
                 ApplyDisplayedAssetHydration(game, displayedAssets);
                 FinalizeFallbackLinks(game);
 
-                bool isFromPlatformScanner = !string.Equals(request.ImportSource, "Heuristic Scan", StringComparison.OrdinalIgnoreCase)
+                bool isFromPlatformScanner = !string.Equals(normalizedImportSource, PlatformSourceNames.HeuristicScan, StringComparison.OrdinalIgnoreCase)
                     && !request.IsManual;
 
                 if (!displayedAssets.AreRequiredAssetsReady && !isFromPlatformScanner)
@@ -366,7 +368,7 @@ namespace Codec.Services.Importing
             request.SteamAppId.HasValue ||
             !string.IsNullOrWhiteSpace(request.EpicAppId) ||
             hasLaunchScript ||
-            string.Equals(request.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase);
+            string.Equals(PlatformSourceNames.NormalizeImportSource(request.ImportSource), PlatformSourceNames.RiotGames, StringComparison.OrdinalIgnoreCase);
 
         private static void LogExecutableCopyright(ScanLogBatch batch, string executablePath, GameNameService.ExeCopyrightInfo copyright)
         {

@@ -24,12 +24,23 @@ namespace Codec.Tests
         {
             var game = new Game
             {
-                ImportedFrom = "Epic Games Store",
+                ImportedFrom = "Epic Games",
                 EpicAppId = "Fortnite",
                 Executable = @"D:\Epic Games\Fortnite\FortniteGame\Binaries\Win64\FortniteClient-Win64-Shipping.exe"
             };
 
             Assert.Equal("Launches through Epic Games", game.LaunchOptionsDisplay);
+        }
+
+        [Fact]
+        public void ImportedFromDisplay_NormalizesLegacyEpicGamesStoreName()
+        {
+            var game = new Game
+            {
+                ImportedFrom = "Epic Games Store"
+            };
+
+            Assert.Equal("Epic Games", game.ImportedFromDisplay);
         }
 
         [Fact]

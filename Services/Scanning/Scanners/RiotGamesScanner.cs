@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Scanning.Scanners
@@ -9,7 +11,8 @@ namespace Codec.Services.Scanning.Scanners
     public class RiotGamesScanner : PlatformScanner
     {
         private const string RiotGamesFolderName = "Riot Games";
-        private static readonly string StartMenuPath = @"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Riot Games";
+        private static readonly string CommonStartMenuPath = @"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Riot Games";
+        private static readonly string DefaultRiotClientPath = @"C:\Riot Games\Riot Client\RiotClientServices.exe";
         private static readonly HashSet<string> IgnoredFolderNames = new(StringComparer.OrdinalIgnoreCase)
         {
             "Riot Client",
@@ -27,22 +30,50 @@ namespace Codec.Services.Scanning.Scanners
         private static readonly Dictionary<string, string> FolderDisplayNames = new(StringComparer.OrdinalIgnoreCase)
         {
             ["LoR"] = "Legends of Runeterra",
+            ["Lion"] = "2XKO",
+        };
+
+        private static readonly Dictionary<string, RiotLaunchProfile> LaunchProfiles = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["League of Legends"] = new("League of Legends", "league_of_legends"),
+            ["Legends of Runeterra"] = new("Legends of Runeterra", "bacon"),
+            ["LoR"] = new("Legends of Runeterra", "bacon"),
+            ["VALORANT"] = new("VALORANT", "valorant"),
+            ["2XKO"] = new("2XKO", "lion"),
+            ["Lion"] = new("2XKO", "lion"),
         };
 
         private readonly Func<IEnumerable<string>> _riotRootProvider;
-        private readonly string _startMenuPath;
+        private readonly IReadOnlyList<string> _startMenuPaths;
+        private readonly ShortcutCreator _createShortcut;
 
         public override string PlatformName => "Riot Games";
 
         public RiotGamesScanner()
-            : this(FindRiotGamesRoots, StartMenuPath)
+            : this(FindRiotGamesRoots, GetDefaultStartMenuPaths())
         {
         }
 
         internal RiotGamesScanner(Func<IEnumerable<string>> riotRootProvider, string startMenuPath)
+            : this(riotRootProvider, new[] { startMenuPath })
+        {
+        }
+
+        internal RiotGamesScanner(Func<IEnumerable<string>> riotRootProvider, string startMenuPath, ShortcutCreator createShortcut)
+            : this(riotRootProvider, new[] { startMenuPath }, createShortcut)
+        {
+        }
+
+        private RiotGamesScanner(Func<IEnumerable<string>> riotRootProvider, IReadOnlyList<string> startMenuPaths)
+            : this(riotRootProvider, startMenuPaths, TryCreateWindowsShortcut)
+        {
+        }
+
+        private RiotGamesScanner(Func<IEnumerable<string>> riotRootProvider, IReadOnlyList<string> startMenuPaths, ShortcutCreator createShortcut)
         {
             _riotRootProvider = riotRootProvider;
-            _startMenuPath = startMenuPath;
+            _startMenuPaths = startMenuPaths;
+            _createShortcut = createShortcut;
         }
 
         public override Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
@@ -57,7 +88,7 @@ namespace Codec.Services.Scanning.Scanners
             if (riotRoots.Count == 0)
                 return Task.FromResult(candidates);
 
-            var shortcuts = FindStartMenuShortcuts(_startMenuPath);
+            var shortcuts = FindStartMenuShortcuts(_startMenuPaths);
 
             foreach (var root in riotRoots)
             {
@@ -71,6 +102,7 @@ namespace Codec.Services.Scanning.Scanners
 
                     string gameName = GetDisplayName(folderName);
                     string? launchScript = TryMatchShortcut(folderName, gameName, shortcuts);
+                    launchScript ??= TryCreateMissingShortcut(root, folderName, gameName, shortcuts);
                     candidates.Add(new GameCandidate(gameName, dir, PlatformName, LaunchScriptPath: launchScript));
                 }
             }
@@ -95,25 +127,45 @@ namespace Codec.Services.Scanning.Scanners
             return roots;
         }
 
+        private static IReadOnlyList<string> GetDefaultStartMenuPaths()
+        {
+            var paths = new List<string> { CommonStartMenuPath };
+
+            string userProgramsPath = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+            if (!string.IsNullOrWhiteSpace(userProgramsPath))
+            {
+                paths.Add(Path.Combine(userProgramsPath, "Riot Games"));
+            }
+
+            return paths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
         private static string[] SafeGetDirectories(string path)
         {
             try { return Directory.GetDirectories(path); }
             catch { return Array.Empty<string>(); }
         }
 
-        private static Dictionary<string, string> FindStartMenuShortcuts(string startMenuPath)
+        private static Dictionary<string, string> FindStartMenuShortcuts(IEnumerable<string> startMenuPaths)
         {
             var shortcuts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (!Directory.Exists(startMenuPath))
-                return shortcuts;
 
-            foreach (var lnk in SafeGetFiles(startMenuPath, "*.lnk"))
+            foreach (var startMenuPath in startMenuPaths)
             {
-                string name = Path.GetFileNameWithoutExtension(lnk);
-                if (ShouldIgnoreShortcut(name))
+                if (!Directory.Exists(startMenuPath))
                     continue;
 
-                shortcuts[name] = lnk;
+                foreach (var lnk in SafeGetFiles(startMenuPath, "*.lnk"))
+                {
+                    string name = Path.GetFileNameWithoutExtension(lnk);
+                    if (ShouldIgnoreShortcut(name))
+                        continue;
+
+                    shortcuts.TryAdd(name, lnk);
+                }
             }
 
             return shortcuts;
@@ -125,6 +177,128 @@ namespace Codec.Services.Scanning.Scanners
                 return launchScript;
 
             return null;
+        }
+
+        private string? TryCreateMissingShortcut(
+            string riotRoot,
+            string folderName,
+            string gameName,
+            Dictionary<string, string> shortcuts)
+        {
+            if (!TryGetLaunchProfile(folderName, gameName, out var profile))
+                return null;
+
+            string targetPath = ResolveRiotClientPath(riotRoot);
+            if (string.IsNullOrWhiteSpace(targetPath))
+                return null;
+
+            string workingDirectory = Path.GetDirectoryName(targetPath) ?? riotRoot;
+            string shortcutFileName = profile.ShortcutName + ".lnk";
+
+            foreach (var startMenuPath in _startMenuPaths)
+            {
+                if (string.IsNullOrWhiteSpace(startMenuPath))
+                    continue;
+
+                string shortcutPath = Path.Combine(startMenuPath, shortcutFileName);
+                if (!_createShortcut(shortcutPath, targetPath, profile.Arguments, workingDirectory))
+                    continue;
+
+                if (!File.Exists(shortcutPath))
+                    continue;
+
+                shortcuts[profile.ShortcutName] = shortcutPath;
+                return shortcutPath;
+            }
+
+            return null;
+        }
+
+        private static bool TryGetLaunchProfile(string folderName, string gameName, out RiotLaunchProfile profile)
+        {
+            if (LaunchProfiles.TryGetValue(gameName, out var gameProfile))
+            {
+                profile = gameProfile;
+                return true;
+            }
+
+            if (LaunchProfiles.TryGetValue(folderName, out var folderProfile))
+            {
+                profile = folderProfile;
+                return true;
+            }
+
+            profile = null!;
+            return false;
+        }
+
+        private static string ResolveRiotClientPath(string riotRoot)
+        {
+            string rootClientPath = Path.Combine(riotRoot, "Riot Client", "RiotClientServices.exe");
+            if (File.Exists(rootClientPath))
+                return rootClientPath;
+
+            return File.Exists(DefaultRiotClientPath)
+                ? DefaultRiotClientPath
+                : string.Empty;
+        }
+
+        private static bool TryCreateWindowsShortcut(string shortcutPath, string targetPath, string arguments, string workingDirectory)
+        {
+            object? shell = null;
+            object? shortcut = null;
+
+            try
+            {
+                string? shortcutDirectory = Path.GetDirectoryName(shortcutPath);
+                if (!string.IsNullOrWhiteSpace(shortcutDirectory))
+                {
+                    Directory.CreateDirectory(shortcutDirectory);
+                }
+
+                Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null)
+                    return false;
+
+                shell = Activator.CreateInstance(shellType);
+                if (shell == null)
+                    return false;
+
+                shortcut = shellType.InvokeMember(
+                    "CreateShortcut",
+                    BindingFlags.InvokeMethod,
+                    binder: null,
+                    target: shell,
+                    args: new object[] { shortcutPath });
+                if (shortcut == null)
+                    return false;
+
+                Type shortcutType = shortcut.GetType();
+                shortcutType.InvokeMember("TargetPath", BindingFlags.SetProperty, null, shortcut, new object[] { targetPath });
+                shortcutType.InvokeMember("Arguments", BindingFlags.SetProperty, null, shortcut, new object[] { arguments });
+                shortcutType.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, shortcut, new object[] { workingDirectory });
+                shortcutType.InvokeMember("IconLocation", BindingFlags.SetProperty, null, shortcut, new object[] { targetPath });
+                shortcutType.InvokeMember("Save", BindingFlags.InvokeMethod, null, shortcut, Array.Empty<object>());
+
+                return File.Exists(shortcutPath);
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                ReleaseComObject(shortcut);
+                ReleaseComObject(shell);
+            }
+        }
+
+        private static void ReleaseComObject(object? value)
+        {
+            if (value != null && Marshal.IsComObject(value))
+            {
+                Marshal.FinalReleaseComObject(value);
+            }
         }
 
         private static string GetDisplayName(string folderName) =>
@@ -144,6 +318,13 @@ namespace Codec.Services.Scanning.Scanners
         {
             try { return Directory.GetFiles(path, searchPattern); }
             catch { return Array.Empty<string>(); }
+        }
+
+        internal delegate bool ShortcutCreator(string shortcutPath, string targetPath, string arguments, string workingDirectory);
+
+        private sealed record RiotLaunchProfile(string ShortcutName, string Product, string Patchline = "live")
+        {
+            public string Arguments => $"--launch-product={Product} --launch-patchline={Patchline}";
         }
     }
 }

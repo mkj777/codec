@@ -34,7 +34,7 @@ namespace Codec.Tests
 
                 Assert.Equal("Fortnite", candidate.Name);
                 Assert.Equal(Path.GetFullPath(installPath), candidate.FolderPath);
-                Assert.Equal("Epic Games Store", candidate.Source);
+                Assert.Equal("Epic Games", candidate.Source);
                 Assert.Equal("FortniteGame", candidate.EpicAppId);
                 Assert.Equal(Path.GetFullPath(executablePath), candidate.ExecutableHintPath);
                 Assert.Contains(Path.GetFullPath(installPath), scanner.KnownLibraryPaths);

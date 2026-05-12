@@ -1,3 +1,4 @@
+using Codec.Helpers;
 using Codec.Services.Scanning.Scanners;
 using Codec.Services.Storage;
 using System;
@@ -49,6 +50,7 @@ namespace Codec.Services.Scanning
                     .Where(entry => !string.IsNullOrWhiteSpace(entry.FolderPath))
                     .GroupBy(entry => entry.FolderPath, StringComparer.OrdinalIgnoreCase)
                     .Select(group => group.OrderByDescending(e => e.CachedAtUtc).First())
+                    .Select(NormalizeCachedSource)
                     .ToDictionary(entry => entry.FolderPath, StringComparer.OrdinalIgnoreCase);
 
                 Debug.WriteLine($"Loaded scan cache with {deduped.Count} entries");
@@ -84,6 +86,15 @@ namespace Codec.Services.Scanning
             bool hasExecutable = !string.IsNullOrWhiteSpace(entry.ExecutablePath);
             bool hasLaunchScript = !string.IsNullOrWhiteSpace(entry.LaunchScriptPath)
                 && File.Exists(entry.LaunchScriptPath);
+            bool candidateHasLaunchScript = !string.IsNullOrWhiteSpace(candidate.LaunchScriptPath)
+                && File.Exists(candidate.LaunchScriptPath);
+
+            if (candidateHasLaunchScript &&
+                !string.Equals(entry.LaunchScriptPath, candidate.LaunchScriptPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _entries.Remove(candidate.FolderPath);
+                return false;
+            }
 
             if (!Directory.Exists(entry.FolderPath) ||
                 (hasExecutable && !File.Exists(entry.ExecutablePath)) ||
@@ -139,7 +150,7 @@ namespace Codec.Services.Scanning
                 FolderPath = candidate.FolderPath,
                 ExecutablePath = executablePath,
                 GameName = resolvedName,
-                ImportSource = candidate.Source,
+                ImportSource = PlatformSourceNames.NormalizeImportSource(candidate.Source),
                 SteamAppId = steamId,
                 EpicAppId = candidate.EpicAppId,
                 RawgId = rawgId,
@@ -193,11 +204,37 @@ namespace Codec.Services.Scanning
             public DateTime CachedAtUtc { get; init; }
         }
 
+        private static CachedScanResult NormalizeCachedSource(CachedScanResult entry)
+        {
+            string normalizedSource = PlatformSourceNames.NormalizeImportSource(entry.ImportSource);
+            if (string.Equals(normalizedSource, entry.ImportSource, StringComparison.Ordinal))
+            {
+                return entry;
+            }
+
+            return new CachedScanResult
+            {
+                CacheVersion = entry.CacheVersion,
+                FolderPath = entry.FolderPath,
+                ExecutablePath = entry.ExecutablePath,
+                GameName = entry.GameName,
+                ImportSource = normalizedSource,
+                SteamAppId = entry.SteamAppId,
+                EpicAppId = entry.EpicAppId,
+                RawgId = entry.RawgId,
+                IgdbId = entry.IgdbId,
+                LaunchScriptPath = entry.LaunchScriptPath,
+                DirectoryTimestampUtcTicks = entry.DirectoryTimestampUtcTicks,
+                ExecutableTimestampUtcTicks = entry.ExecutableTimestampUtcTicks,
+                CachedAtUtc = entry.CachedAtUtc
+            };
+        }
+
         private static bool CanTrustMissingExecutable(CachedScanResult entry) =>
             entry.SteamAppId.HasValue ||
             !string.IsNullOrWhiteSpace(entry.EpicAppId) ||
-            string.Equals(entry.ImportSource, "Riot Games", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(entry.ImportSource, "Steam", StringComparison.OrdinalIgnoreCase);
+            string.Equals(entry.ImportSource, PlatformSourceNames.RiotGames, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(entry.ImportSource, PlatformSourceNames.Steam, StringComparison.OrdinalIgnoreCase);
 
         private static class TimestampUtility
         {

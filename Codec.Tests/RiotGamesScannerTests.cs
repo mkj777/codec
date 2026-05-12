@@ -21,7 +21,8 @@ namespace Codec.Tests
                 string missingStartMenuPath = Path.Combine(tempRoot, "missing-start-menu");
                 var scanner = new RiotGamesScanner(
                     () => new[] { firstRiotRoot, secondRiotRoot },
-                    missingStartMenuPath);
+                    missingStartMenuPath,
+                    (_, _, _, _) => false);
 
                 var candidates = await scanner.ScanAsync();
 
@@ -37,6 +38,7 @@ namespace Codec.Tests
             }
             finally
             {
+                DeleteDirectoryIfExists(tempRoot);
             }
         }
 
@@ -67,6 +69,62 @@ namespace Codec.Tests
                 Assert.Equal("Legends of Runeterra", candidate.Name);
                 Assert.Equal(lorRoot, candidate.FolderPath);
                 Assert.Equal(shortcutPath, candidate.LaunchScriptPath);
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(tempRoot);
+            }
+        }
+
+        [Theory]
+        [InlineData("League of Legends", "League of Legends", "League of Legends.lnk", "--launch-product=league_of_legends --launch-patchline=live")]
+        [InlineData("LoR", "Legends of Runeterra", "Legends of Runeterra.lnk", "--launch-product=bacon --launch-patchline=live")]
+        [InlineData("VALORANT", "VALORANT", "VALORANT.lnk", "--launch-product=valorant --launch-patchline=live")]
+        [InlineData("2XKO", "2XKO", "2XKO.lnk", "--launch-product=lion --launch-patchline=live")]
+        public async Task ScanAsync_CreatesKnownRiotShortcutWhenStartMenuShortcutIsMissing(
+            string folderName,
+            string expectedName,
+            string expectedShortcutFileName,
+            string expectedArguments)
+        {
+            string tempRoot = CreateTempDirectory();
+
+            try
+            {
+                string riotRoot = Path.Combine(tempRoot, "C", "Riot Games");
+                string gameRoot = Path.Combine(riotRoot, folderName);
+                string clientDirectory = Path.Combine(riotRoot, "Riot Client");
+                string clientPath = Path.Combine(clientDirectory, "RiotClientServices.exe");
+                Directory.CreateDirectory(gameRoot);
+                Directory.CreateDirectory(clientDirectory);
+                File.WriteAllText(clientPath, "stub");
+
+                string startMenuPath = Path.Combine(tempRoot, "Start Menu", "Programs", "Riot Games");
+                string expectedShortcutPath = Path.Combine(startMenuPath, expectedShortcutFileName);
+                var createdShortcuts = new List<(string ShortcutPath, string TargetPath, string Arguments, string WorkingDirectory)>();
+
+                var scanner = new RiotGamesScanner(
+                    () => new[] { riotRoot },
+                    startMenuPath,
+                    (shortcutPath, targetPath, arguments, workingDirectory) =>
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(shortcutPath)!);
+                        File.WriteAllText(shortcutPath, "shortcut");
+                        createdShortcuts.Add((shortcutPath, targetPath, arguments, workingDirectory));
+                        return true;
+                    });
+
+                var candidates = await scanner.ScanAsync();
+                var candidate = Assert.Single(candidates);
+                var createdShortcut = Assert.Single(createdShortcuts);
+
+                Assert.Equal(expectedName, candidate.Name);
+                Assert.Equal(gameRoot, candidate.FolderPath);
+                Assert.Equal(expectedShortcutPath, candidate.LaunchScriptPath);
+                Assert.Equal(expectedShortcutPath, createdShortcut.ShortcutPath);
+                Assert.Equal(clientPath, createdShortcut.TargetPath);
+                Assert.Equal(expectedArguments, createdShortcut.Arguments);
+                Assert.Equal(clientDirectory, createdShortcut.WorkingDirectory);
             }
             finally
             {
