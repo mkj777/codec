@@ -875,7 +875,7 @@
                                                    FontWeight="SemiBold"
                                                    FontFamily="Segoe UI Variable Text"
                                                    Foreground="#CCCCCC"/>
-                                        <TextBlock Text="Run a library scan when Codec starts."
+                                        <TextBlock Text="On Startup: Run Library scan"
                                                    FontSize="11.5"
                                                    FontWeight="Normal"
                                                    FontFamily="Segoe UI Variable Text"
@@ -906,7 +906,7 @@
                                                    FontWeight="SemiBold"
                                                    FontFamily="Segoe UI Variable Text"
                                                    Foreground="#CCCCCC"/>
-                                        <TextBlock Text="Start Steam silently with Codec."
+                                        <TextBlock Text="On Startup: Start Steam silently"
                                                    FontSize="11.5"
                                                    FontWeight="Normal"
                                                    FontFamily="Segoe UI Variable Text"
