@@ -91,11 +91,11 @@
             <Style x:Key="SidebarUtilityButtonStyle"
                    TargetType="Button">
                 <Setter Property="Height"
-                        Value="32"/>
+                        Value="28"/>
                 <Setter Property="Padding"
-                        Value="10,0"/>
+                        Value="8,0"/>
                 <Setter Property="FontSize"
-                        Value="12"/>
+                        Value="11"/>
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
                 <Setter Property="Foreground"
@@ -107,7 +107,7 @@
                 <Setter Property="BorderThickness"
                         Value="1"/>
                 <Setter Property="CornerRadius"
-                        Value="6"/>
+                        Value="5"/>
                 <Setter Property="HorizontalContentAlignment"
                         Value="Center"/>
                 <Setter Property="VerticalContentAlignment"
@@ -277,18 +277,18 @@
                                             Spacing="6">
                                     <Button x:Name="SidebarSettingsButton"
                                             Style="{StaticResource SidebarUtilityButtonStyle}"
-                                            Width="34"
+                                            Width="30"
                                             Padding="0"
                                             IsEnabled="{Binding IsUiEnabled}"
                                             Click="ManageButton_Click"
                                             ToolTipService.ToolTip="Settings">
                                         <FontIcon Glyph="&#xE713;"
                                                   FontFamily="Segoe MDL2 Assets"
-                                                  FontSize="14"/>
+                                                  FontSize="12"/>
                                     </Button>
                                     <Button x:Name="SidebarAddExecutableButton"
                                             Style="{StaticResource SidebarUtilityButtonStyle}"
-                                            MinWidth="72"
+                                            MinWidth="64"
                                             Click="AddGame_Click"
                                             ToolTipService.ToolTip="Add by executable">
                                         <StackPanel Orientation="Horizontal"
@@ -296,17 +296,17 @@
                                                     VerticalAlignment="Center">
                                             <FontIcon Glyph="&#xE710;"
                                                       FontFamily="Segoe MDL2 Assets"
-                                                      FontSize="11"
+                                                      FontSize="10"
                                                       VerticalAlignment="Center"/>
                                             <TextBlock Text="Add"
-                                                       FontSize="12"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="SidebarScanButton"
                                             Style="{StaticResource SidebarUtilityButtonStyle}"
-                                            MinWidth="78"
+                                            MinWidth="70"
                                             IsEnabled="{Binding CanStartScan}"
                                             Click="SidebarAddGames_Click"
                                             ToolTipService.ToolTip="Scan for games">
@@ -315,10 +315,10 @@
                                                     VerticalAlignment="Center">
                                             <FontIcon Glyph="&#xE721;"
                                                       FontFamily="Segoe MDL2 Assets"
-                                                      FontSize="11"
+                                                      FontSize="10"
                                                       VerticalAlignment="Center"/>
                                             <TextBlock Text="Scan"
-                                                       FontSize="12"
+                                                       FontSize="11"
                                                        FontWeight="SemiBold"
                                                        VerticalAlignment="Center"/>
                                         </StackPanel>
