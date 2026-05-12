@@ -53,6 +53,9 @@ namespace Codec.Views
         private const int OFN_FILEMUSTEXIST = 0x00001000;
         private const int OFN_PATHMUSTEXIST = 0x00000800;
         private const int OFN_NOCHANGEDIR = 0x00000008;
+        private const int FilePickerBufferLength = 32768;
+        private const string LaunchScriptFileFilter = "Launch Scripts (*.bat;*.cmd;*.lnk)\0*.bat;*.cmd;*.lnk\0All Files (*.*)\0*.*\0\0";
+        private const string ExecutableFileFilter = "Executable Files (*.exe)\0*.exe\0All Files (*.*)\0*.*\0\0";
         private const double DetailsComfortableBreakpoint = 900d;
         private const double DetailsCompactBreakpoint = 680d;
         private const double DetailsMetricMinWidth = 520d;
@@ -153,13 +156,15 @@ namespace Codec.Views
         private void DetailsSettingsButton_Click(object sender, RoutedEventArgs e)
             => HideRemoveGameConfirmationPopover();
 
-        private async void SelectScriptButton_Click(object sender, RoutedEventArgs e)
+        private async void ChangeLaunchScriptMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel?.SelectedGame == null)
                 return;
 
-            string? gameFolderPath = ViewModel.SelectedGame.FolderLocation;
-            string? selectedFilePath = OpenFileDialog(gameFolderPath);
+            string? selectedFilePath = OpenFileDialog(
+                GetLaunchPickerInitialDirectory(),
+                LaunchScriptFileFilter,
+                "Select Launch Script");
 
             if (!string.IsNullOrWhiteSpace(selectedFilePath))
             {
@@ -168,10 +173,61 @@ namespace Codec.Views
             }
         }
 
-        private string? OpenFileDialog(string? initialDirectory)
+        private async void ChangeExecutableMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var fileBuffer = new char[260];
-            var fileBufferPtr = Marshal.AllocHGlobal(260 * 2);
+            if (ViewModel?.SelectedGame == null)
+                return;
+
+            string? selectedFilePath = OpenFileDialog(
+                GetLaunchPickerInitialDirectory(),
+                ExecutableFileFilter,
+                "Select Executable");
+
+            if (!string.IsNullOrWhiteSpace(selectedFilePath))
+            {
+                if (ViewModel.SetExecutableCommand.CanExecute(selectedFilePath))
+                    await ViewModel.SetExecutableCommand.ExecuteAsync(selectedFilePath);
+            }
+        }
+
+        private string? GetLaunchPickerInitialDirectory()
+        {
+            var game = ViewModel?.SelectedGame;
+            if (game == null)
+                return null;
+
+            string? launchScriptFolder = TryGetExistingDirectoryName(game.LaunchScript);
+            if (launchScriptFolder != null)
+                return launchScriptFolder;
+
+            if (!string.IsNullOrWhiteSpace(game.FolderLocation) && Directory.Exists(game.FolderLocation))
+                return game.FolderLocation;
+
+            return TryGetExistingDirectoryName(game.Executable);
+        }
+
+        private static string? TryGetExistingDirectoryName(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return null;
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(filePath);
+                return !string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory)
+                    ? directory
+                    : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private string? OpenFileDialog(string? initialDirectory, string fileFilter, string title)
+        {
+            var fileBuffer = new char[FilePickerBufferLength];
+            var fileBufferPtr = Marshal.AllocHGlobal(FilePickerBufferLength * sizeof(char));
             Marshal.Copy(fileBuffer, 0, fileBufferPtr, fileBuffer.Length);
 
             try
@@ -180,14 +236,14 @@ namespace Codec.Views
                 {
                     lStructSize = Marshal.SizeOf<OPENFILENAME>(),
                     hwndOwner = GetActiveWindow(),
-                    lpstrFilter = "Batch Files (*.bat)\0*.bat\0All Files (*.*)\0*.*\0\0",
+                    lpstrFilter = fileFilter,
                     nFilterIndex = 1,
                     lpstrFile = fileBufferPtr,
-                    nMaxFile = 260,
+                    nMaxFile = FilePickerBufferLength,
                     lpstrInitialDir = !string.IsNullOrWhiteSpace(initialDirectory) && Directory.Exists(initialDirectory)
                         ? initialDirectory
                         : null,
-                    lpstrTitle = "Select Launch Script",
+                    lpstrTitle = title,
                     Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR
                 };
 

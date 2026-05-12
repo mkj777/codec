@@ -38,18 +38,29 @@ namespace Codec.Models
         [ObservableProperty] private Guid id = Guid.NewGuid();
         [ObservableProperty] private DateTime dateAdded = DateTime.Now;
 
-        [ObservableProperty] private string executable;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        private string executable;
         [ObservableProperty] private string folderLocation;
         [ObservableProperty] private long folderSize;
-        [ObservableProperty] private string importedFrom;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        private string importedFrom;
 
         // Display-only property that shows just the platform name without the path
         public string ImportedFromDisplay =>
-            ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase) ? "Steam" : ImportedFrom;
+            string.IsNullOrWhiteSpace(ImportedFrom)
+                ? string.Empty
+                : ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase) ? "Steam" : ImportedFrom;
 
         // external IDs
-        [ObservableProperty] private int? steamID;
-        [ObservableProperty] private string? epicAppId;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        private int? steamID;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        private string? epicAppId;
         [ObservableProperty] private int? rawgID;
         [ObservableProperty] private string? rawgSlug;
         [property: JsonPropertyName("IgdbId")]
@@ -270,7 +281,85 @@ namespace Codec.Models
 
         private sealed record PlatformLogoInfo(string Key, string LogoUri, int Order);
 
-        [ObservableProperty] private string? _launchScript;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(HasCustomLaunchScript))]
+        [NotifyPropertyChangedFor(nameof(HasCustomLaunchOptions))]
+        private string? _launchScript;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(HasCustomLaunchScript))]
+        [NotifyPropertyChangedFor(nameof(HasCustomLaunchOptions))]
+        private bool _useLaunchScriptOverride;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(HasCustomLaunchOptions))]
+        private bool _useExecutableOverride;
+
+        [JsonIgnore]
+        public bool HasCustomLaunchScript =>
+            !string.IsNullOrWhiteSpace(LaunchScript) &&
+            (UseLaunchScriptOverride || !IsPlatformLaunchScriptTarget);
+
+        [JsonIgnore]
+        public bool HasCustomLaunchOptions => HasCustomLaunchScript || UseExecutableOverride;
+
+        [JsonIgnore]
+        public string LaunchOptionsDisplay
+        {
+            get
+            {
+                if (HasCustomLaunchScript)
+                {
+                    return LaunchScript!;
+                }
+
+                if (UseExecutableOverride && !string.IsNullOrWhiteSpace(Executable))
+                {
+                    return Executable;
+                }
+
+                if (IsSteamLaunchTarget)
+                {
+                    return "Launches through Steam";
+                }
+
+                if (IsEpicLaunchTarget)
+                {
+                    return "Launches through Epic Games";
+                }
+
+                if (IsRiotLaunchTarget)
+                {
+                    return "Launches through Riot Games";
+                }
+
+                return !string.IsNullOrWhiteSpace(Executable)
+                    ? Executable
+                    : "No launch target selected";
+            }
+        }
+
+        [JsonIgnore]
+        public bool IsSteamLaunchTarget =>
+            SteamID.HasValue &&
+            !string.IsNullOrWhiteSpace(ImportedFrom) &&
+            ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase);
+
+        [JsonIgnore]
+        public bool IsEpicLaunchTarget =>
+            !string.IsNullOrWhiteSpace(EpicAppId) &&
+            !string.IsNullOrWhiteSpace(ImportedFrom) &&
+            ImportedFrom.StartsWith("Epic Games", StringComparison.OrdinalIgnoreCase);
+
+        [JsonIgnore]
+        public bool IsRiotLaunchTarget =>
+            !string.IsNullOrWhiteSpace(ImportedFrom) &&
+            ImportedFrom.Equals("Riot Games", StringComparison.OrdinalIgnoreCase);
+
+        private bool IsPlatformLaunchScriptTarget => IsRiotLaunchTarget;
 
         private bool HasRequiredDisplayedAssetsCached()
         {
@@ -449,7 +538,9 @@ namespace Codec.Models
                 RawgUrl = RawgUrl,
                 IgdbUrl = IgdbUrl,
                 HltbUrl = HltbUrl,
-                LaunchScript = LaunchScript
+                LaunchScript = LaunchScript,
+                UseLaunchScriptOverride = UseLaunchScriptOverride,
+                UseExecutableOverride = UseExecutableOverride
             };
         }
 
@@ -510,6 +601,8 @@ namespace Codec.Models
             IgdbUrl = source.IgdbUrl;
             HltbUrl = source.HltbUrl;
             LaunchScript = source.LaunchScript;
+            UseLaunchScriptOverride = source.UseLaunchScriptOverride;
+            UseExecutableOverride = source.UseExecutableOverride;
             IsFullyImported = source.IsFullyImported;
         }
     }

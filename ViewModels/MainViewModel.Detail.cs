@@ -102,25 +102,70 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand]
-        private async Task SetLaunchScriptAsync(string batFilePath)
+        private async Task SetLaunchScriptAsync(string launchScriptPath)
         {
-            if (SelectedGame == null || string.IsNullOrWhiteSpace(batFilePath))
+            if (SelectedGame == null)
                 return;
 
-            SelectedGame.LaunchScript = batFilePath;
+            string? normalizedPath = NormalizeExistingFilePath(launchScriptPath);
+            if (normalizedPath == null)
+                return;
+
+            SelectedGame.LaunchScript = normalizedPath;
+            SelectedGame.UseLaunchScriptOverride = true;
+            SelectedGame.UseExecutableOverride = false;
             OnPropertyChanged(nameof(SelectedGame));
             await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
 
         [RelayCommand]
-        private async Task ClearLaunchScriptAsync()
+        private async Task SetExecutableAsync(string executablePath)
+        {
+            if (SelectedGame == null)
+                return;
+
+            string? normalizedPath = NormalizeExistingFilePath(executablePath);
+            if (normalizedPath == null)
+                return;
+
+            SelectedGame.Executable = normalizedPath;
+            SelectedGame.FolderLocation = Path.GetDirectoryName(normalizedPath) ?? SelectedGame.FolderLocation;
+            SelectedGame.LaunchScript = null;
+            SelectedGame.UseLaunchScriptOverride = false;
+            SelectedGame.UseExecutableOverride = SelectedGame.IsSteamLaunchTarget
+                || SelectedGame.IsEpicLaunchTarget
+                || SelectedGame.IsRiotLaunchTarget;
+            OnPropertyChanged(nameof(SelectedGame));
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ResetLaunchOptionsAsync()
         {
             if (SelectedGame == null)
                 return;
 
             SelectedGame.LaunchScript = null;
+            SelectedGame.UseLaunchScriptOverride = false;
+            SelectedGame.UseExecutableOverride = false;
             OnPropertyChanged(nameof(SelectedGame));
             await _services.LibraryStorage.SaveAsync(Games.ToList());
+        }
+
+        private static string? NormalizeExistingFilePath(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return null;
+
+            try
+            {
+                string normalizedPath = Path.GetFullPath(filePath);
+                return File.Exists(normalizedPath) ? normalizedPath : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         [RelayCommand]
@@ -159,10 +204,19 @@ namespace Codec.ViewModels
 
             try
             {
-                bool isSteamGame = SelectedGame.SteamID.HasValue
-                    && string.Equals(SelectedGame.ImportedFrom, "Steam", StringComparison.OrdinalIgnoreCase);
-                bool isEpicGame = !string.IsNullOrWhiteSpace(SelectedGame.EpicAppId)
-                    && string.Equals(SelectedGame.ImportedFrom, "Epic Games", StringComparison.OrdinalIgnoreCase);
+                bool isSteamGame = SelectedGame.IsSteamLaunchTarget;
+                bool isEpicGame = SelectedGame.IsEpicLaunchTarget;
+                bool isRiotGame = SelectedGame.IsRiotLaunchTarget;
+
+                if (SelectedGame.HasCustomLaunchScript && TryLaunchFile(SelectedGame.LaunchScript))
+                {
+                    return;
+                }
+
+                if (SelectedGame.UseExecutableOverride && TryLaunchFile(SelectedGame.Executable))
+                {
+                    return;
+                }
 
                 if (isSteamGame)
                 {
@@ -184,25 +238,11 @@ namespace Codec.ViewModels
                         UseShellExecute = true
                     });
                 }
-                else if (!string.IsNullOrWhiteSpace(SelectedGame.LaunchScript) && File.Exists(SelectedGame.LaunchScript))
+                else if (isRiotGame && TryLaunchFile(SelectedGame.LaunchScript))
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = SelectedGame.LaunchScript,
-                        UseShellExecute = true,
-                        WorkingDirectory = Path.GetDirectoryName(SelectedGame.LaunchScript)
-                    });
+                    return;
                 }
-                else if (!string.IsNullOrWhiteSpace(SelectedGame.Executable) && File.Exists(SelectedGame.Executable))
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = SelectedGame.Executable,
-                        UseShellExecute = true,
-                        WorkingDirectory = Path.GetDirectoryName(SelectedGame.Executable)
-                    });
-                }
-                else
+                else if (!TryLaunchFile(SelectedGame.Executable))
                 {
                     Debug.WriteLine($"Cannot launch {SelectedGame.Name}: executable not found at {SelectedGame.Executable}");
                 }
@@ -211,6 +251,21 @@ namespace Codec.ViewModels
             {
                 Debug.WriteLine($"Failed to launch {SelectedGame.Name}: {ex.Message}");
             }
+        }
+
+        private static bool TryLaunchFile(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                return false;
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = filePath,
+                UseShellExecute = true,
+                WorkingDirectory = Path.GetDirectoryName(filePath)
+            });
+
+            return true;
         }
 
         internal static string BuildEpicLaunchUri(string epicAppId) =>
