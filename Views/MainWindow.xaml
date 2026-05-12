@@ -139,7 +139,9 @@
                 <!-- Sidebar -->
                 <Border Grid.Column="0"
                         Background="#191919"
-                        CornerRadius="8,20,20,8"
+                        BorderBrush="#303030"
+                        BorderThickness="1.5"
+                        CornerRadius="5,24,0,5"
                         Canvas.ZIndex="3">
                     <Grid RowSpacing="0">
                         <Grid.RowDefinitions>
@@ -812,7 +814,7 @@
                                 BorderThickness="0"
                                 FontSize="13"
                                 FontFamily="Segoe UI Variable Text"
-                                Padding="7,2,6,4"
+                                Padding="7,4,6,4"
                                 Foreground="#666666"
                                 Click="SettingsClose_Click">
                             <Button.Resources>
