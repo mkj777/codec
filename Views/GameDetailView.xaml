@@ -486,7 +486,8 @@
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Stretch"
                                                 CornerRadius="16"
-                                                Command="{Binding OpenGameSettingsCommand}"
+                                                Command="{Binding ToggleGameSettingsCommand}"
+                                                Click="DetailsSettingsButton_Click"
                                                 PointerEntered="HeroActionButton_PointerEntered"
                                                 PointerExited="HeroActionButton_PointerExited"
                                                 PointerPressed="HeroActionButton_PointerPressed"
@@ -627,9 +628,6 @@
 
                         <Grid x:Name="SettingsOverlay"
                               Visibility="{Binding IsGameSettingsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <Grid Background="#CC000000"
-                                      Tapped="Scrim_Tapped"/>
-
                                 <Border x:Name="SettingsPanelBorder"
                                         MinWidth="250"
                                         MaxWidth="300"

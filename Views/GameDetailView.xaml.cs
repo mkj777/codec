@@ -95,6 +95,7 @@ namespace Codec.Views
         public GameDetailView()
         {
             InitializeComponent();
+            RootLayout.AddHandler(UIElement.TappedEvent, new TappedEventHandler(RootLayout_Tapped), true);
             Loaded += GameDetailView_Loaded;
             SizeChanged += GameDetailView_SizeChanged;
         }
@@ -102,12 +103,43 @@ namespace Codec.Views
         private void BackButton_Click(object sender, RoutedEventArgs e)
             => ViewModel?.BackCommand.Execute(null);
 
-        private void Scrim_Tapped(object sender, TappedRoutedEventArgs e)
+        private void RootLayout_Tapped(object sender, TappedRoutedEventArgs e)
         {
+            if (ViewModel?.IsGameSettingsOpen != true)
+                return;
+
+            if (IsInsideSettingsSurface(e.OriginalSource as DependencyObject))
+                return;
+
             HideRemoveGameConfirmationPopover();
 
-            if (ViewModel?.CloseGameSettingsCommand.CanExecute(null) == true)
+            if (ViewModel.CloseGameSettingsCommand.CanExecute(null))
                 ViewModel.CloseGameSettingsCommand.Execute(null);
+        }
+
+        private bool IsInsideSettingsSurface(DependencyObject? source)
+        {
+            if (source == null)
+                return false;
+
+            return IsDescendantOf(source, SettingsPanelBorder)
+                || IsDescendantOf(source, DetailsSettingsButton)
+                || (RemoveGameConfirmationPopover.Visibility == Visibility.Visible
+                    && IsDescendantOf(source, RemoveGameConfirmationPopover));
+        }
+
+        private static bool IsDescendantOf(DependencyObject source, DependencyObject ancestor)
+        {
+            DependencyObject? current = source;
+            while (current != null)
+            {
+                if (ReferenceEquals(current, ancestor))
+                    return true;
+
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return false;
         }
 
         private void CloseGameSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -117,6 +149,9 @@ namespace Codec.Views
             if (ViewModel?.CloseGameSettingsCommand.CanExecute(null) == true)
                 ViewModel.CloseGameSettingsCommand.Execute(null);
         }
+
+        private void DetailsSettingsButton_Click(object sender, RoutedEventArgs e)
+            => HideRemoveGameConfirmationPopover();
 
         private async void SelectScriptButton_Click(object sender, RoutedEventArgs e)
         {

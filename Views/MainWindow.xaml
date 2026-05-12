@@ -24,7 +24,7 @@
             <conv:UriToMediaSourceConverter x:Key="UriToMediaSourceConverter"/>
             <conv:IntEqualsToBoolConverter x:Key="IntEqualsToBoolConverter"/>
             <Style x:Key="FranchiseFilterRadioButtonStyle"
-                    TargetType="RadioButton">
+                   TargetType="RadioButton">
                 <Setter Property="Padding"
                         Value="12,5"/>
                 <Setter Property="FontSize"
@@ -132,7 +132,7 @@
         <Grid Grid.Row="1">
             <Grid ColumnSpacing="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="240"/>
+                    <ColumnDefinition Width="220"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
@@ -357,8 +357,8 @@
                               Foreground="#FFD700"
                               VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1"
-                            Spacing="2"
-                            MaxWidth="260">
+                                Spacing="2"
+                                MaxWidth="260">
                         <TextBlock Text="Running as Administrator"
                                    FontSize="12"
                                    FontWeight="SemiBold"
@@ -403,18 +403,18 @@
                                   VerticalAlignment="Center"/>
 
                     <StackPanel Grid.Column="1"
-                            Spacing="6">
+                                Spacing="6">
                         <TextBlock Text="Adding to Library"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="#999999"
                                    FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                         <StackPanel Orientation="Horizontal"
-                                Spacing="16"
-                                VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
+                                    Spacing="16"
                                     VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="6"
+                                        VerticalAlignment="Center">
                                 <TextBlock Text="{Binding AddedCount, Mode=OneWay}"
                                            FontSize="22"
                                            FontWeight="Bold"
@@ -427,8 +427,8 @@
                                            VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    VerticalAlignment="Center">
+                                        Spacing="6"
+                                        VerticalAlignment="Center">
                                 <TextBlock Text="{Binding ImportRemainingCount, Mode=OneWay}"
                                            FontSize="22"
                                            FontWeight="Bold"
@@ -467,15 +467,15 @@
                               VerticalAlignment="Center"/>
 
                     <StackPanel Grid.Column="1"
-                            Spacing="6">
+                                Spacing="6">
                         <TextBlock Text="Scan Complete"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="#999999"
                                    FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
                         <StackPanel Orientation="Horizontal"
-                                Spacing="6"
-                                VerticalAlignment="Center">
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
                             <TextBlock Text="{Binding ScanCompleteAddedCount, Mode=OneWay}"
                                        FontSize="22"
                                        FontWeight="Bold"
@@ -672,8 +672,8 @@
 
                     <!-- Header row -->
                     <Grid Grid.Row="0"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,0,0,16">
+                          HorizontalAlignment="Stretch"
+                          Margin="0,0,0,16">
                         <StackPanel Orientation="Horizontal"
                                     Spacing="4"
                                     HorizontalAlignment="Left"
@@ -1041,17 +1041,17 @@
                                 Click="ResetCancel_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                        Color="#22FFFFFF"/>
+                                                 Color="#22FFFFFF"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                        Color="#33FFFFFF"/>
+                                                 Color="#33FFFFFF"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                        Color="#999999"/>
+                                                 Color="#999999"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                        Color="#666666"/>
+                                                 Color="#666666"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                        Color="Transparent"/>
+                                                 Color="Transparent"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                        Color="Transparent"/>
+                                                 Color="Transparent"/>
                             </Button.Resources>
                         </Button>
                     </Grid>
@@ -1107,17 +1107,17 @@
                                 Click="ResetCancel_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                        Color="#2E2E2E"/>
+                                                 Color="#2E2E2E"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                        Color="#333333"/>
+                                                 Color="#333333"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                        Color="#484848"/>
+                                                 Color="#484848"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                        Color="#505050"/>
+                                                 Color="#505050"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                        Color="#CCCCCC"/>
+                                                 Color="#CCCCCC"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                        Color="#AAAAAA"/>
+                                                 Color="#AAAAAA"/>
                             </Button.Resources>
                         </Button>
 
@@ -1137,17 +1137,17 @@
                                 Click="ResetConfirm_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                        Color="#4DFF6B6B"/>
+                                                 Color="#4DFF6B6B"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                        Color="#66FF6B6B"/>
+                                                 Color="#66FF6B6B"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                        Color="#99FF6B6B"/>
+                                                 Color="#99FF6B6B"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                        Color="#BBFF6B6B"/>
+                                                 Color="#BBFF6B6B"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                        Color="#FF8A8A"/>
+                                                 Color="#FF8A8A"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                        Color="#FF6B6B"/>
+                                                 Color="#FF6B6B"/>
                             </Button.Resources>
                         </Button>
                     </Grid>
@@ -1244,7 +1244,7 @@
                 MinWidth="260">
             <StackPanel Spacing="8">
                 <StackPanel Orientation="Horizontal"
-                        Spacing="10">
+                            Spacing="10">
                     <FontIcon Glyph="&#xE896;"
                               FontSize="16"
                               Foreground="#64B5F6"
@@ -1301,8 +1301,8 @@
                           Foreground="#E57373"
                           VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1"
-                        Spacing="2"
-                        VerticalAlignment="Center">
+                            Spacing="2"
+                            VerticalAlignment="Center">
                     <TextBlock Text="Update failed"
                                FontSize="12"
                                FontWeight="SemiBold"

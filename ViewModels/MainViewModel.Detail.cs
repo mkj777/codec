@@ -23,6 +23,12 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand]
+        private void ToggleGameSettings()
+        {
+            IsGameSettingsOpen = !IsGameSettingsOpen;
+        }
+
+        [RelayCommand]
         private void CloseGameSettings()
         {
             IsGameSettingsOpen = false;
