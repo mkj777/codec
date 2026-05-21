@@ -309,7 +309,7 @@ namespace Codec.ViewModels
         {
             _appSettings = new AppSettings();
             _suppressSettingsSave = true;
-            ScanOnStartup = false;
+            ScanOnStartup = _appSettings.ScanOnStartup;
             LaunchSteamSilent = false;
             _suppressSettingsSave = false;
         }

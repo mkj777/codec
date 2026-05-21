@@ -212,13 +212,13 @@ namespace Codec.Views
         private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.IsOnboardingVisible = false;
-            await ViewModel.CompleteOnboardingAsync(false, false);
+            await ViewModel.CompleteOnboardingAsync(true, false);
             await ViewModel.ScanGamesCommand.ExecuteAsync(null);
         }
 
         private async void OnboardingSkip_Click(object sender, RoutedEventArgs e)
         {
-            await ViewModel.CompleteOnboardingAsync(false, false);
+            await ViewModel.CompleteOnboardingAsync(true, false);
             ViewModel.IsOnboardingVisible = false;
         }
 
