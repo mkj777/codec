@@ -31,5 +31,22 @@ namespace Codec.Tests
             Assert.NotNull(settings);
             Assert.False(settings.ScanOnStartup);
         }
+
+        [Fact]
+        public void NewSettings_SelectedSortIndexDefaultIsZero()
+        {
+            var settings = new AppSettings();
+
+            Assert.Equal(0, settings.SelectedSortIndex);
+        }
+
+        [Fact]
+        public void Deserialize_ExplicitSelectedSortIndex_PreservesSavedChoice()
+        {
+            var settings = JsonSerializer.Deserialize<AppSettings>("""{"SelectedSortIndex":2}""");
+
+            Assert.NotNull(settings);
+            Assert.Equal(2, settings.SelectedSortIndex);
+        }
     }
 }

@@ -184,13 +184,26 @@ namespace Codec.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SortLabel))]
+        [NotifyPropertyChangedFor(nameof(SortIconGlyph))]
         private int _selectedSortIndex = 0; // 0=Alphabetic, 1=FolderSize desc, 2=DateAdded desc
 
-        public string SortLabel => _selectedSortIndex switch
+        public string SortLabel => SelectedSortIndex switch
         {
-            1 => "Folder Size",
-            2 => "Date Added",
+            0 => "Alphabetic",
+            1 => "Alphabetic",
+            2 => "Folder Size",
+            3 => "Folder Size",
+            4 => "Date Added",
+            5 => "Date Added",
             _ => "Alphabetic",
+        };
+
+        public string SortIconGlyph => SelectedSortIndex switch
+        {
+            1 => "\uE74A", // Z-A ArrowUp
+            3 => "\uE74A", // Folder Size (Small-Large) ArrowUp
+            5 => "\uE74A", // Date Added (Oldest) ArrowUp
+            _ => "\uE74B", // ArrowDown for all others (0, 2, 4)
         };
 
         public void SetLoadingState(bool isVisible, string? title = null, string? subtitle = null)
@@ -277,6 +290,7 @@ namespace Codec.ViewModels
             _suppressSettingsSave = true;
             ScanOnStartup = _appSettings.ScanOnStartup;
             LaunchSteamSilent = _appSettings.LaunchSteamSilent;
+            SelectedSortIndex = _appSettings.SelectedSortIndex;
             _suppressSettingsSave = false;
 
             var saved = await _services.LibraryStorage.LoadAsync();
@@ -318,6 +332,7 @@ namespace Codec.ViewModels
             _suppressSettingsSave = true;
             ScanOnStartup = _appSettings.ScanOnStartup;
             LaunchSteamSilent = false;
+            SelectedSortIndex = 0;
             _suppressSettingsSave = false;
         }
 
@@ -591,12 +606,24 @@ namespace Codec.ViewModels
             return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
         }
 
-        partial void OnSelectedSortIndexChanged(int value) => ApplySortToGames();
-
-        private IEnumerable<Game> GetSortedGames(IEnumerable<Game> source) => _selectedSortIndex switch
+        partial void OnSelectedSortIndexChanged(int value)
         {
-            1 => source.OrderByDescending(g => g.FolderSize).ThenBy(g => g.Id),
-            2 => source.OrderByDescending(g => g.DateAdded).ThenBy(g => g.Id),
+            ApplySortToGames();
+            if (!_suppressSettingsSave)
+            {
+                _appSettings.SelectedSortIndex = value;
+                _ = _services.AppSettings.SaveAsync(_appSettings);
+            }
+        }
+
+        private IEnumerable<Game> GetSortedGames(IEnumerable<Game> source) => SelectedSortIndex switch
+        {
+            0 => source.OrderBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
+            1 => source.OrderByDescending(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
+            2 => source.OrderByDescending(g => g.FolderSize).ThenBy(g => g.Id),
+            3 => source.OrderBy(g => g.FolderSize).ThenBy(g => g.Id),
+            4 => source.OrderByDescending(g => g.DateAdded).ThenBy(g => g.Id),
+            5 => source.OrderBy(g => g.DateAdded).ThenBy(g => g.Id),
             _ => source.OrderBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
         };
 
@@ -617,7 +644,7 @@ namespace Codec.ViewModels
 
         private void InsertGameSorted(Game game)
         {
-            if (_selectedSortIndex != 0)
+            if (SelectedSortIndex != 0)
             {
                 Games.Add(game);
                 ApplySortToGames();
