@@ -52,6 +52,8 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(IsEmptyLibrary));
             OnPropertyChanged(nameof(IsLibraryVisible));
             RefreshSidebarFilteredGames();
+            RefreshAvailableImportSources();
+            RefreshDisplayedGames();
 
             return Games.ToList();
         }

@@ -38,6 +38,11 @@ namespace Codec.ViewModels
 
         public ObservableCollection<Game> Games { get; set; } = new();
         public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
+        public ObservableCollection<Game> DisplayedGames { get; } = new();
+        public ObservableCollection<ImportFilterItem> AvailableImportSources { get; } = new();
+
+        [ObservableProperty]
+        private string? _selectedImportFilter;
 
         public MainViewModel(ServiceHost services)
         {
@@ -54,6 +59,8 @@ namespace Codec.ViewModels
             OnUpdateStatusChanged(); // sync current state immediately (race-safe)
             Games.CollectionChanged += Games_CollectionChanged;
             RefreshSidebarFilteredGames();
+            RefreshAvailableImportSources();
+            RefreshDisplayedGames();
         }
 
         // ---------------------------------------------------------------------------------
@@ -443,6 +450,105 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(IsEmptyLibrary));
             OnPropertyChanged(nameof(IsLibraryVisible));
             RefreshSidebarFilteredGames();
+            RefreshAvailableImportSources();
+            RefreshDisplayedGames();
+        }
+
+        private bool _isUpdatingFilters = false;
+
+        private void OnFilterItemSelectionChanged(ImportFilterItem changedItem)
+        {
+            if (_isUpdatingFilters) return;
+
+            _isUpdatingFilters = true;
+            try
+            {
+                if (changedItem.IsSelected)
+                {
+                    // Unselect others
+                    foreach (var item in AvailableImportSources)
+                    {
+                        if (item != changedItem)
+                        {
+                            item.IsSelected = false;
+                        }
+                    }
+                    SelectedImportFilter = changedItem.Name;
+                }
+                else
+                {
+                    // If we unselected the active filter, clear the filter name
+                    if (SelectedImportFilter == changedItem.Name)
+                    {
+                        SelectedImportFilter = null;
+                    }
+                }
+            }
+            finally
+            {
+                _isUpdatingFilters = false;
+            }
+
+            RefreshDisplayedGames();
+        }
+
+        partial void OnSelectedImportFilterChanged(string? value) => RefreshDisplayedGames();
+
+        private void RefreshAvailableImportSources()
+        {
+            var sources = Games
+                .Select(g => g.ImportedFromDisplay)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s)
+                .ToList();
+
+            var toRemove = AvailableImportSources.Where(item => !sources.Contains(item.Name, StringComparer.OrdinalIgnoreCase)).ToList();
+            foreach (var item in toRemove)
+            {
+                AvailableImportSources.Remove(item);
+            }
+
+            foreach (var src in sources)
+            {
+                if (!AvailableImportSources.Any(item => string.Equals(item.Name, src, StringComparison.OrdinalIgnoreCase)))
+                {
+                    AvailableImportSources.Add(new ImportFilterItem(src, OnFilterItemSelectionChanged));
+                }
+            }
+
+            if (SelectedImportFilter != null && !sources.Contains(SelectedImportFilter, StringComparer.OrdinalIgnoreCase))
+            {
+                SelectedImportFilter = null;
+            }
+        }
+
+        private void RefreshDisplayedGames()
+        {
+            var query = Games.AsEnumerable();
+            if (!string.IsNullOrEmpty(SelectedImportFilter))
+            {
+                query = query.Where(g => string.Equals(g.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var sortedFiltered = GetSortedGames(query).ToList();
+
+            for (int targetIndex = 0; targetIndex < sortedFiltered.Count; targetIndex++)
+            {
+                var game = sortedFiltered[targetIndex];
+                int existingIndex = DisplayedGames.IndexOf(game);
+
+                if (existingIndex == targetIndex)
+                    continue;
+
+                if (existingIndex >= 0)
+                    DisplayedGames.Move(existingIndex, targetIndex);
+                else
+                    DisplayedGames.Insert(targetIndex, game);
+            }
+
+            for (int index = DisplayedGames.Count - 1; index >= sortedFiltered.Count; index--)
+                DisplayedGames.RemoveAt(index);
         }
 
         private void RefreshSidebarFilteredGames()
@@ -506,6 +612,7 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(IsEmptyLibrary));
             OnPropertyChanged(nameof(IsLibraryVisible));
             RefreshSidebarFilteredGames();
+            RefreshDisplayedGames();
         }
 
         private void InsertGameSorted(Game game)
