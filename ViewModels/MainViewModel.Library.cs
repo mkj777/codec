@@ -1,5 +1,6 @@
 using Codec.Helpers;
 using Codec.Models;
+using Codec.Services.Fetching;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -74,6 +75,77 @@ namespace Codec.ViewModels
 
             await _services.LibraryStorage.SaveAsync(Games.ToList());
             HideScanProgress();
+        }
+
+        private async Task SilentUpdateImagesAsync(IEnumerable<Game> gamesToUpdate)
+        {
+            // Wait a short time to allow UI startup animations to complete smoothly
+            await Task.Delay(3000).ConfigureAwait(false);
+
+            var games = gamesToUpdate.ToList();
+            bool anyChanged = false;
+
+            foreach (var game in games)
+            {
+                try
+                {
+                    // Create hydration snapshot of the game
+                    var snapshot = game.CreateHydrationSnapshot();
+
+                    // Force redownload of assets on background thread
+                    var displayedAssets = await _services.DisplayedAssets.EnsureDisplayedAssetsAsync(snapshot, force: true).ConfigureAwait(false);
+
+                    // Check if anything actually changed
+                    bool changed = snapshot.GridDbId != game.GridDbId ||
+                                   snapshot.LibraryCapsuleCache != game.LibraryCapsuleCache ||
+                                   snapshot.HasHeroAssetSource != game.HasHeroAssetSource ||
+                                   snapshot.LibraryHeroUrl != game.LibraryHeroUrl ||
+                                   snapshot.LibraryHeroCache != game.LibraryHeroCache ||
+                                   snapshot.HasLogoAssetSource != game.HasLogoAssetSource ||
+                                   snapshot.LibraryLogoUrl != game.LibraryLogoUrl ||
+                                   snapshot.LibraryLogoCache != game.LibraryLogoCache ||
+                                   displayedAssets.GridDbId != game.GridDbId ||
+                                   displayedAssets.CapsuleCachePath != game.LibraryCapsuleCache ||
+                                   displayedAssets.HasHeroSource != game.HasHeroAssetSource ||
+                                   displayedAssets.HeroUrl != game.LibraryHeroUrl ||
+                                   displayedAssets.HeroCachePath != game.LibraryHeroCache ||
+                                   displayedAssets.HasLogoSource != game.HasLogoAssetSource ||
+                                   displayedAssets.LogoUrl != game.LibraryLogoUrl ||
+                                   displayedAssets.LogoCachePath != game.LibraryLogoCache;
+
+                    if (changed)
+                    {
+                        anyChanged = true;
+
+                        await RunOnUiThreadAsync(() =>
+                        {
+                            ApplyDisplayedAssetHydration(game, displayedAssets);
+                            game.IsFullyImported = displayedAssets.AreRequiredAssetsReady;
+                        }).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[SilentUpdate] Failed to update assets for {game.Name}: {ex.Message}");
+                }
+
+                // Small delay to respect rate limits
+                await Task.Delay(250).ConfigureAwait(false);
+            }
+
+            if (anyChanged)
+            {
+                try
+                {
+                    var currentGames = await RunOnUiThreadAsync(() => Games.ToList()).ConfigureAwait(false);
+                    await _services.LibraryStorage.SaveAsync(currentGames).ConfigureAwait(false);
+                    Debug.WriteLine("[SilentUpdate] Library saved with updated game images.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[SilentUpdate] Failed to save updated library: {ex.Message}");
+                }
+            }
         }
 
         private async Task PopulateGridDbDataAsync(IEnumerable<Game> games)

@@ -315,6 +315,8 @@ namespace Codec.ViewModels
 
             if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
                 _ = ScanGamesOnStartupAsync();
+
+            _ = SilentUpdateImagesAsync(Games);
         }
 
         public async Task CompleteOnboardingAsync(bool scanOnStartup, bool launchSteamSilent)
