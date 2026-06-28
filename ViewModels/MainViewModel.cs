@@ -24,7 +24,7 @@ namespace Codec.ViewModels
     public partial class MainViewModel : ObservableObject
     {
         private const int SidebarSearchDebounceDelayMs = 300;
-        private const int UpdateNotificationDismissDelayMs = 5000;
+        private const int UpdateNotificationDismissDelayMs = 15000;
         private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
         private readonly DispatcherQueue _dispatcherQueue;
@@ -235,15 +235,15 @@ namespace Codec.ViewModels
             _dispatcherQueue.TryEnqueue(() =>
             {
                 var s = _services.Updates;
-                IsUpdateCheckingVisible = s.Status == UpdateStatus.Checking;
+                IsUpdateCheckingVisible = false;
                 IsUpdateDownloadingVisible = s.Status == UpdateStatus.Downloading;
                 IsUpdateBannerVisible = s.Status == UpdateStatus.Ready;
-                IsUpdateNoUpdateVisible = s.Status == UpdateStatus.NoUpdateFound;
+                IsUpdateNoUpdateVisible = false;
                 IsUpdateErrorVisible = s.Status == UpdateStatus.Error;
                 UpdateDownloadProgress = s.DownloadProgress;
                 UpdateErrorMessage = s.ErrorMessage ?? string.Empty;
 
-                if (s.Status is UpdateStatus.Error or UpdateStatus.NoUpdateFound)
+                if (s.Status == UpdateStatus.Error)
                     ScheduleUpdateNotificationDismissal(s.Status);
                 else
                     Interlocked.Increment(ref _updateNotificationDismissVersion);
