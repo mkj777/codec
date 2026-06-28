@@ -1,6 +1,10 @@
+using Codec.Models;
+using Codec.Services.Fetching;
 using Codec.Services.Scanning;
 using Codec.Services.Scanning.Scanners;
 using Codec.Services.Importing;
+using Codec.Services.Resolving;
+using Codec.Services.Storage;
 using Codec.ViewModels;
 using Xunit;
 
@@ -66,6 +70,41 @@ namespace Codec.Tests
             Assert.True(GameImportPipeline.AllowsMissingExecutable(epicRequest, hasLaunchScript: false));
             Assert.False(GameImportPipeline.AllowsMissingExecutable(epicSourceOnlyRequest, hasLaunchScript: false));
             Assert.False(GameImportPipeline.AllowsMissingExecutable(heuristicRequest, hasLaunchScript: false));
+        }
+
+        [Fact]
+        public async Task ImportPipeline_ReturnsDuplicateForExistingRiotFolder()
+        {
+            var cache = new MetadataCache();
+            var gameDetails = new GameDetailsService(cache);
+            var gameName = new GameNameService(gameDetails);
+            var steamKit = new SteamKitService();
+            var gameAssets = new GameAssetService(steamKit);
+            var rawgDetails = new RawgDetailsService(cache);
+            var pipeline = new GameImportPipeline(
+                gameName,
+                gameDetails,
+                new SteamDetailsService(cache, steamKit),
+                rawgDetails,
+                new IgdbService(),
+                new HltbService(cache),
+                new DisplayedAssetService(gameAssets, new GridDbService(gameAssets), rawgDetails));
+
+            var request = new GameImportRequest(
+                ExecutablePath: string.Empty,
+                FolderLocation: @"E:\Riot Games\VALORANT",
+                NameHint: "VALORANT",
+                ImportSource: "Riot Games");
+            var existing = new Game
+            {
+                Name = "VALORANT",
+                FolderLocation = @"E:\Riot Games\VALORANT\",
+                ImportedFrom = "Riot Games"
+            };
+
+            var result = await pipeline.ImportAsync(request, new[] { existing }, TestContext.Current.CancellationToken);
+
+            Assert.Equal(GameImportResultStatus.Duplicate, result.Status);
         }
 
         [Fact]

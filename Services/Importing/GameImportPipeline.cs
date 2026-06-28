@@ -116,6 +116,12 @@ namespace Codec.Services.Importing
                 ? request.FolderLocation
                 : (!string.IsNullOrEmpty(normalizedExePath) ? Path.GetDirectoryName(normalizedExePath) ?? string.Empty : string.Empty);
 
+            if (RiotGameDuplicateHelper.IsDuplicateGame(normalizedImportSource, folderLocation, request.LaunchScriptPath, librarySnapshot))
+            {
+                batch.Flush("⤼ DUPLICATE", $"Riot target already in library: folder='{folderLocation}' lnk='{request.LaunchScriptPath}'");
+                return GameImportResult.Duplicate("This Riot game is already in your library.");
+            }
+
             string detectedName = string.IsNullOrWhiteSpace(request.NameHint)
                 ? (!string.IsNullOrEmpty(normalizedExePath)
                     ? _gameName.GetBestName(normalizedExePath) ?? Path.GetFileNameWithoutExtension(normalizedExePath)

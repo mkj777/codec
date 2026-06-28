@@ -79,8 +79,12 @@ namespace Codec.Services.Scanning.Scanners
         public override Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
         {
             var candidates = new List<GameCandidate>();
+            var seenGameFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenLaunchTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var riotRoots = _riotRootProvider()
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Select(NormalizeDirectoryPath)
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -100,10 +104,22 @@ namespace Codec.Services.Scanning.Scanners
                     if (ShouldIgnoreGameFolder(folderName))
                         continue;
 
+                    string normalizedGameFolder = NormalizeDirectoryPath(dir);
+                    if (!seenGameFolders.Add(normalizedGameFolder))
+                        continue;
+
                     string gameName = GetDisplayName(folderName);
                     string? launchScript = TryMatchShortcut(folderName, gameName, shortcuts);
                     launchScript ??= TryCreateMissingShortcut(root, folderName, gameName, shortcuts);
-                    candidates.Add(new GameCandidate(gameName, dir, PlatformName, LaunchScriptPath: launchScript));
+
+                    if (!string.IsNullOrWhiteSpace(launchScript))
+                    {
+                        string normalizedLaunchTarget = NormalizeDirectoryPath(launchScript);
+                        if (!seenLaunchTargets.Add(normalizedLaunchTarget))
+                            continue;
+                    }
+
+                    candidates.Add(new GameCandidate(gameName, normalizedGameFolder, PlatformName, LaunchScriptPath: launchScript));
                 }
             }
 
@@ -318,6 +334,20 @@ namespace Codec.Services.Scanning.Scanners
         {
             try { return Directory.GetFiles(path, searchPattern); }
             catch { return Array.Empty<string>(); }
+        }
+
+        private static string NormalizeDirectoryPath(string path)
+        {
+            try
+            {
+                return Path.GetFullPath(path)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch
+            {
+                return path.Trim()
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
         }
 
         internal delegate bool ShortcutCreator(string shortcutPath, string targetPath, string arguments, string workingDirectory);

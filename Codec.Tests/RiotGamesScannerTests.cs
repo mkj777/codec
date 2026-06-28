@@ -76,6 +76,69 @@ namespace Codec.Tests
             }
         }
 
+        [Fact]
+        public async Task ScanAsync_DeduplicatesGameFoldersFromEquivalentRoots()
+        {
+            string tempRoot = CreateTempDirectory();
+
+            try
+            {
+                string riotRoot = Path.Combine(tempRoot, "C", "Riot Games");
+                string valorantRoot = Path.Combine(riotRoot, "VALORANT");
+                Directory.CreateDirectory(valorantRoot);
+
+                string missingStartMenuPath = Path.Combine(tempRoot, "missing-start-menu");
+                var scanner = new RiotGamesScanner(
+                    () => new[] { riotRoot, riotRoot + Path.DirectorySeparatorChar },
+                    missingStartMenuPath,
+                    (_, _, _, _) => false);
+
+                var candidate = Assert.Single(await scanner.ScanAsync());
+
+                Assert.Equal("VALORANT", candidate.Name);
+                Assert.Equal(Path.GetFullPath(valorantRoot), candidate.FolderPath);
+                Assert.Single(scanner.KnownLibraryPaths);
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task ScanAsync_DeduplicatesGamesWithSameLaunchShortcut()
+        {
+            string tempRoot = CreateTempDirectory();
+
+            try
+            {
+                string riotRoot = Path.Combine(tempRoot, "C", "Riot Games");
+                string lorRoot = Path.Combine(riotRoot, "LoR");
+                string displayNameRoot = Path.Combine(riotRoot, "Legends of Runeterra");
+                Directory.CreateDirectory(lorRoot);
+                Directory.CreateDirectory(displayNameRoot);
+
+                string startMenuPath = Path.Combine(tempRoot, "Start Menu", "Riot Games");
+                Directory.CreateDirectory(startMenuPath);
+                string shortcutPath = Path.Combine(startMenuPath, "Legends of Runeterra.lnk");
+                File.WriteAllText(shortcutPath, "shortcut");
+
+                var scanner = new RiotGamesScanner(
+                    () => new[] { riotRoot },
+                    startMenuPath,
+                    (_, _, _, _) => false);
+
+                var candidate = Assert.Single(await scanner.ScanAsync());
+
+                Assert.Equal("Legends of Runeterra", candidate.Name);
+                Assert.Equal(shortcutPath, candidate.LaunchScriptPath);
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(tempRoot);
+            }
+        }
+
         [Theory]
         [InlineData("League of Legends", "League of Legends", "League of Legends.lnk", "--launch-product=league_of_legends --launch-patchline=live")]
         [InlineData("LoR", "Legends of Runeterra", "Legends of Runeterra.lnk", "--launch-product=bacon --launch-patchline=live")]

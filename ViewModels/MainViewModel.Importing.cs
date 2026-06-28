@@ -1,4 +1,5 @@
 using Codec.Models;
+using Codec.Helpers;
 using Codec.Services.Importing;
 using Microsoft.UI.Dispatching;
 using System;
@@ -19,12 +20,40 @@ namespace Codec.ViewModels
         {
             var snapshot = await RunOnUiThreadAsync(() =>
             {
+                if (RiotGameDuplicateHelper.IsDuplicateGame(game.ImportedFrom, game.FolderLocation, game.LaunchScript, Games))
+                {
+                    return DeduplicateRiotGamesInMemory();
+                }
+
                 InsertGameSorted(game);
                 IsOnboardingVisible = false;
-                return Games.ToList();
+                return DeduplicateRiotGamesInMemory();
             });
 
             await _services.LibraryStorage.SaveAsync(snapshot).ConfigureAwait(false);
+        }
+
+        private List<Game> DeduplicateRiotGamesInMemory()
+        {
+            var deduplicated = RiotGameDuplicateHelper.DeduplicateByIdentity(Games);
+            if (deduplicated.Count == Games.Count)
+            {
+                return deduplicated;
+            }
+
+            Games.CollectionChanged -= Games_CollectionChanged;
+            Games.Clear();
+            foreach (var existingGame in GetSortedGames(deduplicated))
+            {
+                Games.Add(existingGame);
+            }
+            Games.CollectionChanged += Games_CollectionChanged;
+            OnPropertyChanged(nameof(HasGames));
+            OnPropertyChanged(nameof(IsEmptyLibrary));
+            OnPropertyChanged(nameof(IsLibraryVisible));
+            RefreshSidebarFilteredGames();
+
+            return Games.ToList();
         }
 
         private void ImportCoordinator_StatusChanged(object? sender, GameImportStatusSnapshot snapshot)

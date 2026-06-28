@@ -12,13 +12,13 @@
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="*|x86" Project="x86" />
-    <Deploy />
+    <Deploy Solution="*|ARM" />
+    <Deploy Solution="*|ARM64" />
+    <Deploy Solution="*|x64" />
+    <Deploy Solution="*|x86" />
+    <Deploy Solution="Release|Any CPU" />
   </Project>
   <Project Path="Codec.Tests\Codec.Tests.csproj">
-    <Platform Solution="*|Any CPU" Project="x64" />
-    <Platform Solution="*|ARM" Project="x64" />
-    <Platform Solution="*|ARM64" Project="x64" />
-    <Platform Solution="*|x64" Project="x64" />
-    <Platform Solution="*|x86" Project="x64" />
+    <Platform Project="x64" />
   </Project>
 </Solution>

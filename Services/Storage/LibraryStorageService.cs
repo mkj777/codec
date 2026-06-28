@@ -43,7 +43,7 @@ namespace Codec.Services.Storage
 
         public async Task SaveAsync(IEnumerable<Game> games)
         {
-            var snapshot = games.ToList();
+            var snapshot = RiotGameDuplicateHelper.DeduplicateByIdentity(games);
             try
             {
                 await _saveGate.WaitAsync();
@@ -79,7 +79,7 @@ namespace Codec.Services.Storage
                     game.ImportedFrom = PlatformSourceNames.NormalizeImportSource(game.ImportedFrom);
                 }
 
-                return games;
+                return RiotGameDuplicateHelper.DeduplicateByIdentity(games);
             }
             catch (Exception ex)
             {

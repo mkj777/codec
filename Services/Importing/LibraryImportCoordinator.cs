@@ -1,4 +1,5 @@
 using Codec.Models;
+using Codec.Helpers;
 using Codec.Services.Logging;
 using Codec.Services.Scanning;
 using System;
@@ -242,6 +243,13 @@ namespace Codec.Services.Importing
                 return;
             }
 
+            if (RiotGameDuplicateHelper.IsDuplicateGame(candidate.ImportSource, candidate.FolderLocation, candidate.LaunchScriptPath, librarySnapshot))
+            {
+                batch?.Flush("✗ DENIED", $"Riot target already in library: folder='{candidate.FolderLocation}' lnk='{candidate.LaunchScriptPath}'");
+                IncrementSkipped();
+                return;
+            }
+
             lock (_stateGate)
             {
                 ResetSessionCountsIfIdle_NoLock();
@@ -410,6 +418,10 @@ namespace Codec.Services.Importing
                 return $"steam:{request.SteamAppId.Value}";
             if (!string.IsNullOrWhiteSpace(request.EpicAppId))
                 return $"epic:{request.EpicAppId}";
+            if (RiotGameDuplicateHelper.IsRiotSource(request.ImportSource) && RiotGameDuplicateHelper.TryGetPathKey(request.LaunchScriptPath, out var riotLaunchTarget))
+                return $"launch:{riotLaunchTarget}";
+            if (RiotGameDuplicateHelper.IsRiotSource(request.ImportSource) && RiotGameDuplicateHelper.TryGetPathKey(request.FolderLocation, out var riotFolderPath))
+                return $"folder:{riotFolderPath}";
             if (!string.IsNullOrWhiteSpace(request.ExecutablePath))
                 return request.ExecutablePath;
             return $"name:{request.NameHint}";
@@ -421,6 +433,10 @@ namespace Codec.Services.Importing
                 return $"steam:{candidate.SteamAppId.Value}";
             if (!string.IsNullOrWhiteSpace(candidate.EpicAppId))
                 return $"epic:{candidate.EpicAppId}";
+            if (RiotGameDuplicateHelper.IsRiotSource(candidate.ImportSource) && RiotGameDuplicateHelper.TryGetPathKey(candidate.LaunchScriptPath, out var riotLaunchTarget))
+                return $"launch:{riotLaunchTarget}";
+            if (RiotGameDuplicateHelper.IsRiotSource(candidate.ImportSource) && RiotGameDuplicateHelper.TryGetPathKey(candidate.FolderLocation, out var riotFolderPath))
+                return $"folder:{riotFolderPath}";
             if (!string.IsNullOrWhiteSpace(candidate.ExecutablePath))
                 return candidate.ExecutablePath;
             return $"name:{candidate.GameName}";
