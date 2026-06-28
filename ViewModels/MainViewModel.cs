@@ -185,6 +185,8 @@ namespace Codec.ViewModels
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SortLabel))]
         [NotifyPropertyChangedFor(nameof(SortIconGlyph))]
+        [NotifyPropertyChangedFor(nameof(ShowFolderSizeTag))]
+        [NotifyPropertyChangedFor(nameof(ShowDateAddedTag))]
         private int _selectedSortIndex = 0; // 0=Alphabetic, 1=FolderSize desc, 2=DateAdded desc
 
         public string SortLabel => SelectedSortIndex switch
@@ -205,6 +207,9 @@ namespace Codec.ViewModels
             5 => "\uE74A", // Date Added (Oldest) ArrowUp
             _ => "\uE74B", // ArrowDown for all others (0, 2, 4)
         };
+
+        public bool ShowFolderSizeTag => SelectedSortIndex == 2 || SelectedSortIndex == 3;
+        public bool ShowDateAddedTag => SelectedSortIndex == 4 || SelectedSortIndex == 5;
 
         public void SetLoadingState(bool isVisible, string? title = null, string? subtitle = null)
         {

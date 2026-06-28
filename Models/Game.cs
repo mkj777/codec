@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Codec.Helpers;
 using System;
 using System.Collections.Generic;
@@ -36,13 +36,17 @@ namespace Codec.Models
 
         // basic information
         [ObservableProperty] private Guid id = Guid.NewGuid();
-        [ObservableProperty] private DateTime dateAdded = DateTime.Now;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(DateAddedDisplay))]
+        private DateTime dateAdded = DateTime.Now;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         private string executable;
         [ObservableProperty] private string folderLocation;
-        [ObservableProperty] private long folderSize;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FolderSizeDisplay))]
+        private long folderSize;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
@@ -615,6 +619,22 @@ namespace Codec.Models
             UseExecutableOverride = source.UseExecutableOverride;
             IsFullyImported = source.IsFullyImported;
         }
+
+        public string FolderSizeDisplay
+        {
+            get
+            {
+                if (FolderSize <= 0) return "0 MB";
+                double sizeInMb = FolderSize / (1024.0 * 1024.0);
+                if (sizeInMb >= 1000)
+                {
+                    return $"{(sizeInMb / 1024.0):F1} GB";
+                }
+                return $"{sizeInMb:F0} MB";
+            }
+        }
+
+        public string DateAddedDisplay => DateAdded.ToString("MMM dd, yyyy");
     }
 
     public sealed record FranchiseGameRef(
