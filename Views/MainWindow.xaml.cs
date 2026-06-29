@@ -27,8 +27,8 @@ namespace Codec.Views
         private const int MinWindowWidth = 900;
         private const int MinWindowHeight = 560;
 
-        private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(Colors.White);
-        private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9A, 0x9A, 0x9A));
+        private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0xF3, 0xED, 0xC9));
+        private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9E, 0x8E, 0x78));
 
         private static readonly Windows.UI.Color[] FireColors =
         [
