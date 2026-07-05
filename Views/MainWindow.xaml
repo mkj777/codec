@@ -801,31 +801,26 @@
                                    Foreground="#444444"
                                    CharacterSpacing="40"/>
 
-                        <Border Background="#252525"
-                                BorderBrush="#383838"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="10,8">
-                            <Grid ColumnSpacing="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Version"
-                                           FontSize="13"
-                                           FontWeight="SemiBold"
-                                           FontFamily="Segoe UI Variable Text"
-                                           Foreground="#CCCCCC"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1"
-                                           Text="{x:Bind AppVersion}"
-                                           FontSize="12"
-                                           FontWeight="SemiBold"
-                                           FontFamily="Segoe UI Variable Text"
-                                           Foreground="#888888"
-                                           VerticalAlignment="Center"/>
-                            </Grid>
-                        </Border>
+                        <Grid ColumnSpacing="10"
+                              Margin="0,2,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Version"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable Text"
+                                       Foreground="#777777"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{x:Bind AppVersion}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       FontFamily="Segoe UI Variable Text"
+                                       Foreground="#666666"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
                     </StackPanel>
 
                     <Button x:Name="SidebarDebugButton"
