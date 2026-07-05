@@ -146,7 +146,7 @@ namespace Codec.Services.Fetching
             catch (Exception ex)
             {
                 Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: EXCEPTION for '{name}': {ex.Message}");
-                return (null, null);
+                throw;
             }
         }
 
@@ -1176,7 +1176,12 @@ limit 200;";
             using var content = new StringContent(body, Encoding.UTF8, "text/plain");
             using var response = await _http.PostAsync(url, content).ConfigureAwait(false);
             Debug.WriteLine($"[IGDB] HTTP {(int)response.StatusCode} {response.StatusCode} ← {url}");
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                Debug.WriteLine($"[IGDB] ERROR RESPONSE: {errorBody}");
+                throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}). Response content: {errorBody}");
+            }
             string result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             Debug.WriteLine($"[IGDB] RESPONSE: {result}");
             return result;

@@ -171,19 +171,10 @@
                                 <SolidColorBrush x:Key="ButtonBorderBrush"
                                                  Color="Transparent"/>
                             </Button.Resources>
-                            <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center"
-                                        Spacing="6">
-                                <TextBlock Text="Codec"
-                                           FontSize="18"
-                                           FontWeight="Bold"
-                                           Foreground="#F3EDC9"/>
-                                <TextBlock Text="{x:Bind AppVersion}"
-                                           FontSize="11"
-                                           Foreground="#888888"
-                                           VerticalAlignment="Bottom"
-                                           Margin="0,0,0,2"/>
-                            </StackPanel>
+                            <TextBlock Text="Codec"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="#F3EDC9"/>
                         </Button>
                         <Grid Grid.Row="1"
                               Height="28"
@@ -800,6 +791,41 @@
                                                  Color="#FF6B6B"/>
                             </Button.Resources>
                         </Button>
+                    </StackPanel>
+
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="ABOUT"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable Text"
+                                   Foreground="#444444"
+                                   CharacterSpacing="40"/>
+
+                        <Border Background="#252525"
+                                BorderBrush="#383838"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,8">
+                            <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Version"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable Text"
+                                           Foreground="#CCCCCC"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{x:Bind AppVersion}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           FontFamily="Segoe UI Variable Text"
+                                           Foreground="#888888"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
                     </StackPanel>
 
                     <Button x:Name="SidebarDebugButton"

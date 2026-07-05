@@ -162,16 +162,23 @@ namespace Codec.Services.Importing
                 // they are compared only against IGDB release years.
                 if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !string.IsNullOrWhiteSpace(detectedName))
                 {
-                    var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(detectedName, executableCopyrightYears).ConfigureAwait(false);
-                    igdbId = foundIgdbId;
-                    if (igdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
+                    try
                     {
-                        batch.Log($"PIPELINE IGDB-YEAR exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
+                        var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(detectedName, executableCopyrightYears).ConfigureAwait(false);
+                        igdbId = foundIgdbId;
+                        if (igdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
+                        {
+                            batch.Log($"PIPELINE IGDB-YEAR exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
+                        }
+                        else if (!igdbId.HasValue && executableCopyrightYears.Count > 0 && !isRiotSource)
+                        {
+                            batch.Flush("✗ INVALID", $"no IGDB release-year match (exe©{string.Join("/", executableCopyrightYears.Order())})");
+                            return GameImportResult.Invalid($"Codec rejected '{detectedName}' because its executable copyright year did not match an IGDB release year.");
+                        }
                     }
-                    else if (!igdbId.HasValue && executableCopyrightYears.Count > 0 && !isRiotSource)
+                    catch (Exception ex)
                     {
-                        batch.Flush("✗ INVALID", $"no IGDB release-year match (exe©{string.Join("/", executableCopyrightYears.Order())})");
-                        return GameImportResult.Invalid($"Codec rejected '{detectedName}' because its executable copyright year did not match an IGDB release year.");
+                        batch.Log($"PIPELINE IGDB-VALIDATE FAILED: {ex.Message}");
                     }
                 }
 

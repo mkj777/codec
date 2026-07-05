@@ -393,6 +393,7 @@ namespace Codec.Services.Scanning
                 int? igdbId = null;
                 int? rawgId = null;
                 var validateSw = Stopwatch.StartNew();
+                bool igdbCallFailed = false;
                 if (!steamId.HasValue && !isRiotSource)
                 {
                     try
@@ -417,9 +418,10 @@ namespace Codec.Services.Scanning
                     catch (Exception ex)
                     {
                         batch.Log($"IGDB-VALIDATE FAILED: {ex.Message}");
+                        igdbCallFailed = true;
                     }
 
-                    if (!igdbId.HasValue)
+                    if (!igdbId.HasValue && !igdbCallFailed)
                     {
                         if (executableCopyrightYears.Count > 0)
                         {
