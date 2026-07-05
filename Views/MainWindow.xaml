@@ -33,11 +33,11 @@
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
                 <Setter Property="Foreground"
-                        Value="White"/>
+                        Value="#F3EDC9"/>
                 <Setter Property="Background"
                         Value="Transparent"/>
                 <Setter Property="BorderBrush"
-                        Value="#44FFFFFF"/>
+                        Value="#60E76C2B"/>
                 <Setter Property="BorderThickness"
                         Value="1"/>
                 <Setter Property="CornerRadius"
@@ -62,9 +62,9 @@
                                         <VisualState x:Name="Checked">
                                             <VisualState.Setters>
                                                 <Setter Target="Root.Background"
-                                                        Value="#66FFFFFF"/>
+                                                        Value="#33E76C2B"/>
                                                 <Setter Target="Root.BorderBrush"
-                                                        Value="#AAFFFFFF"/>
+                                                        Value="#E76C2B"/>
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState x:Name="Unchecked"/>
@@ -78,15 +78,19 @@
             </Style>
             <!-- Softer default blur overlay -->
             <AcrylicBrush x:Key="BlurOverlayBrush"
-                          TintColor="#66000000"
+                          TintColor="#661C1A17"
                           TintOpacity="0.25"
                           TintLuminosityOpacity="0.8"
-                          FallbackColor="#66000000"/>
+                          FallbackColor="#661C1A17"/>
             <Style TargetType="TextBlock">
                 <Setter Property="FontSize"
                         Value="14"/>
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
+                <Setter Property="FontFamily"
+                        Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="Foreground"
+                        Value="#F3EDC9"/>
             </Style>
             <Style x:Key="SidebarUtilityButtonStyle"
                    TargetType="Button">
@@ -380,8 +384,8 @@
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
                     Margin="0,32,32,0"
-                    Background="#1C1C1C"
-                    BorderBrush="#FFD700"
+                    Background="#1C1A17"
+                    BorderBrush="#D4A832"
                     BorderThickness="1"
                     CornerRadius="10"
                     Padding="14,12">
@@ -394,7 +398,7 @@
                     <FontIcon Grid.Column="0"
                               Glyph="&#xE7BA;"
                               FontSize="16"
-                              Foreground="#FFD700"
+                              Foreground="#D4A832"
                               VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1"
                                 Spacing="2"
@@ -402,10 +406,10 @@
                         <TextBlock Text="Running as Administrator"
                                    FontSize="12"
                                    FontWeight="SemiBold"
-                                   Foreground="#FFD700"/>
+                                   Foreground="#D4A832"/>
                         <TextBlock Text="Some features may not work correctly."
                                    FontSize="12"
-                                   Foreground="#FFD700"
+                                   Foreground="#D4A832"
                                    TextWrapping="Wrap"
                                    Opacity="0.8"/>
                     </StackPanel>
@@ -413,7 +417,7 @@
                             Content="✕"
                             Background="Transparent"
                             BorderThickness="0"
-                            Foreground="#FFD700"
+                            Foreground="#D4A832"
                             FontSize="12"
                             Padding="4,0"
                             VerticalAlignment="Top"
@@ -424,18 +428,18 @@
 
 
             <StackPanel Visibility="{Binding IsScanProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                        Background="#BF1C1C1C"
+                        Background="#D51C1A17"
                         Padding="24"
                         CornerRadius="8"
                         Spacing="12"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
                 <TextBlock Text="{Binding ScanProgressMessage}"
-                           Foreground="White"
+                           Foreground="#F3EDC9"
                            FontSize="18"
                            FontWeight="SemiBold"
                            TextAlignment="Center"
-                           FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                           FontFamily="{StaticResource CodecFontFamily}"/>
                 <ProgressBar Width="320"
                              Height="8"
                              IsIndeterminate="{Binding ScanProgressIsIndeterminate}"
@@ -455,7 +459,7 @@
                   Visibility="{Binding IsMediaOverlayOpen, Converter={StaticResource BoolToVisibilityConverter}}"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch">
-                <Grid Background="#E0000000"
+                <Grid Background="#E61C1A17"
                       Tapped="MediaScrim_Tapped"/>
 
                 <Grid HorizontalAlignment="Stretch"
@@ -474,7 +478,7 @@
                                 FontSize="24"
                                 FontWeight="Bold"
                                 Margin="0,-48,0,0"
-                                Foreground="White"/>
+                                Foreground="#F3EDC9"/>
 
                         <FlipView x:Name="MediaOverlayFlipView"
                                   ItemsSource="{Binding SelectedGame.Media}"
@@ -507,7 +511,7 @@
                   Visibility="{Binding IsFranchiseOverlayOpen, Converter={StaticResource BoolToVisibilityConverter}}"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch">
-                <Grid Background="#E0000000"
+                <Grid Background="#E61C1A17"
                       Tapped="FranchiseScrim_Tapped"/>
                 <Grid HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch"
@@ -546,7 +550,7 @@
                                 BorderThickness="0"
                                 FontSize="24"
                                 FontWeight="Bold"
-                                Foreground="White"/>
+                                Foreground="#F3EDC9"/>
                     </Grid>
 
                     <!-- Timeline fills remaining vertical space -->
@@ -564,7 +568,7 @@
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
               Visibility="{Binding IsOnboardingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-              Background="#FF1C1C1C"
+              Background="#FF1C1A17"
               IsHitTestVisible="True">
             <Grid HorizontalAlignment="Center"
                   VerticalAlignment="Center"
@@ -588,33 +592,39 @@
                     <TextBlock Text="Welcome to Codec!"
                                FontSize="28"
                                FontWeight="Bold"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                     <TextBlock Text="I'm Shrimp, and I'd love to guide you through Codec."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                     <TextBlock Text="I'll try to find all your games for you, but you can always add any that I miss later on. If you'd rather skip that for now, you're free to use the button below."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                     <TextBlock Text="My goal is to make collecting games as easy and fun as possible—no matter where they came from. If something doesn't work right or you need a hand, you can reach out to my creator on GitHub."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
-                               Foreground="#FF868686"/>
+                               FontFamily="{StaticResource CodecFontFamily}"
+                               Foreground="#9E8E78"/>
                     <TextBlock Text="Thank you for giving Codec a try."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8"
                                 Margin="4,0,0,0">
                         <Button Content="Start"
                                 FontWeight="SemiBold"
+                                Background="#E76C2B"
+                                BorderBrush="#E76C2B"
+                                Foreground="#1C1A17"
                                 Padding="24,8"
                                 Click="OnboardingStart_Click"/>
                         <Button Content="Skip"
                                 FontWeight="SemiBold"
+                                Background="#25221F"
+                                BorderBrush="#3E3830"
+                                Foreground="#F3EDC9"
                                 Padding="24,8"
                                 Click="OnboardingSkip_Click"/>
                     </StackPanel>
@@ -628,9 +638,9 @@
               Grid.ColumnSpan="2"
               Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               IsHitTestVisible="True">
-            <Grid Background="#CC000000"
+            <Grid Background="#CC1C1A17"
                   Tapped="SettingsScrim_Tapped"/>
-            <Border Background="#1C1C1C"
+            <Border Background="#1C1A17"
                     CornerRadius="14"
                     Padding="22"
                     Width="340"
@@ -644,12 +654,12 @@
                             <FontIcon Glyph="&#xE713;"
                                       FontFamily="Segoe MDL2 Assets"
                                       FontSize="14"
-                                      Foreground="#AAAAAA"/>
+                                      Foreground="#9E8E78"/>
                             <TextBlock Text="Settings"
                                        FontSize="17"
                                        FontWeight="SemiBold"
-                                       FontFamily="Segoe UI Variable Display"
-                                       Foreground="White"
+                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       Foreground="#F3EDC9"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                         <Button Content="✕"
@@ -658,19 +668,19 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 FontSize="13"
-                                FontFamily="Segoe UI Variable Text"
+                                FontFamily="{StaticResource CodecFontFamily}"
                                 Padding="7,4,6,4"
-                                Foreground="#666666"
+                                Foreground="#9E8E78"
                                 Click="SettingsClose_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                 Color="#22FFFFFF"/>
+                                                 Color="#22E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                 Color="#33FFFFFF"/>
+                                                 Color="#33E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                 Color="#999999"/>
+                                                 Color="#F3EDC9"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                 Color="#666666"/>
+                                                 Color="#9E8E78"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
                                                  Color="Transparent"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
@@ -683,12 +693,12 @@
                         <TextBlock Text="STARTUP"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable Text"
-                                   Foreground="#444444"
+                                   FontFamily="{StaticResource CodecFontFamily}"
+                                   Foreground="#D4A832"
                                    CharacterSpacing="40"/>
 
-                        <Border Background="#252525"
-                                BorderBrush="#383838"
+                        <Border Background="#25221F"
+                                BorderBrush="#3E3830"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="10,2">
@@ -704,13 +714,13 @@
                                         <TextBlock Text="Scan for games"
                                                    FontSize="13"
                                                    FontWeight="SemiBold"
-                                                   FontFamily="Segoe UI Variable Text"
-                                                   Foreground="#CCCCCC"/>
+                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   Foreground="#F3EDC9"/>
                                         <TextBlock Text="On Startup: Run Library scan"
                                                    FontSize="11.5"
                                                    FontWeight="Normal"
-                                                   FontFamily="Segoe UI Variable Text"
-                                                   Foreground="#666666"
+                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   Foreground="#9E8E78"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <ToggleSwitch Grid.Column="1"
@@ -722,7 +732,7 @@
                                 </Grid>
 
                                 <Border Height="1"
-                                        Background="#383838"/>
+                                        Background="#3E3830"/>
 
                                 <Grid ColumnSpacing="10"
                                       Margin="0,8">
@@ -735,13 +745,13 @@
                                         <TextBlock Text="Launch Steam"
                                                    FontSize="13"
                                                    FontWeight="SemiBold"
-                                                   FontFamily="Segoe UI Variable Text"
-                                                   Foreground="#CCCCCC"/>
+                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   Foreground="#F3EDC9"/>
                                         <TextBlock Text="On Startup: Start Steam silently"
                                                    FontSize="11.5"
                                                    FontWeight="Normal"
-                                                   FontFamily="Segoe UI Variable Text"
-                                                   Foreground="#666666"
+                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   Foreground="#9E8E78"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <ToggleSwitch Grid.Column="1"
@@ -759,8 +769,8 @@
                         <TextBlock Text="MAINTENANCE"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable Text"
-                                   Foreground="#444444"
+                                   FontFamily="{StaticResource CodecFontFamily}"
+                                   Foreground="#D4A832"
                                    CharacterSpacing="40"/>
 
                         <Button Content="Reset Codec"
@@ -769,26 +779,26 @@
                                 Padding="0,9"
                                 FontSize="13"
                                 FontWeight="SemiBold"
-                                FontFamily="Segoe UI Variable Text"
-                                Background="#33FF6B6B"
-                                BorderBrush="#66FF6B6B"
+                                FontFamily="{StaticResource CodecFontFamily}"
+                                Background="#26E76C2B"
+                                BorderBrush="#55E76C2B"
                                 BorderThickness="1"
                                 CornerRadius="8"
-                                Foreground="#FF6B6B"
+                                Foreground="#E76C2B"
                                 Click="ResetApp_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                 Color="#4DFF6B6B"/>
+                                                 Color="#33E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                 Color="#66FF6B6B"/>
+                                                 Color="#55E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                 Color="#99FF6B6B"/>
+                                                 Color="#80E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                 Color="#BBFF6B6B"/>
+                                                 Color="#A0E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                 Color="#FF8A8A"/>
+                                                 Color="#D4A832"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                 Color="#FF6B6B"/>
+                                                 Color="#E76C2B"/>
                             </Button.Resources>
                         </Button>
                     </StackPanel>
@@ -797,8 +807,8 @@
                         <TextBlock Text="ABOUT"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable Text"
-                                   Foreground="#444444"
+                                   FontFamily="{StaticResource CodecFontFamily}"
+                                   Foreground="#D4A832"
                                    CharacterSpacing="40"/>
 
                         <Grid ColumnSpacing="10"
@@ -810,15 +820,15 @@
                             <TextBlock Text="Version"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       FontFamily="Segoe UI Variable Text"
-                                       Foreground="#777777"
+                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       Foreground="#9E8E78"
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="{x:Bind AppVersion}"
                                        FontSize="12"
                                        FontWeight="SemiBold"
-                                       FontFamily="Segoe UI Variable Text"
-                                       Foreground="#666666"
+                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       Foreground="#9E8E78"
                                        VerticalAlignment="Center"/>
                         </Grid>
                     </StackPanel>
@@ -832,25 +842,25 @@
                             Padding="0,9"
                             FontSize="13"
                             FontWeight="SemiBold"
-                            FontFamily="Segoe UI Variable Text"
-                            Background="#252525"
-                            BorderBrush="#383838"
+                            FontFamily="{StaticResource CodecFontFamily}"
+                            Background="#25221F"
+                            BorderBrush="#3E3830"
                             BorderThickness="1"
                             CornerRadius="8"
-                            Foreground="#AAAAAA">
+                            Foreground="#9E8E78">
                         <Button.Resources>
                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                             Color="#2E2E2E"/>
+                                             Color="#2E2A25"/>
                             <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                             Color="#333333"/>
+                                             Color="#342F29"/>
                             <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                             Color="#484848"/>
+                                             Color="#5E5346"/>
                             <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                             Color="#505050"/>
+                                             Color="#6A5A4A"/>
                             <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                             Color="#CCCCCC"/>
+                                             Color="#F3EDC9"/>
                             <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                             Color="#AAAAAA"/>
+                                             Color="#9E8E78"/>
                         </Button.Resources>
                         <Button.Flyout>
                             <MenuFlyout>
@@ -875,9 +885,9 @@
               Grid.ColumnSpan="2"
               Visibility="{Binding IsResetConfirmVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               IsHitTestVisible="True">
-            <Grid Background="#CC000000"
+            <Grid Background="#CC1C1A17"
                   Tapped="ResetScrim_Tapped"/>
-            <Border Background="#1C1C1C"
+            <Border Background="#1C1A17"
                     CornerRadius="14"
                     Padding="28"
                     Width="360"
@@ -891,20 +901,20 @@
                                     Spacing="6"
                                     VerticalAlignment="Center"
                                     Margin="0,0,0,0">
-                            <Border BorderBrush="#44FF6B6B"
+                            <Border BorderBrush="#60E76C2B"
                                     BorderThickness="0"
                                     CornerRadius="6"
                                     Padding="0">
                                 <FontIcon Glyph="&#xE7BA;"
                                           FontFamily="Segoe MDL2 Assets"
                                           FontSize="14"
-                                          Foreground="#FF6B6B"/>
+                                          Foreground="#E76C2B"/>
                             </Border>
                             <TextBlock Text="Reset Codec"
                                        FontSize="18"
                                        FontWeight="Bold"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
-                                       Foreground="White"
+                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       Foreground="#F3EDC9"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                         <Button Content="✕"
@@ -914,17 +924,17 @@
                                 BorderThickness="0"
                                 FontSize="13"
                                 Padding="7,2,6,4"
-                                Foreground="#666666"
+                                Foreground="#9E8E78"
                                 Click="ResetCancel_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                 Color="#22FFFFFF"/>
+                                                 Color="#22E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                 Color="#33FFFFFF"/>
+                                                 Color="#33E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                 Color="#999999"/>
+                                                 Color="#F3EDC9"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                 Color="#666666"/>
+                                                 Color="#9E8E78"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
                                                  Color="Transparent"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
@@ -939,24 +949,24 @@
                             <TextBlock Text="THIS WILL DELETE"
                                        FontSize="12"
                                        FontWeight="SemiBold"
-                                       Foreground="#444444"
+                                       Foreground="#D4A832"
                                        CharacterSpacing="100"/>
                             <TextBlock Text="Game library Data · Cached artwork · App settings"
                                        FontSize="12"
                                        FontWeight="Normal"
-                                       Foreground="#666666"
+                                       Foreground="#9E8E78"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
                         <StackPanel Spacing="2">
                             <TextBlock Text="THIS WONT DELETE"
                                        FontSize="12"
                                        FontWeight="SemiBold"
-                                       Foreground="#444444"
+                                       Foreground="#D4A832"
                                        CharacterSpacing="100"/>
                             <TextBlock Text="Your Games · Your game files or saves."
                                        FontSize="12"
                                        FontWeight="Normal"
-                                       Foreground="#666666"
+                                       Foreground="#9E8E78"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
                     </StackPanel>
@@ -976,25 +986,25 @@
                                 Padding="0,11"
                                 FontSize="13"
                                 FontWeight="SemiBold"
-                                Background="#252525"
-                                BorderBrush="#383838"
+                                Background="#25221F"
+                                BorderBrush="#3E3830"
                                 BorderThickness="1"
                                 CornerRadius="8"
-                                Foreground="#AAAAAA"
+                                Foreground="#9E8E78"
                                 Click="ResetCancel_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                 Color="#2E2E2E"/>
+                                                 Color="#2E2A25"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                 Color="#333333"/>
+                                                 Color="#342F29"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                 Color="#484848"/>
+                                                 Color="#5E5346"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                 Color="#505050"/>
+                                                 Color="#6A5A4A"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                 Color="#CCCCCC"/>
+                                                 Color="#F3EDC9"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                 Color="#AAAAAA"/>
+                                                 Color="#9E8E78"/>
                             </Button.Resources>
                         </Button>
 
@@ -1006,25 +1016,25 @@
                                 Padding="0,11"
                                 FontSize="13"
                                 FontWeight="SemiBold"
-                                Background="#33FF6B6B"
-                                BorderBrush="#66FF6B6B"
+                                Background="#26E76C2B"
+                                BorderBrush="#55E76C2B"
                                 BorderThickness="1"
                                 CornerRadius="8"
-                                Foreground="#FF6B6B"
+                                Foreground="#E76C2B"
                                 Click="ResetConfirm_Click">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                 Color="#4DFF6B6B"/>
+                                                 Color="#33E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                 Color="#66FF6B6B"/>
+                                                 Color="#55E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                 Color="#99FF6B6B"/>
+                                                 Color="#80E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                 Color="#BBFF6B6B"/>
+                                                 Color="#A0E76C2B"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                 Color="#FF8A8A"/>
+                                                 Color="#D4A832"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                 Color="#FF6B6B"/>
+                                                 Color="#E76C2B"/>
                             </Button.Resources>
                         </Button>
                     </Grid>
@@ -1040,7 +1050,7 @@
               Visibility="Collapsed"
               IsHitTestVisible="False">
             <Rectangle x:Name="FireDarkBackground"
-                       Fill="#FF000000"
+                       Fill="#FF1C1A17"
                        Opacity="0"/>
             <Canvas x:Name="FireParticleCanvas"
                     HorizontalAlignment="Stretch"
@@ -1053,13 +1063,13 @@
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,1"
                                          EndPoint="0,0">
-                        <GradientStop Color="#FF000000"
+                        <GradientStop Color="#FF1C1A17"
                                       Offset="0"/>
-                        <GradientStop Color="#DDFF3300"
+                        <GradientStop Color="#DDE76C2B"
                                       Offset="0.35"/>
-                        <GradientStop Color="#AAFF8800"
+                        <GradientStop Color="#AAD4A832"
                                       Offset="0.65"/>
-                        <GradientStop Color="#00FF4400"
+                        <GradientStop Color="#00E76C2B"
                                       Offset="1"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
@@ -1070,7 +1080,7 @@
         <Border x:Name="StartupOverlay"
                 Grid.RowSpan="2"
                 Grid.ColumnSpan="2"
-                Background="#FF1C1C1C"
+                Background="#FF1C1A17"
                 IsHitTestVisible="True">
             <Border.RenderTransform>
                 <CompositeTransform/>
@@ -1103,7 +1113,7 @@
                     <FontIcon Grid.Column="0"
                               Glyph="&#xE896;"
                               FontSize="20"
-                              Foreground="#64B5F6"
+                              Foreground="#D4A832"
                               VerticalAlignment="Center"/>
 
                     <StackPanel Grid.Column="1"
@@ -1116,17 +1126,17 @@
                                        FontWeight="SemiBold"
                                        Foreground="#F3EDC9"
                                        VerticalAlignment="Center"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                       FontFamily="{StaticResource CodecFontFamily}"/>
                             <TextBlock Text="{Binding UpdateDownloadProgress}"
                                        FontSize="13"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                       FontFamily="{StaticResource CodecFontFamily}"/>
                             <TextBlock Text="%"
                                        FontSize="13"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                       FontFamily="{StaticResource CodecFontFamily}"/>
                         </StackPanel>
                         <ProgressBar Value="{Binding UpdateDownloadProgress}"
                                      Minimum="0"
@@ -1154,7 +1164,7 @@
                     <FontIcon Grid.Column="0"
                               Glyph="&#xE783;"
                               FontSize="20"
-                              Foreground="#E57373"
+                              Foreground="#E76C2B"
                               VerticalAlignment="Center"/>
                     
                     <StackPanel Grid.Column="1"
@@ -1163,13 +1173,13 @@
                         <TextBlock Text="Update failed"
                                    FontSize="12"
                                    FontWeight="SemiBold"
-                                   Foreground="#E57373"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                   Foreground="#E76C2B"
+                                   FontFamily="{StaticResource CodecFontFamily}"/>
                         <TextBlock Text="{Binding UpdateErrorMessage}"
                                    FontSize="11"
                                    Foreground="#9E8E78"
                                    TextWrapping="Wrap"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                   FontFamily="{StaticResource CodecFontFamily}"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -1202,12 +1212,12 @@
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="#9E8E78"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                   FontFamily="{StaticResource CodecFontFamily}"/>
                         <TextBlock Text="Downloaded and ready to install"
                                    FontSize="11"
                                    Foreground="#F3EDC9"
                                    TextWrapping="Wrap"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                   FontFamily="{StaticResource CodecFontFamily}"/>
                     </StackPanel>
                     
                     <Button Grid.Column="2"
@@ -1215,7 +1225,7 @@
                             VerticalAlignment="Center"
                             Click="RestartToUpdate_Click"
                             Background="#E76C2B"
-                            Foreground="White"
+                            Foreground="#1C1A17"
                             FontSize="12"
                             FontWeight="SemiBold"
                             Padding="10,5"
@@ -1255,7 +1265,7 @@
                                        FontWeight="Bold"
                                        Foreground="#F3EDC9"
                                        VerticalAlignment="Center"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                       FontFamily="{StaticResource CodecFontFamily}"/>
                             <TextBlock Text="added"
                                        FontSize="12"
                                        Foreground="#9E8E78"
@@ -1269,7 +1279,7 @@
                                        FontWeight="Bold"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"
-                                       FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                       FontFamily="{StaticResource CodecFontFamily}"/>
                             <TextBlock Text="processing"
                                        FontSize="12"
                                        Foreground="#9E8E78"
@@ -1296,7 +1306,7 @@
                     <FontIcon Grid.Column="0"
                               Glyph="&#xE73E;"
                               FontSize="20"
-                              Foreground="#4CAF50"
+                              Foreground="#D4A832"
                               VerticalAlignment="Center"/>
 
                     <StackPanel Grid.Column="1"
@@ -1308,7 +1318,7 @@
                                    FontWeight="Bold"
                                    Foreground="#F3EDC9"
                                    VerticalAlignment="Center"
-                                   FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                                   FontFamily="{StaticResource CodecFontFamily}"/>
                         <TextBlock Text="games added"
                                    FontSize="12"
                                    Foreground="#9E8E78"
@@ -1334,7 +1344,7 @@
                     <FontIcon Grid.Column="0"
                               Glyph="&#xE783;"
                               FontSize="20"
-                              Foreground="#E57373"
+                              Foreground="#E76C2B"
                               VerticalAlignment="Center"/>
 
                     <TextBlock Grid.Column="1"
@@ -1343,7 +1353,7 @@
                                FontWeight="SemiBold"
                                Foreground="#F3EDC9"
                                VerticalAlignment="Center"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                 </Grid>
             </Border>
 
@@ -1364,7 +1374,7 @@
                     <FontIcon Grid.Column="0"
                               Glyph="&#xE8F1;"
                               FontSize="20"
-                              Foreground="#FFB74D"
+                              Foreground="#C4956A"
                               VerticalAlignment="Center"/>
 
                     <TextBlock Grid.Column="1"
@@ -1373,7 +1383,7 @@
                                FontWeight="SemiBold"
                                Foreground="#F3EDC9"
                                VerticalAlignment="Center"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                 </Grid>
             </Border>
 
@@ -1403,7 +1413,7 @@
                                FontWeight="SemiBold"
                                Foreground="#F3EDC9"
                                VerticalAlignment="Center"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                 </Grid>
             </Border>
         </StackPanel>
@@ -1413,7 +1423,7 @@
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
               Visibility="{Binding IsLoadingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-              Background="#FF1C1C1C"
+              Background="#FF1C1A17"
               IsHitTestVisible="True">
             <StackPanel Orientation="Horizontal"
                         Spacing="24"
@@ -1429,18 +1439,18 @@
                     <TextBlock Text="{Binding LoadingTitle}"
                                FontSize="28"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"/>
+                               FontFamily="{StaticResource CodecFontFamily}"/>
                     <TextBlock Text="{Binding LoadingSubtitle}"
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="ms-appx:///Assets/Fonts/Sansation-Bold.ttf#Sansation"
-                               Foreground="#FF868686"/>
+                               FontFamily="{StaticResource CodecFontFamily}"
+                               Foreground="#9E8E78"/>
                     <ProgressBar Width="445"
                                  Height="8"
                                  CornerRadius="16"
                                  IsIndeterminate="True"
-                                 Foreground="#FF5BDFFF"
-                                 Background="#FF2A2A2A"/>
+                                 Foreground="#E76C2B"
+                                 Background="#25221F"/>
                 </StackPanel>
             </StackPanel>
         </Grid>

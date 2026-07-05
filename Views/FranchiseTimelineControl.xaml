@@ -27,7 +27,7 @@
             <!-- Continuous horizontal line in center row, drawn behind items -->
             <Rectangle Grid.Row="1"
                        Height="2"
-                       Fill="#44FFFFFF"
+                       Fill="#60E76C2B"
                        HorizontalAlignment="Stretch"
                        VerticalAlignment="Center"
                        IsHitTestVisible="False"/>
@@ -64,14 +64,14 @@
                                 <Border CornerRadius="3"
                                         Padding="5,2"
                                         HorizontalAlignment="Center"
-                                        Background="#AA1E1E1E"
-                                        BorderBrush="#44FFFFFF"
+                                        Background="#D51C1A17"
+                                        BorderBrush="#60E76C2B"
                                         BorderThickness="1"
                                         Visibility="{x:Bind BadgeText, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="{x:Bind BadgeText}"
                                                FontSize="10"
                                                FontWeight="Bold"
-                                               Foreground="#FFCC88"
+                                               Foreground="#D4A832"
                                                HorizontalAlignment="Center"/>
                                 </Border>
 
@@ -79,7 +79,7 @@
                                         Width="140"
                                         Height="190"
                                         HorizontalAlignment="Center"
-                                        Background="#22FFFFFF">
+                                        Background="#22E76C2B">
                                     <Image Source="{x:Bind Entry.CoverUrl}"
                                            Width="140"
                                            Height="190"
@@ -89,7 +89,7 @@
                                 <TextBlock Text="{x:Bind Entry.Name}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
-                                           Foreground="White"
+                                           Foreground="#F3EDC9"
                                            HorizontalAlignment="Center"
                                            TextAlignment="Center"
                                            TextWrapping="Wrap"
@@ -101,7 +101,7 @@
                                             HorizontalAlignment="Center">
                                     <TextBlock Text="{x:Bind ReleaseYearDisplay}"
                                                FontSize="12"
-                                               Foreground="#888888"
+                                               Foreground="#9E8E78"
                                                VerticalAlignment="Center"/>
                                     <ItemsControl ItemsSource="{x:Bind PlatformLogoUris}"
                                                   VerticalAlignment="Center">
@@ -126,7 +126,7 @@
                             <Ellipse Grid.Row="1"
                                      Width="14"
                                      Height="14"
-                                     Fill="White"
+                                     Fill="#E76C2B"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"/>
 
@@ -141,14 +141,14 @@
                                 <Border CornerRadius="3"
                                         Padding="5,2"
                                         HorizontalAlignment="Center"
-                                        Background="#AA1E1E1E"
-                                        BorderBrush="#44FFFFFF"
+                                        Background="#D51C1A17"
+                                        BorderBrush="#60E76C2B"
                                         BorderThickness="1"
                                         Visibility="{x:Bind BadgeText, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="{x:Bind BadgeText}"
                                                FontSize="10"
                                                FontWeight="Bold"
-                                               Foreground="#FFCC88"
+                                               Foreground="#D4A832"
                                                HorizontalAlignment="Center"/>
                                 </Border>
 
@@ -156,7 +156,7 @@
                                         Width="140"
                                         Height="190"
                                         HorizontalAlignment="Center"
-                                        Background="#22FFFFFF">
+                                        Background="#22E76C2B">
                                     <Image Source="{x:Bind Entry.CoverUrl}"
                                            Width="140"
                                            Height="190"
@@ -166,7 +166,7 @@
                                 <TextBlock Text="{x:Bind Entry.Name}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
-                                           Foreground="White"
+                                           Foreground="#F3EDC9"
                                            HorizontalAlignment="Center"
                                            TextAlignment="Center"
                                            TextWrapping="Wrap"
@@ -178,7 +178,7 @@
                                             HorizontalAlignment="Center">
                                     <TextBlock Text="{x:Bind ReleaseYearDisplay}"
                                                FontSize="12"
-                                               Foreground="#888888"
+                                               Foreground="#9E8E78"
                                                VerticalAlignment="Center"/>
                                     <ItemsControl ItemsSource="{x:Bind PlatformLogoUris}"
                                                   VerticalAlignment="Center">

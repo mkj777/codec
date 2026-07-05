@@ -9,6 +9,119 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
+            <FontFamily x:Key="CodecRegularFontFamily">ms-appx:///Assets/fonts/Nunito-Regular.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="CodecFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="CodecSemiBoldFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="CodecBoldFontFamily">ms-appx:///Assets/fonts/Nunito-Bold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="MTCMediaFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="PivotHeaderItemFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="PivotTitleFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="KeyTipFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+
+            <Color x:Key="SystemAccentColor">#E76C2B</Color>
+            <Color x:Key="SystemAccentColorLight1">#F87D3C</Color>
+            <Color x:Key="SystemAccentColorLight2">#F59A63</Color>
+            <Color x:Key="SystemAccentColorLight3">#F1B48B</Color>
+            <Color x:Key="SystemAccentColorDark1">#D65C1A</Color>
+            <Color x:Key="SystemAccentColorDark2">#B94E16</Color>
+            <Color x:Key="SystemAccentColorDark3">#8F3D13</Color>
+
+            <SolidColorBrush x:Key="CodecBackgroundBrush" Color="#1C1A17"/>
+            <SolidColorBrush x:Key="CodecSurfaceBrush" Color="#25221F"/>
+            <SolidColorBrush x:Key="CodecSurfaceHoverBrush" Color="#2E2A25"/>
+            <SolidColorBrush x:Key="CodecBorderBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="CodecPrimaryBrush" Color="#E76C2B"/>
+            <SolidColorBrush x:Key="CodecAccentBrush" Color="#D4A832"/>
+            <SolidColorBrush x:Key="CodecSecondaryBrush" Color="#C4956A"/>
+            <SolidColorBrush x:Key="CodecTextBrush" Color="#F3EDC9"/>
+            <SolidColorBrush x:Key="CodecTextMutedBrush" Color="#9E8E78"/>
+
+            <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#F3EDC9"/>
+            <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="#9E8E78"/>
+            <SolidColorBrush x:Key="TextFillColorTertiaryBrush" Color="#C4956A"/>
+            <SolidColorBrush x:Key="TextFillColorDisabledBrush" Color="#5E5346"/>
+            <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#1C1A17"/>
+            <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="#25221F"/>
+
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#E76C2B"/>
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#F87D3C"/>
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#D65C1A"/>
+            <SolidColorBrush x:Key="AccentFillColorDisabledBrush" Color="#5E5346"/>
+            <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#E76C2B"/>
+            <SolidColorBrush x:Key="AccentTextFillColorSecondaryBrush" Color="#D4A832"/>
+            <SolidColorBrush x:Key="AccentTextFillColorTertiaryBrush" Color="#C4956A"/>
+            <SolidColorBrush x:Key="AccentTextFillColorDisabledBrush" Color="#5E5346"/>
+
+            <SolidColorBrush x:Key="ControlFillColorDefaultBrush" Color="#25221F"/>
+            <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="#2E2A25"/>
+            <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="ControlFillColorDisabledBrush" Color="#25221F"/>
+            <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="ControlStrokeColorSecondaryBrush" Color="#5E5346"/>
+            <SolidColorBrush x:Key="ControlStrokeColorOnAccentDefaultBrush" Color="#1C1A17"/>
+            <SolidColorBrush x:Key="SurfaceStrokeColorDefaultBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="SurfaceStrokeColorFlyoutBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="CardStrokeColorDefaultBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="CardBackgroundFillColorDefaultBrush" Color="#25221F"/>
+            <SolidColorBrush x:Key="SolidBackgroundFillColorBaseBrush" Color="#1C1A17"/>
+            <SolidColorBrush x:Key="SolidBackgroundFillColorSecondaryBrush" Color="#25221F"/>
+
+            <SolidColorBrush x:Key="ButtonBackground" Color="#25221F"/>
+            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2E2A25"/>
+            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3E3830"/>
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#5E5346"/>
+            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#6A5A4A"/>
+            <SolidColorBrush x:Key="ButtonForeground" Color="#F3EDC9"/>
+            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
+            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#9E8E78"/>
+
+            <SolidColorBrush x:Key="TextControlBackground" Color="#25221F"/>
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#2E2A25"/>
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#2E2A25"/>
+            <SolidColorBrush x:Key="TextControlForeground" Color="#F3EDC9"/>
+            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#9E8E78"/>
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#E76C2B"/>
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#5E5346"/>
+
+            <SolidColorBrush x:Key="ContentDialogForeground" Color="#F3EDC9"/>
+            <SolidColorBrush x:Key="ContentDialogBackground" Color="#25221F"/>
+            <SolidColorBrush x:Key="ContentDialogBorderBrush" Color="#3E3830"/>
+            <SolidColorBrush x:Key="ContentDialogLightDismissOverlayBackground" Color="#CC1C1A17"/>
+            <SolidColorBrush x:Key="ContentDialogSeparatorBorderBrush" Color="#3E3830"/>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="Foreground" Value="{StaticResource CodecTextBrush}"/>
+            </Style>
+            <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="RadioButton" BasedOn="{StaticResource DefaultRadioButtonStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="ToggleSwitch" BasedOn="{StaticResource DefaultToggleSwitchStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="HyperlinkButton" BasedOn="{StaticResource DefaultHyperlinkButtonStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="MenuFlyoutItem" BasedOn="{StaticResource DefaultMenuFlyoutItemStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+            <Style TargetType="ContentDialog" BasedOn="{StaticResource DefaultContentDialogStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+            </Style>
+
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>

@@ -32,32 +32,50 @@
                                 </Setter.Value>
                         </Setter>
                 </Style>
+                <Style x:Key="DetailMetaLabelTextStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="FontFamily"
+                                Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                        <Setter Property="FontWeight"
+                                Value="SemiBold"/>
+                        <Setter Property="Foreground"
+                                Value="#9E8E78"/>
+                </Style>
+                <Style x:Key="DetailMetaValueTextStyle"
+                       TargetType="TextBlock">
+                        <Setter Property="FontFamily"
+                                Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                        <Setter Property="FontWeight"
+                                Value="SemiBold"/>
+                        <Setter Property="Foreground"
+                                Value="#F3EDC9"/>
+                </Style>
                 <SolidColorBrush x:Key="HeroActionPlayFallbackFillBrush"
-                                 Color="#86161A1F"/>
+                                 Color="#861C1A17"/>
                 <SolidColorBrush x:Key="HeroActionSettingsFallbackFillBrush"
-                                 Color="#7414181D"/>
+                                 Color="#7425221F"/>
                 <SolidColorBrush x:Key="HeroActionPlayFallbackForegroundBrush"
-                                 Color="#FFF3F6FB"/>
+                                 Color="#FFF3EDC9"/>
                 <SolidColorBrush x:Key="HeroActionSettingsFallbackForegroundBrush"
-                                 Color="#FFDDE5EF"/>
+                                 Color="#FFD4A832"/>
                 <LinearGradientBrush x:Key="HeroActionPlayFallbackBorderBrush"
                                      StartPoint="0,0"
                                      EndPoint="1,1">
-                        <GradientStop Color="#D4FFFFFF"
+                        <GradientStop Color="#D4E76C2B"
                                       Offset="0"/>
-                        <GradientStop Color="#52F2F5F8"
+                        <GradientStop Color="#52D4A832"
                                       Offset="0.42"/>
-                        <GradientStop Color="#26FFFFFF"
+                        <GradientStop Color="#26E76C2B"
                                       Offset="1"/>
                 </LinearGradientBrush>
                 <LinearGradientBrush x:Key="HeroActionSettingsFallbackBorderBrush"
                                      StartPoint="0,0"
                                      EndPoint="1,1">
-                        <GradientStop Color="#A4FFFFFF"
+                        <GradientStop Color="#A4C4956A"
                                       Offset="0"/>
-                        <GradientStop Color="#34EEF2F6"
+                        <GradientStop Color="#34D4A832"
                                       Offset="0.52"/>
-                        <GradientStop Color="#18FFFFFF"
+                        <GradientStop Color="#18E76C2B"
                                       Offset="1"/>
                 </LinearGradientBrush>
                 <Style x:Key="HeroActionInputButtonStyle"
@@ -354,7 +372,7 @@
                                Source="{Binding SelectedGame.LibraryHero}"
                                Stretch="UniformToFill"
                                Margin="-20,0,0,0"/>
-                        <Grid Background="#2C000000"
+                        <Grid Background="#441C1A17"
                               Margin="-20,0,0,0"/>
                         <Grid x:Name="HeroOverlay"
                               Margin="20"
@@ -401,7 +419,7 @@
                                                                   VerticalAlignment="Center"/>
                                                 </Border>
                                                 <Border x:Name="BackButtonHighlight"
-                                                        Background="#18FFFFFF"
+                                                        Background="#18E76C2B"
                                                         CornerRadius="11"
                                                         Opacity="0"
                                                         IsHitTestVisible="False"/>
@@ -477,7 +495,7 @@
                                                 </Grid>
                                         </Border>
                                         <Border x:Name="DetailsSettingsHighlight"
-                                                Background="#18FFFFFF"
+                                                Background="#18E76C2B"
                                                 CornerRadius="16"
                                                 Opacity="0"
                                                 IsHitTestVisible="False"/>
@@ -522,8 +540,8 @@
                                 <Border Grid.Row="2"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Bottom"
-                                        Background="#22000000"
-                                        BorderBrush="#44FFFFFF"
+                                        Background="#6625221F"
+                                        BorderBrush="#60E76C2B"
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         Padding="10,4"
@@ -534,12 +552,12 @@
                                                 <TextBlock Text="via"
                                                            Opacity="0.55"
                                                            FontSize="12"
-                                                           Foreground="White"
+                                                           Foreground="#F3EDC9"
                                                            VerticalAlignment="Center"/>
                                                 <TextBlock Text="{Binding SelectedGame.ImportedFromDisplay}"
                                                            FontSize="12"
                                                            FontWeight="SemiBold"
-                                                           Foreground="White"
+                                                           Foreground="#F3EDC9"
                                                            VerticalAlignment="Center"/>
                                         </StackPanel>
                                 </Border>
@@ -587,7 +605,7 @@
                                                 </Grid>
                                         </Border>
                                         <Border x:Name="DetailsPlayHighlight"
-                                                Background="#20FFFFFF"
+                                                Background="#20E76C2B"
                                                 CornerRadius="28"
                                                 Opacity="0"
                                                 IsHitTestVisible="False"/>
@@ -638,8 +656,8 @@
                                         MaxHeight="320"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Stretch"
-                                        Background="#1C1C1C"
-                                        BorderBrush="#383838"
+                                        Background="#1C1A17"
+                                        BorderBrush="#3E3830"
                                         BorderThickness="1,0,0,1"
                                         Margin="0,24,0,24"
                                         Padding="22"
@@ -660,13 +678,13 @@
                                                                 <FontIcon Glyph="&#xE713;"
                                                                           FontFamily="Segoe MDL2 Assets"
                                                                           FontSize="14"
-                                                                          Foreground="#AAAAAA"/>
+                                                                          Foreground="#9E8E78"/>
                                                                 <TextBlock x:Name="SettingsHeaderText"
                                                                            Text="Game Settings"
                                                                            FontSize="17"
                                                                            FontWeight="SemiBold"
-                                                                           FontFamily="Segoe UI Variable Display"
-                                                                           Foreground="White"
+                                                                           FontFamily="{StaticResource CodecFontFamily}"
+                                                                           Foreground="#F3EDC9"
                                                                            VerticalAlignment="Center"/>
                                                         </StackPanel>
                                                         <Button Content="✕"
@@ -676,18 +694,18 @@
                                                                 Background="Transparent"
                                                                 BorderThickness="0"
                                                                 FontSize="13"
-                                                                FontFamily="Segoe UI Variable Text"
+                                                                FontFamily="{StaticResource CodecFontFamily}"
                                                                 Padding="6,1,5,3"
-                                                                Foreground="#666666">
+                                                                Foreground="#9E8E78">
                                                                 <Button.Resources>
                                                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                         Color="#22FFFFFF"/>
+                                                                                         Color="#22E76C2B"/>
                                                                         <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                         Color="#33FFFFFF"/>
+                                                                                         Color="#33E76C2B"/>
                                                                         <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                         Color="#999999"/>
+                                                                                         Color="#F3EDC9"/>
                                                                         <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                         Color="#666666"/>
+                                                                                         Color="#9E8E78"/>
                                                                         <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
                                                                                          Color="Transparent"/>
                                                                         <SolidColorBrush x:Key="ButtonBorderBrushPressed"
@@ -713,8 +731,8 @@
                                                         <Border Grid.Row="0"
                                                                 Grid.RowSpan="2"
                                                                 Grid.Column="0"
-                                                                Background="#252525"
-                                                                BorderBrush="#383838"
+                                                                Background="#25221F"
+                                                                BorderBrush="#3E3830"
                                                                 BorderThickness="1"
                                                                 CornerRadius="8"
                                                                 Padding="10,2">
@@ -726,19 +744,19 @@
                                                                                            Text="FOLDER SIZE"
                                                                                            FontSize="11"
                                                                                            FontWeight="SemiBold"
-                                                                                           FontFamily="Segoe UI Variable Text"
-                                                                                           Foreground="#444444"
+                                                                                           FontFamily="{StaticResource CodecFontFamily}"
+                                                                                           Foreground="#D4A832"
                                                                                            CharacterSpacing="40"/>
                                                                                 <TextBlock x:Name="FolderSizeValue"
                                                                                            Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
                                                                                            FontWeight="SemiBold"
-                                                                                           FontFamily="Segoe UI Variable Text"
-                                                                                           Foreground="#CCCCCC"
+                                                                                           FontFamily="{StaticResource CodecFontFamily}"
+                                                                                           Foreground="#F3EDC9"
                                                                                            FontSize="13"/>
                                                                         </StackPanel>
 
                                                                         <Border Height="1"
-                                                                                Background="#383838"/>
+                                                                                Background="#3E3830"/>
 
                                                                         <StackPanel x:Name="LaunchScriptSection"
                                                                                     Margin="0,8"
@@ -748,8 +766,8 @@
                                                                                                    Text="LAUNCH OPTIONS"
                                                                                                    FontSize="11"
                                                                                                    FontWeight="SemiBold"
-                                                                                                   FontFamily="Segoe UI Variable Text"
-                                                                                                   Foreground="#444444"
+                                                                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                                                                   Foreground="#D4A832"
                                                                                                    CharacterSpacing="40"/>
 
                                                                                         <TextBlock x:Name="LaunchScriptValue"
@@ -758,8 +776,8 @@
                                                                                                    TextTrimming="CharacterEllipsis"
                                                                                                    MaxLines="2"
                                                                                                    Padding="0"
-                                                                                                   Foreground="#CCCCCC"
-                                                                                                   FontFamily="Segoe UI Variable Text"
+                                                                                                   Foreground="#F3EDC9"
+                                                                                                   FontFamily="{StaticResource CodecFontFamily}"
                                                                                                    FontSize="12"/>
                                                                                 </StackPanel>
 
@@ -769,25 +787,25 @@
                                                                                                 Padding="14,7"
                                                                                                 FontSize="12"
                                                                                                 FontWeight="SemiBold"
-                                                                                                FontFamily="Segoe UI Variable Text"
-                                                                                                Background="#252525"
-                                                                                                BorderBrush="#383838"
+                                                                                                FontFamily="{StaticResource CodecFontFamily}"
+                                                                                                Background="#25221F"
+                                                                                                BorderBrush="#3E3830"
                                                                                                 BorderThickness="1"
                                                                                                 CornerRadius="8"
-                                                                                                Foreground="#AAAAAA">
+                                                                                                Foreground="#9E8E78">
                                                                                                 <Button.Resources>
                                                                                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                                                         Color="#2E2E2E"/>
+                                                                                                                         Color="#2E2A25"/>
                                                                                                         <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                                                         Color="#333333"/>
+                                                                                                                         Color="#342F29"/>
                                                                                                         <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                                                                         Color="#484848"/>
+                                                                                                                         Color="#5E5346"/>
                                                                                                         <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                                                                         Color="#505050"/>
+                                                                                                                         Color="#6A5A4A"/>
                                                                                                         <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                                                         Color="#CCCCCC"/>
+                                                                                                                         Color="#F3EDC9"/>
                                                                                                         <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                                                         Color="#AAAAAA"/>
+                                                                                                                         Color="#9E8E78"/>
                                                                                                 </Button.Resources>
                                                                                                 <Button.Flyout>
                                                                                                         <MenuFlyout>
@@ -805,25 +823,25 @@
                                                                                                 Padding="14,7"
                                                                                                 FontSize="12"
                                                                                                 FontWeight="SemiBold"
-                                                                                                FontFamily="Segoe UI Variable Text"
-                                                                                                Background="#252525"
-                                                                                                BorderBrush="#383838"
+                                                                                                FontFamily="{StaticResource CodecFontFamily}"
+                                                                                                Background="#25221F"
+                                                                                                BorderBrush="#3E3830"
                                                                                                 BorderThickness="1"
                                                                                                 CornerRadius="8"
-                                                                                                Foreground="#AAAAAA">
+                                                                                                Foreground="#9E8E78">
                                                                                                 <Button.Resources>
                                                                                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                                                         Color="#2E2E2E"/>
+                                                                                                                         Color="#2E2A25"/>
                                                                                                         <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                                                         Color="#333333"/>
+                                                                                                                         Color="#342F29"/>
                                                                                                         <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                                                                         Color="#484848"/>
+                                                                                                                         Color="#5E5346"/>
                                                                                                         <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                                                                         Color="#505050"/>
+                                                                                                                         Color="#6A5A4A"/>
                                                                                                         <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                                                         Color="#CCCCCC"/>
+                                                                                                                         Color="#F3EDC9"/>
                                                                                                         <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                                                         Color="#AAAAAA"/>
+                                                                                                                         Color="#9E8E78"/>
                                                                                                 </Button.Resources>
                                                                                         </Button>
                                                                                 </StackPanel>
@@ -839,8 +857,8 @@
                                                                    Text="LIBRARY"
                                                                    FontSize="11"
                                                                    FontWeight="SemiBold"
-                                                                   FontFamily="Segoe UI Variable Text"
-                                                                   Foreground="#444444"
+                                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                                   Foreground="#D4A832"
                                                                    CharacterSpacing="40"/>
                                                         <Grid ColumnSpacing="8">
                                                                 <Grid.ColumnDefinitions>
@@ -855,25 +873,25 @@
                                                                         Padding="0,9"
                                                                         FontSize="13"
                                                                         FontWeight="SemiBold"
-                                                                        FontFamily="Segoe UI Variable Text"
-                                                                        Background="#252525"
-                                                                        BorderBrush="#383838"
+                                                                        FontFamily="{StaticResource CodecFontFamily}"
+                                                                        Background="#25221F"
+                                                                        BorderBrush="#3E3830"
                                                                         BorderThickness="1"
                                                                         CornerRadius="8"
-                                                                        Foreground="#AAAAAA">
+                                                                        Foreground="#9E8E78">
                                                                         <Button.Resources>
                                                                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                                 Color="#2E2E2E"/>
+                                                                                                 Color="#2E2A25"/>
                                                                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                                 Color="#333333"/>
+                                                                                                 Color="#342F29"/>
                                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                                                 Color="#484848"/>
+                                                                                                 Color="#5E5346"/>
                                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                                                 Color="#505050"/>
+                                                                                                 Color="#6A5A4A"/>
                                                                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                                 Color="#CCCCCC"/>
+                                                                                                 Color="#F3EDC9"/>
                                                                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                                 Color="#AAAAAA"/>
+                                                                                                 Color="#9E8E78"/>
                                                                         </Button.Resources>
                                                                 </Button>
                                                                 <Button x:Name="RemoveGameButton"
@@ -885,25 +903,25 @@
                                                                         Padding="0,9"
                                                                         FontSize="13"
                                                                         FontWeight="SemiBold"
-                                                                        FontFamily="Segoe UI Variable Text"
-                                                                        Background="#33FF6B6B"
-                                                                        BorderBrush="#66FF6B6B"
+                                                                        FontFamily="{StaticResource CodecFontFamily}"
+                                                                        Background="#26E76C2B"
+                                                                        BorderBrush="#55E76C2B"
                                                                         BorderThickness="1"
                                                                         CornerRadius="8"
-                                                                        Foreground="#FF6B6B">
+                                                                        Foreground="#E76C2B">
                                                                         <Button.Resources>
                                                                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                                 Color="#4DFF6B6B"/>
+                                                                                                 Color="#33E76C2B"/>
                                                                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                                 Color="#66FF6B6B"/>
+                                                                                                 Color="#55E76C2B"/>
                                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                                                 Color="#99FF6B6B"/>
+                                                                                                 Color="#80E76C2B"/>
                                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                                                 Color="#BBFF6B6B"/>
+                                                                                                 Color="#A0E76C2B"/>
                                                                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                                 Color="#FF8A8A"/>
+                                                                                                 Color="#D4A832"/>
                                                                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                                 Color="#FF6B6B"/>
+                                                                                                 Color="#E76C2B"/>
                                                                         </Button.Resources>
                                                                 </Button>
                                                         </Grid>
@@ -960,25 +978,28 @@
                                                             Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Publisher"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Developer"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Genre"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.Genres, Converter={StaticResource ListToCommaConverter}, FallbackValue='N/A'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
@@ -991,36 +1012,44 @@
                                                             Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}">
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Age Rating"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.DisplayAgeRating, FallbackValue='Not Available'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            Opacity="{Binding SelectedGame.AgeRatingOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Release Date"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='N/A'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                                 <TextBlock Text="{Binding SelectedGame.OriginalReleaseDisplay, FallbackValue=''}"
                                                                            Visibility="{Binding SelectedGame.HasOriginalReleaseDate, Converter={StaticResource BoolToVisibilityConverter}}"
                                                                            Opacity="0.72"
+                                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="#9E8E78"
                                                                            FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Price"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            TextWrapping="Wrap">
-                                        <Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
+                                        <Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                             FontWeight="SemiBold"/>
                                         <Run Text="{Binding SelectedGame.PriceDiscount, FallbackValue=''}"
                                                                         FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
-                                                                        Foreground="#B3FFFFFF"/>
+                                                                        FontWeight="SemiBold"
+                                                                        Foreground="#C4956A"/>
                                                                 </TextBlock>
                                                         </StackPanel>
                                                 </StackPanel>
@@ -1031,13 +1060,14 @@
                                                             Margin="0,-10,0,0"
                                                             Spacing="0"
                                                             HorizontalAlignment="Left"
-                                                            VerticalAlignment="Top">
+                                                        VerticalAlignment="Top">
                                                         <TextBlock Text="Description"
-                                                                   Opacity="0.4"
+                                                                   Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                    Margin="0,0,0,0"
                                                                    HorizontalAlignment="Left"
                                                                    FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                         <TextBlock Text="{Binding SelectedGame.Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
+                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
                                                                    HorizontalAlignment="Left"
                                                                    FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                    MaxWidth="{x:Bind DetailsDescriptionMaxWidth, Mode=OneWay}"
@@ -1051,31 +1081,36 @@
                                                             VerticalAlignment="Top">
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Steam Reviews"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Opacity="{Binding SelectedGame.SteamReviewOpacity, FallbackValue=0.6}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap">
-                                                                        <Run Text="{Binding SelectedGame.DisplaySteamReviewSummary, FallbackValue='Not Available'}"/>
+                                                                        <Run Text="{Binding SelectedGame.DisplaySteamReviewSummary, FallbackValue='Not Available'}"
+                                                                             FontWeight="SemiBold"/>
                                                                         <Run Text="{Binding SelectedGame.DisplaySteamReviewCount, FallbackValue=''}"
                                                                              FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
-                                                                             Foreground="#A0A0A0"/>
+                                                                             FontWeight="SemiBold"
+                                                                             Foreground="#9E8E78"/>
                                                                 </TextBlock>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Main Story"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.DisplayMainStory, FallbackValue='Not Available'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            Opacity="{Binding SelectedGame.MainStoryOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Completionist"
-                                                                           Opacity="0.4"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
                                                                            FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
                                                                 <TextBlock Text="{Binding SelectedGame.DisplayCompletionist, FallbackValue='Not Available'}"
+                                                                           Style="{StaticResource DetailMetaValueTextStyle}"
                                                                            Opacity="{Binding SelectedGame.CompletionistOpacity, FallbackValue=0.6}"
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
@@ -1124,7 +1159,7 @@
                                                                                  Color="Transparent"/>
                                                         </StackPanel.Resources>
                                                         <HyperlinkButton Content="Website"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1133,7 +1168,7 @@
                                                                          NavigateUri="{Binding SelectedGame.OfficialWebsiteUrl}"
                                                                          Visibility="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="Steam"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0,4,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1142,7 +1177,7 @@
                                                                          NavigateUri="{Binding SelectedGame.SteamPageUrl}"
                                                                          Visibility="{Binding SelectedGame.SteamPageUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="RAWG"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1151,7 +1186,7 @@
                                                                          NavigateUri="{Binding SelectedGame.RawgUrl}"
                                                                          Visibility="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="IGDB"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1160,7 +1195,7 @@
                                                                          NavigateUri="{Binding SelectedGame.IgdbUrl}"
                                                                          Visibility="{Binding SelectedGame.IgdbUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="HowLongToBeat"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1169,7 +1204,7 @@
                                                                          NavigateUri="{Binding SelectedGame.HltbUrl}"
                                                                          Visibility="{Binding SelectedGame.HltbUrl, Converter={StaticResource NullToVisibilityConverter}}"/>
                                                         <HyperlinkButton Content="Media"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1178,7 +1213,7 @@
                                                                          HorizontalAlignment="Right"
                                                                          Command="{Binding OpenMediaOverlayCommand}"/>
                                                         <HyperlinkButton Content="Franchise"
-                                                                         Foreground="White"
+                                                                         Foreground="#F3EDC9"
                                                                          Margin="0,6,0,0"
                                                                          Padding="0"
                                                                          FontSize="{x:Bind DetailsLinkFontSize, Mode=OneWay}"
@@ -1201,8 +1236,8 @@
                         <Border x:Name="RemoveGameConfirmationPopover"
                                 Width="240"
                                 Visibility="Collapsed"
-                                Background="#1C1C1C"
-                                BorderBrush="#4A3434"
+                                Background="#1C1A17"
+                                BorderBrush="#5E5346"
                                 BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="12">
@@ -1211,13 +1246,13 @@
                                                 <TextBlock Text="Are you sure?"
                                                            FontSize="13"
                                                            FontWeight="SemiBold"
-                                                           FontFamily="Segoe UI Variable Text"
-                                                           Foreground="#FFFFFF"/>
+                                                           FontFamily="{StaticResource CodecFontFamily}"
+                                                           Foreground="#F3EDC9"/>
                                                 <TextBlock Text="This removes the game from your library. Files stay on disk."
                                                            TextWrapping="Wrap"
                                                            FontSize="12"
-                                                           FontFamily="Segoe UI Variable Text"
-                                                           Foreground="#8A8A8A"/>
+                                                           FontFamily="{StaticResource CodecFontFamily}"
+                                                           Foreground="#9E8E78"/>
                                         </StackPanel>
                                         <Grid ColumnSpacing="8">
                                                 <Grid.ColumnDefinitions>
@@ -1232,25 +1267,25 @@
                                                         Padding="0,7"
                                                         FontSize="12"
                                                         FontWeight="SemiBold"
-                                                        FontFamily="Segoe UI Variable Text"
-                                                        Background="#252525"
-                                                        BorderBrush="#383838"
+                                                        FontFamily="{StaticResource CodecFontFamily}"
+                                                        Background="#25221F"
+                                                        BorderBrush="#3E3830"
                                                         BorderThickness="1"
                                                         CornerRadius="8"
-                                                        Foreground="#AAAAAA">
+                                                        Foreground="#9E8E78">
                                                         <Button.Resources>
                                                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                 Color="#2E2E2E"/>
+                                                                                 Color="#2E2A25"/>
                                                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                 Color="#333333"/>
+                                                                                 Color="#342F29"/>
                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                                 Color="#484848"/>
+                                                                                 Color="#5E5346"/>
                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                                 Color="#505050"/>
+                                                                                 Color="#6A5A4A"/>
                                                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                 Color="#CCCCCC"/>
+                                                                                 Color="#F3EDC9"/>
                                                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                 Color="#AAAAAA"/>
+                                                                                 Color="#9E8E78"/>
                                                         </Button.Resources>
                                                 </Button>
                                                 <Button Content="Yes"
@@ -1261,25 +1296,25 @@
                                                         Padding="0,7"
                                                         FontSize="12"
                                                         FontWeight="SemiBold"
-                                                        FontFamily="Segoe UI Variable Text"
-                                                        Background="#33FF6B6B"
-                                                        BorderBrush="#66FF6B6B"
+                                                        FontFamily="{StaticResource CodecFontFamily}"
+                                                        Background="#26E76C2B"
+                                                        BorderBrush="#55E76C2B"
                                                         BorderThickness="1"
                                                         CornerRadius="8"
-                                                        Foreground="#FF6B6B">
+                                                        Foreground="#E76C2B">
                                                         <Button.Resources>
                                                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                                                 Color="#4DFF6B6B"/>
+                                                                                 Color="#33E76C2B"/>
                                                                 <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                                                 Color="#66FF6B6B"/>
+                                                                                 Color="#55E76C2B"/>
                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                                                 Color="#99FF6B6B"/>
+                                                                                 Color="#80E76C2B"/>
                                                                 <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                                                 Color="#BBFF6B6B"/>
+                                                                                 Color="#A0E76C2B"/>
                                                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                                                 Color="#FF8A8A"/>
+                                                                                 Color="#D4A832"/>
                                                                 <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                                                 Color="#FF6B6B"/>
+                                                                                 Color="#E76C2B"/>
                                                         </Button.Resources>
                                                 </Button>
                                         </Grid>

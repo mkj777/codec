@@ -42,13 +42,13 @@
                                     <VisualState x:Name="Normal"/>
                                     <VisualState x:Name="PointerOver">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#252525"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#25221F"/>
                                             <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#2E2E2E"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#2E2A25"/>
                                             <Setter Target="ContentPresenter.Foreground" Value="#9E8E78"/>
                                         </VisualState.Setters>
                                     </VisualState>
@@ -82,8 +82,8 @@
         </Style>
 
         <Style x:Key="SortButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#252525"/>
-            <Setter Property="BorderBrush" Value="#383838"/>
+            <Setter Property="Background" Value="#25221F"/>
+            <Setter Property="BorderBrush" Value="#3E3830"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="#9E8E78"/>
             <Setter Property="Padding" Value="12,8"/>
@@ -108,15 +108,15 @@
                                     <VisualState x:Name="Normal"/>
                                     <VisualState x:Name="PointerOver">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#2E2E2E"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#484848"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#2E2A25"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#5E5346"/>
                                             <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#333333"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#505050"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#342F29"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#6A5A4A"/>
                                             <Setter Target="ContentPresenter.Foreground" Value="#9E8E78"/>
                                         </VisualState.Setters>
                                     </VisualState>
@@ -151,7 +151,7 @@
                                   Margin="4,4,4,10">
                                 <Border x:Name="ShadowLayer"
                                         Margin="0,8,0,0"
-                                        Background="#24000000"
+                                        Background="#331C1A17"
                                         CornerRadius="12"
                                         Opacity="0.42">
                                     <Border.RenderTransform>
@@ -169,14 +169,14 @@
                                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
 
                                     <Border x:Name="HoverTint"
-                                            Background="#FFFFFF"
+                                            Background="#F3EDC9"
                                             CornerRadius="8"
                                             IsHitTestVisible="False"
                                             Opacity="0"/>
 
                                     <Border x:Name="HoverOutline"
                                             Background="Transparent"
-                                            BorderBrush="#FFFFFF"
+                                            BorderBrush="#F3EDC9"
                                             BorderThickness="1"
                                             CornerRadius="8"
                                             IsHitTestVisible="False"
@@ -306,8 +306,8 @@
         </Style>
 
         <Style x:Key="FilterToggleButtonStyle" TargetType="ToggleButton">
-            <Setter Property="Background" Value="#252525"/>
-            <Setter Property="BorderBrush" Value="#383838"/>
+            <Setter Property="Background" Value="#25221F"/>
+            <Setter Property="BorderBrush" Value="#3E3830"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="#9E8E78"/>
             <Setter Property="Padding" Value="14,8"/>
@@ -336,15 +336,15 @@
                                     <VisualState x:Name="Normal"/>
                                     <VisualState x:Name="PointerOver">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#2E2E2E"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#484848"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#2E2A25"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#5E5346"/>
                                             <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#333333"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#505050"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#342F29"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#6A5A4A"/>
                                             <Setter Target="ContentPresenter.Foreground" Value="#9E8E78"/>
                                         </VisualState.Setters>
                                     </VisualState>
@@ -408,7 +408,7 @@
                         <Flyout.FlyoutPresenterStyle>
                             <Style TargetType="FlyoutPresenter">
                                 <Setter Property="Background" Value="#1C1A17"/>
-                                <Setter Property="BorderBrush" Value="#383838"/>
+                                <Setter Property="BorderBrush" Value="#3E3830"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                                 <Setter Property="CornerRadius" Value="10"/>
                                 <Setter Property="Padding" Value="6"/>

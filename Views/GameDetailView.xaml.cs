@@ -373,9 +373,9 @@ namespace Codec.Views
         {
             double paneWidth = GetDetailsPaneWidth();
 
-            SetResponsiveProperty(ref _detailsLabelFontSize, ScaleResponsiveValue(paneWidth, 11d, 13d), nameof(DetailsLabelFontSize));
-            SetResponsiveProperty(ref _detailsValueFontSize, ScaleResponsiveValue(paneWidth, 12d, 15d), nameof(DetailsValueFontSize));
-            SetResponsiveProperty(ref _detailsInlineFontSize, ScaleResponsiveValue(paneWidth, 10d, 12d), nameof(DetailsInlineFontSize));
+            SetResponsiveProperty(ref _detailsLabelFontSize, ScaleResponsiveValue(paneWidth, 12d, 13d), nameof(DetailsLabelFontSize));
+            SetResponsiveProperty(ref _detailsValueFontSize, ScaleResponsiveValue(paneWidth, 13d, 15d), nameof(DetailsValueFontSize));
+            SetResponsiveProperty(ref _detailsInlineFontSize, ScaleResponsiveValue(paneWidth, 11d, 12d), nameof(DetailsInlineFontSize));
             SetResponsiveProperty(ref _detailsLinkFontSize, ScaleResponsiveValue(paneWidth, 12d, 14d), nameof(DetailsLinkFontSize));
             SetResponsiveProperty(ref _detailsPlatformIconHeight, ScaleResponsiveValue(paneWidth, 16d, 22d), nameof(DetailsPlatformIconHeight));
             SetResponsiveProperty(ref _detailsSectionSpacing, ScaleResponsiveValue(paneWidth, 4d, 8d), nameof(DetailsSectionSpacing));
