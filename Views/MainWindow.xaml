@@ -253,6 +253,9 @@
                                 <SolidColorBrush x:Key="ListViewItemForegroundSelectedPointerOver" Color="#F3EDC9"/>
                                 <SolidColorBrush x:Key="ListViewItemForegroundSelectedPressed" Color="#F3EDC9"/>
                             </ListView.Resources>
+                            <ListView.ItemContainerTransitions>
+                                <TransitionCollection/>
+                            </ListView.ItemContainerTransitions>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Height"

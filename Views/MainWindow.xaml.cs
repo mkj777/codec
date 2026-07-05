@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +27,8 @@ namespace Codec.Views
     {
         private const int MinWindowWidth = 900;
         private const int MinWindowHeight = 560;
+        private const int SidebarListRefreshFadeMs = 75;
+        private const double SidebarListRefreshStartOpacity = 0.92;
 
         private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0xF3, 0xED, 0xC9));
         private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9E, 0x8E, 0x78));
@@ -38,6 +41,9 @@ namespace Codec.Views
             ColorHelper.FromArgb(255, 255, 50, 0),
             ColorHelper.FromArgb(255, 220, 20, 0),
         ];
+
+        private bool _isSidebarListRefreshAnimationQueued;
+        private Storyboard? _sidebarListRefreshStoryboard;
 
         public MainViewModel ViewModel { get; }
 
@@ -55,6 +61,7 @@ namespace Codec.Views
             AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"));
             ConfigureWindowConstraints();
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+            ViewModel.SidebarFilteredGames.CollectionChanged += SidebarFilteredGames_CollectionChanged;
             _ = ViewModel.LoadLibraryAsync();
             RootGrid.Loaded += MainWindow_Loaded;
         }
@@ -86,6 +93,60 @@ namespace Codec.Views
 
             if (e.PropertyName == nameof(ViewModel.IsInitialLoading) && !ViewModel.IsInitialLoading)
                 DispatcherQueue.TryEnqueue(() => PlayStartupOpenAnimation());
+        }
+
+        private void SidebarFilteredGames_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (ViewModel.IsInitialLoading || _isSidebarListRefreshAnimationQueued)
+                return;
+
+            _isSidebarListRefreshAnimationQueued = true;
+            if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+                {
+                    _isSidebarListRefreshAnimationQueued = false;
+                    PlaySidebarListRefreshAnimation();
+                }))
+            {
+                _isSidebarListRefreshAnimationQueued = false;
+            }
+        }
+
+        private void PlaySidebarListRefreshAnimation()
+        {
+            _sidebarListRefreshStoryboard?.Stop();
+
+            if (SidebarGameList.Items.Count == 0)
+            {
+                SidebarGameList.Opacity = 1;
+                return;
+            }
+
+            SidebarGameList.Opacity = SidebarListRefreshStartOpacity;
+
+            var fade = new DoubleAnimation
+            {
+                From = SidebarListRefreshStartOpacity,
+                To = 1,
+                Duration = new Duration(TimeSpan.FromMilliseconds(SidebarListRefreshFadeMs)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            Storyboard.SetTarget(fade, SidebarGameList);
+            Storyboard.SetTargetProperty(fade, "Opacity");
+
+            var storyboard = new Storyboard();
+            storyboard.Children.Add(fade);
+            storyboard.Completed += (_, _) =>
+            {
+                if (!ReferenceEquals(_sidebarListRefreshStoryboard, storyboard))
+                    return;
+
+                SidebarGameList.Opacity = 1;
+                _sidebarListRefreshStoryboard = null;
+            };
+
+            _sidebarListRefreshStoryboard = storyboard;
+            storyboard.Begin();
         }
 
         private void PlayStartupOpenAnimation()

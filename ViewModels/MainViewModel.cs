@@ -23,7 +23,7 @@ namespace Codec.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
-        private const int SidebarSearchDebounceDelayMs = 300;
+        private const int SidebarSearchDebounceDelayMs = 60;
         private const int UpdateNotificationDismissDelayMs = 15000;
         private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
@@ -511,10 +511,13 @@ namespace Codec.ViewModels
                 _isUpdatingFilters = false;
             }
 
-            RefreshDisplayedGames();
         }
 
-        partial void OnSelectedImportFilterChanged(string? value) => RefreshDisplayedGames();
+        partial void OnSelectedImportFilterChanged(string? value)
+        {
+            RefreshSidebarFilteredGames();
+            RefreshDisplayedGames();
+        }
 
         private void RefreshAvailableImportSources()
         {
@@ -547,13 +550,7 @@ namespace Codec.ViewModels
 
         private void RefreshDisplayedGames()
         {
-            var query = Games.AsEnumerable();
-            if (!string.IsNullOrEmpty(SelectedImportFilter))
-            {
-                query = query.Where(g => string.Equals(g.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            var sortedFiltered = GetSortedGames(query).ToList();
+            var sortedFiltered = GetSortedGames(Games.Where(MatchesSelectedImportFilter)).ToList();
 
             for (int targetIndex = 0; targetIndex < sortedFiltered.Count; targetIndex++)
             {
@@ -576,6 +573,7 @@ namespace Codec.ViewModels
         private void RefreshSidebarFilteredGames()
         {
             var filteredGames = Games
+                .Where(MatchesSelectedImportFilter)
                 .Where(MatchesSidebarSearch)
                 .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
                 .ThenBy(game => game.Id)
@@ -611,6 +609,12 @@ namespace Codec.ViewModels
                 return true;
 
             return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        private bool MatchesSelectedImportFilter(Game game)
+        {
+            return string.IsNullOrEmpty(SelectedImportFilter) ||
+                   string.Equals(game.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase);
         }
 
         partial void OnSelectedSortIndexChanged(int value)
