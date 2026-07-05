@@ -3,6 +3,7 @@ using Codec.Services.Storage;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -50,6 +51,59 @@ namespace Codec.ViewModels
         private const int MainlineFranchiseCategory = 0;
         // Always exclude: bundle (3), mod (5)
         private static readonly HashSet<int> ExcludedFranchiseCategories = new() { 3, 5 };
+        private static readonly HashSet<string> LaunchAvailabilityPropertyNames = new(StringComparer.Ordinal)
+        {
+            nameof(Game.Executable),
+            nameof(Game.ImportedFrom),
+            nameof(Game.SteamID),
+            nameof(Game.EpicAppId),
+            nameof(Game.LaunchScript),
+            nameof(Game.UseLaunchScriptOverride),
+            nameof(Game.UseExecutableOverride),
+            nameof(Game.CanLaunch)
+        };
+
+        public bool CanPlaySelectedGame => SelectedGame?.CanLaunch == true;
+
+        public string PlayButtonText => CanPlaySelectedGame ? "PLAY" : "MISSING";
+
+        public double PlayButtonOpacity => CanPlaySelectedGame ? 1d : 0.46d;
+
+        public string PlayButtonToolTip => CanPlaySelectedGame
+            ? "Launch game"
+            : "Missing launch target";
+
+        partial void OnSelectedGameChanged(Game? oldValue, Game? newValue)
+        {
+            if (oldValue != null)
+            {
+                oldValue.PropertyChanged -= SelectedGame_PropertyChanged;
+            }
+
+            if (newValue != null)
+            {
+                newValue.PropertyChanged += SelectedGame_PropertyChanged;
+            }
+
+            NotifyPlayAvailabilityChanged();
+        }
+
+        private void SelectedGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == null || LaunchAvailabilityPropertyNames.Contains(e.PropertyName))
+            {
+                NotifyPlayAvailabilityChanged();
+            }
+        }
+
+        private void NotifyPlayAvailabilityChanged()
+        {
+            OnPropertyChanged(nameof(CanPlaySelectedGame));
+            OnPropertyChanged(nameof(PlayButtonText));
+            OnPropertyChanged(nameof(PlayButtonOpacity));
+            OnPropertyChanged(nameof(PlayButtonToolTip));
+            PlayGameCommand.NotifyCanExecuteChanged();
+        }
 
         [RelayCommand]
         private void OpenFranchiseOverlay()
@@ -196,10 +250,10 @@ namespace Codec.ViewModels
             await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanPlaySelectedGame))]
         private void PlayGame()
         {
-            if (SelectedGame == null)
+            if (SelectedGame == null || !SelectedGame.CanLaunch)
                 return;
 
             try

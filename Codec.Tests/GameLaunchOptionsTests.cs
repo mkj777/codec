@@ -98,6 +98,105 @@ namespace Codec.Tests
         }
 
         [Fact]
+        public void CanLaunch_IsFalse_ForManualGameWithoutExecutable()
+        {
+            var game = new Game
+            {
+                ImportedFrom = "Added manually",
+                Executable = string.Empty
+            };
+
+            Assert.False(game.CanLaunch);
+        }
+
+        [Fact]
+        public void CanLaunch_IsFalse_ForManualGameWithMissingExecutable()
+        {
+            var game = new Game
+            {
+                ImportedFrom = "Added manually",
+                Executable = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "Missing.exe")
+            };
+
+            Assert.False(game.CanLaunch);
+        }
+
+        [Fact]
+        public void CanLaunch_IsTrue_ForManualGameWithExistingExecutable()
+        {
+            string executablePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.exe");
+
+            try
+            {
+                File.WriteAllText(executablePath, "stub");
+                var game = new Game
+                {
+                    ImportedFrom = "Added manually",
+                    Executable = executablePath
+                };
+
+                Assert.True(game.CanLaunch);
+            }
+            finally
+            {
+                if (File.Exists(executablePath))
+                    File.Delete(executablePath);
+            }
+        }
+
+        [Fact]
+        public void CanLaunch_IsTrue_ForLauncherTargetsWithoutExecutable()
+        {
+            var steamGame = new Game
+            {
+                ImportedFrom = "Steam",
+                SteamID = 730
+            };
+            var epicGame = new Game
+            {
+                ImportedFrom = "Epic Games",
+                EpicAppId = "FortniteGame"
+            };
+
+            Assert.True(steamGame.CanLaunch);
+            Assert.True(epicGame.CanLaunch);
+        }
+
+        [Fact]
+        public void CanLaunch_IsFalse_ForRiotGameWithoutLaunchScriptOrExecutable()
+        {
+            var game = new Game
+            {
+                ImportedFrom = "Riot Games"
+            };
+
+            Assert.False(game.CanLaunch);
+        }
+
+        [Fact]
+        public void CanLaunch_IsTrue_ForRiotGameWithExistingLaunchScript()
+        {
+            string launchScriptPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.lnk");
+
+            try
+            {
+                File.WriteAllText(launchScriptPath, "stub");
+                var game = new Game
+                {
+                    ImportedFrom = "Riot Games",
+                    LaunchScript = launchScriptPath
+                };
+
+                Assert.True(game.CanLaunch);
+            }
+            finally
+            {
+                if (File.Exists(launchScriptPath))
+                    File.Delete(launchScriptPath);
+            }
+        }
+
+        [Fact]
         public void LaunchOptionChanges_RaiseDisplayNotification()
         {
             var game = new Game();
@@ -117,6 +216,7 @@ namespace Codec.Tests
             Assert.Contains(nameof(Game.LaunchOptionsDisplay), changes);
             Assert.Contains(nameof(Game.HasCustomLaunchScript), changes);
             Assert.Contains(nameof(Game.HasCustomLaunchOptions), changes);
+            Assert.Contains(nameof(Game.CanLaunch), changes);
         }
     }
 }

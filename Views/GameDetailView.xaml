@@ -552,6 +552,7 @@
                                       HorizontalAlignment="Left"
                                       VerticalAlignment="Bottom"
                                       Margin="0,0,0,2"
+                                      ToolTipService.ToolTip="{Binding PlayButtonToolTip, Mode=OneWay}"
                                       RenderTransformOrigin="0.5,0.5">
                                         <Grid.RenderTransform>
                                                 <CompositeTransform x:Name="DetailsPlayTransform"
@@ -564,6 +565,7 @@
                                                 BorderBrush="{StaticResource HeroActionPlayFallbackBorderBrush}"
                                                 BorderThickness="1.5"
                                                 CornerRadius="28"
+                                                Opacity="{Binding PlayButtonOpacity, Mode=OneWay, FallbackValue=0.46}"
                                                 IsHitTestVisible="False">
                                                 <Grid Padding="24,12">
                                                         <StackPanel Orientation="Horizontal"
@@ -576,7 +578,7 @@
                                                                           FontSize="16"
                                                                           Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
                                                                 <TextBlock x:Name="DetailsPlayText"
-                                                                           Text="PLAY"
+                                                                           Text="{Binding PlayButtonText, Mode=OneWay, FallbackValue='MISSING'}"
                                                                            FontSize="16"
                                                                            FontWeight="Bold"
                                                                            CharacterSpacing="120"
@@ -595,13 +597,14 @@
                                                 VerticalAlignment="Stretch"
                                                 CornerRadius="28"
                                                 Command="{Binding PlayGameCommand}"
+                                                IsEnabled="{Binding CanPlaySelectedGame, Mode=OneWay}"
                                                 PointerEntered="HeroActionButton_PointerEntered"
                                                 PointerExited="HeroActionButton_PointerExited"
                                                 PointerPressed="HeroActionButton_PointerPressed"
                                                 PointerReleased="HeroActionButton_PointerReleased"
                                                 PointerCanceled="HeroActionButton_PointerCanceled"
                                                 LostFocus="HeroActionButton_LostFocus"
-                                                ToolTipService.ToolTip="Launch game">
+                                                ToolTipService.ToolTip="{Binding PlayButtonToolTip, Mode=OneWay}">
                                                 <Button.Resources>
                                                         <SolidColorBrush x:Key="ButtonBackground"
                                                                          Color="#01000000"/>

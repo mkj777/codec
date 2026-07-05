@@ -42,6 +42,7 @@ namespace Codec.Models
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private string executable;
         [ObservableProperty] private string folderLocation;
         [ObservableProperty]
@@ -50,6 +51,7 @@ namespace Codec.Models
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private string importedFrom;
 
         // Display-only property that shows just the platform name without the path
@@ -72,9 +74,11 @@ namespace Codec.Models
         // external IDs
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private int? steamID;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private string? epicAppId;
         [ObservableProperty] private int? rawgID;
         [ObservableProperty] private string? rawgSlug;
@@ -300,17 +304,20 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(HasCustomLaunchScript))]
         [NotifyPropertyChangedFor(nameof(HasCustomLaunchOptions))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private string? _launchScript;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(HasCustomLaunchScript))]
         [NotifyPropertyChangedFor(nameof(HasCustomLaunchOptions))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private bool _useLaunchScriptOverride;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(HasCustomLaunchOptions))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
         private bool _useExecutableOverride;
 
         [JsonIgnore]
@@ -320,6 +327,35 @@ namespace Codec.Models
 
         [JsonIgnore]
         public bool HasCustomLaunchOptions => HasCustomLaunchScript || UseExecutableOverride;
+
+        [JsonIgnore]
+        public bool CanLaunch
+        {
+            get
+            {
+                if (HasCustomLaunchScript && HasExistingFile(LaunchScript))
+                {
+                    return true;
+                }
+
+                if (UseExecutableOverride && HasExistingFile(Executable))
+                {
+                    return true;
+                }
+
+                if (IsSteamLaunchTarget || IsEpicLaunchTarget)
+                {
+                    return true;
+                }
+
+                if (IsRiotLaunchTarget && HasExistingFile(LaunchScript))
+                {
+                    return true;
+                }
+
+                return HasExistingFile(Executable);
+            }
+        }
 
         [JsonIgnore]
         public string LaunchOptionsDisplay
@@ -374,6 +410,23 @@ namespace Codec.Models
             ImportedFrom.Equals("Riot Games", StringComparison.OrdinalIgnoreCase);
 
         private bool IsPlatformLaunchScriptTarget => IsRiotLaunchTarget;
+
+        private static bool HasExistingFile(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return false;
+            }
+
+            try
+            {
+                return File.Exists(filePath);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private bool HasRequiredDisplayedAssetsCached()
         {
