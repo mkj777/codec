@@ -528,6 +528,18 @@ namespace Codec.Services.Resolving
             return (steamId, steamName);
         }
 
+        public async Task<(int? steamId, string? steamName)> FindGameIdsByNameAsync(string gameName, CancellationToken cancellationToken = default)
+        {
+            GameMatch? steamMatch = await ResolveSteamMatchFromCandidatesAsync(BuildNameOnlyCandidates(gameName), cancellationToken);
+
+            bool isHighConfidence = steamMatch != null &&
+                steamMatch.ConfidenceScore >= Config.HighConfidenceThreshold;
+            int? steamId = isHighConfidence ? (int)steamMatch!.SteamAppId : null;
+            string? steamName = isHighConfidence ? steamMatch!.SteamName : null;
+
+            return (steamId, steamName);
+        }
+
         private async Task<GameMatch?> ResolveSteamMatchAsync(string exePath, CancellationToken cancellationToken = default, string? nameHint = null, bool skipFuzzySearch = false)
         {
             if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
@@ -566,6 +578,11 @@ namespace Codec.Services.Resolving
                 return null;
 
             List<LocalGameCandidate> candidates = BuildCandidates(exePath, nameHint);
+            return await ResolveSteamMatchFromCandidatesAsync(candidates, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task<GameMatch?> ResolveSteamMatchFromCandidatesAsync(List<LocalGameCandidate> candidates, CancellationToken cancellationToken)
+        {
             if (candidates.Count == 0)
             {
                 return null;
@@ -815,6 +832,32 @@ namespace Codec.Services.Resolving
                 .GroupBy(c => $"{c.MetadataSource}|{c.DetectedName}", StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.First())
                 .ToList();
+        }
+
+        private List<LocalGameCandidate> BuildNameOnlyCandidates(string gameName)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+            {
+                return new List<LocalGameCandidate>();
+            }
+
+            string cleanedName = GameNameCleaner.RemoveTrailingDomainTag(gameName);
+            if (string.IsNullOrWhiteSpace(cleanedName))
+            {
+                return new List<LocalGameCandidate>();
+            }
+
+            return new List<LocalGameCandidate>
+            {
+                new()
+                {
+                    DetectedName = cleanedName,
+                    FullPath = string.Empty,
+                    ExecutableName = cleanedName,
+                    MetadataSource = "launcher",
+                    ExpectedSeriesNumbers = ExtractSeriesNumbers(NormalizeName(cleanedName))
+                }
+            };
         }
 
         private IEnumerable<SearchCandidate> GenerateSearchCandidates(LocalGameCandidate candidate)

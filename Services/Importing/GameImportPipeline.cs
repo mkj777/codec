@@ -49,7 +49,7 @@ namespace Codec.Services.Importing
             string normalizedImportSource = PlatformSourceNames.NormalizeImportSource(request.ImportSource);
             var batch = request.LogBatch ?? new ScanLogBatch(request.NameHint, normalizedImportSource);
 
-            batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} epic={request.EpicAppId} rawg={request.RawgId}");
+            batch.Log($"PIPELINE ENTRY exe='{request.ExecutablePath}' lnk='{request.LaunchScriptPath}' steam={request.SteamAppId} epic={request.EpicAppId} rawg={request.RawgId} metadata='{request.MetadataLookupName ?? "-"}'");
             cancellationToken.ThrowIfCancellationRequested();
 
             bool hasLaunchScript = !string.IsNullOrWhiteSpace(request.LaunchScriptPath)
@@ -138,6 +138,10 @@ namespace Codec.Services.Importing
             // Normalize ASCII trademark notation to unicode for display/storage
             detectedName = Regex.Replace(detectedName, @"\(TM\)", "™", RegexOptions.IgnoreCase);
             detectedName = Regex.Replace(detectedName, @"\(R\)", "®", RegexOptions.IgnoreCase);
+            string metadataLookupName = GameNameCleaner.GetMetadataLookupName(detectedName, request.MetadataLookupName);
+            bool usesAlternateMetadataLookupName =
+                !string.IsNullOrWhiteSpace(metadataLookupName) &&
+                !string.Equals(GameNameCleaner.RemoveTrailingDomainTag(detectedName), metadataLookupName, StringComparison.OrdinalIgnoreCase);
 
             if (GameContentHeuristics.NameMatchesUtility(detectedName))
             {
@@ -148,6 +152,7 @@ namespace Codec.Services.Importing
             try
             {
                 int? steamId = request.SteamAppId;
+                int? steamMetadataAppId = null;
                 int? rawgId = request.RawgId;
                 int? igdbId = request.IgdbId;
                 var executableCopyright = !string.IsNullOrEmpty(normalizedExePath)
@@ -157,6 +162,37 @@ namespace Codec.Services.Importing
                 IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
 
                 bool isSteamLauncherSource = string.Equals(normalizedImportSource, PlatformSourceNames.Steam, StringComparison.OrdinalIgnoreCase);
+                bool isSteamFriendPass = isSteamLauncherSource && steamId.HasValue && usesAlternateMetadataLookupName;
+                int launchSteamId = steamId.GetValueOrDefault();
+                string metadataValidationName = string.IsNullOrWhiteSpace(metadataLookupName)
+                    ? detectedName
+                    : metadataLookupName;
+
+                if (isSteamFriendPass)
+                {
+                    try
+                    {
+                        var resolvedBaseSteam = await _gameName.FindGameIdsByNameAsync(metadataValidationName, cancellationToken).ConfigureAwait(false);
+                        if (resolvedBaseSteam.steamId.HasValue && resolvedBaseSteam.steamId.Value != launchSteamId)
+                        {
+                            steamMetadataAppId = resolvedBaseSteam.steamId.Value;
+                            if (!string.IsNullOrWhiteSpace(resolvedBaseSteam.steamName))
+                            {
+                                metadataLookupName = resolvedBaseSteam.steamName;
+                                metadataValidationName = resolvedBaseSteam.steamName;
+                            }
+                            batch.Log($"PIPELINE FRIEND-PASS metadata steam={steamMetadataAppId} name='{metadataValidationName}' launchSteam={launchSteamId}");
+                        }
+                        else
+                        {
+                            batch.Log($"PIPELINE FRIEND-PASS metadata steam unresolved for '{metadataValidationName}'");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        batch.Log($"PIPELINE FRIEND-PASS steam metadata lookup failed: {ex.Message}");
+                    }
+                }
 
                 // Non-Steam path: IGDB is the primary authority. If EXE copyright years exist,
                 // they are compared only against IGDB release years.
@@ -164,7 +200,7 @@ namespace Codec.Services.Importing
                 {
                     try
                     {
-                        var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(detectedName, executableCopyrightYears).ConfigureAwait(false);
+                        var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(metadataValidationName, executableCopyrightYears).ConfigureAwait(false);
                         igdbId = foundIgdbId;
                         if (igdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
                         {
@@ -179,6 +215,38 @@ namespace Codec.Services.Importing
                     catch (Exception ex)
                     {
                         batch.Log($"PIPELINE IGDB-VALIDATE FAILED: {ex.Message}");
+                    }
+                }
+
+                if (isSteamFriendPass && !steamMetadataAppId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !string.IsNullOrWhiteSpace(metadataValidationName))
+                {
+                    try
+                    {
+                        var (foundIgdbId, igdbReleaseYear) = await _igdb.FindIgdbMatchByNameAsync(metadataValidationName, executableCopyrightYears).ConfigureAwait(false);
+                        igdbId = foundIgdbId;
+                        if (igdbId.HasValue && executableCopyrightYears.Count > 0 && igdbReleaseYear.HasValue)
+                        {
+                            batch.Log($"PIPELINE FRIEND-PASS IGDB-YEAR exe©{string.Join("/", executableCopyrightYears.Order())} igdb={igdbReleaseYear}");
+                        }
+
+                        if (igdbId.HasValue)
+                        {
+                            int? igdbSteamId = await _igdb.FindSteamIdByIgdbIdAsync(igdbId.Value).ConfigureAwait(false);
+                            if (igdbSteamId.HasValue && igdbSteamId.Value != launchSteamId)
+                            {
+                                steamMetadataAppId = igdbSteamId.Value;
+                                batch.Log($"PIPELINE FRIEND-PASS IGDB-STEAM igdb={igdbId} -> metadataSteam={steamMetadataAppId}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        batch.Log($"PIPELINE FRIEND-PASS IGDB lookup failed: {ex.Message}");
+                    }
+
+                    if (!igdbId.HasValue && executableCopyrightYears.Count == 0)
+                    {
+                        rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName, RawgValidationMode.Strict).ConfigureAwait(false);
                     }
                 }
 
@@ -206,7 +274,7 @@ namespace Codec.Services.Importing
                 // year exists to validate against IGDB.
                 if (!steamId.HasValue && !isRiotSource && !rawgId.HasValue && !igdbId.HasValue && executableCopyrightYears.Count == 0)
                 {
-                    var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath, nameHint: detectedName).ConfigureAwait(false);
+                    var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath, nameHint: metadataValidationName).ConfigureAwait(false);
                     steamId ??= resolvedIds.steamId;
                     if (!string.IsNullOrWhiteSpace(resolvedIds.steamName))
                         detectedName = resolvedIds.steamName;
@@ -226,7 +294,7 @@ namespace Codec.Services.Importing
 
                 if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isRiotSource && executableCopyrightYears.Count == 0)
                 {
-                    rawgId = await _gameDetails.ValidateGameAsync(detectedName, RawgValidationMode.Strict).ConfigureAwait(false);
+                    rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName, RawgValidationMode.Strict).ConfigureAwait(false);
                 }
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
@@ -242,13 +310,13 @@ namespace Codec.Services.Importing
                     return GameImportResult.Duplicate($"A game with Epic ID {request.EpicAppId} already exists in your library.");
                 }
 
-                if (rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
+                if (!isSteamFriendPass && rawgId.HasValue && librarySnapshot.Any(g => g.RawgID == rawgId.Value))
                 {
                     batch.Flush("⤼ DUPLICATE", $"rawg id {rawgId} already in library");
                     return GameImportResult.Duplicate($"A game with RAWG ID {rawgId.Value} already exists in your library.");
                 }
 
-                if (igdbId.HasValue && librarySnapshot.Any(g => g.IgdbId == igdbId.Value))
+                if (!isSteamFriendPass && igdbId.HasValue && librarySnapshot.Any(g => g.IgdbId == igdbId.Value))
                 {
                     batch.Flush("⤼ DUPLICATE", $"igdb id {igdbId} already in library");
                     return GameImportResult.Duplicate($"A game with IGDB ID {igdbId.Value} already exists in your library.");
@@ -261,9 +329,11 @@ namespace Codec.Services.Importing
                     FolderLocation = folderLocation,
                     ImportedFrom = normalizedImportSource,
                     SteamID = steamId,
+                    SteamMetadataAppId = steamMetadataAppId,
                     EpicAppId = string.IsNullOrWhiteSpace(request.EpicAppId) ? null : request.EpicAppId,
                     RawgID = rawgId,
                     IgdbId = igdbId,
+                    MetadataLookupName = usesAlternateMetadataLookupName ? metadataLookupName : null,
                     LaunchScript = hasLaunchScript
                         ? request.LaunchScriptPath
                         : null
@@ -281,7 +351,8 @@ namespace Codec.Services.Importing
                     }
                 }
 
-                if (game.SteamID.HasValue)
+                int? steamMetadataId = game.EffectiveSteamMetadataAppId;
+                if (steamMetadataId.HasValue)
                 {
                     // Steam first (assets, release date), then HLTB (preferred TTB source), then IGDB (fills gaps)
                     await _steamDetails.PopulateFromSteamAsync(game).ConfigureAwait(false);
@@ -289,8 +360,8 @@ namespace Codec.Services.Importing
 
                     var igdbIdTask = game.IgdbId.HasValue
                         ? Task.FromResult<int?>(game.IgdbId.Value)
-                        : _igdb.FindIgdbIdBySteamIdAsync(game.SteamID.Value);
-                    var rawgIdTask = _gameDetails.FindRawgIdBySteamIdAsync(game.SteamID.Value);
+                        : _igdb.FindIgdbIdBySteamIdAsync(steamMetadataId.Value);
+                    var rawgIdTask = _gameDetails.FindRawgIdBySteamIdAsync(steamMetadataId.Value);
                     await Task.WhenAll(igdbIdTask, rawgIdTask).ConfigureAwait(false);
 
                     game.IgdbId = igdbIdTask.Result;

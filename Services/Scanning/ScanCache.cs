@@ -18,7 +18,7 @@ namespace Codec.Services.Scanning
     public sealed class ScanCache
     {
         private const string CacheFileName = "scan-cache.json";
-        private const int CurrentCacheVersion = 3;
+        private const int CurrentCacheVersion = 4;
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
@@ -78,6 +78,12 @@ namespace Codec.Services.Scanning
             }
 
             if (!string.Equals(entry.EpicAppId, candidate.EpicAppId, StringComparison.OrdinalIgnoreCase))
+            {
+                _entries.Remove(candidate.FolderPath);
+                return false;
+            }
+
+            if (!string.Equals(entry.MetadataLookupName, candidate.MetadataLookupName, StringComparison.OrdinalIgnoreCase))
             {
                 _entries.Remove(candidate.FolderPath);
                 return false;
@@ -152,6 +158,7 @@ namespace Codec.Services.Scanning
                 GameName = resolvedName,
                 ImportSource = PlatformSourceNames.NormalizeImportSource(candidate.Source),
                 SteamAppId = steamId,
+                MetadataLookupName = candidate.MetadataLookupName,
                 EpicAppId = candidate.EpicAppId,
                 RawgId = rawgId,
                 IgdbId = igdbId,
@@ -195,6 +202,7 @@ namespace Codec.Services.Scanning
             public required string GameName { get; init; }
             public required string ImportSource { get; init; }
             public int? SteamAppId { get; init; }
+            public string? MetadataLookupName { get; init; }
             public string? EpicAppId { get; init; }
             public int? RawgId { get; init; }
             public int? IgdbId { get; init; }
@@ -220,6 +228,7 @@ namespace Codec.Services.Scanning
                 GameName = entry.GameName,
                 ImportSource = normalizedSource,
                 SteamAppId = entry.SteamAppId,
+                MetadataLookupName = entry.MetadataLookupName,
                 EpicAppId = entry.EpicAppId,
                 RawgId = entry.RawgId,
                 IgdbId = entry.IgdbId,

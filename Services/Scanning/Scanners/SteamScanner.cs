@@ -1,5 +1,6 @@
 using Gameloop.Vdf;
 using Gameloop.Vdf.Linq;
+using Codec.Services;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -57,7 +58,10 @@ namespace Codec.Services.Scanning.Scanners
                     Debug.WriteLine($"[SteamScanner] SKIP '{game.Name}' (appid={game.AppId}): install folder missing or empty at {gameFolderPath}");
                     continue;
                 }
-                candidates.Add(new GameCandidate(game.Name, gameFolderPath, PlatformName, game.AppId));
+                string? metadataLookupName = GameNameCleaner.TryGetFriendPassBaseName(game.Name, out string baseName)
+                    ? baseName
+                    : null;
+                candidates.Add(new GameCandidate(game.Name, gameFolderPath, PlatformName, game.AppId, MetadataLookupName: metadataLookupName));
             }
 
             return candidates;

@@ -36,5 +36,31 @@ namespace Codec.Tests
 
             Assert.Equal(cleaned, GameNameCleaner.RemoveTrailingDomainTag(cleaned));
         }
+
+        [Theory]
+        [InlineData("It Takes Two Friend's Pass", "It Takes Two")]
+        [InlineData("It Takes Two Friend\u2019s Pass", "It Takes Two")]
+        [InlineData("It Takes Two - Friend's Pass", "It Takes Two")]
+        [InlineData("IT TAKES TWO FRIEND'S PASS", "IT TAKES TWO")]
+        public void TryGetFriendPassBaseName_StripsTrailingSuffix(string input, string expected)
+        {
+            bool stripped = GameNameCleaner.TryGetFriendPassBaseName(input, out string baseName);
+
+            Assert.True(stripped);
+            Assert.Equal(expected, baseName);
+        }
+
+        [Theory]
+        [InlineData("Friend's Pass")]
+        [InlineData("Friend's Pass Collection")]
+        [InlineData("Pass the Friends")]
+        [InlineData("It Takes Two")]
+        public void TryGetFriendPassBaseName_DoesNotStripNonSuffixNames(string input)
+        {
+            bool stripped = GameNameCleaner.TryGetFriendPassBaseName(input, out string baseName);
+
+            Assert.False(stripped);
+            Assert.Equal(string.Empty, baseName);
+        }
     }
 }

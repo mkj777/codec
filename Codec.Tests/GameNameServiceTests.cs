@@ -46,6 +46,7 @@ namespace Codec.Tests
         [InlineData("BioShock Remastered", "BioShock", true)]
         [InlineData("Resident Evil 0", "Resident Evil 0 / biohazard 0 HD REMASTER", true)]
         [InlineData("BioShock", "BioShock / BioShock Infinite Bundle", false)]
+        [InlineData("It Takes Two", "It Takes Two Friend's Pass", false)]
         [InlineData("Mortal Kombat 11 Aftermath Edition", "Mortal Kombat 11", false)]
         [InlineData("CloverPit-SteamGG.NET", "CloverPit", true)]
         [InlineData("LoveChoice-Steamrip.com", "LoveChoice", true)]

@@ -43,7 +43,8 @@ namespace Codec.Services.Importing
         string? LaunchScriptPath = null,
         int? IgdbId = null,
         string? EpicAppId = null,
-        ScanLogBatch? LogBatch = null);
+        ScanLogBatch? LogBatch = null,
+        string? MetadataLookupName = null);
 
     public enum ImportNotificationSeverity
     {

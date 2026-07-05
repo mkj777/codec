@@ -29,7 +29,8 @@ namespace Codec.Services.Scanning
         string? LaunchScriptPath = null,
         int? IgdbId = null,
         string? EpicAppId = null,
-        ScanLogBatch? LogBatch = null);
+        ScanLogBatch? LogBatch = null,
+        string? MetadataLookupName = null);
 
     public class GameScanner
     {
@@ -165,7 +166,8 @@ namespace Codec.Services.Scanning
                         candidate.LaunchScriptPath,
                         IgdbId: null,
                         EpicAppId: candidate.EpicAppId,
-                        LogBatch: batch);
+                        LogBatch: batch,
+                        MetadataLookupName: candidate.MetadataLookupName);
                 }
             }
 
@@ -283,7 +285,8 @@ namespace Codec.Services.Scanning
                                 cachedResult.LaunchScriptPath,
                                 cachedResult.IgdbId,
                                 cachedResult.EpicAppId,
-                                LogBatch: batch);
+                                LogBatch: batch,
+                                MetadataLookupName: cachedResult.MetadataLookupName);
                             continue;
                         }
                     }
@@ -498,7 +501,8 @@ namespace Codec.Services.Scanning
                     candidate.LaunchScriptPath,
                     igdbId,
                     candidate.EpicAppId,
-                    LogBatch: batch);
+                    LogBatch: batch,
+                    MetadataLookupName: candidate.MetadataLookupName);
             }
 
             phase3Sw.Stop();

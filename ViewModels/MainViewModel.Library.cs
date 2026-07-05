@@ -174,8 +174,8 @@ namespace Codec.ViewModels
 
         private void QueueSteamWarmups(Game game)
         {
-            if (!game.SteamID.HasValue) return;
-            int id = game.SteamID.Value;
+            if (!game.EffectiveSteamMetadataAppId.HasValue) return;
+            int id = game.EffectiveSteamMetadataAppId.Value;
             _services.Cache.QueueWarmup("steam", $"https://store.steampowered.com/api/appdetails?appids={id}", TimeSpan.FromDays(1));
             _services.Cache.QueueWarmup("steam", $"https://store.steampowered.com/appreviews/{id}/?json=1&language=all&filter=all&num_per_page=0", TimeSpan.FromHours(6));
             _services.Cache.QueueWarmup("steam", $"https://steamspy.com/api.php?request=appdetails&appid={id}", TimeSpan.FromHours(4));
@@ -188,9 +188,9 @@ namespace Codec.ViewModels
                 _services.Cache.QueueWarmup("rawg", $"https://codec-api-proxy.vercel.app/api/rawg/details?id={game.RawgID.Value}", TimeSpan.FromDays(1));
                 return;
             }
-            if (!string.IsNullOrWhiteSpace(game.Name))
+            if (!string.IsNullOrWhiteSpace(game.EffectiveMetadataLookupName))
             {
-                string term = Uri.EscapeDataString(game.Name);
+                string term = Uri.EscapeDataString(game.EffectiveMetadataLookupName);
                 _services.Cache.QueueWarmup("rawg", $"https://codec-api-proxy.vercel.app/api/rawg/search?term={term}", TimeSpan.FromDays(1));
             }
         }

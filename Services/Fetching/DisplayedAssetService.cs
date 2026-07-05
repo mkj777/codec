@@ -72,6 +72,7 @@ namespace Codec.Services.Fetching
 
             string? capsuleCachePath = game.LibraryCapsuleCache;
             int? gridDbId = game.GridDbId;
+            int? steamMetadataId = game.EffectiveSteamMetadataAppId;
 
             if (game.SteamID.HasValue)
             {
@@ -83,7 +84,7 @@ namespace Codec.Services.Fetching
             }
             else
             {
-                var gridResult = await _gridDb.ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibraryCapsuleCache, forceCoverDownload: force).ConfigureAwait(false);
+                var gridResult = await _gridDb.ResolveGridAssetsAsync(game.EffectiveMetadataLookupName, game.GridDbId, game.LibraryCapsuleCache, forceCoverDownload: force).ConfigureAwait(false);
                 gridDbId = gridResult.GridDbId;
                 capsuleCachePath = gridResult.CoverCachePath;
             }
@@ -111,18 +112,18 @@ namespace Codec.Services.Fetching
                 {
                     heroCachePath = heroPath;
                 }
-                else if (game.SteamID.HasValue)
+                else if (steamMetadataId.HasValue)
                 {
                     needsSteamHeroFallback = true;
                 }
             }
-            else if (game.SteamID.HasValue)
+            else if (steamMetadataId.HasValue)
             {
                 needsSteamHeroFallback = true;
             }
 
             // Logo 404 fallback for Steam games: clear broken logo and let hero fall back to Steam headers / RAWG.
-            if (game.SteamID.HasValue && hasLogoSource && logoCachePath == null)
+            if (steamMetadataId.HasValue && hasLogoSource && logoCachePath == null)
             {
                 needsSteamHeroFallback = true;
                 preferSteamHeaderImage = true;
@@ -130,18 +131,18 @@ namespace Codec.Services.Fetching
                 logoCachePath = null;
             }
 
-            if (game.SteamID.HasValue && needsSteamHeroFallback)
+            if (steamMetadataId.HasValue && needsSteamHeroFallback)
             {
                 string? steamHeaderUrl = null;
 
                 if (preferSteamHeaderImage)
                 {
-                    steamHeaderUrl = await _gameAssets.FetchSteamHeaderImageUrlAsync(game.SteamID.Value).ConfigureAwait(false);
+                    steamHeaderUrl = await _gameAssets.FetchSteamHeaderImageUrlAsync(steamMetadataId.Value).ConfigureAwait(false);
                 }
 
                 if (string.IsNullOrWhiteSpace(steamHeaderUrl))
                 {
-                    steamHeaderUrl = await _gameAssets.ResolveSteamHeaderFallbackUrlAsync(game.SteamID.Value).ConfigureAwait(false);
+                    steamHeaderUrl = await _gameAssets.ResolveSteamHeaderFallbackUrlAsync(steamMetadataId.Value).ConfigureAwait(false);
                 }
 
                 if (!string.IsNullOrWhiteSpace(steamHeaderUrl))
@@ -263,9 +264,9 @@ namespace Codec.Services.Fetching
 
         private static string BuildAssetKey(Game game, string suffix)
         {
-            if (game.SteamID.HasValue)
+            if (game.EffectiveSteamMetadataAppId.HasValue)
             {
-                return $"steam_{game.SteamID.Value}_{suffix}";
+                return $"steam_{game.EffectiveSteamMetadataAppId.Value}_{suffix}";
             }
 
             if (game.RawgID.HasValue)
@@ -273,9 +274,9 @@ namespace Codec.Services.Fetching
                 return $"rawg_{game.RawgID.Value}_{suffix}";
             }
 
-            string normalizedName = string.IsNullOrWhiteSpace(game.Name)
+            string normalizedName = string.IsNullOrWhiteSpace(game.EffectiveMetadataLookupName)
                 ? "game"
-                : game.Name.Replace(' ', '_').ToLowerInvariant();
+                : game.EffectiveMetadataLookupName.Replace(' ', '_').ToLowerInvariant();
 
             return $"{normalizedName}_{suffix}";
         }

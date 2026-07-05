@@ -376,19 +376,33 @@ namespace Codec.ViewModels
             try
             {
                 var snapshot = game.CreateHydrationSnapshot();
-                var steamTask = snapshot.SteamID.HasValue ? _services.SteamDetails.PopulateFromSteamAsync(snapshot) : Task.CompletedTask;
-                var rawgTask = !snapshot.SteamID.HasValue && snapshot.RawgID.HasValue
+                if (snapshot.SteamID.HasValue && snapshot.UsesAlternateMetadataLookupName && !snapshot.SteamMetadataAppId.HasValue)
+                {
+                    var resolvedBaseSteam = await _services.GameName.FindGameIdsByNameAsync(snapshot.EffectiveMetadataLookupName);
+                    if (resolvedBaseSteam.steamId.HasValue && resolvedBaseSteam.steamId.Value != snapshot.SteamID.Value)
+                    {
+                        snapshot.SteamMetadataAppId = resolvedBaseSteam.steamId.Value;
+                        if (!string.IsNullOrWhiteSpace(resolvedBaseSteam.steamName))
+                        {
+                            snapshot.MetadataLookupName = resolvedBaseSteam.steamName;
+                        }
+                    }
+                }
+
+                int? steamMetadataId = snapshot.EffectiveSteamMetadataAppId;
+                var steamTask = steamMetadataId.HasValue ? _services.SteamDetails.PopulateFromSteamAsync(snapshot) : Task.CompletedTask;
+                var rawgTask = !steamMetadataId.HasValue && snapshot.RawgID.HasValue
                     ? _services.RawgDetails.PopulateAsync(snapshot)
                     : Task.CompletedTask;
                 var folderSizeTask = FolderSizeService.CalculateAsync(snapshot.FolderLocation);
 
                 await Task.WhenAll(steamTask, rawgTask, folderSizeTask);
 
-                if (snapshot.SteamID.HasValue)
+                if (steamMetadataId.HasValue)
                 {
                     if (!snapshot.IgdbId.HasValue)
                     {
-                        snapshot.IgdbId = await _services.Igdb.FindIgdbIdBySteamIdAsync(snapshot.SteamID.Value);
+                        snapshot.IgdbId = await _services.Igdb.FindIgdbIdBySteamIdAsync(steamMetadataId.Value);
                     }
                     if (snapshot.IgdbId.HasValue)
                     {

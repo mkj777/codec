@@ -76,7 +76,8 @@ namespace Codec.Services.Fetching
 
         public async Task PopulateFromSteamAsync(Game game)
         {
-            if (!game.SteamID.HasValue)
+            int? steamMetadataId = game.EffectiveSteamMetadataAppId;
+            if (!steamMetadataId.HasValue)
             {
                 return;
             }
@@ -105,11 +106,12 @@ namespace Codec.Services.Fetching
 
             try
             {
-                var url = $"https://store.steampowered.com/api/appdetails?appids={game.SteamID.Value}&l=english";
+                int steamId = steamMetadataId.Value;
+                var url = $"https://store.steampowered.com/api/appdetails?appids={steamId}&l=english";
                 var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromDays(1));
                 using var doc = JsonDocument.Parse(json);
 
-                if (!doc.RootElement.TryGetProperty(game.SteamID.Value.ToString(), out var appNode))
+                if (!doc.RootElement.TryGetProperty(steamId.ToString(), out var appNode))
                 {
                     return;
                 }
@@ -153,7 +155,7 @@ namespace Codec.Services.Fetching
 
                 // Categories (disabled per request)
 
-                await PopulatePriceAsync(game).ConfigureAwait(false);
+                await PopulatePriceAsync(game, steamId).ConfigureAwait(false);
 
                 // Release date fallback: only set when missing (RAWG preferred)
                 if (!game.ReleaseDate.HasValue && data.TryGetProperty("release_date", out var releaseNode) && releaseNode.ValueKind == JsonValueKind.Object)
@@ -170,7 +172,7 @@ namespace Codec.Services.Fetching
                 }
 
                 // Reviews summary
-                await PopulateReviewsAsync(game).ConfigureAwait(false);
+                await PopulateReviewsAsync(game, steamId).ConfigureAwait(false);
 
                 // Age rating
                 var ratings = new List<string>();
@@ -223,15 +225,15 @@ namespace Codec.Services.Fetching
                 }
 
                 // Hero + logo via SteamKit PICS hash lookup; legacy URL probe as fallback.
-                var picsAssets = await _steamKit.GetLibraryAssetsAsync((uint)game.SteamID.Value).ConfigureAwait(false);
+                var picsAssets = await _steamKit.GetLibraryAssetsAsync((uint)steamId).ConfigureAwait(false);
                 if (!string.IsNullOrEmpty(picsAssets?.HeroUrl))
                 {
                     game.LibraryHeroUrl = picsAssets.HeroUrl;
                 }
                 else
                 {
-                    var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero.jpg";
-                    var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/library_hero_2x.jpg";
+                    var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/library_hero.jpg";
+                    var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/library_hero_2x.jpg";
                     game.LibraryHeroUrl = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
                 }
 
@@ -241,8 +243,8 @@ namespace Codec.Services.Fetching
                 }
                 else
                 {
-                    var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo.png";
-                    var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{game.SteamID.Value}/logo_2x.png";
+                    var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/logo.png";
+                    var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/logo_2x.png";
                     game.LibraryLogoUrl = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
                 }
 
@@ -251,7 +253,7 @@ namespace Codec.Services.Fetching
                 {
                     game.OfficialWebsiteUrl = site.GetString();
                 }
-                game.SteamPageUrl = $"https://store.steampowered.com/app/{game.SteamID.Value}";
+                game.SteamPageUrl = $"https://store.steampowered.com/app/{steamId}";
             }
             catch
             {
@@ -289,11 +291,11 @@ namespace Codec.Services.Fetching
             };
         }
 
-        private async Task PopulateReviewsAsync(Game game)
+        private async Task PopulateReviewsAsync(Game game, int steamId)
         {
             try
             {
-                var url = $"https://store.steampowered.com/appreviews/{game.SteamID}/?json=1&language=all&filter=all&num_per_page=0";
+                var url = $"https://store.steampowered.com/appreviews/{steamId}/?json=1&language=all&filter=all&num_per_page=0";
                 var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromHours(6)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
 
@@ -320,11 +322,11 @@ namespace Codec.Services.Fetching
             }
         }
 
-        private async Task PopulatePriceAsync(Game game)
+        private async Task PopulatePriceAsync(Game game, int steamId)
         {
             try
             {
-                var url = $"https://steamspy.com/api.php?request=appdetails&appid={game.SteamID}";
+                var url = $"https://steamspy.com/api.php?request=appdetails&appid={steamId}";
                 var json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromHours(4)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
 

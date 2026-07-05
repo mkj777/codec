@@ -215,7 +215,7 @@ namespace Codec.Services.Importing
             }
 
             var batch = candidate.LogBatch;
-            batch?.Log($"ENQUEUE source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath} epic={candidate.EpicAppId}");
+            batch?.Log($"ENQUEUE source={candidate.ImportSource} exe={candidate.ExecutablePath} lnk={candidate.LaunchScriptPath} epic={candidate.EpicAppId} metadata='{candidate.MetadataLookupName ?? "-"}'");
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
 
             bool hasExe = !string.IsNullOrWhiteSpace(candidate.ExecutablePath);
@@ -275,7 +275,8 @@ namespace Codec.Services.Importing
                 candidate.LaunchScriptPath,
                 candidate.IgdbId,
                 candidate.EpicAppId,
-                LogBatch: batch), _disposeCts.Token).ConfigureAwait(false);
+                LogBatch: batch,
+                MetadataLookupName: candidate.MetadataLookupName), _disposeCts.Token).ConfigureAwait(false);
 
             PublishStatus();
         }

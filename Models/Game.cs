@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Codec.Helpers;
+using Codec.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -75,7 +76,12 @@ namespace Codec.Models
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
+        [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
+        [NotifyPropertyChangedFor(nameof(UsesAlternateMetadataLookupName))]
         private int? steamID;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
+        private int? steamMetadataAppId;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
@@ -87,7 +93,16 @@ namespace Codec.Models
         [ObservableProperty] private int? gridDbId;
 
         // game details
-        [ObservableProperty] private string name;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(EffectiveMetadataLookupName))]
+        [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
+        [NotifyPropertyChangedFor(nameof(UsesAlternateMetadataLookupName))]
+        private string name;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(EffectiveMetadataLookupName))]
+        [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
+        [NotifyPropertyChangedFor(nameof(UsesAlternateMetadataLookupName))]
+        private string? metadataLookupName;
         [ObservableProperty] private string? publisher;
         [ObservableProperty] private string? developer;
         [ObservableProperty] private List<string>? genres;
@@ -166,6 +181,24 @@ namespace Codec.Models
         public double CompletionistOpacity => GetAvailabilityOpacity(HasCompletionTime(TimeToCompleteCompletionist));
 
         public bool IsRemakeOrRemaster => IgdbCategory is 8 or 9;
+
+        [JsonIgnore]
+        public int? EffectiveSteamMetadataAppId => SteamMetadataAppId ?? (UsesAlternateMetadataLookupName ? null : SteamID);
+
+        [JsonIgnore]
+        public string EffectiveMetadataLookupName => GameNameCleaner.GetMetadataLookupName(Name, MetadataLookupName);
+
+        [JsonIgnore]
+        public bool UsesAlternateMetadataLookupName
+        {
+            get
+            {
+                string displayName = GameNameCleaner.RemoveTrailingDomainTag(Name);
+                string metadataName = EffectiveMetadataLookupName;
+                return !string.IsNullOrWhiteSpace(metadataName) &&
+                       !string.Equals(displayName, metadataName, StringComparison.OrdinalIgnoreCase);
+            }
+        }
 
         public bool HasOriginalReleaseDate => OriginalReleaseDate.HasValue;
 
@@ -561,12 +594,14 @@ namespace Codec.Models
                 FolderSize = FolderSize,
                 ImportedFrom = ImportedFrom,
                 SteamID = SteamID,
+                SteamMetadataAppId = SteamMetadataAppId,
                 EpicAppId = EpicAppId,
                 RawgID = RawgID,
                 RawgSlug = RawgSlug,
                 IgdbId = IgdbId,
                 GridDbId = GridDbId,
                 Name = Name,
+                MetadataLookupName = MetadataLookupName,
                 Publisher = Publisher,
                 Developer = Developer,
                 Genres = Genres == null ? null : new List<string>(Genres),
@@ -624,12 +659,14 @@ namespace Codec.Models
             FolderSize = source.FolderSize;
             ImportedFrom = source.ImportedFrom;
             SteamID = source.SteamID;
+            SteamMetadataAppId = source.SteamMetadataAppId;
             EpicAppId = source.EpicAppId;
             RawgID = source.RawgID;
             RawgSlug = source.RawgSlug;
             IgdbId = source.IgdbId;
             GridDbId = source.GridDbId;
             Name = source.Name;
+            MetadataLookupName = source.MetadataLookupName;
             Publisher = source.Publisher;
             Developer = source.Developer;
             Genres = source.Genres == null ? null : new List<string>(source.Genres);

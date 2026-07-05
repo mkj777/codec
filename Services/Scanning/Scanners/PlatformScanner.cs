@@ -15,7 +15,8 @@ namespace Codec.Services.Scanning.Scanners
         string? EpicAppId = null,
         string? LaunchScriptPath = null,
         string? ExecutableHintPath = null,
-        bool HasStrongGameSignals = false
+        bool HasStrongGameSignals = false,
+        string? MetadataLookupName = null
     );
 
     /// <summary>

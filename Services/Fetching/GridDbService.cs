@@ -34,7 +34,7 @@ namespace Codec.Services.Fetching
                 return false;
             }
 
-            var resolution = await ResolveGridAssetsAsync(game.Name, game.GridDbId, game.LibraryCapsuleCache, forceCoverDownload);
+            var resolution = await ResolveGridAssetsAsync(game.EffectiveMetadataLookupName, game.GridDbId, game.LibraryCapsuleCache, forceCoverDownload);
             if (!resolution.GridDbId.HasValue || string.IsNullOrWhiteSpace(resolution.CoverCachePath))
             {
                 return false;

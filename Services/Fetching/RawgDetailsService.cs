@@ -26,14 +26,14 @@ namespace Codec.Services.Fetching
 
         public async Task TryPopulateRawgFromSearchAsync(Game game)
         {
-            if (game == null || game.RawgID.HasValue || string.IsNullOrWhiteSpace(game.Name))
+            if (game == null || game.RawgID.HasValue || string.IsNullOrWhiteSpace(game.EffectiveMetadataLookupName))
             {
                 return;
             }
 
             try
             {
-                string url = SearchEndpoint + Uri.EscapeDataString(game.Name);
+                string url = SearchEndpoint + Uri.EscapeDataString(game.EffectiveMetadataLookupName);
                 string json = await _cache.GetOrFetchAsync("rawg", url, TimeSpan.FromDays(1)).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;

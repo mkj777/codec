@@ -33,7 +33,7 @@ namespace Codec.Services.Fetching
                 return;
             }
 
-            var term = NormalizeSearchTerm(game.Name);
+            var term = NormalizeSearchTerm(game.EffectiveMetadataLookupName);
             if (string.IsNullOrWhiteSpace(term))
             {
                 return;
