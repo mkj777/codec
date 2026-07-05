@@ -411,19 +411,31 @@
                                                         Background="{StaticResource HeroActionSettingsFallbackFillBrush}"
                                                         BorderBrush="{StaticResource HeroActionSettingsFallbackBorderBrush}"
                                                         BorderThickness="1"
-                                                        CornerRadius="11"
+                                                        CornerRadius="13"
                                                         IsHitTestVisible="False">
-                                                        <FontIcon x:Name="BackButtonGlyph"
-                                                                  Glyph="&#xE72B;"
-                                                                  FontFamily="Segoe Fluent Icons"
-                                                                  FontSize="12"
-                                                                  Foreground="{StaticResource HeroActionSettingsFallbackForegroundBrush}"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center"/>
+                                                        <Viewbox Width="13"
+                                                                 Height="13"
+                                                                 HorizontalAlignment="Center"
+                                                                 VerticalAlignment="Center">
+                                                                <Viewbox.RenderTransform>
+                                                                        <CompositeTransform TranslateX="-0.8"/>
+                                                                </Viewbox.RenderTransform>
+                                                                <Path x:Name="BackButtonGlyph"
+                                                                      Width="13"
+                                                                      Height="13"
+                                                                      Data="M 8.6 3.2 L 4.2 6.5 L 8.6 9.8"
+                                                                      Stroke="{StaticResource HeroActionSettingsFallbackForegroundBrush}"
+                                                                      StrokeThickness="1.75"
+                                                                      StrokeStartLineCap="Round"
+                                                                      StrokeEndLineCap="Round"
+                                                                      StrokeLineJoin="Round"
+                                                                      Stretch="Uniform"
+                                                                      Fill="Transparent"/>
+                                                        </Viewbox>
                                                 </Border>
                                                 <Border x:Name="BackButtonHighlight"
-                                                        Background="#18E76C2B"
-                                                        CornerRadius="11"
+                                                        Background="#22D4A832"
+                                                        CornerRadius="13"
                                                         Opacity="0"
                                                         IsHitTestVisible="False"/>
                                                 <Button x:Name="BackButton"
@@ -431,13 +443,34 @@
                                                         Click="BackButton_Click"
                                                         VerticalAlignment="Stretch"
                                                         HorizontalAlignment="Stretch"
-                                                        CornerRadius="11"
+                                                        CornerRadius="13"
                                                         PointerEntered="HeroActionButton_PointerEntered"
                                                         PointerExited="HeroActionButton_PointerExited"
                                                         PointerPressed="HeroActionButton_PointerPressed"
                                                         PointerReleased="HeroActionButton_PointerReleased"
                                                         PointerCanceled="HeroActionButton_PointerCanceled"
-                                                        LostFocus="HeroActionButton_LostFocus"/>
+                                                        LostFocus="HeroActionButton_LostFocus">
+                                                        <Button.Resources>
+                                                                <SolidColorBrush x:Key="ButtonBackground"
+                                                                                 Color="#01000000"/>
+                                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
+                                                                                 Color="#01000000"/>
+                                                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
+                                                                                 Color="#01000000"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrush"
+                                                                                 Color="#00FFFFFF"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
+                                                                                 Color="#00FFFFFF"/>
+                                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
+                                                                                 Color="#00FFFFFF"/>
+                                                                <SolidColorBrush x:Key="ButtonForeground"
+                                                                                 Color="#00FFFFFF"/>
+                                                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
+                                                                                 Color="#00FFFFFF"/>
+                                                                <SolidColorBrush x:Key="ButtonForegroundPressed"
+                                                                                 Color="#00FFFFFF"/>
+                                                        </Button.Resources>
+                                                </Button>
                                         </Grid>
 
                                         <!-- Logo overlayed with dynamic padding -->
