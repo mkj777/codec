@@ -71,6 +71,7 @@
                                     <TextBlock Text="{x:Bind BadgeText}"
                                                FontSize="10"
                                                FontWeight="Bold"
+                                               FontFamily="{StaticResource CodecBoldFontFamily}"
                                                Foreground="#D4A832"
                                                HorizontalAlignment="Center"/>
                                 </Border>
@@ -89,6 +90,7 @@
                                 <TextBlock Text="{x:Bind Entry.Name}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
+                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                            Foreground="#F3EDC9"
                                            HorizontalAlignment="Center"
                                            TextAlignment="Center"
@@ -148,6 +150,7 @@
                                     <TextBlock Text="{x:Bind BadgeText}"
                                                FontSize="10"
                                                FontWeight="Bold"
+                                               FontFamily="{StaticResource CodecBoldFontFamily}"
                                                Foreground="#D4A832"
                                                HorizontalAlignment="Center"/>
                                 </Border>
@@ -166,6 +169,7 @@
                                 <TextBlock Text="{x:Bind Entry.Name}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
+                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                            Foreground="#F3EDC9"
                                            HorizontalAlignment="Center"
                                            TextAlignment="Center"

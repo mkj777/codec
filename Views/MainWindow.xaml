@@ -32,6 +32,8 @@
                         Value="12"/>
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
+                <Setter Property="FontFamily"
+                        Value="{StaticResource CodecSemiBoldFontFamily}"/>
                 <Setter Property="Foreground"
                         Value="#F3EDC9"/>
                 <Setter Property="Background"
@@ -55,6 +57,7 @@
                                                   VerticalAlignment="Center"
                                                   Foreground="{TemplateBinding Foreground}"
                                                   FontSize="{TemplateBinding FontSize}"
+                                                  FontFamily="{TemplateBinding FontFamily}"
                                                   FontWeight="{TemplateBinding FontWeight}"
                                                   Content="{TemplateBinding Content}"/>
                                 <VisualStateManager.VisualStateGroups>
@@ -88,7 +91,7 @@
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
                 <Setter Property="FontFamily"
-                        Value="{StaticResource CodecFontFamily}"/>
+                        Value="{StaticResource CodecSemiBoldFontFamily}"/>
                 <Setter Property="Foreground"
                         Value="#F3EDC9"/>
             </Style>
@@ -102,6 +105,8 @@
                         Value="11"/>
                 <Setter Property="FontWeight"
                         Value="SemiBold"/>
+                <Setter Property="FontFamily"
+                        Value="{StaticResource CodecSemiBoldFontFamily}"/>
                 <Setter Property="Foreground"
                         Value="#F3EDC9"/>
                 <Setter Property="Background"
@@ -178,6 +183,7 @@
                             <TextBlock Text="Codec"
                                        FontSize="18"
                                        FontWeight="Bold"
+                                       FontFamily="{StaticResource CodecBoldFontFamily}"
                                        Foreground="#F3EDC9"/>
                         </Button>
                         <Grid Grid.Row="1"
@@ -439,7 +445,7 @@
                            FontSize="18"
                            FontWeight="SemiBold"
                            TextAlignment="Center"
-                           FontFamily="{StaticResource CodecFontFamily}"/>
+                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                 <ProgressBar Width="320"
                              Height="8"
                              IsIndeterminate="{Binding ScanProgressIsIndeterminate}"
@@ -477,6 +483,7 @@
                                 BorderThickness="0"
                                 FontSize="24"
                                 FontWeight="Bold"
+                                FontFamily="{StaticResource CodecBoldFontFamily}"
                                 Margin="0,-48,0,0"
                                 Foreground="#F3EDC9"/>
 
@@ -550,6 +557,7 @@
                                 BorderThickness="0"
                                 FontSize="24"
                                 FontWeight="Bold"
+                                FontFamily="{StaticResource CodecBoldFontFamily}"
                                 Foreground="#F3EDC9"/>
                     </Grid>
 
@@ -592,24 +600,24 @@
                     <TextBlock Text="Welcome to Codec!"
                                FontSize="28"
                                FontWeight="Bold"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecBoldFontFamily}"/>
                     <TextBlock Text="I'm Shrimp, and I'd love to guide you through Codec."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                     <TextBlock Text="I'll try to find all your games for you, but you can always add any that I miss later on. If you'd rather skip that for now, you're free to use the button below."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                     <TextBlock Text="My goal is to make collecting games as easy and fun as possible—no matter where they came from. If something doesn't work right or you need a hand, you can reach out to my creator on GitHub."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecFontFamily}"
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                Foreground="#9E8E78"/>
                     <TextBlock Text="Thank you for giving Codec a try."
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8"
                                 Margin="4,0,0,0">
@@ -658,7 +666,7 @@
                             <TextBlock Text="Settings"
                                        FontSize="17"
                                        FontWeight="SemiBold"
-                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                        Foreground="#F3EDC9"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
@@ -668,7 +676,7 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 FontSize="13"
-                                FontFamily="{StaticResource CodecFontFamily}"
+                                FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                 Padding="7,4,6,4"
                                 Foreground="#9E8E78"
                                 Click="SettingsClose_Click">
@@ -693,7 +701,7 @@
                         <TextBlock Text="STARTUP"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   FontFamily="{StaticResource CodecFontFamily}"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                    Foreground="#D4A832"
                                    CharacterSpacing="40"/>
 
@@ -714,12 +722,12 @@
                                         <TextBlock Text="Scan for games"
                                                    FontSize="13"
                                                    FontWeight="SemiBold"
-                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                                    Foreground="#F3EDC9"/>
                                         <TextBlock Text="On Startup: Run Library scan"
                                                    FontSize="11.5"
-                                                   FontWeight="Normal"
-                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                                    Foreground="#9E8E78"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
@@ -745,12 +753,12 @@
                                         <TextBlock Text="Launch Steam"
                                                    FontSize="13"
                                                    FontWeight="SemiBold"
-                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                                    Foreground="#F3EDC9"/>
                                         <TextBlock Text="On Startup: Start Steam silently"
                                                    FontSize="11.5"
-                                                   FontWeight="Normal"
-                                                   FontFamily="{StaticResource CodecFontFamily}"
+                                                   FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                                    Foreground="#9E8E78"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
@@ -769,7 +777,7 @@
                         <TextBlock Text="MAINTENANCE"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   FontFamily="{StaticResource CodecFontFamily}"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                    Foreground="#D4A832"
                                    CharacterSpacing="40"/>
 
@@ -779,7 +787,7 @@
                                 Padding="0,9"
                                 FontSize="13"
                                 FontWeight="SemiBold"
-                                FontFamily="{StaticResource CodecFontFamily}"
+                                FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                 Background="#26E76C2B"
                                 BorderBrush="#55E76C2B"
                                 BorderThickness="1"
@@ -807,7 +815,7 @@
                         <TextBlock Text="ABOUT"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   FontFamily="{StaticResource CodecFontFamily}"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                    Foreground="#D4A832"
                                    CharacterSpacing="40"/>
 
@@ -820,14 +828,14 @@
                             <TextBlock Text="Version"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1"
                                        Text="{x:Bind AppVersion}"
                                        FontSize="12"
                                        FontWeight="SemiBold"
-                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"/>
                         </Grid>
@@ -842,7 +850,7 @@
                             Padding="0,9"
                             FontSize="13"
                             FontWeight="SemiBold"
-                            FontFamily="{StaticResource CodecFontFamily}"
+                            FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                             Background="#25221F"
                             BorderBrush="#3E3830"
                             BorderThickness="1"
@@ -913,7 +921,7 @@
                             <TextBlock Text="Reset Codec"
                                        FontSize="18"
                                        FontWeight="Bold"
-                                       FontFamily="{StaticResource CodecFontFamily}"
+                                       FontFamily="{StaticResource CodecBoldFontFamily}"
                                        Foreground="#F3EDC9"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
@@ -953,7 +961,7 @@
                                        CharacterSpacing="100"/>
                             <TextBlock Text="Game library Data · Cached artwork · App settings"
                                        FontSize="12"
-                                       FontWeight="Normal"
+                                       FontWeight="SemiBold"
                                        Foreground="#9E8E78"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
@@ -965,7 +973,7 @@
                                        CharacterSpacing="100"/>
                             <TextBlock Text="Your Games · Your game files or saves."
                                        FontSize="12"
-                                       FontWeight="Normal"
+                                       FontWeight="SemiBold"
                                        Foreground="#9E8E78"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
@@ -1126,17 +1134,17 @@
                                        FontWeight="SemiBold"
                                        Foreground="#F3EDC9"
                                        VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecFontFamily}"/>
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                             <TextBlock Text="{Binding UpdateDownloadProgress}"
                                        FontSize="13"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecFontFamily}"/>
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                             <TextBlock Text="%"
                                        FontSize="13"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecFontFamily}"/>
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                         </StackPanel>
                         <ProgressBar Value="{Binding UpdateDownloadProgress}"
                                      Minimum="0"
@@ -1174,12 +1182,12 @@
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="#E76C2B"
-                                   FontFamily="{StaticResource CodecFontFamily}"/>
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                         <TextBlock Text="{Binding UpdateErrorMessage}"
                                    FontSize="11"
                                    Foreground="#9E8E78"
                                    TextWrapping="Wrap"
-                                   FontFamily="{StaticResource CodecFontFamily}"/>
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -1212,12 +1220,12 @@
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="#9E8E78"
-                                   FontFamily="{StaticResource CodecFontFamily}"/>
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                         <TextBlock Text="Downloaded and ready to install"
                                    FontSize="11"
                                    Foreground="#F3EDC9"
                                    TextWrapping="Wrap"
-                                   FontFamily="{StaticResource CodecFontFamily}"/>
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                     </StackPanel>
                     
                     <Button Grid.Column="2"
@@ -1265,7 +1273,7 @@
                                        FontWeight="Bold"
                                        Foreground="#F3EDC9"
                                        VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecFontFamily}"/>
+                                       FontFamily="{StaticResource CodecBoldFontFamily}"/>
                             <TextBlock Text="added"
                                        FontSize="12"
                                        Foreground="#9E8E78"
@@ -1279,7 +1287,7 @@
                                        FontWeight="Bold"
                                        Foreground="#9E8E78"
                                        VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecFontFamily}"/>
+                                       FontFamily="{StaticResource CodecBoldFontFamily}"/>
                             <TextBlock Text="processing"
                                        FontSize="12"
                                        Foreground="#9E8E78"
@@ -1318,7 +1326,7 @@
                                    FontWeight="Bold"
                                    Foreground="#F3EDC9"
                                    VerticalAlignment="Center"
-                                   FontFamily="{StaticResource CodecFontFamily}"/>
+                                   FontFamily="{StaticResource CodecBoldFontFamily}"/>
                         <TextBlock Text="games added"
                                    FontSize="12"
                                    Foreground="#9E8E78"
@@ -1353,7 +1361,7 @@
                                FontWeight="SemiBold"
                                Foreground="#F3EDC9"
                                VerticalAlignment="Center"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                 </Grid>
             </Border>
 
@@ -1383,7 +1391,7 @@
                                FontWeight="SemiBold"
                                Foreground="#F3EDC9"
                                VerticalAlignment="Center"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                 </Grid>
             </Border>
 
@@ -1413,7 +1421,7 @@
                                FontWeight="SemiBold"
                                Foreground="#F3EDC9"
                                VerticalAlignment="Center"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                 </Grid>
             </Border>
         </StackPanel>
@@ -1439,11 +1447,11 @@
                     <TextBlock Text="{Binding LoadingTitle}"
                                FontSize="28"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecFontFamily}"/>
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
                     <TextBlock Text="{Binding LoadingSubtitle}"
                                FontSize="18"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecFontFamily}"
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                Foreground="#9E8E78"/>
                     <ProgressBar Width="445"
                                  Height="8"

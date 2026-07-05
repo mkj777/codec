@@ -14,11 +14,11 @@
             <FontFamily x:Key="CodecFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
             <FontFamily x:Key="CodecSemiBoldFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
             <FontFamily x:Key="CodecBoldFontFamily">ms-appx:///Assets/fonts/Nunito-Bold.ttf#Nunito</FontFamily>
-            <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
-            <FontFamily x:Key="MTCMediaFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
-            <FontFamily x:Key="PivotHeaderItemFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
-            <FontFamily x:Key="PivotTitleFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
-            <FontFamily x:Key="KeyTipFontFamily">ms-appx:///Assets/fonts/Nunito-Medium.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="MTCMediaFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="PivotHeaderItemFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="PivotTitleFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
+            <FontFamily x:Key="KeyTipFontFamily">ms-appx:///Assets/fonts/Nunito-SemiBold.ttf#Nunito</FontFamily>
 
             <Color x:Key="SystemAccentColor">#E76C2B</Color>
             <Color x:Key="SystemAccentColorLight1">#F87D3C</Color>
@@ -98,28 +98,39 @@
                 <Setter Property="Foreground" Value="{StaticResource CodecTextBrush}"/>
             </Style>
             <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style TargetType="RadioButton" BasedOn="{StaticResource DefaultRadioButtonStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style TargetType="ToggleSwitch" BasedOn="{StaticResource DefaultToggleSwitchStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
                 <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
             </Style>
             <Style TargetType="HyperlinkButton" BasedOn="{StaticResource DefaultHyperlinkButtonStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style TargetType="MenuFlyoutItem" BasedOn="{StaticResource DefaultMenuFlyoutItemStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
             <Style TargetType="ContentDialog" BasedOn="{StaticResource DefaultContentDialogStyle}">
-                <Setter Property="FontFamily" Value="{StaticResource CodecFontFamily}"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </Style>
+            <Style TargetType="ToolTip" BasedOn="{StaticResource DefaultToolTipStyle}">
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
 
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>

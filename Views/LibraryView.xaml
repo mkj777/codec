@@ -20,6 +20,7 @@
             <Setter Property="Padding" Value="10,7"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Foreground" Value="#9E8E78"/>
             <Setter Property="UseSystemFocusVisuals" Value="False"/>
@@ -35,6 +36,7 @@
                                               HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalContentAlignment="Center"
                                               FontSize="{TemplateBinding FontSize}"
+                                              FontFamily="{TemplateBinding FontFamily}"
                                               FontWeight="{TemplateBinding FontWeight}"
                                               Foreground="{TemplateBinding Foreground}"/>
                             <VisualStateManager.VisualStateGroups>
@@ -313,6 +315,7 @@
             <Setter Property="Padding" Value="14,8"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="UseSystemFocusVisuals" Value="False"/>
             <Setter Property="Template">
@@ -329,6 +332,7 @@
                                               HorizontalContentAlignment="Center"
                                               VerticalContentAlignment="Center"
                                               FontSize="{TemplateBinding FontSize}"
+                                              FontFamily="{TemplateBinding FontFamily}"
                                               FontWeight="{TemplateBinding FontWeight}"
                                               Foreground="{TemplateBinding Foreground}"/>
                             <VisualStateManager.VisualStateGroups>
@@ -398,6 +402,7 @@
                     <TextBlock Text="{Binding SortLabel}"
                                FontSize="12"
                                FontWeight="SemiBold"
+                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                VerticalAlignment="Center"/>
                     <FontIcon Glyph="{Binding SortIconGlyph}"
                                FontSize="9"
@@ -421,7 +426,9 @@
                                           Style="{StaticResource SortOptionToggleButtonStyle}"
                                           Click="SortOption_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Alphabetic" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Alphabetic"
+                                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                               VerticalAlignment="Center"/>
                                     <FontIcon Glyph="&#xE74B;" FontSize="9" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </ToggleButton>
@@ -430,7 +437,9 @@
                                           Style="{StaticResource SortOptionToggleButtonStyle}"
                                           Click="SortOption_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Alphabetic" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Alphabetic"
+                                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                               VerticalAlignment="Center"/>
                                     <FontIcon Glyph="&#xE74A;" FontSize="9" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </ToggleButton>
@@ -439,7 +448,9 @@
                                           Style="{StaticResource SortOptionToggleButtonStyle}"
                                           Click="SortOption_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Folder Size" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Folder Size"
+                                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                               VerticalAlignment="Center"/>
                                     <FontIcon Glyph="&#xE74B;" FontSize="9" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </ToggleButton>
@@ -448,7 +459,9 @@
                                           Style="{StaticResource SortOptionToggleButtonStyle}"
                                           Click="SortOption_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Folder Size" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Folder Size"
+                                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                               VerticalAlignment="Center"/>
                                     <FontIcon Glyph="&#xE74A;" FontSize="9" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </ToggleButton>
@@ -457,7 +470,9 @@
                                           Style="{StaticResource SortOptionToggleButtonStyle}"
                                           Click="SortOption_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Date Added" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Date Added"
+                                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                               VerticalAlignment="Center"/>
                                     <FontIcon Glyph="&#xE74B;" FontSize="9" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </ToggleButton>
@@ -466,7 +481,9 @@
                                           Style="{StaticResource SortOptionToggleButtonStyle}"
                                           Click="SortOption_Click">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="Date Added" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Date Added"
+                                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                               VerticalAlignment="Center"/>
                                     <FontIcon Glyph="&#xE74A;" FontSize="9" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </ToggleButton>
@@ -541,6 +558,7 @@
                                     <TextBlock Text="{x:Bind FolderSizeDisplay}"
                                                FontSize="10"
                                                FontWeight="Bold"
+                                               FontFamily="{StaticResource CodecBoldFontFamily}"
                                                Foreground="#F3EDC9"/>
                                 </Border>
 
@@ -557,6 +575,7 @@
                                     <TextBlock Text="{x:Bind DateAddedDisplay}"
                                                FontSize="10"
                                                FontWeight="Bold"
+                                               FontFamily="{StaticResource CodecBoldFontFamily}"
                                                Foreground="#F3EDC9"/>
                                 </Border>
                             </Grid>
