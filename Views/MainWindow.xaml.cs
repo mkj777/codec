@@ -6,6 +6,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
@@ -19,6 +20,9 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using Windows.Graphics;
 using Windows.Storage.Pickers;
+using Windows.System;
+using Windows.UI.Core;
+using Windows.UI.ViewManagement;
 using WinRT.Interop;
 
 namespace Codec.Views
@@ -44,6 +48,7 @@ namespace Codec.Views
 
         private bool _isSidebarListRefreshAnimationQueued;
         private Storyboard? _sidebarListRefreshStoryboard;
+        private Storyboard? _sidebarStateStoryboard;
 
         public MainViewModel ViewModel { get; }
 
@@ -62,6 +67,8 @@ namespace Codec.Views
             ConfigureWindowConstraints();
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             ViewModel.SidebarFilteredGames.CollectionChanged += SidebarFilteredGames_CollectionChanged;
+            RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
+            RootGrid.AddHandler(UIElement.RightTappedEvent, new RightTappedEventHandler(RootGrid_RightTapped), true);
             _ = ViewModel.LoadLibraryAsync();
             RootGrid.Loaded += MainWindow_Loaded;
         }
@@ -93,6 +100,203 @@ namespace Codec.Views
 
             if (e.PropertyName == nameof(ViewModel.IsInitialLoading) && !ViewModel.IsInitialLoading)
                 DispatcherQueue.TryEnqueue(() => PlayStartupOpenAnimation());
+
+            if (e.PropertyName == nameof(ViewModel.IsSidebarCollapsed))
+                ApplySidebarState(ViewModel.IsSidebarCollapsed, animate: true);
+        }
+
+        private void RootGrid_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            bool controlDown = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
+                & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
+
+            if (controlDown && (e.Key == VirtualKey.F || e.Key == VirtualKey.S))
+            {
+                if (CanFocusSidebarSearch())
+                {
+                    FocusSidebarSearch();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            if (e.Key != VirtualKey.Back || IsTextInputSource(e.OriginalSource as DependencyObject))
+                return;
+
+            if (HandleDetailBackRequest())
+                e.Handled = true;
+        }
+
+        private void RootGrid_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+            if (!IsWithinDetailSurface(e.OriginalSource as DependencyObject))
+                return;
+
+            if (HandleDetailBackRequest())
+                e.Handled = true;
+        }
+
+        private bool CanFocusSidebarSearch() =>
+            ViewModel.IsUiEnabled
+            && !ViewModel.IsInitialLoading
+            && !ViewModel.IsLoadingVisible
+            && !ViewModel.IsOnboardingVisible
+            && !ViewModel.IsSettingsVisible
+            && !ViewModel.IsResetConfirmVisible
+            && !ViewModel.IsGameSettingsOpen
+            && !ViewModel.IsMediaOverlayOpen
+            && !ViewModel.IsFranchiseOverlayOpen;
+
+        private void FocusSidebarSearch()
+        {
+            if (ViewModel.IsSidebarCollapsed)
+                ViewModel.IsSidebarCollapsed = false;
+
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                SidebarSearchTextBox.Focus(FocusState.Keyboard);
+                SidebarSearchTextBox.SelectAll();
+            });
+        }
+
+        private bool HandleDetailBackRequest()
+        {
+            if (!ViewModel.IsDetailsVisible
+                || ViewModel.IsInitialLoading
+                || ViewModel.IsLoadingVisible
+                || ViewModel.IsOnboardingVisible
+                || ViewModel.IsSettingsVisible
+                || ViewModel.IsResetConfirmVisible)
+            {
+                return false;
+            }
+
+            if (GameDetailHost.TryCloseTransientLayer())
+                return true;
+
+            if (ViewModel.IsMediaOverlayOpen)
+            {
+                ViewModel.CloseMediaOverlayCommand.Execute(null);
+                return true;
+            }
+
+            if (ViewModel.IsFranchiseOverlayOpen)
+            {
+                ViewModel.CloseFranchiseOverlayCommand.Execute(null);
+                return true;
+            }
+
+            if (ViewModel.BackCommand.CanExecute(null))
+                ViewModel.BackCommand.Execute(null);
+            return true;
+        }
+
+        private static bool IsTextInputSource(DependencyObject? source)
+        {
+            DependencyObject? current = source;
+            while (current != null)
+            {
+                if (current is TextBox or PasswordBox or RichEditBox)
+                    return true;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return false;
+        }
+
+        private bool IsWithinDetailSurface(DependencyObject? source)
+        {
+            if (source == null)
+                return false;
+
+            return IsDescendantOf(source, GameDetailHost)
+                || (ViewModel.IsMediaOverlayOpen && IsDescendantOf(source, MediaOverlay))
+                || (ViewModel.IsFranchiseOverlayOpen && IsDescendantOf(source, FranchiseOverlay));
+        }
+
+        private static bool IsDescendantOf(DependencyObject source, DependencyObject ancestor)
+        {
+            DependencyObject? current = source;
+            while (current != null)
+            {
+                if (ReferenceEquals(current, ancestor))
+                    return true;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return false;
+        }
+
+        private void ApplySidebarState(bool isCollapsed, bool animate)
+        {
+            _sidebarStateStoryboard?.Stop();
+            _sidebarStateStoryboard = null;
+
+            bool animationsEnabled = animate;
+            try
+            {
+                animationsEnabled &= new UISettings().AnimationsEnabled;
+            }
+            catch
+            {
+                animationsEnabled = false;
+            }
+
+            if (!animationsEnabled)
+            {
+                SidebarColumn.Width = isCollapsed ? new GridLength(0) : new GridLength(220);
+                SidebarBorder.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+                SidebarBorder.Opacity = 1;
+                SidebarTranslateTransform.X = 0;
+                return;
+            }
+
+            if (!isCollapsed)
+            {
+                SidebarColumn.Width = new GridLength(220);
+                SidebarBorder.Visibility = Visibility.Visible;
+                SidebarBorder.Opacity = 0;
+                SidebarTranslateTransform.X = -18;
+            }
+
+            var duration = new Duration(TimeSpan.FromMilliseconds(150));
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            var opacity = new DoubleAnimation
+            {
+                To = isCollapsed ? 0 : 1,
+                Duration = duration,
+                EasingFunction = ease
+            };
+            var translate = new DoubleAnimation
+            {
+                To = isCollapsed ? -18 : 0,
+                Duration = duration,
+                EasingFunction = ease,
+                EnableDependentAnimation = true
+            };
+
+            Storyboard.SetTarget(opacity, SidebarBorder);
+            Storyboard.SetTargetProperty(opacity, "Opacity");
+            Storyboard.SetTarget(translate, SidebarTranslateTransform);
+            Storyboard.SetTargetProperty(translate, "X");
+
+            var storyboard = new Storyboard();
+            storyboard.Children.Add(opacity);
+            storyboard.Children.Add(translate);
+            storyboard.Completed += (_, _) =>
+            {
+                if (!ReferenceEquals(_sidebarStateStoryboard, storyboard))
+                    return;
+
+                if (isCollapsed)
+                {
+                    SidebarBorder.Visibility = Visibility.Collapsed;
+                    SidebarColumn.Width = new GridLength(0);
+                }
+                SidebarBorder.Opacity = 1;
+                SidebarTranslateTransform.X = 0;
+                _sidebarStateStoryboard = null;
+            };
+            _sidebarStateStoryboard = storyboard;
+            storyboard.Begin();
         }
 
         private void SidebarFilteredGames_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

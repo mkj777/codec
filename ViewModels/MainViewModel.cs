@@ -137,6 +137,8 @@ namespace Codec.ViewModels
         public string FranchiseAllLabel => $"All ({FranchiseAllCount})";
         [ObservableProperty] private bool _isSettingsVisible;
         [ObservableProperty] private bool _isResetConfirmVisible;
+        [ObservableProperty]
+        private bool _isSidebarCollapsed;
         [ObservableProperty] private bool _scanOnStartup;
         [ObservableProperty] private bool _launchSteamSilent;
         [ObservableProperty] private bool _isUiEnabled = true;
@@ -283,6 +285,9 @@ namespace Codec.ViewModels
             SidebarSelectedItem = null;
         }
 
+        [RelayCommand]
+        private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
+
         // ---------------------------------------------------------------------------------
         // Library Lifecycle
         // ---------------------------------------------------------------------------------
@@ -296,6 +301,7 @@ namespace Codec.ViewModels
             ScanOnStartup = _appSettings.ScanOnStartup;
             LaunchSteamSilent = _appSettings.LaunchSteamSilent;
             SelectedSortIndex = _appSettings.SelectedSortIndex;
+            IsSidebarCollapsed = _appSettings.IsSidebarCollapsed;
             _suppressSettingsSave = false;
 
             var saved = await _services.LibraryStorage.LoadAsync();
@@ -340,7 +346,15 @@ namespace Codec.ViewModels
             ScanOnStartup = _appSettings.ScanOnStartup;
             LaunchSteamSilent = false;
             SelectedSortIndex = 0;
+            IsSidebarCollapsed = false;
             _suppressSettingsSave = false;
+        }
+
+        partial void OnIsSidebarCollapsedChanged(bool value)
+        {
+            if (_suppressSettingsSave) return;
+            _appSettings.IsSidebarCollapsed = value;
+            _ = _services.AppSettings.SaveAsync(_appSettings);
         }
 
         partial void OnScanOnStartupChanged(bool value)
@@ -380,7 +394,7 @@ namespace Codec.ViewModels
         {
             IsOnboardingVisible = false;
             await _importCoordinator.StartScanAsync();
-            IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible;
+            IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
         }
 
         private async Task ScanGamesOnStartupAsync()
@@ -395,7 +409,7 @@ namespace Codec.ViewModels
             var result = await _importCoordinator.EnqueueManualExecutableAsync(executablePath);
             if (!result.IsAccepted && Games.Count == 0)
             {
-                IsOnboardingVisible = true;
+                IsOnboardingVisible = !_appSettings.OnboardingCompleted;
             }
             if (result.Status == ImportEnqueueResultStatus.Invalid)
             {

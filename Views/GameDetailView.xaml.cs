@@ -106,6 +106,24 @@ namespace Codec.Views
         private void BackButton_Click(object sender, RoutedEventArgs e)
             => ViewModel?.BackCommand.Execute(null);
 
+        public bool TryCloseTransientLayer()
+        {
+            if (RemoveGameConfirmationPopover.Visibility == Visibility.Visible)
+            {
+                HideRemoveGameConfirmationPopover();
+                return true;
+            }
+
+            if (ViewModel?.IsGameSettingsOpen == true)
+            {
+                if (ViewModel.CloseGameSettingsCommand.CanExecute(null))
+                    ViewModel.CloseGameSettingsCommand.Execute(null);
+                return true;
+            }
+
+            return false;
+        }
+
         private void RootLayout_Tapped(object sender, TappedRoutedEventArgs e)
         {
             if (ViewModel?.IsGameSettingsOpen != true)

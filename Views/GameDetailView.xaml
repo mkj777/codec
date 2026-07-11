@@ -98,6 +98,44 @@
                         <Setter Property="UseSystemFocusVisuals"
                                 Value="False"/>
                 </Style>
+                <Style x:Key="DetailDrawerButtonStyle" TargetType="Button">
+                        <Setter Property="Width" Value="28"/>
+                        <Setter Property="Height" Value="28"/>
+                        <Setter Property="Padding" Value="5"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Foreground" Value="#9E8E78"/>
+                        <Setter Property="UseSystemFocusVisuals" Value="True"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                                <Grid Background="Transparent">
+                                                        <ContentPresenter x:Name="DrawerIconPresenter"
+                                                                          Padding="{TemplateBinding Padding}"
+                                                                          HorizontalContentAlignment="Center"
+                                                                          VerticalContentAlignment="Center"
+                                                                          Opacity="0.72"/>
+                                                        <VisualStateManager.VisualStateGroups>
+                                                                <VisualStateGroup x:Name="CommonStates">
+                                                                        <VisualState x:Name="Normal"/>
+                                                                        <VisualState x:Name="PointerOver">
+                                                                                <VisualState.Setters>
+                                                                                        <Setter Target="DrawerIconPresenter.Opacity" Value="1"/>
+                                                                                </VisualState.Setters>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="Pressed">
+                                                                                <VisualState.Setters>
+                                                                                        <Setter Target="DrawerIconPresenter.Opacity" Value="0.48"/>
+                                                                                </VisualState.Setters>
+                                                                        </VisualState>
+                                                                        <VisualState x:Name="Disabled"/>
+                                                                </VisualStateGroup>
+                                                        </VisualStateManager.VisualStateGroups>
+                                                </Grid>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                </Style>
         </UserControl.Resources>
 
         <Grid x:Name="RootLayout">
@@ -374,9 +412,9 @@
                         <Image x:Name="HeroBackdropImage"
                                Source="{Binding SelectedGame.LibraryHero}"
                                Stretch="UniformToFill"
-                               Margin="-20,0,0,0"/>
+                               Margin="-24,0,0,0"/>
                         <Grid Background="#441C1A17"
-                              Margin="-20,0,0,0"/>
+                              Margin="-24,0,0,0"/>
                         <Grid x:Name="HeroOverlay"
                               Margin="20"
                               VerticalAlignment="Stretch"
@@ -394,8 +432,28 @@
                                                 <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Back stays top-left -->
-                                        <Grid x:Name="BackButtonChrome"
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="8"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top">
+                                                <Button x:Name="DetailSidebarOpenButton"
+                                                        Style="{StaticResource DetailDrawerButtonStyle}"
+                                                        Command="{Binding ToggleSidebarCommand}"
+                                                        Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                        ToolTipService.ToolTip="Open sidebar"
+                                                        AutomationProperties.Name="Open sidebar"
+                                                        VerticalAlignment="Center">
+                                                        <Viewbox Width="18" Height="18">
+                                                                <Canvas Width="18" Height="18">
+                                                                        <Path Data="M4,3.5 L14,3.5 Q15.5,3.5 15.5,5 L15.5,13 Q15.5,14.5 14,14.5 L4,14.5 Q2.5,14.5 2.5,13 L2.5,5 Q2.5,3.5 4,3.5 Z M7,3.5 L7,14.5"
+                                                                              Stroke="{Binding Foreground, ElementName=DetailSidebarOpenButton}"
+                                                                              StrokeThickness="1.4"
+                                                                              StrokeLineJoin="Round"/>
+                                                                </Canvas>
+                                                        </Viewbox>
+                                                </Button>
+
+                                                <Grid x:Name="BackButtonChrome"
                                               Width="34"
                                               Height="34"
                                               VerticalAlignment="Top"
@@ -471,7 +529,8 @@
                                                                                  Color="#00FFFFFF"/>
                                                         </Button.Resources>
                                                 </Button>
-                                        </Grid>
+                                                </Grid>
+                                        </StackPanel>
 
                                         <!-- Logo overlayed with dynamic padding -->
                                         <Grid>

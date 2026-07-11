@@ -14,6 +14,7 @@ namespace Codec.Services.Storage
         public string? SteamClientPath { get; set; }
         public string? EpicLauncherPath { get; set; }
         public int SelectedSortIndex { get; set; }
+        public bool IsSidebarCollapsed { get; set; }
     }
 
     public class AppSettingsService

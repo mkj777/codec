@@ -245,7 +245,7 @@ namespace Codec.ViewModels
             IsDetailsVisible = false;
             SelectedGame = null;
             SidebarSelectedItem = null;
-            IsOnboardingVisible = Games.Count == 0;
+            IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
 
             await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
