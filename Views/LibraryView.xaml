@@ -383,6 +383,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
     </UserControl.Resources>
 
     <Grid>
@@ -391,12 +392,16 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Sort bar -->
-        <StackPanel Grid.Row="0"
-                    Orientation="Horizontal"
-                    Spacing="8"
-                    Margin="0,-20,0,8">
-            <Button x:Name="SortButton"
+        <!-- Library toolbar -->
+        <Grid Grid.Row="0"
+              Margin="0,-20,0,8">
+            <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                          HorizontalScrollMode="Enabled"
+                          VerticalScrollBarVisibility="Disabled"
+                          VerticalScrollMode="Disabled"
+                          VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SortButton"
                     Style="{StaticResource SortButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <TextBlock Text="{Binding SortLabel}"
@@ -490,24 +495,27 @@
                         </StackPanel>
                     </Flyout>
                 </Button.Flyout>
-            </Button>
+                    </Button>
 
-            <ItemsControl ItemsSource="{Binding AvailableImportSources}"
-                          VerticalAlignment="Center">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" Spacing="8"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="local:ImportFilterItem">
-                        <ToggleButton Content="{Binding Name}"
-                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                      Style="{StaticResource FilterToggleButtonStyle}"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
+                    <ItemsControl ItemsSource="{Binding AvailableImportSources}"
+                                  VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="8"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:ImportFilterItem">
+                                <ToggleButton Content="{Binding Name}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Style="{StaticResource FilterToggleButtonStyle}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+        </Grid>
 
         <ScrollViewer Grid.Row="1"
                       x:Name="LibraryScroller"
@@ -584,6 +592,7 @@
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
         </ScrollViewer>
+
     </Grid>
 
 </UserControl>

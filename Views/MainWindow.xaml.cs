@@ -255,35 +255,19 @@ namespace Codec.Views
             }
         }
 
-        private void ManageButton_Click(object sender, RoutedEventArgs e)
+        private void SidebarSettingsButton_Click(object sender, RoutedEventArgs e)
             => ViewModel.IsSettingsVisible = true;
 
-        private void SettingsClose_Click(object sender, RoutedEventArgs e)
-            => ViewModel.IsSettingsVisible = false;
-
-        private void SettingsScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
-            => ViewModel.IsSettingsVisible = false;
-
-        private async void SidebarAddGames_Click(object sender, RoutedEventArgs e)
+        private async void SidebarScanButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!ViewModel.ScanGamesCommand.CanExecute(null))
+                return;
+
             ViewModel.IsSettingsVisible = false;
             await ViewModel.ScanGamesCommand.ExecuteAsync(null);
         }
 
-        private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
-        {
-            ViewModel.IsOnboardingVisible = false;
-            await ViewModel.CompleteOnboardingAsync(true, false);
-            await ViewModel.ScanGamesCommand.ExecuteAsync(null);
-        }
-
-        private async void OnboardingSkip_Click(object sender, RoutedEventArgs e)
-        {
-            await ViewModel.CompleteOnboardingAsync(true, false);
-            ViewModel.IsOnboardingVisible = false;
-        }
-
-        private async void AddGame_Click(object sender, RoutedEventArgs e)
+        private async void SidebarAddExecutableButton_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.IsSettingsVisible = false;
             try
@@ -305,6 +289,25 @@ namespace Codec.Views
                 };
                 await errorDialog.ShowAsync();
             }
+        }
+
+        private void SettingsClose_Click(object sender, RoutedEventArgs e)
+            => ViewModel.IsSettingsVisible = false;
+
+        private void SettingsScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+            => ViewModel.IsSettingsVisible = false;
+
+        private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsOnboardingVisible = false;
+            await ViewModel.CompleteOnboardingAsync(true, false);
+            await ViewModel.ScanGamesCommand.ExecuteAsync(null);
+        }
+
+        private async void OnboardingSkip_Click(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.CompleteOnboardingAsync(true, false);
+            ViewModel.IsOnboardingVisible = false;
         }
 
         private async void DebugCheckIds_Click(object sender, RoutedEventArgs e)

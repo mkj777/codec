@@ -95,32 +95,38 @@
                 <Setter Property="Foreground"
                         Value="#F3EDC9"/>
             </Style>
-            <Style x:Key="SidebarUtilityButtonStyle"
+            <Style x:Key="SidebarSettingsButtonStyle"
                    TargetType="Button">
-                <Setter Property="Height"
-                        Value="30"/>
-                <Setter Property="Padding"
-                        Value="12,0"/>
-                <Setter Property="FontSize"
-                        Value="11"/>
-                <Setter Property="FontWeight"
-                        Value="SemiBold"/>
-                <Setter Property="FontFamily"
-                        Value="{StaticResource CodecSemiBoldFontFamily}"/>
-                <Setter Property="Foreground"
-                        Value="#F3EDC9"/>
-                <Setter Property="Background"
-                        Value="#A03E3830"/>
-                <Setter Property="BorderBrush"
-                        Value="#3E3830"/>
-                <Setter Property="BorderThickness"
-                        Value="1"/>
-                <Setter Property="CornerRadius"
-                        Value="6"/>
-                <Setter Property="HorizontalContentAlignment"
-                        Value="Center"/>
-                <Setter Property="VerticalContentAlignment"
-                        Value="Center"/>
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Foreground" Value="#9E8E78"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="UseSystemFocusVisuals" Value="True"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="SidebarActionButtonStyle"
+                   TargetType="Button">
+                <Setter Property="Height" Value="34"/>
+                <Setter Property="Padding" Value="8,0"/>
+                <Setter Property="Background" Value="#D525221F"/>
+                <Setter Property="BorderBrush" Value="#703E3830"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Foreground" Value="#F3EDC9"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="UseSystemFocusVisuals" Value="True"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
             </Style>
         </Grid.Resources>
 
@@ -285,76 +291,89 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <!-- Buttons row filling full horizontal space above mascot -->
-                            <Grid Grid.Row="0"
-                                  Margin="8,8,8,4">
+                            <Grid Grid.Row="0" Margin="8,8,8,4" ColumnSpacing="6">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="30"/>
-                                    <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                 <Button Grid.Column="0"
-                                        x:Name="SidebarSettingsButton"
-                                        Style="{StaticResource SidebarUtilityButtonStyle}"
-                                        Width="30"
-                                        Padding="0"
-                                        IsEnabled="{Binding IsUiEnabled}"
-                                        Click="ManageButton_Click"
-                                        ToolTipService.ToolTip="Settings">
-                                    <FontIcon Glyph="&#xE713;"
-                                              FontFamily="Segoe MDL2 Assets"
-                                              FontSize="12"/>
-                                </Button>
-
-                                <Button Grid.Column="2"
+                                <Button Grid.Column="0"
                                         x:Name="SidebarAddExecutableButton"
-                                        Style="{StaticResource SidebarUtilityButtonStyle}"
-                                        HorizontalAlignment="Stretch"
-                                        Click="AddGame_Click"
+                                        Style="{StaticResource SidebarActionButtonStyle}"
+                                        Background="#E76C2B"
+                                        BorderBrush="#E76C2B"
+                                        Foreground="#1C1A17"
+                                        IsEnabled="{Binding IsUiEnabled}"
+                                        Click="SidebarAddExecutableButton_Click"
                                         ToolTipService.ToolTip="Add by executable">
-                                    <StackPanel Orientation="Horizontal"
-                                                Spacing="6"
-                                                VerticalAlignment="Center">
+                                    <Button.Resources>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F87D3C"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D65C1A"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#F87D3C"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#D65C1A"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#1C1A17"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#1C1A17"/>
+                                    </Button.Resources>
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
                                         <FontIcon Glyph="&#xE710;"
                                                   FontFamily="Segoe MDL2 Assets"
-                                                  FontSize="10"
-                                                  VerticalAlignment="Center"/>
-                                        <TextBlock Text="Add"
-                                                   FontSize="11"
-                                                   FontWeight="SemiBold"
-                                                   VerticalAlignment="Center"/>
+                                                  FontSize="11"/>
+                                        <TextBlock Text="Add"/>
                                     </StackPanel>
                                 </Button>
 
-                                <Button Grid.Column="4"
+                                <Button Grid.Column="1"
                                         x:Name="SidebarScanButton"
-                                        Style="{StaticResource SidebarUtilityButtonStyle}"
-                                        HorizontalAlignment="Stretch"
+                                        Style="{StaticResource SidebarActionButtonStyle}"
                                         IsEnabled="{Binding CanStartScan}"
-                                        Click="SidebarAddGames_Click"
+                                        Click="SidebarScanButton_Click"
                                         ToolTipService.ToolTip="Scan for games">
-                                    <StackPanel Orientation="Horizontal"
-                                                Spacing="6"
-                                                VerticalAlignment="Center">
+                                    <Button.Resources>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#EA3E3830"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FFE76C2B"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#B0E76C2B"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#FFE76C2B"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#1C1A17"/>
+                                    </Button.Resources>
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
                                         <FontIcon Glyph="&#xE721;"
                                                   FontFamily="Segoe MDL2 Assets"
-                                                  FontSize="10"
-                                                  VerticalAlignment="Center"/>
-                                        <TextBlock Text="Scan"
-                                                   FontSize="11"
-                                                   FontWeight="SemiBold"
-                                                   VerticalAlignment="Center"/>
+                                                  FontSize="11"/>
+                                        <TextBlock Text="Scan"/>
                                     </StackPanel>
                                 </Button>
                             </Grid>
 
+                            <Button Grid.Row="1"
+                                    x:Name="SidebarSettingsButton"
+                                    Style="{StaticResource SidebarSettingsButtonStyle}"
+                                    Margin="8,0,8,4"
+                                    HorizontalAlignment="Stretch"
+                                    IsEnabled="{Binding IsUiEnabled}"
+                                    Click="SidebarSettingsButton_Click"
+                                    ToolTipService.ToolTip="Settings">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#25221F"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#3E3830"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#3E3830"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#5E5346"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F3EDC9"/>
+                                </Button.Resources>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <FontIcon Glyph="&#xE713;"
+                                              FontFamily="Segoe MDL2 Assets"
+                                              FontSize="13"/>
+                                    <TextBlock Text="Settings"/>
+                                </StackPanel>
+                            </Button>
+
                             <!-- Mascot image placed in the bottom corner and fills horizontal space -->
-                            <Grid Grid.Row="1"
+                            <Grid Grid.Row="2"
                                   Height="150"
                                   VerticalAlignment="Bottom">
                                 <Image Source="ms-appx:///Assets/shrimpSleep.png"
