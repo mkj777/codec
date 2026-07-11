@@ -425,6 +425,18 @@
             </Setter>
         </Style>
 
+        <Style x:Key="FavoriteIconButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="#D91C1A17"/>
+            <Setter Property="BorderBrush" Value="#70D4A832"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Foreground" Value="#D4A832"/>
+            <Setter Property="UseSystemFocusVisuals" Value="True"/>
+        </Style>
+
     </UserControl.Resources>
 
     <Grid>
@@ -597,15 +609,16 @@
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="local:Game">
-                        <Button Click="LibraryItem_Click"
-                                Style="{StaticResource LibraryCoverButtonStyle}"
-                                ClickMode="Press"
-                                Tag="{x:Bind}"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                HorizontalContentAlignment="Stretch"
-                                VerticalContentAlignment="Stretch">
-                            <Grid>
+                        <Grid>
+                            <Button Click="LibraryItem_Click"
+                                    Style="{StaticResource LibraryCoverButtonStyle}"
+                                    ClickMode="Press"
+                                    Tag="{x:Bind}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Stretch">
+                                <Grid>
                                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                         CornerRadius="8">
                                     <Image Source="{x:Bind LibraryCapsule}"
@@ -645,8 +658,24 @@
                                                FontFamily="{StaticResource CodecBoldFontFamily}"
                                                Foreground="#F3EDC9"/>
                                 </Border>
-                            </Grid>
-                        </Button>
+                                </Grid>
+                            </Button>
+
+                            <Button Style="{StaticResource FavoriteIconButtonStyle}"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="10"
+                                    Command="{Binding ElementName=LibraryViewRoot, Path=DataContext.ToggleFavoriteCommand}"
+                                    CommandParameter="{x:Bind}"
+                                    ToolTipService.ToolTip="{x:Bind FavoriteToolTip, Mode=OneWay}"
+                                    AutomationProperties.Name="{x:Bind FavoriteToolTip, Mode=OneWay}">
+                                <FontIcon Glyph="{x:Bind FavoriteGlyph, Mode=OneWay}"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="15"
+                                          Foreground="#D4A832"
+                                          Opacity="{x:Bind FavoriteOpacity, Mode=OneWay}"/>
+                            </Button>
+                        </Grid>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>

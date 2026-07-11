@@ -50,6 +50,11 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(FolderSizeDisplay))]
         private long folderSize;
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(FavoriteGlyph))]
+        [NotifyPropertyChangedFor(nameof(FavoriteToolTip))]
+        [NotifyPropertyChangedFor(nameof(FavoriteOpacity))]
+        private bool isFavorite;
+        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
@@ -199,6 +204,15 @@ namespace Codec.Models
                        !string.Equals(displayName, metadataName, StringComparison.OrdinalIgnoreCase);
             }
         }
+
+        [JsonIgnore]
+        public string FavoriteGlyph => IsFavorite ? "\uE735" : "\uE734";
+
+        [JsonIgnore]
+        public string FavoriteToolTip => IsFavorite ? "Remove from favorites" : "Add to favorites";
+
+        [JsonIgnore]
+        public double FavoriteOpacity => IsFavorite ? 1d : 0.62d;
 
         public bool HasOriginalReleaseDate => OriginalReleaseDate.HasValue;
 
@@ -592,6 +606,7 @@ namespace Codec.Models
                 Executable = Executable,
                 FolderLocation = FolderLocation,
                 FolderSize = FolderSize,
+                IsFavorite = IsFavorite,
                 ImportedFrom = ImportedFrom,
                 SteamID = SteamID,
                 SteamMetadataAppId = SteamMetadataAppId,
@@ -657,6 +672,7 @@ namespace Codec.Models
             Executable = source.Executable;
             FolderLocation = source.FolderLocation;
             FolderSize = source.FolderSize;
+            IsFavorite = source.IsFavorite;
             ImportedFrom = source.ImportedFrom;
             SteamID = source.SteamID;
             SteamMetadataAppId = source.SteamMetadataAppId;

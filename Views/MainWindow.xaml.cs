@@ -49,6 +49,8 @@ namespace Codec.Views
         private bool _isSidebarListRefreshAnimationQueued;
         private Storyboard? _sidebarListRefreshStoryboard;
         private Storyboard? _sidebarStateStoryboard;
+        private readonly TaskCompletionSource<bool> _libraryReadyForStartup = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private bool _startupSequenceStarted;
 
         public MainViewModel ViewModel { get; }
 
@@ -75,6 +77,8 @@ namespace Codec.Views
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            _ = PlayStartupOpenAnimationAsync();
+
             using var identity = WindowsIdentity.GetCurrent();
             if (new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
                 AdminWarningToast.Visibility = Visibility.Visible;
@@ -99,7 +103,14 @@ namespace Codec.Views
                     () => StopAllMediaPlayers(MediaOverlayFlipView));
 
             if (e.PropertyName == nameof(ViewModel.IsInitialLoading) && !ViewModel.IsInitialLoading)
-                DispatcherQueue.TryEnqueue(() => PlayStartupOpenAnimation());
+                _libraryReadyForStartup.TrySetResult(true);
+
+            if (e.PropertyName == nameof(ViewModel.IsOnboardingVisible)
+                && ViewModel.IsOnboardingVisible
+                && StartupOverlay.Visibility == Visibility.Collapsed)
+            {
+                DispatcherQueue.TryEnqueue(PlayOnboardingEntranceAnimation);
+            }
 
             if (e.PropertyName == nameof(ViewModel.IsSidebarCollapsed))
                 ApplySidebarState(ViewModel.IsSidebarCollapsed, animate: true);
@@ -353,32 +364,210 @@ namespace Codec.Views
             storyboard.Begin();
         }
 
-        private void PlayStartupOpenAnimation()
+        private async Task PlayStartupOpenAnimationAsync()
         {
+            if (_startupSequenceStarted)
+                return;
+
+            _startupSequenceStarted = true;
+            bool animationsEnabled = new UISettings().AnimationsEnabled;
+            FrameworkElement[] tiles =
+            [
+                StartupTile0, StartupTile1, StartupTile2,
+                StartupTile3, StartupTile4, StartupTile5,
+                StartupTile6, StartupTile7, StartupTile8
+            ];
+
+            if (!animationsEnabled)
+            {
+                foreach (FrameworkElement tile in tiles)
+                    tile.Opacity = 0.42;
+
+                StartupBrand.Opacity = 1;
+                await Task.WhenAll(Task.Delay(450), _libraryReadyForStartup.Task);
+                await FadeStartupOverlayAsync(180);
+                return;
+            }
+
+            var intro = new Storyboard();
+            var easeOut = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+            for (int index = 0; index < tiles.Length; index++)
+            {
+                var transform = (CompositeTransform)tiles[index].RenderTransform;
+                transform.TranslateY = 18;
+
+                var fade = new DoubleAnimation
+                {
+                    From = 0,
+                    To = 1,
+                    BeginTime = TimeSpan.FromMilliseconds(120 + (index * 70)),
+                    Duration = TimeSpan.FromMilliseconds(360),
+                    EasingFunction = easeOut
+                };
+                Storyboard.SetTarget(fade, tiles[index]);
+                Storyboard.SetTargetProperty(fade, "Opacity");
+                intro.Children.Add(fade);
+
+                var rise = new DoubleAnimation
+                {
+                    From = 18,
+                    To = 0,
+                    BeginTime = fade.BeginTime,
+                    Duration = fade.Duration,
+                    EasingFunction = easeOut,
+                    EnableDependentAnimation = true
+                };
+                Storyboard.SetTarget(rise, transform);
+                Storyboard.SetTargetProperty(rise, "TranslateY");
+                intro.Children.Add(rise);
+            }
+
+            var scanOpacity = new DoubleAnimationUsingKeyFrames();
+            scanOpacity.KeyFrames.Add(new LinearDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(450)), Value = 0 });
+            scanOpacity.KeyFrames.Add(new LinearDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(620)), Value = 0.9 });
+            scanOpacity.KeyFrames.Add(new LinearDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1320)), Value = 0 });
+            Storyboard.SetTarget(scanOpacity, StartupScanLine);
+            Storyboard.SetTargetProperty(scanOpacity, "Opacity");
+            intro.Children.Add(scanOpacity);
+
+            var scanMove = new DoubleAnimation
+            {
+                From = -170,
+                To = 170,
+                BeginTime = TimeSpan.FromMilliseconds(450),
+                Duration = TimeSpan.FromMilliseconds(870),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut },
+                EnableDependentAnimation = true
+            };
+            Storyboard.SetTarget(scanMove, StartupScanTransform);
+            Storyboard.SetTargetProperty(scanMove, "TranslateY");
+            intro.Children.Add(scanMove);
+
+            foreach (string property in new[] { "ScaleX", "ScaleY" })
+            {
+                var contract = new DoubleAnimation
+                {
+                    From = 1,
+                    To = 0.84,
+                    BeginTime = TimeSpan.FromMilliseconds(1350),
+                    Duration = TimeSpan.FromMilliseconds(520),
+                    EasingFunction = easeOut
+                };
+                Storyboard.SetTarget(contract, StartupMosaicTransform);
+                Storyboard.SetTargetProperty(contract, property);
+                intro.Children.Add(contract);
+            }
+
+            var soften = new DoubleAnimation
+            {
+                From = 1,
+                To = 0.28,
+                BeginTime = TimeSpan.FromMilliseconds(1450),
+                Duration = TimeSpan.FromMilliseconds(430)
+            };
+            Storyboard.SetTarget(soften, StartupMosaic);
+            Storyboard.SetTargetProperty(soften, "Opacity");
+            intro.Children.Add(soften);
+
+            var showBrand = new DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                BeginTime = TimeSpan.FromMilliseconds(1480),
+                Duration = TimeSpan.FromMilliseconds(420),
+                EasingFunction = easeOut
+            };
+            Storyboard.SetTarget(showBrand, StartupBrand);
+            Storyboard.SetTargetProperty(showBrand, "Opacity");
+            intro.Children.Add(showBrand);
+
+            intro.Begin();
+            await Task.WhenAll(Task.Delay(2200), _libraryReadyForStartup.Task);
+            await FadeStartupOverlayAsync(300);
+        }
+
+        private Task FadeStartupOverlayAsync(int durationMs)
+        {
+            var completion = new TaskCompletionSource<bool>();
             var transform = (CompositeTransform)StartupOverlay.RenderTransform;
             transform.CenterX = StartupOverlay.ActualWidth / 2;
             transform.CenterY = StartupOverlay.ActualHeight / 2;
-
-            var duration = new Duration(TimeSpan.FromMilliseconds(280));
+            var duration = TimeSpan.FromMilliseconds(durationMs);
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            var storyboard = new Storyboard();
 
-            var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = duration, EasingFunction = ease };
-            var scaleX = new DoubleAnimation { From = 1, To = 1.04, Duration = duration, EasingFunction = ease };
-            var scaleY = new DoubleAnimation { From = 1, To = 1.04, Duration = duration, EasingFunction = ease };
+            var fade = new DoubleAnimation { From = StartupOverlay.Opacity, To = 0, Duration = duration, EasingFunction = ease };
+            Storyboard.SetTarget(fade, StartupOverlay);
+            Storyboard.SetTargetProperty(fade, "Opacity");
+            storyboard.Children.Add(fade);
 
-            Storyboard.SetTarget(fadeOut, StartupOverlay);
-            Storyboard.SetTargetProperty(fadeOut, "Opacity");
-            Storyboard.SetTarget(scaleX, transform);
-            Storyboard.SetTargetProperty(scaleX, "ScaleX");
-            Storyboard.SetTarget(scaleY, transform);
-            Storyboard.SetTargetProperty(scaleY, "ScaleY");
+            foreach (string property in new[] { "ScaleX", "ScaleY" })
+            {
+                var scale = new DoubleAnimation { From = 1, To = 1.035, Duration = duration, EasingFunction = ease };
+                Storyboard.SetTarget(scale, transform);
+                Storyboard.SetTargetProperty(scale, property);
+                storyboard.Children.Add(scale);
+            }
 
-            var sb = new Storyboard();
-            sb.Children.Add(fadeOut);
-            sb.Children.Add(scaleX);
-            sb.Children.Add(scaleY);
-            sb.Completed += (_, _) => StartupOverlay.Visibility = Visibility.Collapsed;
-            sb.Begin();
+            storyboard.Completed += (_, _) =>
+            {
+                StartupOverlay.Visibility = Visibility.Collapsed;
+                if (ViewModel.IsOnboardingVisible)
+                    PlayOnboardingEntranceAnimation();
+                completion.TrySetResult(true);
+            };
+            storyboard.Begin();
+            return completion.Task;
+        }
+
+        private void PlayOnboardingEntranceAnimation()
+        {
+            if (!new UISettings().AnimationsEnabled)
+            {
+                OnboardingMascot.Opacity = 1;
+                OnboardingCopy.Opacity = 1;
+                return;
+            }
+
+            var storyboard = new Storyboard();
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            FrameworkElement[] elements = [OnboardingMascot, OnboardingCopy];
+
+            for (int index = 0; index < elements.Length; index++)
+            {
+                FrameworkElement element = elements[index];
+                var transform = (CompositeTransform)element.RenderTransform;
+                transform.TranslateY = index == 0 ? 10 : 16;
+                element.Opacity = 0;
+
+                var fade = new DoubleAnimation
+                {
+                    From = 0,
+                    To = 1,
+                    BeginTime = TimeSpan.FromMilliseconds(index * 90),
+                    Duration = TimeSpan.FromMilliseconds(420),
+                    EasingFunction = ease
+                };
+                Storyboard.SetTarget(fade, element);
+                Storyboard.SetTargetProperty(fade, "Opacity");
+                storyboard.Children.Add(fade);
+
+                var rise = new DoubleAnimation
+                {
+                    From = transform.TranslateY,
+                    To = 0,
+                    BeginTime = fade.BeginTime,
+                    Duration = fade.Duration,
+                    EasingFunction = ease,
+                    EnableDependentAnimation = true
+                };
+                Storyboard.SetTarget(rise, transform);
+                Storyboard.SetTargetProperty(rise, "TranslateY");
+                storyboard.Children.Add(rise);
+            }
+
+            storyboard.Begin();
         }
 
         private static void StopAllMediaPlayers(DependencyObject parent)
@@ -501,17 +690,28 @@ namespace Codec.Views
         private void SettingsScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
             => ViewModel.IsSettingsVisible = false;
 
-        private async void OnboardingStart_Click(object sender, RoutedEventArgs e)
+        private async void OnboardingAddGame_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.IsOnboardingVisible = false;
-            await ViewModel.CompleteOnboardingAsync(true, false);
-            await ViewModel.ScanGamesCommand.ExecuteAsync(null);
-        }
+            try
+            {
+                string? path = await PickExeFileAsync();
+                if (path == null)
+                    return;
 
-        private async void OnboardingSkip_Click(object sender, RoutedEventArgs e)
-        {
-            await ViewModel.CompleteOnboardingAsync(true, false);
-            ViewModel.IsOnboardingVisible = false;
+                if (ViewModel.AddGameFromOnboardingCommand.CanExecute(path))
+                    await ViewModel.AddGameFromOnboardingCommand.ExecuteAsync(path);
+            }
+            catch (Exception ex)
+            {
+                var errorDialog = new ContentDialog
+                {
+                    Title = "Couldn't add this game",
+                    Content = ex.Message,
+                    CloseButtonText = "Close",
+                    XamlRoot = Content.XamlRoot
+                };
+                await errorDialog.ShowAsync();
+            }
         }
 
         private async void DebugCheckIds_Click(object sender, RoutedEventArgs e)

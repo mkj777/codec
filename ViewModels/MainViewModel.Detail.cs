@@ -63,15 +63,37 @@ namespace Codec.ViewModels
             nameof(Game.CanLaunch)
         };
 
-        public bool CanPlaySelectedGame => SelectedGame?.CanLaunch == true;
+        private LaunchFeedbackState _launchFeedbackState;
 
-        public string PlayButtonText => CanPlaySelectedGame ? "PLAY" : "MISSING";
+        public bool IsLaunchingGame => _launchFeedbackState != LaunchFeedbackState.Idle;
 
-        public double PlayButtonOpacity => CanPlaySelectedGame ? 1d : 0.46d;
+        public bool IsLaunchSpinnerVisible => _launchFeedbackState == LaunchFeedbackState.Launching;
 
-        public string PlayButtonToolTip => CanPlaySelectedGame
-            ? "Launch game"
-            : "Missing launch target";
+        public bool IsPlayGlyphVisible => !IsLaunchSpinnerVisible;
+
+        public string PlayButtonGlyph => _launchFeedbackState switch
+        {
+            LaunchFeedbackState.Failed => "\uEA39",
+            _ => "\uE768"
+        };
+
+        public bool CanPlaySelectedGame => SelectedGame?.CanLaunch == true && !IsLaunchingGame;
+
+        public string PlayButtonText => _launchFeedbackState switch
+        {
+            LaunchFeedbackState.Launching => "LAUNCHING",
+            LaunchFeedbackState.Failed => "COULDN'T START",
+            _ => SelectedGame?.CanLaunch == true ? "PLAY" : "MISSING"
+        };
+
+        public double PlayButtonOpacity => SelectedGame?.CanLaunch == true ? 1d : 0.46d;
+
+        public string PlayButtonToolTip => _launchFeedbackState switch
+        {
+            LaunchFeedbackState.Launching => "Launching game",
+            LaunchFeedbackState.Failed => "Codec couldn't start this game",
+            _ => SelectedGame?.CanLaunch == true ? "Launch game" : "Missing launch target"
+        };
 
         partial void OnSelectedGameChanged(Game? oldValue, Game? newValue)
         {
@@ -103,6 +125,16 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(PlayButtonOpacity));
             OnPropertyChanged(nameof(PlayButtonToolTip));
             PlayGameCommand.NotifyCanExecuteChanged();
+        }
+
+        private void SetLaunchFeedbackState(LaunchFeedbackState state)
+        {
+            _launchFeedbackState = state;
+            OnPropertyChanged(nameof(IsLaunchingGame));
+            OnPropertyChanged(nameof(IsLaunchSpinnerVisible));
+            OnPropertyChanged(nameof(IsPlayGlyphVisible));
+            OnPropertyChanged(nameof(PlayButtonGlyph));
+            NotifyPlayAvailabilityChanged();
         }
 
         [RelayCommand]
@@ -251,10 +283,13 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand(CanExecute = nameof(CanPlaySelectedGame))]
-        private void PlayGame()
+        private async Task PlayGameAsync()
         {
             if (SelectedGame == null || !SelectedGame.CanLaunch)
                 return;
+
+            SetLaunchFeedbackState(LaunchFeedbackState.Launching);
+            bool launched = false;
 
             try
             {
@@ -264,15 +299,13 @@ namespace Codec.ViewModels
 
                 if (SelectedGame.HasCustomLaunchScript && TryLaunchFile(SelectedGame.LaunchScript))
                 {
-                    return;
+                    launched = true;
                 }
-
-                if (SelectedGame.UseExecutableOverride && TryLaunchFile(SelectedGame.Executable))
+                else if (SelectedGame.UseExecutableOverride && TryLaunchFile(SelectedGame.Executable))
                 {
-                    return;
+                    launched = true;
                 }
-
-                if (isSteamGame)
+                else if (isSteamGame)
                 {
                     bool steamRunning = Process.GetProcessesByName("steam").Length > 0;
                     if (!steamRunning)
@@ -283,6 +316,7 @@ namespace Codec.ViewModels
                         FileName = $"steam://rungameid/{SelectedGame.SteamID!.Value}",
                         UseShellExecute = true
                     });
+                    launched = true;
                 }
                 else if (isEpicGame)
                 {
@@ -291,20 +325,32 @@ namespace Codec.ViewModels
                         FileName = BuildEpicLaunchUri(SelectedGame.EpicAppId!),
                         UseShellExecute = true
                     });
+                    launched = true;
                 }
                 else if (isRiotGame && TryLaunchFile(SelectedGame.LaunchScript))
                 {
-                    return;
+                    launched = true;
                 }
-                else if (!TryLaunchFile(SelectedGame.Executable))
+                else
                 {
-                    Debug.WriteLine($"Cannot launch {SelectedGame.Name}: executable not found at {SelectedGame.Executable}");
+                    launched = TryLaunchFile(SelectedGame.Executable);
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to launch {SelectedGame.Name}: {ex.Message}");
             }
+
+            if (!launched)
+            {
+                SetLaunchFeedbackState(LaunchFeedbackState.Failed);
+                await Task.Delay(1400);
+                SetLaunchFeedbackState(LaunchFeedbackState.Idle);
+                return;
+            }
+
+            await Task.Delay(7000);
+            SetLaunchFeedbackState(LaunchFeedbackState.Idle);
         }
 
         private static bool TryLaunchFile(string? filePath)
@@ -450,5 +496,12 @@ namespace Codec.ViewModels
             game.LibraryLogoUrl = hydration.LogoUrl;
             game.LibraryLogoCache = hydration.LogoCachePath;
         }
+    }
+
+    internal enum LaunchFeedbackState
+    {
+        Idle,
+        Launching,
+        Failed
     }
 }

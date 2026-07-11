@@ -632,33 +632,6 @@
                                         </Button>
                                 </Grid>
 
-                                <!-- Import source tag bottom-center of hero -->
-                                <Border Grid.Row="2"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Bottom"
-                                        Background="#6625221F"
-                                        BorderBrush="#60E76C2B"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="10,4"
-                                        Margin="0,0,50,0"
-                                        Visibility="{Binding SelectedGame.ImportedFrom, Converter={StaticResource NullToVisibilityConverter}}">
-                                        <StackPanel Orientation="Horizontal"
-                                                    Spacing="5">
-                                                <TextBlock Text="via"
-                                                           Opacity="0.55"
-                                                           FontSize="12"
-                                                           Foreground="#F3EDC9"
-                                                           VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding SelectedGame.ImportedFromDisplay}"
-                                                           FontSize="12"
-                                                           FontWeight="SemiBold"
-                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
-                                                           Foreground="#F3EDC9"
-                                                           VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                </Border>
-
                                 <!-- Play button anchored to the hero's lower-left corner -->
                                 <Grid x:Name="DetailsPlayChrome"
                                       Grid.Row="2"
@@ -687,11 +660,19 @@
                                                                     Spacing="10"
                                                                     HorizontalAlignment="Center"
                                                                     VerticalAlignment="Center">
-                                                                <FontIcon x:Name="DetailsPlayGlyph"
-                                                                          Glyph="&#xE768;"
-                                                                          FontFamily="Segoe Fluent Icons"
-                                                                          FontSize="16"
-                                                                          Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
+                                                                <Grid Width="18" Height="18">
+                                                                        <FontIcon x:Name="DetailsPlayGlyph"
+                                                                                  Glyph="{Binding PlayButtonGlyph, Mode=OneWay}"
+                                                                                  FontFamily="Segoe Fluent Icons"
+                                                                                  FontSize="16"
+                                                                                  Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"
+                                                                                  Visibility="{Binding IsPlayGlyphVisible, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                                        <ProgressRing Width="18"
+                                                                                      Height="18"
+                                                                                      IsActive="{Binding IsLaunchSpinnerVisible, Mode=OneWay}"
+                                                                                      Foreground="#D4A832"
+                                                                                      Visibility="{Binding IsLaunchSpinnerVisible, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                                </Grid>
                                                                 <TextBlock x:Name="DetailsPlayText"
                                                                            Text="{Binding PlayButtonText, Mode=OneWay, FallbackValue='MISSING'}"
                                                                            FontSize="16"
@@ -838,19 +819,55 @@
                                                                         <StackPanel x:Name="FolderSizeSection"
                                                                                     Margin="0,8"
                                                                                     Spacing="1">
-                                                                                <TextBlock x:Name="FolderSizeLabel"
-                                                                                           Text="FOLDER SIZE"
-                                                                                           FontSize="11"
-                                                                                           FontWeight="SemiBold"
-                                                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
-                                                                                           Foreground="#D4A832"
-                                                                                           CharacterSpacing="40"/>
-                                                                                <TextBlock x:Name="FolderSizeValue"
-                                                                                           Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
-                                                                                           FontWeight="SemiBold"
-                                                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
-                                                                                           Foreground="#F3EDC9"
-                                                                                           FontSize="13"/>
+                                                                                <Grid>
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                        </Grid.ColumnDefinitions>
+
+                                                                                        <StackPanel Grid.Column="0"
+                                                                                                    Spacing="1">
+                                                                                                <TextBlock x:Name="FolderSizeLabel"
+                                                                                                           Text="FOLDER SIZE"
+                                                                                                           FontSize="11"
+                                                                                                           FontWeight="SemiBold"
+                                                                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                                                                           Foreground="#D4A832"
+                                                                                                           CharacterSpacing="40"/>
+                                                                                                <TextBlock x:Name="FolderSizeValue"
+                                                                                                           Text="{Binding SelectedGame.FolderSize, Converter={StaticResource BytesToSizeConverter}, FallbackValue='Not Available'}"
+                                                                                                           FontWeight="SemiBold"
+                                                                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                                                                           Foreground="#F3EDC9"
+                                                                                                           FontSize="13"/>
+                                                                                        </StackPanel>
+
+                                                                                        <Border Grid.Column="1"
+                                                                                                Width="1"
+                                                                                                Margin="12,0"
+                                                                                                Background="#3E3830"
+                                                                                                VerticalAlignment="Stretch"
+                                                                                                Visibility="{Binding SelectedGame.ImportedFrom, Converter={StaticResource NullToVisibilityConverter}}"/>
+
+                                                                                        <StackPanel Grid.Column="2"
+                                                                                                    Orientation="Horizontal"
+                                                                                                    Spacing="5"
+                                                                                                    VerticalAlignment="Center"
+                                                                                                    Visibility="{Binding SelectedGame.ImportedFrom, Converter={StaticResource NullToVisibilityConverter}}">
+                                                                                                <TextBlock Text="via"
+                                                                                                           FontSize="12"
+                                                                                                           FontFamily="{StaticResource CodecRegularFontFamily}"
+                                                                                                           Foreground="#9E8E78"
+                                                                                                           VerticalAlignment="Center"/>
+                                                                                                <TextBlock Text="{Binding SelectedGame.ImportedFromDisplay}"
+                                                                                                           FontSize="13"
+                                                                                                           FontWeight="SemiBold"
+                                                                                                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                                                                           Foreground="#F3EDC9"
+                                                                                                           VerticalAlignment="Center"/>
+                                                                                        </StackPanel>
+                                                                                </Grid>
                                                                         </StackPanel>
 
                                                                         <Border Height="1"

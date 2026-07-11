@@ -655,71 +655,158 @@
 
         </Grid>
 
-        <!-- Onboarding overlay for first launch / empty library -->
+        <!-- Warm one-choice onboarding: no setup form, only ways into library. -->
         <Grid x:Name="OnboardingOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
               Visibility="{Binding IsOnboardingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               Background="#FF1C1A17"
               IsHitTestVisible="True">
-            <Grid HorizontalAlignment="Center"
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="OnboardingLayoutStates">
+                    <VisualState x:Name="OnboardingCompact">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0"/>
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="OnboardingContentGrid.MaxWidth" Value="520"/>
+                            <Setter Target="OnboardingContentGrid.Margin" Value="28"/>
+                            <Setter Target="OnboardingMascot.(Grid.Row)" Value="0"/>
+                            <Setter Target="OnboardingMascot.(Grid.Column)" Value="0"/>
+                            <Setter Target="OnboardingMascot.(Grid.ColumnSpan)" Value="3"/>
+                            <Setter Target="OnboardingMascot.Width" Value="220"/>
+                            <Setter Target="OnboardingMascot.Height" Value="235"/>
+                            <Setter Target="OnboardingMascot.HorizontalAlignment" Value="Center"/>
+                            <Setter Target="OnboardingCopy.(Grid.Row)" Value="1"/>
+                            <Setter Target="OnboardingCopy.(Grid.Column)" Value="0"/>
+                            <Setter Target="OnboardingCopy.(Grid.ColumnSpan)" Value="3"/>
+                            <Setter Target="OnboardingCopy.HorizontalAlignment" Value="Center"/>
+                            <Setter Target="OnboardingActions.Orientation" Value="Vertical"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="OnboardingWide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="780"/>
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="OnboardingContentGrid.MaxWidth" Value="940"/>
+                            <Setter Target="OnboardingContentGrid.Margin" Value="42"/>
+                            <Setter Target="OnboardingMascot.(Grid.Row)" Value="0"/>
+                            <Setter Target="OnboardingMascot.(Grid.Column)" Value="0"/>
+                            <Setter Target="OnboardingMascot.(Grid.ColumnSpan)" Value="1"/>
+                            <Setter Target="OnboardingMascot.Width" Value="310"/>
+                            <Setter Target="OnboardingMascot.Height" Value="330"/>
+                            <Setter Target="OnboardingCopy.(Grid.Row)" Value="0"/>
+                            <Setter Target="OnboardingCopy.(Grid.Column)" Value="2"/>
+                            <Setter Target="OnboardingCopy.(Grid.ColumnSpan)" Value="1"/>
+                            <Setter Target="OnboardingActions.Orientation" Value="Horizontal"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Grid x:Name="OnboardingContentGrid"
+                  HorizontalAlignment="Center"
                   VerticalAlignment="Center"
-                  MaxWidth="1100"
-                  Margin="0,0,32,0">
+                  MaxWidth="940"
+                  Margin="42">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="48"/>
+                    <ColumnDefinition Width="310"/>
+                    <ColumnDefinition Width="42"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Image Grid.Column="0"
-                       Source="ms-appx:///Assets/shrimpStand.png"
-                       Height="360"
-                       Stretch="Uniform"/>
+                <Grid x:Name="OnboardingMascot"
+                      Grid.Column="0"
+                      Width="310"
+                      Height="330"
+                      VerticalAlignment="Center"
+                      RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
+                        <CompositeTransform/>
+                    </Grid.RenderTransform>
+                    <Border Width="112"
+                            Height="158"
+                            Margin="0,12,18,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Background="#C4956A"
+                            CornerRadius="9"
+                            Opacity="0.45">
+                        <Border.RenderTransform>
+                            <CompositeTransform Rotation="9"/>
+                        </Border.RenderTransform>
+                    </Border>
+                    <Border Width="112"
+                            Height="158"
+                            Margin="0,25,44,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Background="#D4A832"
+                            CornerRadius="9"
+                            Opacity="0.55">
+                        <Border.RenderTransform>
+                            <CompositeTransform Rotation="2"/>
+                        </Border.RenderTransform>
+                    </Border>
+                    <Image Source="ms-appx:///Assets/shrimpStand.png"
+                           Height="285"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Bottom"/>
+                </Grid>
 
-                <StackPanel Grid.Column="2"
-                            Spacing="12"
+                <StackPanel x:Name="OnboardingCopy"
+                            Grid.Column="2"
+                            Spacing="10"
                             VerticalAlignment="Center"
-                            MaxWidth="520">
-                    <TextBlock Text="Welcome to Codec!"
-                               FontSize="28"
+                            MaxWidth="500"
+                            RenderTransformOrigin="0.5,0.5">
+                    <StackPanel.RenderTransform>
+                        <CompositeTransform/>
+                    </StackPanel.RenderTransform>
+                    <TextBlock Text="Let’s find your games."
+                               FontSize="38"
                                FontWeight="Bold"
-                               FontFamily="{StaticResource CodecBoldFontFamily}"/>
-                    <TextBlock Text="I'm Shrimp, and I'd love to guide you through Codec."
-                               FontSize="18"
+                               FontFamily="{StaticResource CodecBoldFontFamily}"
+                               Foreground="#F3EDC9"/>
+                    <TextBlock Text="I can look for them, or you can add one yourself."
+                               FontSize="17"
                                TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
-                    <TextBlock Text="I'll try to find all your games for you, but you can always add any that I miss later on. If you'd rather skip that for now, you're free to use the button below."
-                               FontSize="18"
-                               TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
-                    <TextBlock Text="My goal is to make collecting games as easy and fun as possible—no matter where they came from. If something doesn't work right or you need a hand, you can reach out to my creator on GitHub."
-                               FontSize="18"
-                               TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                               FontFamily="{StaticResource CodecRegularFontFamily}"
                                Foreground="#9E8E78"/>
-                    <TextBlock Text="Thank you for giving Codec a try."
-                               FontSize="18"
-                               TextWrapping="WrapWholeWords"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
-                    <StackPanel Orientation="Horizontal"
-                                Spacing="8"
-                                Margin="4,0,0,0">
-                        <Button Content="Start"
+                    <StackPanel x:Name="OnboardingActions"
+                                Orientation="Horizontal"
+                                Spacing="10"
+                                Margin="0,18,0,0">
+                        <Button Content="Find my games"
                                 FontWeight="SemiBold"
                                 Background="#E76C2B"
                                 BorderBrush="#E76C2B"
                                 Foreground="#1C1A17"
-                                Padding="24,8"
-                                Click="OnboardingStart_Click"/>
-                        <Button Content="Skip"
+                                CornerRadius="10"
+                                Padding="22,11"
+                                Command="{Binding FindGamesFromOnboardingCommand}"/>
+                        <Button Content="Add a game"
                                 FontWeight="SemiBold"
                                 Background="#25221F"
                                 BorderBrush="#3E3830"
                                 Foreground="#F3EDC9"
-                                Padding="24,8"
-                                Click="OnboardingSkip_Click"/>
+                                CornerRadius="10"
+                                Padding="22,11"
+                                Click="OnboardingAddGame_Click"/>
                     </StackPanel>
+                    <Button Content="Maybe later"
+                            Command="{Binding MaybeLaterFromOnboardingCommand}"
+                            HorizontalAlignment="Left"
+                            Margin="-12,2,0,0"
+                            Padding="12,7"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            Foreground="#9E8E78"/>
                 </StackPanel>
             </Grid>
         </Grid>
@@ -1168,7 +1255,7 @@
             </Rectangle>
         </Grid>
 
-        <!-- Startup overlay — fades out via code-behind when library is ready -->
+        <!-- Startup cover mosaic. Library loads behind it; only cached covers are used. -->
         <Border x:Name="StartupOverlay"
                 Grid.RowSpan="2"
                 Grid.ColumnSpan="2"
@@ -1177,6 +1264,68 @@
             <Border.RenderTransform>
                 <CompositeTransform/>
             </Border.RenderTransform>
+            <Grid>
+                <Grid x:Name="StartupMosaic"
+                      Width="390"
+                      Height="390"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
+                        <CompositeTransform x:Name="StartupMosaicTransform"/>
+                    </Grid.RenderTransform>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border x:Name="StartupTile0" Grid.Row="0" Grid.Column="0" Margin="5" CornerRadius="12" Background="#E76C2B" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[0].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile1" Grid.Row="0" Grid.Column="1" Margin="5" CornerRadius="12" Background="#D4A832" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[1].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile2" Grid.Row="0" Grid.Column="2" Margin="5" CornerRadius="12" Background="#C4956A" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[2].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile3" Grid.Row="1" Grid.Column="0" Margin="5" CornerRadius="12" Background="#D4A832" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[3].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile4" Grid.Row="1" Grid.Column="1" Margin="5" CornerRadius="12" Background="#25221F" BorderBrush="#5AE76C2B" BorderThickness="1" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[4].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile5" Grid.Row="1" Grid.Column="2" Margin="5" CornerRadius="12" Background="#E76C2B" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[5].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile6" Grid.Row="2" Grid.Column="0" Margin="5" CornerRadius="12" Background="#C4956A" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[6].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile7" Grid.Row="2" Grid.Column="1" Margin="5" CornerRadius="12" Background="#E76C2B" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[7].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+                    <Border x:Name="StartupTile8" Grid.Row="2" Grid.Column="2" Margin="5" CornerRadius="12" Background="#D4A832" Opacity="0"><Border.RenderTransform><CompositeTransform/></Border.RenderTransform><Image Source="{Binding StartupCoverGames[8].LibraryCapsule}" Stretch="UniformToFill"/></Border>
+
+                    <Rectangle x:Name="StartupScanLine"
+                               Grid.RowSpan="3"
+                               Grid.ColumnSpan="3"
+                               Height="2"
+                               VerticalAlignment="Center"
+                               Margin="12,0"
+                               Fill="#E76C2B"
+                               Opacity="0">
+                        <Rectangle.RenderTransform>
+                            <CompositeTransform x:Name="StartupScanTransform" TranslateY="-170"/>
+                        </Rectangle.RenderTransform>
+                    </Rectangle>
+                </Grid>
+
+                <StackPanel x:Name="StartupBrand"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="8"
+                            Opacity="0">
+                    <Image Source="ms-appx:///Assets/icon.png"
+                           Width="68"
+                           Height="68"
+                           Stretch="Uniform"/>
+                    <TextBlock Text="CODEC"
+                               FontFamily="{StaticResource CodecBoldFontFamily}"
+                               FontSize="18"
+                               CharacterSpacing="300"
+                               Foreground="#F3EDC9"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- ===== Unified Notification Stack ===== -->

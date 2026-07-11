@@ -39,7 +39,10 @@ namespace Codec.ViewModels
         public ObservableCollection<Game> Games { get; set; } = new();
         public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
         public ObservableCollection<Game> DisplayedGames { get; } = new();
+        public ObservableCollection<Game> StartupCoverGames { get; } = new();
         public ObservableCollection<ImportFilterItem> AvailableImportSources { get; } = new();
+
+        public bool HasStartupCovers => StartupCoverGames.Count > 0;
 
         [ObservableProperty]
         private string? _selectedImportFilter;
@@ -69,7 +72,6 @@ namespace Codec.ViewModels
 
         public bool HasGames => Games.Count > 0;
         public bool IsEmptyLibrary => !HasGames;
-
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsLibraryGridVisible))]
         private bool _isDetailsVisible;
@@ -305,6 +307,7 @@ namespace Codec.ViewModels
             _suppressSettingsSave = false;
 
             var saved = await _services.LibraryStorage.LoadAsync();
+            PrepareStartupCoverGames(saved);
             await EnsureCoversAsync(saved);
             var sortedSavedGames = GetSortedGames(saved).ToList();
 
@@ -325,6 +328,38 @@ namespace Codec.ViewModels
             _ = SilentUpdateImagesAsync(Games);
         }
 
+        private void PrepareStartupCoverGames(IReadOnlyList<Game> games)
+        {
+            StartupCoverGames.Clear();
+            var cachedGames = games.Where(game => HasLocalStartupCover(game.LibraryCapsuleCache)).Take(9).ToList();
+
+            if (cachedGames.Count > 0)
+            {
+                for (int index = 0; index < 9; index++)
+                    StartupCoverGames.Add(cachedGames[index % cachedGames.Count]);
+            }
+
+            OnPropertyChanged(nameof(HasStartupCovers));
+        }
+
+        private static bool HasLocalStartupCover(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return false;
+
+            try
+            {
+                if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.IsFile)
+                    return File.Exists(uri.LocalPath);
+
+                return File.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public async Task CompleteOnboardingAsync(bool scanOnStartup, bool launchSteamSilent)
         {
             _appSettings.OnboardingCompleted = true;
@@ -335,6 +370,35 @@ namespace Codec.ViewModels
             LaunchSteamSilent = launchSteamSilent;
             _suppressSettingsSave = false;
             await _services.AppSettings.SaveAsync(_appSettings);
+        }
+
+        [RelayCommand]
+        private async Task FindGamesFromOnboardingAsync()
+        {
+            await CompleteOnboardingAsync(scanOnStartup: true, launchSteamSilent: false);
+            IsOnboardingVisible = false;
+            await ScanGamesAsync();
+        }
+
+        [RelayCommand]
+        private async Task AddGameFromOnboardingAsync(string? executablePath)
+        {
+            if (string.IsNullOrWhiteSpace(executablePath))
+                return;
+
+            ImportEnqueueResult result = await AddGameCommand(executablePath);
+            if (!result.IsAccepted)
+                return;
+
+            await CompleteOnboardingAsync(scanOnStartup: true, launchSteamSilent: false);
+            IsOnboardingVisible = false;
+        }
+
+        [RelayCommand]
+        private async Task MaybeLaterFromOnboardingAsync()
+        {
+            await CompleteOnboardingAsync(scanOnStartup: true, launchSteamSilent: false);
+            IsOnboardingVisible = false;
         }
 
         public void CancelImport() => _importCoordinator.Cancel();
@@ -533,6 +597,17 @@ namespace Codec.ViewModels
             RefreshDisplayedGames();
         }
 
+        [RelayCommand]
+        private async Task ToggleFavoriteAsync(Game? game)
+        {
+            if (game == null)
+                return;
+
+            game.IsFavorite = !game.IsFavorite;
+            ApplySortToGames();
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
+        }
+
         private void RefreshAvailableImportSources()
         {
             var sources = Games
@@ -564,7 +639,7 @@ namespace Codec.ViewModels
 
         private void RefreshDisplayedGames()
         {
-            var sortedFiltered = GetSortedGames(Games.Where(MatchesSelectedImportFilter)).ToList();
+            var sortedFiltered = GetSortedGames(Games.Where(MatchesActiveFilters)).ToList();
 
             for (int targetIndex = 0; targetIndex < sortedFiltered.Count; targetIndex++)
             {
@@ -582,14 +657,16 @@ namespace Codec.ViewModels
 
             for (int index = DisplayedGames.Count - 1; index >= sortedFiltered.Count; index--)
                 DisplayedGames.RemoveAt(index);
+
         }
 
         private void RefreshSidebarFilteredGames()
         {
             var filteredGames = Games
-                .Where(MatchesSelectedImportFilter)
+                .Where(MatchesActiveFilters)
                 .Where(MatchesSidebarSearch)
-                .OrderBy(game => game.Name ?? string.Empty, GameNameComparer)
+                .OrderByDescending(game => game.IsFavorite)
+                .ThenBy(game => game.Name ?? string.Empty, GameNameComparer)
                 .ThenBy(game => game.Id)
                 .ToList();
 
@@ -625,10 +702,11 @@ namespace Codec.ViewModels
             return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
         }
 
-        private bool MatchesSelectedImportFilter(Game game)
+        private bool MatchesActiveFilters(Game game)
         {
-            return string.IsNullOrEmpty(SelectedImportFilter) ||
-                   string.Equals(game.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase);
+            bool matchesImport = string.IsNullOrEmpty(SelectedImportFilter) ||
+                                 string.Equals(game.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase);
+            return matchesImport;
         }
 
         partial void OnSelectedSortIndexChanged(int value)
@@ -643,13 +721,13 @@ namespace Codec.ViewModels
 
         private IEnumerable<Game> GetSortedGames(IEnumerable<Game> source) => SelectedSortIndex switch
         {
-            0 => source.OrderBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
-            1 => source.OrderByDescending(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
-            2 => source.OrderByDescending(g => g.FolderSize).ThenBy(g => g.Id),
-            3 => source.OrderBy(g => g.FolderSize).ThenBy(g => g.Id),
-            4 => source.OrderByDescending(g => g.DateAdded).ThenBy(g => g.Id),
-            5 => source.OrderBy(g => g.DateAdded).ThenBy(g => g.Id),
-            _ => source.OrderBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
+            0 => source.OrderByDescending(g => g.IsFavorite).ThenBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
+            1 => source.OrderByDescending(g => g.IsFavorite).ThenByDescending(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
+            2 => source.OrderByDescending(g => g.IsFavorite).ThenByDescending(g => g.FolderSize).ThenBy(g => g.Id),
+            3 => source.OrderByDescending(g => g.IsFavorite).ThenBy(g => g.FolderSize).ThenBy(g => g.Id),
+            4 => source.OrderByDescending(g => g.IsFavorite).ThenByDescending(g => g.DateAdded).ThenBy(g => g.Id),
+            5 => source.OrderByDescending(g => g.IsFavorite).ThenBy(g => g.DateAdded).ThenBy(g => g.Id),
+            _ => source.OrderByDescending(g => g.IsFavorite).ThenBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
         };
 
         private void ApplySortToGames()
@@ -683,6 +761,10 @@ namespace Codec.ViewModels
 
         private static int CompareGamesByName(Game left, Game right)
         {
+            int favoriteComparison = right.IsFavorite.CompareTo(left.IsFavorite);
+            if (favoriteComparison != 0)
+                return favoriteComparison;
+
             int nameComparison = GameNameComparer.Compare(left.Name ?? string.Empty, right.Name ?? string.Empty);
             if (nameComparison != 0)
                 return nameComparison;
