@@ -349,7 +349,7 @@ namespace Codec.ViewModels
                 return;
             }
 
-            await Task.Delay(7000);
+            await Task.Delay(12000);
             SetLaunchFeedbackState(LaunchFeedbackState.Idle);
         }
 
