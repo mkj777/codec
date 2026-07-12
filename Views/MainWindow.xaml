@@ -789,7 +789,13 @@
                                 Foreground="#1C1A17"
                                 CornerRadius="10"
                                 Padding="22,11"
-                                Command="{Binding FindGamesFromOnboardingCommand}"/>
+                                Command="{Binding FindGamesFromOnboardingCommand}">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F5803F"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#F5803F"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#1C1A17"/>
+                            </Button.Resources>
+                        </Button>
                         <Button Content="Add a game"
                                 FontWeight="SemiBold"
                                 Background="#25221F"
@@ -797,7 +803,13 @@
                                 Foreground="#F3EDC9"
                                 CornerRadius="10"
                                 Padding="22,11"
-                                Click="OnboardingAddGame_Click"/>
+                                Click="OnboardingAddGame_Click">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#332E27"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#5E5346"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
+                            </Button.Resources>
+                        </Button>
                     </StackPanel>
                     <Button Content="Maybe later"
                             Command="{Binding MaybeLaterFromOnboardingCommand}"
@@ -806,7 +818,13 @@
                             Padding="12,7"
                             Background="Transparent"
                             BorderBrush="Transparent"
-                            Foreground="#9E8E78"/>
+                            Foreground="#9E8E78">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
+                        </Button.Resources>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Grid>
