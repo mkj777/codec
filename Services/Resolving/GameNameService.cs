@@ -70,10 +70,11 @@ namespace Codec.Services.Resolving
         private readonly object RateLimitGate = new();
         private DateTime _lastSteamRequestUtc = DateTime.MinValue;
 
-        public GameNameService(GameDetailsService gameDetails)
+        public GameNameService(GameDetailsService gameDetails, int maxConcurrentApiRequests = 3)
         {
             _gameDetails = gameDetails;
-            SteamApiSemaphore = new SemaphoreSlim(Config.MaxConcurrentApiRequests, Config.MaxConcurrentApiRequests);
+            int concurrency = Math.Max(1, maxConcurrentApiRequests);
+            SteamApiSemaphore = new SemaphoreSlim(concurrency, concurrency);
 
             if (!_httpClient.DefaultRequestHeaders.UserAgent.Any())
             {

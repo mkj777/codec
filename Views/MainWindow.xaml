@@ -170,10 +170,6 @@
             </Style>
         </Grid.Resources>
 
-        <Grid.RenderTransform>
-            <TranslateTransform x:Name="ShakeTransform"/>
-        </Grid.RenderTransform>
-
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -340,9 +336,10 @@
                             </ListView.ItemContainerStyle>
                              <ListView.ItemTemplate>
                                  <DataTemplate x:DataType="local:Game">
-                                     <TextBlock
-                                         Text="{x:Bind Name}"
-                                         TextTrimming="CharacterEllipsis"/>
+                                     <Grid Opacity="{x:Bind SidebarOpacity, Mode=OneWay}">
+                                         <TextBlock Text="{x:Bind Name}"
+                                                    TextTrimming="CharacterEllipsis"/>
+                                     </Grid>
                                  </DataTemplate>
                              </ListView.ItemTemplate>
                         </ListView>
@@ -840,10 +837,13 @@
             <Border Background="#1C1A17"
                     CornerRadius="14"
                     Padding="22"
-                    Width="340"
+                    Width="430"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-                <StackPanel Spacing="14">
+                <ScrollViewer MaxHeight="680"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="14" Padding="0,0,8,0">
                     <Grid>
                         <StackPanel Orientation="Horizontal"
                                     Spacing="8"
@@ -963,6 +963,98 @@
                     </StackPanel>
 
                     <StackPanel Spacing="7">
+                        <TextBlock Text="STEAM LIBRARY"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                   Foreground="#D4A832"
+                                   CharacterSpacing="40"/>
+                        <Border Background="#25221F"
+                                BorderBrush="#3E3830"
+                                BorderThickness="1"
+                                CornerRadius="9"
+                                Padding="14">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="38" Height="38" CornerRadius="8" Background="#22D4A832">
+                                        <FontIcon Glyph="&#xE7FC;" FontSize="18" Foreground="#D4A832"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding SteamAccountDisplay}"
+                                                   FontSize="14" FontWeight="SemiBold"
+                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                   Foreground="#F3EDC9"/>
+                                        <TextBlock Text="{Binding SteamLastSyncText}"
+                                                   FontSize="11" Foreground="#9E8E78"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Width="210"
+                                        Height="210"
+                                        CornerRadius="18"
+                                        HorizontalAlignment="Center"
+                                        Visibility="{Binding IsSteamQrVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Image Source="{Binding SteamQrCode}"
+                                           Stretch="UniformToFill"
+                                           AutomationProperties.Name="Steam sign-in QR code"/>
+                                </Border>
+                                <Button Content="Cancel sign-in"
+                                        Command="{Binding CancelSteamSignInCommand}"
+                                        HorizontalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        Foreground="#9E8E78"
+                                        Visibility="{Binding IsSteamQrVisible, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                                <TextBlock Text="{Binding SteamStatusMessage}"
+                                           FontSize="11.5" Foreground="#9E8E78"
+                                           TextWrapping="WrapWholeWords"/>
+
+                                <ProgressBar IsIndeterminate="True"
+                                             Height="3"
+                                             Foreground="#E76C2B"
+                                             Visibility="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button Content="Connect Steam"
+                                            Command="{Binding ConnectSteamCommand}"
+                                            IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Center"
+                                            Padding="14,9"
+                                            Background="#E76C2B" BorderBrush="#E76C2B"
+                                            Foreground="#1C1A17" CornerRadius="7"/>
+                                    <Button Content="Sync now"
+                                            Command="{Binding SyncSteamLibraryCommand}"
+                                            IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            HorizontalAlignment="Stretch"
+                                            Padding="14,9"
+                                            Background="#E76C2B" BorderBrush="#E76C2B"
+                                            Foreground="#1C1A17" CornerRadius="7"/>
+                                    <Button Grid.Column="1"
+                                            Content="Disconnect"
+                                            Click="SteamDisconnect_Click"
+                                            Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            Padding="12,9"
+                                            Background="Transparent" BorderBrush="#5E5346"
+                                            Foreground="#9E8E78" CornerRadius="7"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Spacing="7">
                         <TextBlock Text="MAINTENANCE"
                                    FontSize="11"
                                    FontWeight="SemiBold"
@@ -984,18 +1076,12 @@
                                 Foreground="#E76C2B"
                                 Click="ResetApp_Click">
                             <Button.Resources>
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver"
-                                                 Color="#33E76C2B"/>
-                                <SolidColorBrush x:Key="ButtonBackgroundPressed"
-                                                 Color="#55E76C2B"/>
-                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver"
-                                                 Color="#80E76C2B"/>
-                                <SolidColorBrush x:Key="ButtonBorderBrushPressed"
-                                                 Color="#A0E76C2B"/>
-                                <SolidColorBrush x:Key="ButtonForegroundPointerOver"
-                                                 Color="#D4A832"/>
-                                <SolidColorBrush x:Key="ButtonForegroundPressed"
-                                                 Color="#E76C2B"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#33E76C2B"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#55E76C2B"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#80E76C2B"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#A0E76C2B"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#D4A832"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E76C2B"/>
                             </Button.Resources>
                         </Button>
                     </StackPanel>
@@ -1073,6 +1159,7 @@
                         </Button.Flyout>
                     </Button>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
 
@@ -1107,7 +1194,7 @@
                                           FontSize="14"
                                           Foreground="#E76C2B"/>
                             </Border>
-                            <TextBlock Text="Reset Codec"
+                            <TextBlock Text="Full reset"
                                        FontSize="18"
                                        FontWeight="Bold"
                                        FontFamily="{StaticResource CodecBoldFontFamily}"
@@ -1142,13 +1229,18 @@
 
                     <!-- Body -->
                     <StackPanel Spacing="10">
+                        <TextBlock Text="Codec will close immediately."
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F3EDC9"
+                                   TextWrapping="Wrap"/>
                         <StackPanel Spacing="2">
                             <TextBlock Text="THIS WILL DELETE"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="#D4A832"
                                        CharacterSpacing="100"/>
-                            <TextBlock Text="Game library Data · Cached artwork · App settings"
+                            <TextBlock Text="Library · Artwork · Caches · Logs · Settings · Steam sign-in"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="#9E8E78"
@@ -1160,7 +1252,7 @@
                                        FontWeight="SemiBold"
                                        Foreground="#D4A832"
                                        CharacterSpacing="100"/>
-                            <TextBlock Text="Your Games · Your game files or saves."
+                            <TextBlock Text="Installed games · Save files · Launcher data"
                                        FontSize="12"
                                        FontWeight="SemiBold"
                                        Foreground="#9E8E78"
@@ -1207,7 +1299,7 @@
 
                         <!-- Delete -->
                         <Button Grid.Column="1"
-                                Content="Proceed"
+                                Content="Reset"
                                 HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Padding="0,11"
@@ -1240,37 +1332,33 @@
             </Border>
         </Grid>
 
-        <!-- Fire reset animation overlay -->
-        <Grid x:Name="FireOverlay"
+        <!-- Full reset progress -->
+        <Grid x:Name="ResetProgressOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Background="#F51C1A17"
               Visibility="Collapsed"
-              IsHitTestVisible="False">
-            <Rectangle x:Name="FireDarkBackground"
-                       Fill="#FF1C1A17"
-                       Opacity="0"/>
-            <Canvas x:Name="FireParticleCanvas"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"/>
-            <Rectangle x:Name="FireBottomGlow"
-                       VerticalAlignment="Bottom"
-                       HorizontalAlignment="Stretch"
-                       Height="360"
-                       Opacity="0">
-                <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,1"
-                                         EndPoint="0,0">
-                        <GradientStop Color="#FF1C1A17"
-                                      Offset="0"/>
-                        <GradientStop Color="#DDE76C2B"
-                                      Offset="0.35"/>
-                        <GradientStop Color="#AAD4A832"
-                                      Offset="0.65"/>
-                        <GradientStop Color="#00E76C2B"
-                                      Offset="1"/>
-                    </LinearGradientBrush>
-                </Rectangle.Fill>
-            </Rectangle>
+              IsHitTestVisible="True">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="14">
+                <ProgressRing Width="34"
+                              Height="34"
+                              IsActive="True"
+                              Foreground="#E76C2B"
+                              HorizontalAlignment="Center"/>
+                <TextBlock Text="Your data is being deleted"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           FontFamily="{StaticResource CodecBoldFontFamily}"
+                           Foreground="#F3EDC9"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Codec will restart with a clean slate."
+                           FontSize="12"
+                           FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                           Foreground="#9E8E78"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
         </Grid>
 
         <!-- Startup cover mosaic. Library loads behind it; only cached covers are used. -->
@@ -1347,7 +1435,8 @@
         </Border>
 
         <!-- ===== Unified Notification Stack ===== -->
-        <StackPanel Grid.RowSpan="2"
+        <StackPanel x:Name="NotificationStack"
+                    Grid.RowSpan="2"
                     Grid.ColumnSpan="2"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
@@ -1489,6 +1578,59 @@
                             FontWeight="SemiBold"
                             Padding="10,5"
                             CornerRadius="6"/>
+                </Grid>
+            </Border>
+
+            <!-- Steam sync status card -->
+            <Border Visibility="{Binding IsSteamSyncProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Background="#25221F"
+                    BorderBrush="#3E3830"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="16,14"
+                    Width="340">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="24"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Width="24"
+                          Height="24"
+                          VerticalAlignment="Center">
+                        <ProgressRing IsActive="{Binding IsSteamSyncProgressIndeterminate, Mode=OneWay}"
+                                      Width="22"
+                                      Height="22"
+                                      Visibility="{Binding IsSteamSyncProgressIndeterminate, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        <FontIcon Glyph="&#xE895;"
+                                  FontFamily="Segoe Fluent Icons"
+                                  FontSize="18"
+                                  Foreground="#D4A832"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Visibility="{Binding IsSteamSyncProgressIndeterminate, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"/>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1"
+                                Spacing="7"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SteamSyncProgressTitle, Mode=OneWay}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F3EDC9"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                        <TextBlock Text="{Binding SteamSyncProgressMessage, Mode=OneWay}"
+                                   FontSize="11"
+                                   Foreground="#9E8E78"
+                                   TextWrapping="Wrap"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                        <ProgressBar Value="{Binding SteamSyncProgressValue, Mode=OneWay}"
+                                     Maximum="{Binding SteamSyncProgressMaximum, Mode=OneWay}"
+                                     Minimum="0"
+                                     Height="3"
+                                     HorizontalAlignment="Stretch"
+                                     Visibility="{Binding IsSteamSyncProgressIndeterminate, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"/>
+                    </StackPanel>
                 </Grid>
             </Border>
 

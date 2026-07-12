@@ -47,6 +47,9 @@ namespace Codec.ViewModels
         [ObservableProperty]
         private string? _selectedImportFilter;
 
+        [ObservableProperty]
+        private int _selectedInstallFilter = 1;
+
         public MainViewModel(ServiceHost services)
         {
             _services = services;
@@ -309,6 +312,7 @@ namespace Codec.ViewModels
             SelectedSortIndex = _appSettings.SelectedSortIndex;
             IsSidebarCollapsed = _appSettings.IsSidebarCollapsed;
             _suppressSettingsSave = false;
+            InitializeSteamIntegration();
 
             var saved = await _services.LibraryStorage.LoadAsync();
             PrepareStartupCoverGames(saved);
@@ -330,6 +334,9 @@ namespace Codec.ViewModels
                 _ = ScanGamesOnStartupAsync();
 
             _ = SilentUpdateImagesAsync(Games);
+
+            if (IsSteamConnected)
+                _ = SyncSteamLibraryCoreAsync(useQr: false);
         }
 
         private void PrepareStartupCoverGames(IReadOnlyList<Game> games)
@@ -406,17 +413,6 @@ namespace Codec.ViewModels
         }
 
         public Task CancelImportAsync() => _importCoordinator.CancelAndDrainAsync();
-
-        public void ResetAppSettings()
-        {
-            _appSettings = new AppSettings();
-            _suppressSettingsSave = true;
-            ScanOnStartup = _appSettings.ScanOnStartup;
-            LaunchSteamSilent = false;
-            SelectedSortIndex = 0;
-            IsSidebarCollapsed = false;
-            _suppressSettingsSave = false;
-        }
 
         partial void OnIsSidebarCollapsedChanged(bool value)
         {
@@ -601,6 +597,12 @@ namespace Codec.ViewModels
             RefreshDisplayedGames();
         }
 
+        partial void OnSelectedInstallFilterChanged(int value)
+        {
+            RefreshSidebarFilteredGames();
+            RefreshDisplayedGames();
+        }
+
         [RelayCommand]
         private async Task ToggleFavoriteAsync(Game? game)
         {
@@ -667,7 +669,9 @@ namespace Codec.ViewModels
         private void RefreshSidebarFilteredGames()
         {
             var filteredGames = Games
-                .Where(MatchesActiveFilters)
+                .Where(IsReadyForLibrary)
+                .Where(MatchesImportFilter)
+                .Where(game => !string.IsNullOrWhiteSpace(_appliedSearchText) || MatchesInstallFilter(game))
                 .Where(MatchesSidebarSearch)
                 .OrderByDescending(game => game.IsFavorite)
                 .ThenBy(game => game.Name ?? string.Empty, GameNameComparer)
@@ -708,10 +712,23 @@ namespace Codec.ViewModels
 
         private bool MatchesActiveFilters(Game game)
         {
-            bool matchesImport = string.IsNullOrEmpty(SelectedImportFilter) ||
-                                 string.Equals(game.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase);
-            return matchesImport;
+            return IsReadyForLibrary(game) && MatchesImportFilter(game) && MatchesInstallFilter(game);
         }
+
+        private static bool IsReadyForLibrary(Game game)
+            => !game.IsSteamOwned || (game.IsFullyImported && game.DisplayedAssetsReady);
+
+        private bool MatchesImportFilter(Game game)
+            => string.IsNullOrEmpty(SelectedImportFilter) ||
+               string.Equals(game.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase);
+
+        private bool MatchesInstallFilter(Game game)
+            => SelectedInstallFilter switch
+            {
+                1 => game.IsInstalled,
+                2 => !game.IsInstalled,
+                _ => true
+            };
 
         partial void OnSelectedSortIndexChanged(int value)
         {

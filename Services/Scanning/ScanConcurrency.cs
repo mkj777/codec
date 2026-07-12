@@ -24,7 +24,7 @@ namespace Codec.Services.Scanning
                 HeuristicWorkers: Math.Clamp(processors / 2, 2, 6),
                 ValidationWorkers: validationWorkers,
                 ImportWorkers: importWorkers,
-                NetworkOperations: Math.Clamp(processors / 3, 2, 6),
+                NetworkOperations: 32,
                 DiskOperations: Math.Clamp(processors / 4, 1, 4),
                 FolderSizeOperations: Math.Clamp(processors / 8, 1, 2),
                 ImportQueueCapacity: Math.Max(8, importWorkers * 4),

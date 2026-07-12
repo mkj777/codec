@@ -816,6 +816,29 @@
                                                                 CornerRadius="8"
                                                                 Padding="10,2">
                                                                 <StackPanel Spacing="0">
+                                                                        <Border Margin="0,8,0,0"
+                                                                                Padding="9,6"
+                                                                                Background="#18D4A832"
+                                                                                BorderBrush="#55D4A832"
+                                                                                BorderThickness="1"
+                                                                                CornerRadius="6"
+                                                                                Visibility="{Binding SelectedGame.IsAlsoOwnedOnSteam, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                                <StackPanel Orientation="Horizontal"
+                                                                                            Spacing="7">
+                                                                                        <FontIcon Glyph="&#xE8A7;"
+                                                                                                  FontFamily="Segoe Fluent Icons"
+                                                                                                  FontSize="12"
+                                                                                                  Foreground="#D4A832"
+                                                                                                  VerticalAlignment="Center"/>
+                                                                                        <TextBlock Text="You also own this on Steam"
+                                                                                                   FontSize="11"
+                                                                                                   FontWeight="SemiBold"
+                                                                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                                                                   Foreground="#F3EDC9"
+                                                                                                   VerticalAlignment="Center"/>
+                                                                                </StackPanel>
+                                                                        </Border>
+
                                                                         <StackPanel x:Name="FolderSizeSection"
                                                                                     Margin="0,8"
                                                                                     Spacing="1">

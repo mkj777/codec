@@ -88,27 +88,5 @@ namespace Codec.Services.Storage
             }
         }
 
-        public async Task ResetAsync()
-        {
-            try
-            {
-                await _saveGate.WaitAsync();
-                string dir = GetBaseDirectory();
-                if (Directory.Exists(dir))
-                {
-                    await Task.Run(() => Directory.Delete(dir, recursive: true));
-                }
-                Directory.CreateDirectory(dir);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to reset library: {ex.Message}");
-                throw;
-            }
-            finally
-            {
-                _saveGate.Release();
-            }
-        }
     }
 }

@@ -154,15 +154,6 @@ namespace Codec.Services.Storage
             }
         }
 
-        public void ClearAll()
-        {
-            _memory.Clear();
-            if (Directory.Exists(_baseCacheDir))
-            {
-                try { Directory.Delete(_baseCacheDir, recursive: true); } catch { }
-            }
-        }
-
         private static string BuildCacheKey(string partition, string url) => $"{partition}|{url}";
 
         private string GetDiskPath(string partition, string url)

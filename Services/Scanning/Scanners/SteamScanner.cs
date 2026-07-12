@@ -78,7 +78,7 @@ namespace Codec.Services.Scanning.Scanners
         /// Returns false when Steam left the install dir behind after uninstall — directory missing,
         /// or present but contains no files at any depth. Walks lazily; bails on the first file found.
         /// </summary>
-        private static bool IsInstallFolderPopulated(string folderPath)
+        internal static bool IsInstallFolderPopulated(string folderPath)
         {
             if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
                 return false;

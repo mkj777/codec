@@ -60,39 +60,44 @@ namespace Codec.ViewModels
             nameof(Game.LaunchScript),
             nameof(Game.UseLaunchScriptOverride),
             nameof(Game.UseExecutableOverride),
-            nameof(Game.CanLaunch)
+            nameof(Game.CanLaunch),
+            nameof(Game.CanInstall),
+            nameof(Game.IsInstalled),
+            nameof(Game.IsSteamOwned)
         };
 
         private LaunchFeedbackState _launchFeedbackState;
 
         public bool IsLaunchingGame => _launchFeedbackState != LaunchFeedbackState.Idle;
 
-        public bool IsLaunchSpinnerVisible => _launchFeedbackState == LaunchFeedbackState.Launching;
+        public bool IsLaunchSpinnerVisible => _launchFeedbackState is LaunchFeedbackState.Launching or LaunchFeedbackState.RequestingInstall;
 
         public bool IsPlayGlyphVisible => !IsLaunchSpinnerVisible;
 
         public string PlayButtonGlyph => _launchFeedbackState switch
         {
             LaunchFeedbackState.Failed => "\uEA39",
-            _ => "\uE768"
+            _ => SelectedGame?.CanInstall == true ? "\uE896" : "\uE768"
         };
 
-        public bool CanPlaySelectedGame => SelectedGame?.CanLaunch == true && !IsLaunchingGame;
+        public bool CanPlaySelectedGame => (SelectedGame?.CanLaunch == true || SelectedGame?.CanInstall == true) && !IsLaunchingGame;
 
         public string PlayButtonText => _launchFeedbackState switch
         {
             LaunchFeedbackState.Launching => "LAUNCHING",
-            LaunchFeedbackState.Failed => "COULDN'T START",
-            _ => SelectedGame?.CanLaunch == true ? "PLAY" : "MISSING"
+            LaunchFeedbackState.RequestingInstall => "REQUESTING",
+            LaunchFeedbackState.Failed => SelectedGame?.CanInstall == true ? "REQUEST FAILED" : "COULDN'T START",
+            _ => SelectedGame?.CanInstall == true ? "INSTALL" : SelectedGame?.CanLaunch == true ? "PLAY" : "MISSING"
         };
 
-        public double PlayButtonOpacity => SelectedGame?.CanLaunch == true ? 1d : 0.46d;
+        public double PlayButtonOpacity => CanPlaySelectedGame ? 1d : 0.46d;
 
         public string PlayButtonToolTip => _launchFeedbackState switch
         {
             LaunchFeedbackState.Launching => "Launching game",
-            LaunchFeedbackState.Failed => "Codec couldn't start this game",
-            _ => SelectedGame?.CanLaunch == true ? "Launch game" : "Missing launch target"
+            LaunchFeedbackState.RequestingInstall => "Requesting install from Steam",
+            LaunchFeedbackState.Failed => SelectedGame?.CanInstall == true ? "Steam install request failed" : "Codec couldn't start this game",
+            _ => SelectedGame?.CanInstall == true ? "Install through Steam" : SelectedGame?.CanLaunch == true ? "Launch game" : "Missing launch target"
         };
 
         partial void OnSelectedGameChanged(Game? oldValue, Game? newValue)
@@ -122,6 +127,7 @@ namespace Codec.ViewModels
         {
             OnPropertyChanged(nameof(CanPlaySelectedGame));
             OnPropertyChanged(nameof(PlayButtonText));
+            OnPropertyChanged(nameof(PlayButtonGlyph));
             OnPropertyChanged(nameof(PlayButtonOpacity));
             OnPropertyChanged(nameof(PlayButtonToolTip));
             PlayGameCommand.NotifyCanExecuteChanged();
@@ -285,10 +291,12 @@ namespace Codec.ViewModels
         [RelayCommand(CanExecute = nameof(CanPlaySelectedGame))]
         private async Task PlayGameAsync()
         {
-            if (SelectedGame == null || !SelectedGame.CanLaunch)
+            if (SelectedGame == null || (!SelectedGame.CanLaunch && !SelectedGame.CanInstall))
                 return;
 
-            SetLaunchFeedbackState(LaunchFeedbackState.Launching);
+            SetLaunchFeedbackState(SelectedGame.CanInstall
+                ? LaunchFeedbackState.RequestingInstall
+                : LaunchFeedbackState.Launching);
             bool launched = false;
 
             try
@@ -297,7 +305,16 @@ namespace Codec.ViewModels
                 bool isEpicGame = SelectedGame.IsEpicLaunchTarget;
                 bool isRiotGame = SelectedGame.IsRiotLaunchTarget;
 
-                if (SelectedGame.HasCustomLaunchScript && TryLaunchFile(SelectedGame.LaunchScript))
+                if (SelectedGame.CanInstall)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = BuildSteamInstallUri(SelectedGame.SteamID!.Value),
+                        UseShellExecute = true
+                    });
+                    launched = true;
+                }
+                else if (SelectedGame.HasCustomLaunchScript && TryLaunchFile(SelectedGame.LaunchScript))
                 {
                     launched = true;
                 }
@@ -370,6 +387,8 @@ namespace Codec.ViewModels
 
         internal static string BuildEpicLaunchUri(string epicAppId) =>
             $"com.epicgames.launcher://apps/{Uri.EscapeDataString(epicAppId)}?action=launch&silent=true";
+
+        internal static string BuildSteamInstallUri(int appId) => $"steam://install/{appId}";
 
         [RelayCommand]
         private void OpenGameFolder()
@@ -502,6 +521,7 @@ namespace Codec.ViewModels
     {
         Idle,
         Launching,
+        RequestingInstall,
         Failed
     }
 }

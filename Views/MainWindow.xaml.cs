@@ -1,6 +1,5 @@
 using Codec.Models;
 using Codec.Services;
-using Codec.Services.Storage;
 using Codec.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -10,7 +9,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -31,26 +29,13 @@ namespace Codec.Views
     {
         private const int MinWindowWidth = 900;
         private const int MinWindowHeight = 560;
-        private const int SidebarListRefreshFadeMs = 75;
-        private const double SidebarListRefreshStartOpacity = 0.92;
-
         private static readonly SolidColorBrush SidebarSelectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0xF3, 0xED, 0xC9));
         private static readonly SolidColorBrush SidebarUnselectedForegroundBrush = new(ColorHelper.FromArgb(0xFF, 0x9E, 0x8E, 0x78));
 
-        private static readonly Windows.UI.Color[] FireColors =
-        [
-            ColorHelper.FromArgb(255, 255, 220, 30),
-            ColorHelper.FromArgb(255, 255, 170, 0),
-            ColorHelper.FromArgb(255, 255, 100, 0),
-            ColorHelper.FromArgb(255, 255, 50, 0),
-            ColorHelper.FromArgb(255, 220, 20, 0),
-        ];
-
-        private bool _isSidebarListRefreshAnimationQueued;
-        private Storyboard? _sidebarListRefreshStoryboard;
         private Storyboard? _sidebarStateStoryboard;
         private readonly TaskCompletionSource<bool> _libraryReadyForStartup = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _startupSequenceStarted;
+        private bool _isResetting;
 
         public MainViewModel ViewModel { get; }
 
@@ -68,7 +53,6 @@ namespace Codec.Views
             AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"));
             ConfigureWindowConstraints();
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-            ViewModel.SidebarFilteredGames.CollectionChanged += SidebarFilteredGames_CollectionChanged;
             RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
             RootGrid.AddHandler(UIElement.RightTappedEvent, new RightTappedEventHandler(RootGrid_RightTapped), true);
             _ = ViewModel.LoadLibraryAsync();
@@ -307,60 +291,6 @@ namespace Codec.Views
                 _sidebarStateStoryboard = null;
             };
             _sidebarStateStoryboard = storyboard;
-            storyboard.Begin();
-        }
-
-        private void SidebarFilteredGames_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (ViewModel.IsInitialLoading || _isSidebarListRefreshAnimationQueued)
-                return;
-
-            _isSidebarListRefreshAnimationQueued = true;
-            if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
-                {
-                    _isSidebarListRefreshAnimationQueued = false;
-                    PlaySidebarListRefreshAnimation();
-                }))
-            {
-                _isSidebarListRefreshAnimationQueued = false;
-            }
-        }
-
-        private void PlaySidebarListRefreshAnimation()
-        {
-            _sidebarListRefreshStoryboard?.Stop();
-
-            if (SidebarGameList.Items.Count == 0)
-            {
-                SidebarGameList.Opacity = 1;
-                return;
-            }
-
-            SidebarGameList.Opacity = SidebarListRefreshStartOpacity;
-
-            var fade = new DoubleAnimation
-            {
-                From = SidebarListRefreshStartOpacity,
-                To = 1,
-                Duration = new Duration(TimeSpan.FromMilliseconds(SidebarListRefreshFadeMs)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            Storyboard.SetTarget(fade, SidebarGameList);
-            Storyboard.SetTargetProperty(fade, "Opacity");
-
-            var storyboard = new Storyboard();
-            storyboard.Children.Add(fade);
-            storyboard.Completed += (_, _) =>
-            {
-                if (!ReferenceEquals(_sidebarListRefreshStoryboard, storyboard))
-                    return;
-
-                SidebarGameList.Opacity = 1;
-                _sidebarListRefreshStoryboard = null;
-            };
-
-            _sidebarListRefreshStoryboard = storyboard;
             storyboard.Begin();
         }
 
@@ -690,6 +620,22 @@ namespace Codec.Views
         private void SettingsScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
             => ViewModel.IsSettingsVisible = false;
 
+        private async void SteamDisconnect_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Disconnect Steam",
+                Content = "Keep owned but not installed Steam apps in your Codec library? Installed apps always stay.",
+                PrimaryButtonText = "Remove online apps",
+                SecondaryButtonText = "Keep apps",
+                DefaultButton = ContentDialogButton.Secondary,
+                XamlRoot = Content.XamlRoot
+            };
+
+            ContentDialogResult result = await dialog.ShowAsync();
+            await ViewModel.DisconnectSteamAsync(removeOwnedOnlyGames: result == ContentDialogResult.Primary);
+        }
+
         private async void OnboardingAddGame_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -932,25 +878,25 @@ namespace Codec.Views
 
         private async void ResetConfirm_Click(object sender, RoutedEventArgs e)
         {
+            if (_isResetting)
+                return;
+
+            _isResetting = true;
             ViewModel.IsResetConfirmVisible = false;
-
             ViewModel.IsUiEnabled = false;
-            await ViewModel.CancelImportAsync();
-            ViewModel.IsDetailsVisible = false;
-            ViewModel.SelectedGame = null;
-            ViewModel.SidebarSelectedItem = null;
-            ViewModel.Games.Clear();
-
-            var fireTask = PlayFireAnimationAsync();
+            NotificationStack.Visibility = Visibility.Collapsed;
+            ResetProgressOverlay.Visibility = Visibility.Visible;
+            await Task.Delay(3000);
 
             try
             {
-                App.Services.Cache.ClearAll();
-                await App.Services.LibraryStorage.ResetAsync();
+                App.Services.AppReset.StartFullResetAndRestart();
             }
             catch (Exception ex)
             {
-                await fireTask;
+                _isResetting = false;
+                ResetProgressOverlay.Visibility = Visibility.Collapsed;
+                NotificationStack.Visibility = Visibility.Visible;
                 var errorDialog = new ContentDialog
                 {
                     Title = "Reset Error",
@@ -960,146 +906,7 @@ namespace Codec.Views
                 };
                 await errorDialog.ShowAsync();
                 ViewModel.IsUiEnabled = true;
-                return;
             }
-
-            ViewModel.ResetAppSettings();
-            ViewModel.SetLoadingState(false);
-
-            await fireTask;
-
-            ViewModel.IsOnboardingVisible = true;
-            ViewModel.IsUiEnabled = true;
-        }
-
-        private async Task PlayFireAnimationAsync()
-        {
-            FireOverlay.Visibility = Visibility.Visible;
-            FireDarkBackground.Opacity = 1;
-
-            AnimateOpacity(FireBottomGlow, 0, 1.0, 0.5);
-
-            var shakeSb = BuildShakeStoryboard();
-            shakeSb.Begin();
-
-            var random = new Random();
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
-            timer.Tick += (_, _) =>
-            {
-                SpawnFireParticle(FireParticleCanvas, random);
-                SpawnFireParticle(FireParticleCanvas, random);
-                SpawnFireParticle(FireParticleCanvas, random);
-            };
-            timer.Start();
-
-            await Task.Delay(2600);
-            timer.Stop();
-
-            AnimateOpacity(FireOverlay, 1, 0, 0.65);
-            await Task.Delay(650);
-
-            shakeSb.Stop();
-            ShakeTransform.X = 0;
-            FireOverlay.Visibility = Visibility.Collapsed;
-            FireOverlay.Opacity = 1;
-            FireDarkBackground.Opacity = 0;
-            FireBottomGlow.Opacity = 0;
-            FireParticleCanvas.Children.Clear();
-        }
-
-        private void SpawnFireParticle(Microsoft.UI.Xaml.Controls.Canvas canvas, Random random)
-        {
-            double w = canvas.ActualWidth;
-            double h = canvas.ActualHeight;
-            if (w <= 0 || h <= 0) return;
-
-            var color = FireColors[random.Next(FireColors.Length)];
-            double size = 14 + random.NextDouble() * 38;
-            double x = random.NextDouble() * (w + size) - size / 2;
-            double secs = 0.7 + random.NextDouble() * 1.1;
-
-            var brush = new RadialGradientBrush();
-            brush.GradientStops.Add(new GradientStop { Color = color, Offset = 0 });
-            brush.GradientStops.Add(new GradientStop
-            {
-                Color = ColorHelper.FromArgb(0, color.R, color.G, color.B),
-                Offset = 1
-            });
-
-            var ellipse = new Microsoft.UI.Xaml.Shapes.Ellipse
-            {
-                Width = size,
-                Height = size * 1.7,
-                Fill = brush,
-                Opacity = 0.7 + random.NextDouble() * 0.3,
-                IsHitTestVisible = false
-            };
-
-            Microsoft.UI.Xaml.Controls.Canvas.SetLeft(ellipse, x);
-            Microsoft.UI.Xaml.Controls.Canvas.SetTop(ellipse, h);
-            canvas.Children.Add(ellipse);
-
-            var move = new DoubleAnimation
-            {
-                From = h,
-                To = -size * 2,
-                Duration = new Duration(TimeSpan.FromSeconds(secs)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            var fade = new DoubleAnimation
-            {
-                From = ellipse.Opacity,
-                To = 0,
-                BeginTime = TimeSpan.FromSeconds(secs * 0.5),
-                Duration = new Duration(TimeSpan.FromSeconds(secs * 0.5))
-            };
-
-            var sb = new Storyboard();
-            Storyboard.SetTarget(move, ellipse);
-            Storyboard.SetTargetProperty(move, "(Canvas.Top)");
-            Storyboard.SetTarget(fade, ellipse);
-            Storyboard.SetTargetProperty(fade, "Opacity");
-            sb.Children.Add(move);
-            sb.Children.Add(fade);
-            sb.Completed += (_, _) => canvas.Children.Remove(ellipse);
-            sb.Begin();
-        }
-
-        private Storyboard BuildShakeStoryboard()
-        {
-            var anim = new DoubleAnimationUsingKeyFrames { RepeatBehavior = new RepeatBehavior(11) };
-            (double X, double Ms)[] keys =
-            [
-                (0, 0), (8, 38), (-8, 76), (5, 111), (-5, 146), (3, 176), (-3, 206), (0, 236)
-            ];
-            foreach (var (x, ms) in keys)
-                anim.KeyFrames.Add(new LinearDoubleKeyFrame
-                {
-                    Value = x,
-                    KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(ms))
-                });
-
-            Storyboard.SetTarget(anim, ShakeTransform);
-            Storyboard.SetTargetProperty(anim, "X");
-
-            var sb = new Storyboard();
-            sb.Children.Add(anim);
-            return sb;
-        }
-
-        private static void AnimateOpacity(UIElement target, double from, double to, double secs)
-        {
-            var anim = new DoubleAnimation
-            {
-                From = from,
-                To = to,
-                Duration = new Duration(TimeSpan.FromSeconds(secs))
-            };
-            var sb = new Storyboard();
-            Storyboard.SetTarget(anim, target);
-            Storyboard.SetTargetProperty(anim, "Opacity");
-            sb.Children.Add(anim);
-            sb.Begin();
         }
 
         private async Task<string?> PickExeFileAsync()

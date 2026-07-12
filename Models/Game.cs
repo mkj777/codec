@@ -58,7 +58,26 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
+        [NotifyPropertyChangedFor(nameof(IsAlsoOwnedOnSteam))]
         private string importedFrom;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsOwnedOnly))]
+        [NotifyPropertyChangedFor(nameof(CanLaunch))]
+        [NotifyPropertyChangedFor(nameof(CanInstall))]
+        [NotifyPropertyChangedFor(nameof(LibraryCardOpacity))]
+        [NotifyPropertyChangedFor(nameof(SidebarOpacity))]
+        private bool isInstalled = true;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsOwnedOnly))]
+        [NotifyPropertyChangedFor(nameof(CanInstall))]
+        [NotifyPropertyChangedFor(nameof(LibraryCardOpacity))]
+        [NotifyPropertyChangedFor(nameof(SidebarOpacity))]
+        [NotifyPropertyChangedFor(nameof(IsAlsoOwnedOnSteam))]
+        private bool isSteamOwned;
+
+        [ObservableProperty] private string? steamAppType;
 
         // Display-only property that shows just the platform name without the path
         public string ImportedFromDisplay
@@ -83,6 +102,7 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
         [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
         [NotifyPropertyChangedFor(nameof(UsesAlternateMetadataLookupName))]
+        [NotifyPropertyChangedFor(nameof(IsAlsoOwnedOnSteam))]
         private int? steamID;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
@@ -390,7 +410,7 @@ namespace Codec.Models
                     return true;
                 }
 
-                if (IsSteamLaunchTarget || IsEpicLaunchTarget)
+                if ((IsSteamLaunchTarget && IsInstalled) || IsEpicLaunchTarget)
                 {
                     return true;
                 }
@@ -445,6 +465,21 @@ namespace Codec.Models
             SteamID.HasValue &&
             !string.IsNullOrWhiteSpace(ImportedFrom) &&
             ImportedFrom.StartsWith("Steam", StringComparison.OrdinalIgnoreCase);
+
+        [JsonIgnore]
+        public bool IsAlsoOwnedOnSteam => IsSteamOwned && SteamID.HasValue && !IsSteamLaunchTarget;
+
+        [JsonIgnore]
+        public bool IsOwnedOnly => IsSteamOwned && !IsInstalled;
+
+        [JsonIgnore]
+        public bool CanInstall => IsOwnedOnly && SteamID.HasValue;
+
+        [JsonIgnore]
+        public double LibraryCardOpacity => IsOwnedOnly ? 0.68d : 1d;
+
+        [JsonIgnore]
+        public double SidebarOpacity => IsOwnedOnly ? 0.48d : 1d;
 
         [JsonIgnore]
         public bool IsEpicLaunchTarget =>
@@ -608,6 +643,9 @@ namespace Codec.Models
                 FolderSize = FolderSize,
                 IsFavorite = IsFavorite,
                 ImportedFrom = ImportedFrom,
+                IsInstalled = IsInstalled,
+                IsSteamOwned = IsSteamOwned,
+                SteamAppType = SteamAppType,
                 SteamID = SteamID,
                 SteamMetadataAppId = SteamMetadataAppId,
                 EpicAppId = EpicAppId,
@@ -674,6 +712,9 @@ namespace Codec.Models
             FolderSize = source.FolderSize;
             IsFavorite = source.IsFavorite;
             ImportedFrom = source.ImportedFrom;
+            IsInstalled = source.IsInstalled;
+            IsSteamOwned = source.IsSteamOwned;
+            SteamAppType = source.SteamAppType;
             SteamID = source.SteamID;
             SteamMetadataAppId = source.SteamMetadataAppId;
             EpicAppId = source.EpicAppId;

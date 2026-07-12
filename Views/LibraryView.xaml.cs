@@ -5,12 +5,16 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
+using System;
+using Windows.UI.ViewManagement;
 
 namespace Codec.Views
 {
     public sealed partial class LibraryView : UserControl
     {
         private MainViewModel? _viewModel;
+        private readonly UISettings _uiSettings = new();
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
@@ -67,6 +71,39 @@ namespace Codec.Views
                 SortFlyout.Hide();
                 UpdateSortOptionHighlight(idx);
             }
+        }
+
+        private void LibraryCover_ImageOpened(object sender, RoutedEventArgs e)
+        {
+            if (!_uiSettings.AnimationsEnabled || sender is not Image image)
+                return;
+
+            double targetOpacity = (image.DataContext as Game)?.LibraryCardOpacity ?? 1d;
+            var fade = new DoubleAnimation
+            {
+                From = 0,
+                To = targetOpacity,
+                Duration = new Duration(TimeSpan.FromMilliseconds(180)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                FillBehavior = FillBehavior.Stop
+            };
+            Storyboard.SetTarget(fade, image);
+            Storyboard.SetTargetProperty(fade, "Opacity");
+            var storyboard = new Storyboard();
+            storyboard.Children.Add(fade);
+            storyboard.Begin();
+        }
+
+        private void InstallFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ToggleButton selected || !int.TryParse(selected.Tag?.ToString(), out int value))
+                return;
+
+            InstallFilterAll.IsChecked = value == 0;
+            InstallFilterInstalled.IsChecked = value == 1;
+            InstallFilterOwnedOnly.IsChecked = value == 2;
+            if (ViewModel != null)
+                ViewModel.SelectedInstallFilter = value;
         }
 
         private void UpdateSortOptionHighlight(int activeIndex)
