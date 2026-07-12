@@ -19,10 +19,15 @@ namespace Codec.Services.Importing
         private readonly Func<Task<IReadOnlyCollection<Game>>> _librarySnapshotProvider;
         private readonly Func<Game, Task> _commitImportedGameAsync;
         private readonly GameScanner _scanner;
-        private readonly Channel<GameImportRequest> _queue;
+        private sealed record ImportWorkItem(GameImportRequest Request, CancellationToken CancellationToken);
+
+        private readonly Channel<ImportWorkItem> _queue;
         private readonly HashSet<string> _reservedExecutables = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _stateGate = new();
         private readonly CancellationTokenSource _disposeCts = new();
+        private readonly SemaphoreSlim _commitGate = new(1, 1);
+        private readonly ScanConcurrencyOptions _concurrency;
+        private readonly List<Task> _workerTasks = new();
 
         private CancellationTokenSource _scanCts = new();
         private volatile bool _drainQueue;
@@ -35,6 +40,7 @@ namespace Codec.Services.Importing
         private int _skippedCount;
         private int _failedCount;
         private int _lastCompletedSessionTotal;
+        private TaskCompletionSource<bool> _idleTcs = CreateCompletedIdleSource();
 
         public string? DetectedSteamClientPath => _scanner.DetectedSteamClientPath;
         public string? DetectedEpicLauncherPath => _scanner.DetectedEpicLauncherPath;
@@ -46,19 +52,25 @@ namespace Codec.Services.Importing
             IGameImportPipeline pipeline,
             GameScanner scanner,
             Func<Task<IReadOnlyCollection<Game>>> librarySnapshotProvider,
-            Func<Game, Task> commitImportedGameAsync)
+            Func<Game, Task> commitImportedGameAsync,
+            ScanConcurrencyOptions? concurrency = null)
         {
             _pipeline = pipeline;
             _scanner = scanner;
             _librarySnapshotProvider = librarySnapshotProvider;
             _commitImportedGameAsync = commitImportedGameAsync;
-            _queue = Channel.CreateUnbounded<GameImportRequest>(new UnboundedChannelOptions
+            _concurrency = concurrency ?? ScanConcurrencyOptions.CreateAdaptive();
+            _queue = Channel.CreateBounded<ImportWorkItem>(new BoundedChannelOptions(_concurrency.ImportQueueCapacity)
             {
-                SingleReader = true,
-                SingleWriter = false
+                SingleReader = false,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
             });
 
-            _ = ProcessQueueAsync();
+            for (int i = 0; i < _concurrency.ImportWorkers; i++)
+            {
+                _workerTasks.Add(ProcessQueueAsync(i));
+            }
         }
 
         public async Task StartScanAsync()
@@ -67,7 +79,7 @@ namespace Codec.Services.Importing
 
             lock (_stateGate)
             {
-                if (_isScanRunning)
+                if (_isScanRunning || _queuedCount > 0 || _processingCount > 0)
                 {
                     RaiseNotification(new ImportNotification(
                         "Library Import",
@@ -78,6 +90,7 @@ namespace Codec.Services.Importing
 
                 _drainQueue = false;
                 ResetSessionCountsIfIdle_NoLock();
+                _idleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _isScanRunning = true;
             }
 
@@ -95,13 +108,6 @@ namespace Codec.Services.Importing
 
         public void Cancel()
         {
-            lock (_stateGate)
-            {
-                _isScanRunning = false;
-                _queuedCount = 0;
-                _processingCount = 0;
-            }
-
             _drainQueue = true;
 
             var old = _scanCts;
@@ -110,6 +116,25 @@ namespace Codec.Services.Importing
             old.Dispose();
 
             PublishStatus();
+        }
+
+        public async Task CancelAndDrainAsync()
+        {
+            Cancel();
+            await WaitForIdleAsync().ConfigureAwait(false);
+        }
+
+        public Task WaitForIdleAsync()
+        {
+            lock (_stateGate)
+            {
+                if (!_isScanRunning && _queuedCount == 0 && _processingCount == 0)
+                {
+                    return Task.CompletedTask;
+                }
+
+                return _idleTcs.Task;
+            }
         }
 
         private async Task RunScanAsync()
@@ -122,7 +147,7 @@ namespace Codec.Services.Importing
                 {
                     await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token, clickStopwatch: clickSw).ConfigureAwait(false))
                     {
-                        await TryEnqueueScanCandidateAsync(candidate).ConfigureAwait(false);
+                        await TryEnqueueScanCandidateAsync(candidate, linkedCts.Token).ConfigureAwait(false);
                     }
                 }).ConfigureAwait(false);
             }
@@ -183,6 +208,10 @@ namespace Codec.Services.Importing
             {
                 _drainQueue = false;
                 ResetSessionCountsIfIdle_NoLock();
+                if (_queuedCount == 0 && _processingCount == 0)
+                {
+                    _idleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
                 if (!_reservedExecutables.Add(normalizedPath))
                 {
                     return new ImportEnqueueResult(ImportEnqueueResultStatus.Duplicate, "This executable is already queued for import.");
@@ -194,19 +223,30 @@ namespace Codec.Services.Importing
             string folder = Path.GetDirectoryName(normalizedPath) ?? string.Empty;
             string nameHint = Path.GetFileNameWithoutExtension(normalizedPath);
             var manualBatch = new ScanLogBatch(nameHint, "Added manually");
-            await _queue.Writer.WriteAsync(new GameImportRequest(
+            var request = new GameImportRequest(
                 normalizedPath,
                 folder,
                 nameHint,
                 "Added manually",
                 IsManual: true,
-                LogBatch: manualBatch), _disposeCts.Token).ConfigureAwait(false);
+                LogBatch: manualBatch);
+            try
+            {
+                await _queue.Writer.WriteAsync(
+                    new ImportWorkItem(request, _scanCts.Token),
+                    _disposeCts.Token).ConfigureAwait(false);
+            }
+            catch
+            {
+                RollBackQueuedReservation(normalizedPath);
+                throw;
+            }
 
             PublishStatus();
             return new ImportEnqueueResult(ImportEnqueueResultStatus.Accepted, "Game queued for background import.");
         }
 
-        private async Task TryEnqueueScanCandidateAsync(ValidatedScanCandidate candidate)
+        private async Task TryEnqueueScanCandidateAsync(ValidatedScanCandidate candidate, CancellationToken cancellationToken)
         {
             if (_drainQueue)
             {
@@ -264,7 +304,7 @@ namespace Codec.Services.Importing
                 _queuedCount++;
             }
 
-            await _queue.Writer.WriteAsync(new GameImportRequest(
+            var request = new GameImportRequest(
                 candidate.ExecutablePath,
                 candidate.FolderLocation,
                 candidate.GameName,
@@ -276,28 +316,40 @@ namespace Codec.Services.Importing
                 candidate.IgdbId,
                 candidate.EpicAppId,
                 LogBatch: batch,
-                MetadataLookupName: candidate.MetadataLookupName), _disposeCts.Token).ConfigureAwait(false);
+                MetadataLookupName: candidate.MetadataLookupName);
+            try
+            {
+                await _queue.Writer.WriteAsync(
+                    new ImportWorkItem(request, cancellationToken),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                RollBackQueuedReservation(reservationKey);
+                throw;
+            }
 
             PublishStatus();
         }
 
-        private async Task ProcessQueueAsync()
+        private async Task ProcessQueueAsync(int workerId)
         {
             try
             {
-                await foreach (var request in _queue.Reader.ReadAllAsync(_disposeCts.Token).ConfigureAwait(false))
+                await foreach (var item in _queue.Reader.ReadAllAsync(_disposeCts.Token).ConfigureAwait(false))
                 {
+                    GameImportRequest request = item.Request;
                     lock (_stateGate)
                     {
                         _queuedCount = Math.Max(0, _queuedCount - 1);
-                        _processingCount = 1;
+                        _processingCount++;
                     }
 
-                    if (_drainQueue)
+                    if (_drainQueue || item.CancellationToken.IsCancellationRequested)
                     {
                         lock (_stateGate)
                         {
-                            _processingCount = 0;
+                            _processingCount = Math.Max(0, _processingCount - 1);
                             _reservedExecutables.Remove(GetReservationKey(request));
                         }
 
@@ -305,22 +357,19 @@ namespace Codec.Services.Importing
                         continue;
                     }
 
-                    PublishStatus();
-                    var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
-                    var result = await _pipeline.ImportAsync(request, librarySnapshot, _disposeCts.Token).ConfigureAwait(false);
-
                     try
                     {
+                        PublishStatus();
+                        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(item.CancellationToken, _disposeCts.Token);
+                        var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
+                        var result = await _pipeline.ImportAsync(request, librarySnapshot, linkedCts.Token).ConfigureAwait(false);
+
                         switch (result.Status)
                         {
                             case GameImportResultStatus.Added when result.Game != null && result.Game.IsFullyImported && result.Game.DisplayedAssetsReady:
-                                await _commitImportedGameAsync(result.Game).ConfigureAwait(false);
-                                lock (_stateGate)
-                                {
-                                    _addedCount++;
-                                }
+                                bool committed = await CommitOrSkipAsync(result.Game, linkedCts.Token).ConfigureAwait(false);
 
-                                if (request.IsManual)
+                                if (request.IsManual && committed)
                                 {
                                     RaiseNotification(new ImportNotification(
                                         "Library Import",
@@ -330,11 +379,7 @@ namespace Codec.Services.Importing
                                 break;
                             case GameImportResultStatus.Added when result.Game != null && result.Game.IsFullyImported && !request.IsManual:
                                 // Platform scanner game: commit even without full artwork
-                                await _commitImportedGameAsync(result.Game).ConfigureAwait(false);
-                                lock (_stateGate)
-                                {
-                                    _addedCount++;
-                                }
+                                await CommitOrSkipAsync(result.Game, linkedCts.Token).ConfigureAwait(false);
                                 break;
                             case GameImportResultStatus.Added:
                                 lock (_stateGate)
@@ -381,6 +426,10 @@ namespace Codec.Services.Importing
                                 break;
                         }
                     }
+                    catch (OperationCanceledException) when (item.CancellationToken.IsCancellationRequested || _disposeCts.IsCancellationRequested)
+                    {
+                        request.LogBatch?.Flush("– CANCELLED", $"worker {workerId} cancelled");
+                    }
                     catch (Exception ex)
                     {
                         GameScanner.LogSession($"Commit failed for '{request.ExecutablePath}': {ex.Message}");
@@ -398,7 +447,7 @@ namespace Codec.Services.Importing
                     {
                         lock (_stateGate)
                         {
-                            _processingCount = 0;
+                            _processingCount = Math.Max(0, _processingCount - 1);
                             _reservedExecutables.Remove(GetReservationKey(request));
                         }
 
@@ -411,6 +460,43 @@ namespace Codec.Services.Importing
             {
                 // shutdown
             }
+        }
+
+        private async Task<bool> CommitOrSkipAsync(Game game, CancellationToken cancellationToken)
+        {
+            await _commitGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var latestLibrary = await _librarySnapshotProvider().ConfigureAwait(false);
+                if (IsDuplicateFinalIdentity(game, latestLibrary))
+                {
+                    lock (_stateGate) { _skippedCount++; }
+                    return false;
+                }
+
+                await _commitImportedGameAsync(game).ConfigureAwait(false);
+                lock (_stateGate) { _addedCount++; }
+                return true;
+            }
+            finally
+            {
+                _commitGate.Release();
+            }
+        }
+
+        private static bool IsDuplicateFinalIdentity(Game candidate, IEnumerable<Game> library)
+        {
+            bool allowSharedMetadataIdentity = candidate.IsSteamLaunchTarget && candidate.UsesAlternateMetadataLookupName;
+            return library.Any(existing =>
+                (!string.IsNullOrWhiteSpace(candidate.Executable) &&
+                 string.Equals(existing.Executable, candidate.Executable, StringComparison.OrdinalIgnoreCase)) ||
+                (candidate.SteamID.HasValue && existing.SteamID == candidate.SteamID) ||
+                (!string.IsNullOrWhiteSpace(candidate.EpicAppId) &&
+                 string.Equals(existing.EpicAppId, candidate.EpicAppId, StringComparison.OrdinalIgnoreCase)) ||
+                RiotGameDuplicateHelper.IsDuplicateGame(candidate.ImportedFrom, candidate.FolderLocation, candidate.LaunchScript, new[] { existing }) ||
+                (!allowSharedMetadataIdentity && candidate.IgdbId.HasValue && existing.IgdbId == candidate.IgdbId) ||
+                (!allowSharedMetadataIdentity && candidate.RawgID.HasValue && existing.RawgID == candidate.RawgID));
         }
 
         private static string GetReservationKey(GameImportRequest request)
@@ -460,6 +546,8 @@ namespace Codec.Services.Importing
             {
                 return;
             }
+
+            _idleTcs.TrySetResult(true);
 
             if (snapshot.AddedCount <= 0 && snapshot.SkippedCount <= 0 && snapshot.FailedCount <= 0)
             {
@@ -549,6 +637,25 @@ namespace Codec.Services.Importing
         private void RaiseNotification(ImportNotification notification)
         {
             NotificationRaised?.Invoke(this, notification);
+        }
+
+        private void RollBackQueuedReservation(string reservationKey)
+        {
+            lock (_stateGate)
+            {
+                _queuedCount = Math.Max(0, _queuedCount - 1);
+                _reservedExecutables.Remove(reservationKey);
+            }
+
+            PublishStatus();
+            RaiseCompletionNotificationIfIdle();
+        }
+
+        private static TaskCompletionSource<bool> CreateCompletedIdleSource()
+        {
+            var source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            source.SetResult(true);
+            return source;
         }
 
         public void Dispose()

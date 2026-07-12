@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Codec.Services.Scanning.Scanners
 {
@@ -27,7 +28,7 @@ namespace Codec.Services.Scanning.Scanners
         protected readonly List<string> _knownLibraryPaths = new();
 
         public abstract string PlatformName { get; }
-        public abstract Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null);
+        public abstract Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Library root paths and individual game install dirs owned by this scanner.

@@ -53,9 +53,10 @@ namespace Codec.ViewModels
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             _importCoordinator = new LibraryImportCoordinator(
                 _services.GameImportPipeline,
-                new GameScanner(_services.GameName, _services.Igdb),
+                new GameScanner(_services.GameName, _services.Igdb, _services.ScanResources),
                 GetLibrarySnapshotAsync,
-                CommitImportedGameAsync);
+                CommitImportedGameAsync,
+                _services.ScanConcurrency);
             _importCoordinator.StatusChanged += ImportCoordinator_StatusChanged;
             _importCoordinator.NotificationRaised += ImportCoordinator_NotificationRaised;
             _services.Updates.StatusChanged += OnUpdateStatusChanged;
@@ -102,10 +103,13 @@ namespace Codec.ViewModels
         public bool IsLibraryVisible => !IsInitialLoading && !IsOnboardingVisible && !IsLoadingVisible;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(CanStartScan))]
         private bool _isScanning;
 
-        public bool CanStartScan => !IsScanning;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanStartScan))]
+        private bool _isImportActive;
+
+        public bool CanStartScan => !IsImportActive;
 
         [ObservableProperty] private bool _isScanProgressVisible;
         [ObservableProperty] private string _scanProgressMessage = string.Empty;
@@ -401,7 +405,7 @@ namespace Codec.ViewModels
             IsOnboardingVisible = false;
         }
 
-        public void CancelImport() => _importCoordinator.Cancel();
+        public Task CancelImportAsync() => _importCoordinator.CancelAndDrainAsync();
 
         public void ResetAppSettings()
         {

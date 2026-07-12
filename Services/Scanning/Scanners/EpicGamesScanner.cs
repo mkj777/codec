@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Scanning.Scanners
@@ -57,8 +58,9 @@ namespace Codec.Services.Scanning.Scanners
             _launcherInstallDirs = launcherInstallDirs.ToArray();
         }
 
-        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
+        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var candidates = new List<GameCandidate>();
 
             DetectedEpicLauncherPath = NormalizeExistingFile(_launcherPathProvider());
@@ -85,6 +87,7 @@ namespace Codec.Services.Scanning.Scanners
 
                 foreach (var manifestFile in manifestFiles)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     try
                     {
                         EpicManifestInfo? manifest = await ReadManifestAsync(manifestFile).ConfigureAwait(false);

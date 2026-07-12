@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Codec.Services.Scanning;
 
 namespace Codec.Services.Storage
 {
@@ -35,13 +36,16 @@ namespace Codec.Services.Storage
         };
 
         private readonly ConcurrentDictionary<string, CacheEntry> _memory = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, Lazy<Task<string>>> _inFlight = new(StringComparer.OrdinalIgnoreCase);
         private readonly HttpClient _http = new();
+        private readonly ScanResourceLimiter? _resourceLimiter;
         private readonly string _baseCacheDir;
         private readonly Channel<WarmupRequest> _warmupChannel;
         private readonly CancellationTokenSource _warmupCts = new();
 
-        public MetadataCache()
+        public MetadataCache(ScanResourceLimiter? resourceLimiter = null)
         {
+            _resourceLimiter = resourceLimiter;
             _baseCacheDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Codec Game Library", "Cache");
@@ -78,10 +82,32 @@ namespace Codec.Services.Storage
                 return diskContent;
             }
 
-            // Tier 3: network
-            string payload = await _http.GetStringAsync(url).ConfigureAwait(false);
-            _memory[cacheKey] = new CacheEntry(payload, now);
-            _ = WriteDiskAsync(partition, url, payload);
+            // Tier 3: coalesced network request. Parallel imports asking for the
+            // same URL share one fetch and one atomic disk write.
+            var fetch = _inFlight.GetOrAdd(cacheKey, _ => new Lazy<Task<string>>(
+                () => FetchAndStoreAsync(partition, url, cacheKey),
+                LazyThreadSafetyMode.ExecutionAndPublication));
+
+            try
+            {
+                return await fetch.Value.ConfigureAwait(false);
+            }
+            finally
+            {
+                _inFlight.TryRemove(cacheKey, out _);
+            }
+        }
+
+        private async Task<string> FetchAndStoreAsync(string partition, string url, string cacheKey)
+        {
+            string payload = _resourceLimiter is null
+                ? await _http.GetStringAsync(url).ConfigureAwait(false)
+                : await _resourceLimiter.RunNetworkAsync(
+                    ct => _http.GetStringAsync(url, ct),
+                    _warmupCts.Token).ConfigureAwait(false);
+
+            _memory[cacheKey] = new CacheEntry(payload, DateTime.UtcNow);
+            await WriteDiskAsync(partition, url, payload).ConfigureAwait(false);
             return payload;
         }
 
@@ -175,8 +201,20 @@ namespace Codec.Services.Storage
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
                 var entry = new DiskEntry(url, content, DateTime.UtcNow);
-                await using var fs = File.Create(path);
-                await JsonSerializer.SerializeAsync(fs, entry, DiskJsonOptions);
+                string tempPath = path + $".{Guid.NewGuid():N}.tmp";
+                try
+                {
+                    await using (var fs = File.Create(tempPath))
+                    {
+                        await JsonSerializer.SerializeAsync(fs, entry, DiskJsonOptions);
+                    }
+
+                    File.Move(tempPath, path, overwrite: true);
+                }
+                finally
+                {
+                    try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+                }
             }
             catch
             {

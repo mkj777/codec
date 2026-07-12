@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Codec.Models;
 using Codec.Services.Storage;
+using Codec.Services.Scanning;
 
 namespace Codec.Services.Fetching
 {
@@ -15,11 +16,13 @@ namespace Codec.Services.Fetching
         private readonly HttpClient _http = new();
         private readonly MetadataCache _cache;
         private readonly SteamKitService _steamKit;
+        private readonly ScanResourceLimiter? _resourceLimiter;
 
-        public SteamDetailsService(MetadataCache cache, SteamKitService steamKit)
+        public SteamDetailsService(MetadataCache cache, SteamKitService steamKit, ScanResourceLimiter? resourceLimiter = null)
         {
             _cache = cache;
             _steamKit = steamKit;
+            _resourceLimiter = resourceLimiter;
         }
 
         private async Task<string?> ResolveAssetUrlAsync(string primaryUrl, string fallbackUrl)
@@ -29,7 +32,9 @@ namespace Codec.Services.Fetching
                 try
                 {
                     using var request = new HttpRequestMessage(HttpMethod.Head, url);
-                    using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    using var response = _resourceLimiter is null
+                        ? await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false)
+                        : await _resourceLimiter.RunNetworkAsync(ct => _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)).ConfigureAwait(false);
                     if (response.IsSuccessStatusCode)
                     {
                         return true;
@@ -42,7 +47,9 @@ namespace Codec.Services.Fetching
                     }
 
                     // Fallback: try a lightweight GET to validate actual body is not an HTML 404.
-                    using var getResponse = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    using var getResponse = _resourceLimiter is null
+                        ? await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false)
+                        : await _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct)).ConfigureAwait(false);
                     if (!getResponse.IsSuccessStatusCode)
                     {
                         return false;
@@ -155,7 +162,9 @@ namespace Codec.Services.Fetching
 
                 // Categories (disabled per request)
 
-                await PopulatePriceAsync(game, steamId).ConfigureAwait(false);
+                Task priceTask = PopulatePriceAsync(game, steamId);
+                Task reviewsTask = PopulateReviewsAsync(game, steamId);
+                Task<SteamLibraryAssets?> picsAssetsTask = _steamKit.GetLibraryAssetsAsync((uint)steamId);
 
                 // Release date fallback: only set when missing (RAWG preferred)
                 if (!game.ReleaseDate.HasValue && data.TryGetProperty("release_date", out var releaseNode) && releaseNode.ValueKind == JsonValueKind.Object)
@@ -170,9 +179,6 @@ namespace Codec.Services.Fetching
                         }
                     }
                 }
-
-                // Reviews summary
-                await PopulateReviewsAsync(game, steamId).ConfigureAwait(false);
 
                 // Age rating
                 var ratings = new List<string>();
@@ -225,7 +231,8 @@ namespace Codec.Services.Fetching
                 }
 
                 // Hero + logo via SteamKit PICS hash lookup; legacy URL probe as fallback.
-                var picsAssets = await _steamKit.GetLibraryAssetsAsync((uint)steamId).ConfigureAwait(false);
+                await Task.WhenAll(priceTask, reviewsTask, picsAssetsTask).ConfigureAwait(false);
+                var picsAssets = picsAssetsTask.Result;
                 if (!string.IsNullOrEmpty(picsAssets?.HeroUrl))
                 {
                     game.LibraryHeroUrl = picsAssets.HeroUrl;

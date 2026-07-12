@@ -2,6 +2,7 @@ using Codec.Services.Fetching;
 using Codec.Services.Importing;
 using Codec.Services.Resolving;
 using Codec.Services.Storage;
+using Codec.Services.Scanning;
 
 namespace Codec.Services
 {
@@ -31,10 +32,14 @@ namespace Codec.Services
         public DisplayedAssetService DisplayedAssets { get; }
         public GameImportPipeline GameImportPipeline { get; }
         public UpdateService Updates { get; }
+        public ScanConcurrencyOptions ScanConcurrency { get; }
+        public ScanResourceLimiter ScanResources { get; }
 
         public ServiceHost()
         {
-            Cache = new MetadataCache();
+            ScanConcurrency = ScanConcurrencyOptions.CreateAdaptive();
+            ScanResources = new ScanResourceLimiter(ScanConcurrency);
+            Cache = new MetadataCache(ScanResources);
             LibraryStorage = new LibraryStorageService();
             AppSettings = new AppSettingsService();
 
@@ -42,14 +47,14 @@ namespace Codec.Services
             GameName = new GameNameService(GameDetails);
 
             SteamKit = new SteamKitService();
-            SteamDetails = new SteamDetailsService(Cache, SteamKit);
+            SteamDetails = new SteamDetailsService(Cache, SteamKit, ScanResources);
             RawgDetails = new RawgDetailsService(Cache);
-            Igdb = new IgdbService();
+            Igdb = new IgdbService(new System.Net.Http.HttpClient(), ScanResources);
             Hltb = new HltbService(Cache);
-            GameAssets = new GameAssetService(SteamKit);
-            GridDb = new GridDbService(GameAssets);
+            GameAssets = new GameAssetService(SteamKit, ScanResources);
+            GridDb = new GridDbService(GameAssets, ScanResources);
             DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb, RawgDetails);
-            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets);
+            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets, ScanResources);
             Updates = new UpdateService();
         }
     }

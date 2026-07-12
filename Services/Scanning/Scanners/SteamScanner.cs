@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Scanning.Scanners
@@ -25,8 +26,9 @@ namespace Codec.Services.Scanning.Scanners
 
         private string? _cachedVdfPath;
 
-        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
+        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var candidates = new List<GameCandidate>();
 
             var libraryFolders = await ParseLibraryFoldersAsync();
@@ -39,11 +41,15 @@ namespace Codec.Services.Scanning.Scanners
             Debug.WriteLine($"? Found {libraryFolders.Count} Steam library folders");
 
             foreach (var folder in libraryFolders)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
                 _knownLibraryPaths.Add(folder.Path);
+            }
 
             var installedGames = new List<SteamGameInfo>();
             foreach (var folder in libraryFolders)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var gamesInFolder = await ParseAppManifestsAsync(folder.Path, folder.AppIds);
                 installedGames.AddRange(gamesInFolder);
             }
@@ -52,6 +58,7 @@ namespace Codec.Services.Scanning.Scanners
 
             foreach (var game in installedGames)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string gameFolderPath = System.IO.Path.Combine(game.LibraryPath, "steamapps", "common", game.InstallDir);
                 if (!IsInstallFolderPopulated(gameFolderPath))
                 {

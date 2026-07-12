@@ -81,6 +81,7 @@ namespace Codec.ViewModels
         {
             // Wait a short time to allow UI startup animations to complete smoothly
             await Task.Delay(3000).ConfigureAwait(false);
+            await _importCoordinator.WaitForIdleAsync().ConfigureAwait(false);
 
             var games = gamesToUpdate.ToList();
             bool anyChanged = false;

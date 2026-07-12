@@ -16,6 +16,15 @@ namespace Codec.Services.Scanning.Scanners
     /// </summary>
     public class HeuristicScanner : PlatformScanner
     {
+        private readonly ScanResourceLimiter? _resourceLimiter;
+        private readonly ScanConcurrencyOptions _concurrency;
+
+        public HeuristicScanner(ScanResourceLimiter? resourceLimiter = null)
+        {
+            _resourceLimiter = resourceLimiter;
+            _concurrency = resourceLimiter?.Options ?? ScanConcurrencyOptions.CreateAdaptive();
+        }
+
         public override string PlatformName => "Heuristic Scan";
 
         private IReadOnlyList<string> _excludedPaths = Array.Empty<string>();
@@ -104,22 +113,33 @@ namespace Codec.Services.Scanning.Scanners
             "GOG Games", "EA Games", "Origin Games", "XboxGames"
         };
 
-        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
+        public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
         {
             var candidates = new ConcurrentBag<GameCandidate>();
-            var directoriesToScan = await Task.Run(() => DiscoverCandidateDirectories(progress)).ConfigureAwait(false);
+            var directoriesToScan = await Task.Run(
+                () => DiscoverCandidateDirectories(progress, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
 
-            int maxParallelism = Math.Clamp(Environment.ProcessorCount / 2, 2, 6);
             var options = new ParallelOptions
             {
-                CancellationToken = CancellationToken.None,
-                MaxDegreeOfParallelism = maxParallelism
+                CancellationToken = cancellationToken,
+                MaxDegreeOfParallelism = _concurrency.HeuristicWorkers
             };
 
-            await Parallel.ForEachAsync(directoriesToScan, options, (scanDir, _) =>
+            await Parallel.ForEachAsync(directoriesToScan, options, async (scanDir, ct) =>
             {
-                TryAddCandidate(scanDir.Path, scanDir.Name, candidates);
-                return ValueTask.CompletedTask;
+                if (_resourceLimiter is null)
+                {
+                    TryAddCandidate(scanDir.Path, scanDir.Name, candidates);
+                    return;
+                }
+
+                await _resourceLimiter.RunDiskAsync(innerCt =>
+                {
+                    innerCt.ThrowIfCancellationRequested();
+                    TryAddCandidate(scanDir.Path, scanDir.Name, candidates);
+                    return Task.FromResult(true);
+                }, ct).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
             return candidates
@@ -128,17 +148,19 @@ namespace Codec.Services.Scanning.Scanners
                 .ToList();
         }
 
-        private List<(string Path, string Name)> DiscoverCandidateDirectories(IProgress<string>? progress)
+        private List<(string Path, string Name)> DiscoverCandidateDirectories(IProgress<string>? progress, CancellationToken cancellationToken)
         {
             var directories = new List<(string Path, string Name)>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var drive in LocalDriveDiscovery.GetReadyNonNetworkDrives())
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string driveRoot = drive.RootDirectory.FullName;
 
                 foreach (var relRoot in ScanRoots)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     string rootPath = Path.Combine(driveRoot, relRoot);
                     if (!Directory.Exists(rootPath) || IsExcludedPath(rootPath))
                         continue;
@@ -148,6 +170,7 @@ namespace Codec.Services.Scanning.Scanners
 
                     foreach (var dir in SafeGetDirectories(rootPath))
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         DiscoverCandidateDirectory(dir, relRoot, directories, seen);
                     }
                 }

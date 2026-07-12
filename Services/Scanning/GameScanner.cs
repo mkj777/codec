@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Channels;
 
 namespace Codec.Services.Scanning
 {
@@ -34,27 +35,46 @@ namespace Codec.Services.Scanning
 
     public class GameScanner
     {
+        private sealed class ValidationMetrics
+        {
+            public int CacheHits;
+            public int NewValidated;
+            public int RejectedNoExe;
+            public int RejectedNoRawg;
+            public int SkippedUtility;
+            public long SteamLookupTotalMs;
+            public int SteamLookupCount;
+            public long RawgValidationTotalMs;
+            public int RawgValidationCount;
+            public long ExeDetectionTotalMs;
+            public int ExeDetectionCount;
+        }
+
         private readonly List<PlatformScanner> _platformScanners;
         private readonly HeuristicScanner _heuristicScanner;
         private readonly GameNameService _gameName;
         private readonly IgdbService _igdb;
+        private readonly ScanResourceLimiter? _resourceLimiter;
+        private readonly ScanConcurrencyOptions _concurrency;
         private readonly SteamScanner _steamScanner = new();
         private readonly EpicGamesScanner _epicScanner = new();
 
         public string? DetectedSteamClientPath => _steamScanner.DetectedSteamClientPath;
         public string? DetectedEpicLauncherPath => _epicScanner.DetectedEpicLauncherPath;
 
-        public GameScanner(GameNameService gameName, IgdbService igdb)
+        public GameScanner(GameNameService gameName, IgdbService igdb, ScanResourceLimiter? resourceLimiter = null)
         {
             _gameName = gameName;
             _igdb = igdb;
+            _resourceLimiter = resourceLimiter;
+            _concurrency = resourceLimiter?.Options ?? ScanConcurrencyOptions.CreateAdaptive();
             _platformScanners = new List<PlatformScanner>
             {
                 _steamScanner,
                 _epicScanner,
                 new RiotGamesScanner()
             };
-            _heuristicScanner = new HeuristicScanner();
+            _heuristicScanner = new HeuristicScanner(resourceLimiter);
         }
 
         /// <summary>
@@ -96,12 +116,18 @@ namespace Codec.Services.Scanning
             cacheLoadMs = cacheSw.ElapsedMilliseconds;
 
             LogSession("=== STARTING COMPLETE GAME LIBRARY SCAN ===");
+            LogSession($"Concurrency: heuristic={_concurrency.HeuristicWorkers}, validation={_concurrency.ValidationWorkers}, import={_concurrency.ImportWorkers}, network={_concurrency.NetworkOperations}, disk={_concurrency.DiskOperations}, folderSize={_concurrency.FolderSizeOperations}");
             progress?.Report("Starting comprehensive game scan...");
 
             // PHASE 1: High-Reliability Launcher Integration
             LogSession("\n=== PHASE 1: LAUNCHER INTEGRATION ===");
             var phase1Sw = Stopwatch.StartNew();
-            var steamScan = await ScanPlatformScannerAsync(_steamScanner, progress, cancellationToken).ConfigureAwait(false);
+            var remainingPlatformTasks = _platformScanners
+                .Where(scanner => !ReferenceEquals(scanner, _steamScanner))
+                .Select(scanner => ScanPlatformScannerAsync(scanner, progress, cancellationToken))
+                .ToList();
+            var steamTask = ScanPlatformScannerAsync(_steamScanner, progress, cancellationToken);
+            var steamScan = await steamTask.ConfigureAwait(false);
             var steamCandidates = steamScan.Candidates;
             phase1Timings.Add((_steamScanner.PlatformName, steamScan.ElapsedMs, steamScan.Count));
 
@@ -110,18 +136,6 @@ namespace Codec.Services.Scanning
                 .ToList();
             _heuristicScanner.SetExcludedPaths(steamLibraryPaths);
             LogSession($"  Steam library paths collected: {steamLibraryPaths.Count}");
-
-            // PHASE 2 starts as soon as Steam library paths are known, so local disk
-            // scanning can overlap launcher scans and Steam asset imports.
-            LogSession("\n=== PHASE 2: HEURISTIC SCANNING ===");
-            var phase2Sw = Stopwatch.StartNew();
-            progress?.Report("Scanning standard installation directories...");
-            var heuristicTask = _heuristicScanner.ScanAsync(progress);
-
-            var remainingPlatformTasks = _platformScanners
-                .Where(scanner => !ReferenceEquals(scanner, _steamScanner))
-                .Select(scanner => ScanPlatformScannerAsync(scanner, progress, cancellationToken))
-                .ToList();
 
             if (steamCandidates.Count > 0)
             {
@@ -187,6 +201,11 @@ namespace Codec.Services.Scanning
             _heuristicScanner.SetExcludedPaths(allLibraryPaths);
             LogSession($"  Platform library paths collected: {allLibraryPaths.Count}");
 
+            LogSession("\n=== PHASE 2: HEURISTIC SCANNING ===");
+            var phase2Sw = Stopwatch.StartNew();
+            progress?.Report("Scanning standard installation directories...");
+            var heuristicTask = _heuristicScanner.ScanAsync(progress, cancellationToken);
+
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -233,11 +252,48 @@ namespace Codec.Services.Scanning
 
             int processedCount = 0;
 
-            foreach (var candidate in allCandidates)
+            if (_concurrency.ValidationWorkers > 1)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                processedCount++;
-                progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
+                var metrics = new ValidationMetrics
+                {
+                    CacheHits = cacheHits,
+                    NewValidated = newValidated,
+                    RejectedNoExe = rejectedNoExe,
+                    RejectedNoRawg = rejectedNoRawg,
+                    SkippedUtility = skippedUtility,
+                    SteamLookupTotalMs = steamLookupTotalMs,
+                    SteamLookupCount = steamLookupCount,
+                    RawgValidationTotalMs = rawgValidationTotalMs,
+                    RawgValidationCount = rawgValidationCount,
+                    ExeDetectionTotalMs = exeDetectionTotalMs,
+                    ExeDetectionCount = exeDetectionCount
+                };
+
+                await foreach (var validated in ValidateCandidatesInParallelAsync(
+                    allCandidates, scanCache, metrics, progress, cancellationToken).ConfigureAwait(false))
+                {
+                    yield return validated;
+                }
+
+                cacheHits = metrics.CacheHits;
+                newValidated = metrics.NewValidated;
+                rejectedNoExe = metrics.RejectedNoExe;
+                rejectedNoRawg = metrics.RejectedNoRawg;
+                skippedUtility = metrics.SkippedUtility;
+                steamLookupTotalMs = metrics.SteamLookupTotalMs;
+                steamLookupCount = metrics.SteamLookupCount;
+                rawgValidationTotalMs = metrics.RawgValidationTotalMs;
+                rawgValidationCount = metrics.RawgValidationCount;
+                exeDetectionTotalMs = metrics.ExeDetectionTotalMs;
+                exeDetectionCount = metrics.ExeDetectionCount;
+            }
+            else
+            {
+                foreach (var candidate in allCandidates)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    processedCount++;
+                    progress?.Report($"Validating {processedCount}/{allCandidates.Count}: {candidate.Name}");
 
                 var batch = new ScanLogBatch(candidate.Name, candidate.Source);
                 bool isHeuristicSource = IsHeuristicSource(candidate.Source);
@@ -491,7 +547,7 @@ namespace Codec.Services.Scanning
                 batch.Log($"VALIDATED steam={steamId?.ToString() ?? "-"} epic={candidate.EpicAppId ?? "-"} igdb={igdbId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"} (validate {validateSw.ElapsedMilliseconds}ms, exe {exeSw.ElapsedMilliseconds}ms)");
                 newValidated++;
                 scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath, igdbId);
-                yield return new ValidatedScanCandidate(
+                    yield return new ValidatedScanCandidate(
                     steamId,
                     candidate.Name,
                     rawgId,
@@ -502,7 +558,8 @@ namespace Codec.Services.Scanning
                     igdbId,
                     candidate.EpicAppId,
                     LogBatch: batch,
-                    MetadataLookupName: candidate.MetadataLookupName);
+                        MetadataLookupName: candidate.MetadataLookupName);
+                }
             }
 
             phase3Sw.Stop();
@@ -545,6 +602,277 @@ namespace Codec.Services.Scanning
             LogSession($"Dedup/filter:     {dedupFilterMs}ms");
             LogSession($"Cache load/save:  {cacheLoadMs}ms / {cacheSaveMs}ms");
             LogSession("=====================");
+        }
+
+        private async IAsyncEnumerable<ValidatedScanCandidate> ValidateCandidatesInParallelAsync(
+            IReadOnlyList<GameCandidate> candidates,
+            ScanCache scanCache,
+            ValidationMetrics metrics,
+            IProgress<string>? progress,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var output = Channel.CreateBounded<ValidatedScanCandidate>(new BoundedChannelOptions(_concurrency.ValidationBufferCapacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
+            int processed = 0;
+
+            Task producer = Task.Run(async () =>
+            {
+                Exception? failure = null;
+                try
+                {
+                    var options = new ParallelOptions
+                    {
+                        CancellationToken = cancellationToken,
+                        MaxDegreeOfParallelism = _concurrency.ValidationWorkers
+                    };
+
+                    await Parallel.ForEachAsync(candidates, options, async (candidate, ct) =>
+                    {
+                        int current = Interlocked.Increment(ref processed);
+                        progress?.Report($"Validating {current}/{candidates.Count}: {candidate.Name}");
+                        var result = await ValidateCandidateAsync(candidate, scanCache, metrics, ct).ConfigureAwait(false);
+                        if (result != null)
+                        {
+                            await output.Writer.WriteAsync(result, ct).ConfigureAwait(false);
+                        }
+                    }).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    failure = ex;
+                }
+                finally
+                {
+                    output.Writer.TryComplete(failure);
+                }
+            }, cancellationToken);
+
+            await foreach (var result in output.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return result;
+            }
+
+            await producer.ConfigureAwait(false);
+        }
+
+        private async Task<ValidatedScanCandidate?> ValidateCandidateAsync(
+            GameCandidate candidate,
+            ScanCache scanCache,
+            ValidationMetrics metrics,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var batch = new ScanLogBatch(candidate.Name, candidate.Source);
+            bool isHeuristicSource = IsHeuristicSource(candidate.Source);
+            bool isFromLauncher = !isHeuristicSource;
+
+            if (GameContentHeuristics.ShouldIgnoreCandidate(candidate.Name, candidate.FolderPath, candidate.Source, candidate.SteamAppId.HasValue))
+            {
+                batch.Flush("– SKIPPED", "utility/non-game heuristic");
+                Interlocked.Increment(ref metrics.SkippedUtility);
+                return null;
+            }
+
+            if (scanCache.TryGetValid(candidate, out var cachedResult))
+            {
+                bool cachedIsSteamSource = string.Equals(candidate.Source, "Steam", StringComparison.OrdinalIgnoreCase);
+                var cachedCopyrightYears = !string.IsNullOrEmpty(cachedResult.ExecutablePath)
+                    ? _gameName.TryGetExeCopyrightYears(cachedResult.ExecutablePath)
+                    : new HashSet<int>();
+
+                if (!cachedIsSteamSource && !cachedResult.IgdbId.HasValue && cachedCopyrightYears.Count > 0)
+                {
+                    batch.Log("CACHE-STALE missing IGDB year validation");
+                    scanCache.Invalidate(candidate.FolderPath);
+                }
+                else if (cachedResult.SteamAppId.HasValue && !cachedIsSteamSource &&
+                         !await _gameName.SteamAppMatchesLocalGameAsync(cachedResult.SteamAppId.Value, candidate.Name, cachedResult.ExecutablePath).ConfigureAwait(false))
+                {
+                    batch.Log($"CACHE-STALE rejected cached steam={cachedResult.SteamAppId}");
+                    scanCache.Invalidate(candidate.FolderPath);
+                }
+                else
+                {
+                    batch.Log($"CACHE-HIT (cached {cachedResult.CachedAtUtc:u})");
+                    Interlocked.Increment(ref metrics.CacheHits);
+                    return new ValidatedScanCandidate(
+                        cachedResult.SteamAppId, cachedResult.GameName, cachedResult.RawgId,
+                        cachedResult.ImportSource, cachedResult.ExecutablePath, cachedResult.FolderPath,
+                        cachedResult.LaunchScriptPath, cachedResult.IgdbId, cachedResult.EpicAppId,
+                        batch, cachedResult.MetadataLookupName);
+                }
+            }
+
+            var exeSw = Stopwatch.StartNew();
+            string executablePath;
+            try
+            {
+                if (candidate.SteamAppId.HasValue)
+                {
+                    executablePath = TryGetSteamGameExe(candidate.FolderPath);
+                }
+                else if (!string.IsNullOrWhiteSpace(candidate.EpicAppId))
+                {
+                    executablePath = TryGetExecutableHint(candidate);
+                }
+                else if (ShouldUseFullExecutableDetection(candidate))
+                {
+                    executablePath = _resourceLimiter is null
+                        ? ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name)
+                        : await _resourceLimiter.RunDiskAsync(ct => Task.Run(
+                            () => ExecutableDetector.ExecuteDetectionFunnel(candidate.FolderPath, candidate.Name), ct),
+                            cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    executablePath = string.Empty;
+                    bool hasLaunchScript = !string.IsNullOrWhiteSpace(candidate.LaunchScriptPath) && File.Exists(candidate.LaunchScriptPath);
+                    if (!hasLaunchScript && !CanTrustMissingExecutable(candidate))
+                    {
+                        batch.Flush("✗ REJECTED", "no platform launch target");
+                        Interlocked.Increment(ref metrics.RejectedNoExe);
+                        return null;
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                batch.Flush("✗ REJECTED", $"exe-detect error: {ex.GetType().Name}: {ex.Message}");
+                Interlocked.Increment(ref metrics.RejectedNoExe);
+                return null;
+            }
+            finally
+            {
+                exeSw.Stop();
+                Interlocked.Add(ref metrics.ExeDetectionTotalMs, exeSw.ElapsedMilliseconds);
+                Interlocked.Increment(ref metrics.ExeDetectionCount);
+            }
+
+            if (ShouldUseFullExecutableDetection(candidate) && string.IsNullOrEmpty(executablePath))
+            {
+                batch.Flush("✗ REJECTED", $"no exe (exe-detect {exeSw.ElapsedMilliseconds}ms)");
+                Interlocked.Increment(ref metrics.RejectedNoExe);
+                return null;
+            }
+            if (GameContentHeuristics.IsBlockedExecutable(executablePath))
+            {
+                batch.Flush("– SKIPPED", $"blocked exe '{Path.GetFileName(executablePath)}'");
+                return null;
+            }
+
+            var executableCopyright = !string.IsNullOrEmpty(executablePath)
+                ? _gameName.TryGetExeCopyrightInfo(executablePath)
+                : GameNameService.ExeCopyrightInfo.Empty;
+            LogExecutableCopyright(batch, executablePath, executableCopyright);
+
+            int? steamId = candidate.SteamAppId;
+            int? igdbId = null;
+            int? rawgId = null;
+            bool isRiotSource = string.Equals(candidate.Source, "Riot Games", StringComparison.OrdinalIgnoreCase);
+            bool igdbYearRejected = false;
+            var validateSw = Stopwatch.StartNew();
+
+            try
+            {
+                async Task ResolveExternalAsync(CancellationToken ct)
+                {
+                    bool igdbCallFailed = false;
+                    if (!steamId.HasValue && !isRiotSource)
+                    {
+                        try
+                        {
+                            var match = await _igdb.FindIgdbMatchByNameAsync(candidate.Name, executableCopyright.Years).ConfigureAwait(false);
+                            igdbId = match.Id;
+                            if (igdbId.HasValue)
+                            {
+                                steamId = await _igdb.FindSteamIdByIgdbIdAsync(igdbId.Value).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            batch.Log($"IGDB-VALIDATE FAILED: {ex.Message}");
+                            igdbCallFailed = true;
+                        }
+
+                        if (!igdbId.HasValue && !igdbCallFailed)
+                        {
+                            if (executableCopyright.Years.Count > 0)
+                            {
+                                igdbYearRejected = true;
+                                return;
+                            }
+
+                            if (isHeuristicSource)
+                            {
+                                var steamSw = Stopwatch.StartNew();
+                                try
+                                {
+                                    var found = await _gameName.FindGameIdsAsync(executablePath, nameHint: candidate.Name).ConfigureAwait(false);
+                                    if (found.steamId.HasValue)
+                                    {
+                                        var checkedMatch = await _gameName.TrySteamAppMatchLocalGameAsync(found.steamId.Value, candidate.Name, executablePath).ConfigureAwait(false);
+                                        if (checkedMatch.Matches) steamId = found.steamId;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    batch.Log($"STEAM-FALLBACK FAILED: {ex.Message}");
+                                }
+                                finally
+                                {
+                                    steamSw.Stop();
+                                    Interlocked.Add(ref metrics.SteamLookupTotalMs, steamSw.ElapsedMilliseconds);
+                                    Interlocked.Increment(ref metrics.SteamLookupCount);
+                                }
+                            }
+
+                            if (!steamId.HasValue)
+                            {
+                                rawgId = await ValidateAndFetchRawgIdAsync(batch, candidate.Name, RawgValidationMode.Strict).ConfigureAwait(false);
+                            }
+                        }
+                    }
+                }
+
+                await ResolveExternalAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                validateSw.Stop();
+                Interlocked.Add(ref metrics.RawgValidationTotalMs, validateSw.ElapsedMilliseconds);
+                Interlocked.Increment(ref metrics.RawgValidationCount);
+            }
+
+            if (igdbYearRejected)
+            {
+                batch.Flush("✗ REJECTED", $"no IGDB release-year match for exe©{string.Join("/", executableCopyright.Years.Order())}");
+                Interlocked.Increment(ref metrics.RejectedNoRawg);
+                return null;
+            }
+
+            if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue &&
+                !isFromLauncher && !candidate.HasStrongGameSignals)
+            {
+                batch.Flush("✗ REJECTED", $"no IGDB/RAWG match (validate {validateSw.ElapsedMilliseconds}ms)");
+                Interlocked.Increment(ref metrics.RejectedNoRawg);
+                return null;
+            }
+
+            batch.Log($"VALIDATED steam={steamId?.ToString() ?? "-"} epic={candidate.EpicAppId ?? "-"} igdb={igdbId?.ToString() ?? "-"} rawg={rawgId?.ToString() ?? "-"}");
+            scanCache.Upsert(candidate, candidate.Name, executablePath, steamId, rawgId, candidate.LaunchScriptPath, igdbId);
+            Interlocked.Increment(ref metrics.NewValidated);
+            return new ValidatedScanCandidate(
+                steamId, candidate.Name, rawgId, candidate.Source, executablePath,
+                candidate.FolderPath, candidate.LaunchScriptPath, igdbId, candidate.EpicAppId,
+                batch, candidate.MetadataLookupName);
         }
 
         internal static void LogSession(string line)
@@ -593,7 +921,7 @@ namespace Codec.Services.Scanning
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 progress?.Report($"Scanning {scanner.PlatformName}...");
-                candidates = await scanner.ScanAsync(progress).ConfigureAwait(false);
+                candidates = await scanner.ScanAsync(progress, cancellationToken).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();
                 count = candidates.Count;
                 scannerSw.Stop();

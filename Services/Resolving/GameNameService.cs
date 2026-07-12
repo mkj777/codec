@@ -90,11 +90,11 @@ namespace Codec.Services.Resolving
             public int MaxSearchVariants { get; init; } = 10;
             public int MaxSteamResults { get; init; } = 15;
             public int ApiTimeoutMs { get; init; } = 8000;
-            public int MaxConcurrentApiRequests { get; init; } = 2;
+            public int MaxConcurrentApiRequests { get; init; } = 3;
             public bool UseCaching { get; init; } = true;
             public int CacheDurationDays { get; init; } = 7;
             public bool EnableFallbackSearch { get; init; } = true;
-            public TimeSpan RateLimitDelay { get; init; } = TimeSpan.FromMilliseconds(600);
+            public TimeSpan RateLimitDelay { get; init; } = TimeSpan.FromMilliseconds(200);
             public int MaxRomanNumeralValue { get; init; } = 20;
         }
 

@@ -237,10 +237,123 @@ namespace Codec.Tests
             }
         }
 
+        [Fact]
+        public async Task Coordinator_ProcessesConfiguredImportsConcurrently()
+        {
+            string[] executables = Enumerable.Range(0, 3).Select(_ => CreateTempExe()).ToArray();
+            var release = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var saturated = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            int active = 0;
+            int peak = 0;
+
+            try
+            {
+                var pipeline = new FakePipeline(async _ =>
+                {
+                    int current = Interlocked.Increment(ref active);
+                    int observed;
+                    do
+                    {
+                        observed = Volatile.Read(ref peak);
+                    }
+                    while (current > observed && Interlocked.CompareExchange(ref peak, current, observed) != observed);
+
+                    if (current == 3) saturated.TrySetResult(null);
+                    await release.Task;
+                    Interlocked.Decrement(ref active);
+                    return GameImportResult.Failed("expected test result");
+                });
+
+                var options = new ScanConcurrencyOptions(2, 2, 3, 3, 1, 1, 8, 4);
+                using var coordinator = CreateCoordinator(pipeline, concurrency: options);
+                foreach (string executable in executables)
+                {
+                    await coordinator.EnqueueManualExecutableAsync(executable);
+                }
+
+                await saturated.Task.WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+                Assert.Equal(3, Volatile.Read(ref peak));
+                release.TrySetResult(null);
+                await coordinator.WaitForIdleAsync().WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                release.TrySetResult(null);
+                DeleteIfExists(executables);
+            }
+        }
+
+        [Fact]
+        public async Task Coordinator_SerializesFinalIdentityCheckAcrossWorkers()
+        {
+            string[] executables = Enumerable.Range(0, 2).Select(_ => CreateTempExe()).ToArray();
+            string cover = CreateTempAsset(".png");
+            string hero = CreateTempAsset(".png");
+            var library = new List<Game>();
+            var release = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var saturated = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            int active = 0;
+            int commits = 0;
+
+            try
+            {
+                var pipeline = new FakePipeline(async request =>
+                {
+                    if (Interlocked.Increment(ref active) == 2) saturated.TrySetResult(null);
+                    await release.Task;
+                    return GameImportResult.Added(new Game
+                    {
+                        Name = request.NameHint,
+                        Executable = request.ExecutablePath,
+                        FolderLocation = request.FolderLocation,
+                        ImportedFrom = request.ImportSource,
+                        SteamID = 424242,
+                        IsFullyImported = true,
+                        LibraryCapsuleCache = cover,
+                        LibraryHeroCache = hero,
+                        HasLogoAssetSource = false
+                    }, "added");
+                });
+
+                Task<IReadOnlyCollection<Game>> Snapshot()
+                {
+                    lock (library) return Task.FromResult<IReadOnlyCollection<Game>>(library.ToList());
+                }
+
+                Task Commit(Game game)
+                {
+                    lock (library) library.Add(game);
+                    Interlocked.Increment(ref commits);
+                    return Task.CompletedTask;
+                }
+
+                var options = new ScanConcurrencyOptions(2, 2, 2, 2, 1, 1, 8, 4);
+                using var coordinator = CreateCoordinator(pipeline, Snapshot, Commit, options);
+                foreach (string executable in executables)
+                {
+                    await coordinator.EnqueueManualExecutableAsync(executable);
+                }
+
+                await saturated.Task.WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+                release.TrySetResult(null);
+                await coordinator.WaitForIdleAsync().WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
+
+                Assert.Equal(1, Volatile.Read(ref commits));
+                Assert.Single(library);
+            }
+            finally
+            {
+                release.TrySetResult(null);
+                DeleteIfExists(executables);
+                DeleteIfExists(cover, hero);
+            }
+        }
+
         private static LibraryImportCoordinator CreateCoordinator(
             IGameImportPipeline pipeline,
             Func<Task<IReadOnlyCollection<Game>>>? librarySnapshotProvider = null,
-            Func<Game, Task>? commitImportedGameAsync = null)
+            Func<Game, Task>? commitImportedGameAsync = null,
+            ScanConcurrencyOptions? concurrency = null)
         {
             var cache = new MetadataCache();
             var gameDetails = new GameDetailsService(cache);
@@ -251,7 +364,8 @@ namespace Codec.Tests
                 pipeline,
                 scanner,
                 librarySnapshotProvider ?? (() => Task.FromResult<IReadOnlyCollection<Game>>(Array.Empty<Game>())),
-                commitImportedGameAsync ?? (_ => Task.CompletedTask));
+                commitImportedGameAsync ?? (_ => Task.CompletedTask),
+                concurrency);
         }
 
         private static string CreateTempExe()

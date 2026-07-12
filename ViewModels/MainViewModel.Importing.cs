@@ -66,6 +66,7 @@ namespace Codec.ViewModels
                 _wasImportActive = snapshot.IsActive;
 
                 IsScanning = snapshot.IsScanning;
+                IsImportActive = snapshot.IsActive;
                 IsImportStatusVisible = snapshot.IsActive && !IsStartupScanToastVisible;
                 AddedCount = snapshot.AddedCount;
                 ImportRemainingCount = snapshot.QueuedCount + snapshot.ProcessingCount;

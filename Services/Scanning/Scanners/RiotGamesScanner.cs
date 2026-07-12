@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.Services.Scanning.Scanners
@@ -76,8 +77,9 @@ namespace Codec.Services.Scanning.Scanners
             _createShortcut = createShortcut;
         }
 
-        public override Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null)
+        public override Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var candidates = new List<GameCandidate>();
             var seenGameFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var seenLaunchTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -96,10 +98,12 @@ namespace Codec.Services.Scanning.Scanners
 
             foreach (var root in riotRoots)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 _knownLibraryPaths.Add(root);
 
                 foreach (var dir in SafeGetDirectories(root))
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var folderName = Path.GetFileName(dir);
                     if (ShouldIgnoreGameFolder(folderName))
                         continue;

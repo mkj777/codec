@@ -5,6 +5,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Codec.Services.Scanning;
 
 namespace Codec.Services.Fetching
 {
@@ -18,10 +19,12 @@ namespace Codec.Services.Fetching
         private const string GridDbSearchEndpoint = "https://codec-api-proxy.vercel.app/api/griddb/search";
         private readonly HttpClient _http = new();
         private readonly GameAssetService _gameAssets;
+        private readonly ScanResourceLimiter? _resourceLimiter;
 
-        public GridDbService(GameAssetService gameAssets)
+        public GridDbService(GameAssetService gameAssets, ScanResourceLimiter? resourceLimiter = null)
         {
             _gameAssets = gameAssets;
+            _resourceLimiter = resourceLimiter;
         }
 
         /// <summary>
@@ -80,7 +83,9 @@ namespace Codec.Services.Fetching
             try
             {
                 string url = $"{GridDbSearchEndpoint}?term={Uri.EscapeDataString(gameName)}";
-                var response = await _http.GetStringAsync(url);
+                var response = _resourceLimiter is null
+                    ? await _http.GetStringAsync(url)
+                    : await _resourceLimiter.RunNetworkAsync(ct => _http.GetStringAsync(url, ct));
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("data", out var dataArray) || dataArray.GetArrayLength() == 0)

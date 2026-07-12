@@ -25,6 +25,7 @@ namespace Codec.Services.Importing
         private readonly IgdbService _igdb;
         private readonly HltbService _hltb;
         private readonly DisplayedAssetService _displayedAssets;
+        private readonly ScanResourceLimiter? _resourceLimiter;
 
         public GameImportPipeline(
             GameNameService gameName,
@@ -33,7 +34,8 @@ namespace Codec.Services.Importing
             RawgDetailsService rawgDetails,
             IgdbService igdb,
             HltbService hltb,
-            DisplayedAssetService displayedAssets)
+            DisplayedAssetService displayedAssets,
+            ScanResourceLimiter? resourceLimiter = null)
         {
             _gameName = gameName;
             _gameDetails = gameDetails;
@@ -42,6 +44,7 @@ namespace Codec.Services.Importing
             _igdb = igdb;
             _hltb = hltb;
             _displayedAssets = displayedAssets;
+            _resourceLimiter = resourceLimiter;
         }
 
         public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
@@ -339,30 +342,21 @@ namespace Codec.Services.Importing
                         : null
                 };
 
-                if (Directory.Exists(folderLocation))
-                {
-                    try
-                    {
-                        game.FolderSize = await FolderSizeService.CalculateAsync(folderLocation).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        batch.Log($"PIPELINE folder size lookup failed: {ex.Message}");
-                    }
-                }
+                Task<long>? folderSizeTask = Directory.Exists(folderLocation)
+                    ? CalculateFolderSizeAsync(folderLocation, cancellationToken)
+                    : null;
 
                 int? steamMetadataId = game.EffectiveSteamMetadataAppId;
                 if (steamMetadataId.HasValue)
                 {
                     // Steam first (assets, release date), then HLTB (preferred TTB source), then IGDB (fills gaps)
                     await _steamDetails.PopulateFromSteamAsync(game).ConfigureAwait(false);
-                    await _hltb.PopulateAsync(game).ConfigureAwait(false);
-
+                    var hltbTask = _hltb.PopulateAsync(game);
                     var igdbIdTask = game.IgdbId.HasValue
                         ? Task.FromResult<int?>(game.IgdbId.Value)
                         : _igdb.FindIgdbIdBySteamIdAsync(steamMetadataId.Value);
                     var rawgIdTask = _gameDetails.FindRawgIdBySteamIdAsync(steamMetadataId.Value);
-                    await Task.WhenAll(igdbIdTask, rawgIdTask).ConfigureAwait(false);
+                    await Task.WhenAll(hltbTask, igdbIdTask, rawgIdTask).ConfigureAwait(false);
 
                     game.IgdbId = igdbIdTask.Result;
                     game.RawgID = rawgIdTask.Result;
@@ -398,6 +392,22 @@ namespace Codec.Services.Importing
                     }
                 }
 
+                if (folderSizeTask != null)
+                {
+                    try
+                    {
+                        game.FolderSize = await folderSizeTask.ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        batch.Log($"PIPELINE folder size lookup failed: {ex.Message}");
+                    }
+                }
+
                 FinalizeFallbackLinks(game);
 
                 var displayedAssets = await _displayedAssets.EnsureDisplayedAssetsAsync(game).ConfigureAwait(false);
@@ -417,6 +427,11 @@ namespace Codec.Services.Importing
                 batch.Flush("✓ ADDED", $"steam={game.SteamID} epic={game.EpicAppId} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
                 return GameImportResult.Added(game, $"{game.Name} was added to your library.");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                batch.Flush("– CANCELLED", "import cancelled");
+                throw;
+            }
             catch (Exception ex)
             {
                 batch.Log($"PIPELINE EXCEPTION {ex.GetType().Name}: {ex.Message}");
@@ -425,6 +440,13 @@ namespace Codec.Services.Importing
                 return GameImportResult.Failed("Codec could not finish importing this game.");
             }
         }
+
+        private Task<long> CalculateFolderSizeAsync(string folderLocation, CancellationToken cancellationToken) =>
+            _resourceLimiter is null
+                ? FolderSizeService.CalculateAsync(folderLocation, cancellationToken)
+                : _resourceLimiter.RunFolderSizeAsync(
+                    ct => FolderSizeService.CalculateAsync(folderLocation, ct),
+                    cancellationToken);
 
         private static void FinalizeFallbackLinks(Game game)
         {

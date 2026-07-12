@@ -3,6 +3,7 @@ using Codec.Services.Scanning.Scanners;
 using Codec.Services.Storage;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -25,11 +26,11 @@ namespace Codec.Services.Scanning
             PropertyNameCaseInsensitive = true
         };
 
-        private readonly Dictionary<string, CachedScanResult> _entries;
+        private readonly ConcurrentDictionary<string, CachedScanResult> _entries;
 
         private ScanCache(Dictionary<string, CachedScanResult> entries)
         {
-            _entries = entries;
+            _entries = new ConcurrentDictionary<string, CachedScanResult>(entries, StringComparer.OrdinalIgnoreCase);
         }
 
         public static async Task<ScanCache> LoadAsync()
@@ -73,19 +74,19 @@ namespace Codec.Services.Scanning
 
             if (entry.CacheVersion != CurrentCacheVersion)
             {
-                _entries.Remove(candidate.FolderPath);
+                _entries.TryRemove(candidate.FolderPath, out _);
                 return false;
             }
 
             if (!string.Equals(entry.EpicAppId, candidate.EpicAppId, StringComparison.OrdinalIgnoreCase))
             {
-                _entries.Remove(candidate.FolderPath);
+                _entries.TryRemove(candidate.FolderPath, out _);
                 return false;
             }
 
             if (!string.Equals(entry.MetadataLookupName, candidate.MetadataLookupName, StringComparison.OrdinalIgnoreCase))
             {
-                _entries.Remove(candidate.FolderPath);
+                _entries.TryRemove(candidate.FolderPath, out _);
                 return false;
             }
 
@@ -98,7 +99,7 @@ namespace Codec.Services.Scanning
             if (candidateHasLaunchScript &&
                 !string.Equals(entry.LaunchScriptPath, candidate.LaunchScriptPath, StringComparison.OrdinalIgnoreCase))
             {
-                _entries.Remove(candidate.FolderPath);
+                _entries.TryRemove(candidate.FolderPath, out _);
                 return false;
             }
 
@@ -106,7 +107,7 @@ namespace Codec.Services.Scanning
                 (hasExecutable && !File.Exists(entry.ExecutablePath)) ||
                 (!hasExecutable && !hasLaunchScript && !CanTrustMissingExecutable(entry)))
             {
-                _entries.Remove(candidate.FolderPath);
+                _entries.TryRemove(candidate.FolderPath, out _);
                 return false;
             }
 
@@ -115,7 +116,7 @@ namespace Codec.Services.Scanning
                 long? currentDirTimestamp = TimestampUtility.GetDirectoryTimestamp(entry.FolderPath);
                 if (!currentDirTimestamp.HasValue || currentDirTimestamp.Value > entry.DirectoryTimestampUtcTicks)
                 {
-                    _entries.Remove(candidate.FolderPath);
+                    _entries.TryRemove(candidate.FolderPath, out _);
                     return false;
                 }
             }
@@ -125,7 +126,7 @@ namespace Codec.Services.Scanning
                 long? currentExeTimestamp = TimestampUtility.GetFileTimestamp(entry.ExecutablePath);
                 if (!currentExeTimestamp.HasValue || currentExeTimestamp.Value > entry.ExecutableTimestampUtcTicks)
                 {
-                    _entries.Remove(candidate.FolderPath);
+                    _entries.TryRemove(candidate.FolderPath, out _);
                     return false;
                 }
             }
@@ -138,7 +139,7 @@ namespace Codec.Services.Scanning
         {
             if (!string.IsNullOrWhiteSpace(folderPath))
             {
-                _entries.Remove(folderPath);
+                _entries.TryRemove(folderPath, out _);
             }
         }
 

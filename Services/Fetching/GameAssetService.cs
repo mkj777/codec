@@ -7,6 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Threading;
+using Codec.Services.Scanning;
+using System.Collections.Concurrent;
 
 namespace Codec.Services.Fetching
 {
@@ -14,11 +17,34 @@ namespace Codec.Services.Fetching
     {
         private readonly HttpClient _http = new();
         private readonly SteamKitService? _steamKit;
+        private readonly ScanResourceLimiter? _resourceLimiter;
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _assetGates = new(StringComparer.OrdinalIgnoreCase);
 
-        public GameAssetService(SteamKitService? steamKit = null)
+        public GameAssetService(SteamKitService? steamKit = null, ScanResourceLimiter? resourceLimiter = null)
         {
             _steamKit = steamKit;
+            _resourceLimiter = resourceLimiter;
         }
+
+        private Task<HttpResponseMessage> GetAsync(string url, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead) =>
+            _resourceLimiter is null
+                ? _http.GetAsync(url, completionOption)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, completionOption, ct));
+
+        private Task<HttpResponseMessage> GetAsync(Uri url, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead) =>
+            _resourceLimiter is null
+                ? _http.GetAsync(url, completionOption)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, completionOption, ct));
+
+        private Task<string> GetStringAsync(string url) =>
+            _resourceLimiter is null
+                ? _http.GetStringAsync(url)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.GetStringAsync(url, ct));
+
+        private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption) =>
+            _resourceLimiter is null
+                ? _http.SendAsync(request, completionOption)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.SendAsync(request, completionOption, ct));
 
         private string GetCapsulesDir()
         {
@@ -55,9 +81,13 @@ namespace Codec.Services.Fetching
         /// </summary>
         public async Task<string?> DownloadSteamLibraryCoverAsync(int steamId, bool force = false)
         {
+            var assetGate = _assetGates.GetOrAdd($"steam-cover:{steamId}", _ => new SemaphoreSlim(1, 1));
+            await assetGate.WaitAsync().ConfigureAwait(false);
             try
             {
-                string dir = GetCapsulesDir();
+                try
+                {
+                    string dir = GetCapsulesDir();
 
                 // Preferred path: PICS-resolved library_capsule hash URL.
                 if (_steamKit != null)
@@ -76,13 +106,12 @@ namespace Codec.Services.Fetching
 
                         try
                         {
-                            using var picsResponse = await _http.GetAsync(assets.CapsuleUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                            using var picsResponse = await GetAsync(assets.CapsuleUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                             if (picsResponse.IsSuccessStatusCode)
                             {
                                 if (File.Exists(filePath)) { try { File.Delete(filePath); } catch { } }
                                 await using var remote = await picsResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                                await using var local = File.Create(filePath);
-                                await remote.CopyToAsync(local).ConfigureAwait(false);
+                                await WriteStreamAtomicallyAsync(remote, filePath).ConfigureAwait(false);
                                 return filePath;
                             }
                         }
@@ -114,7 +143,7 @@ namespace Codec.Services.Fetching
                         try { File.Delete(filePath); } catch (Exception delEx) { Debug.WriteLine($"Failed to delete old cover: {delEx.Message}"); }
                     }
 
-                    using var response = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    using var response = await GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                     if (!response.IsSuccessStatusCode)
                     {
                         Debug.WriteLine($"Cover variant not available for {steamId}: {url} -> {(int)response.StatusCode}");
@@ -122,8 +151,7 @@ namespace Codec.Services.Fetching
                     }
 
                     await using var remoteStream = await response.Content.ReadAsStreamAsync();
-                    await using var localStream = File.Create(filePath);
-                    await remoteStream.CopyToAsync(localStream);
+                    await WriteStreamAtomicallyAsync(remoteStream, filePath).ConfigureAwait(false);
 
                     return filePath;
                 }
@@ -140,11 +168,16 @@ namespace Codec.Services.Fetching
 
                 Debug.WriteLine($"No Steam cover found for {steamId} across known variants.");
                 return null;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Cover download failed for {steamId}: {ex.Message}");
+                    return null;
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                Debug.WriteLine($"Cover download failed for {steamId}: {ex.Message}");
-                return null;
+                assetGate.Release();
             }
         }
 
@@ -153,10 +186,14 @@ namespace Codec.Services.Fetching
         /// </summary>
         public async Task<string?> DownloadGridDbCoverAsync(int gridDbId, bool force = false)
         {
+            var assetGate = _assetGates.GetOrAdd($"grid-cover:{gridDbId}", _ => new SemaphoreSlim(1, 1));
+            await assetGate.WaitAsync().ConfigureAwait(false);
             try
             {
-                string gridsUrl = $"https://codec-api-proxy.vercel.app/api/griddb/grids?id={gridDbId}";
-                var response = await _http.GetStringAsync(gridsUrl);
+                try
+                {
+                    string gridsUrl = $"https://codec-api-proxy.vercel.app/api/griddb/grids?id={gridDbId}";
+                var response = await GetStringAsync(gridsUrl);
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("data", out var dataArray) || dataArray.GetArrayLength() == 0)
@@ -197,7 +234,7 @@ namespace Codec.Services.Fetching
                     return filePath;
                 }
 
-                using var downloadResponse = await _http.GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead);
+                using var downloadResponse = await GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead);
                 if (!downloadResponse.IsSuccessStatusCode)
                 {
                     Debug.WriteLine($"GridDB cover variant not available for {gridDbId}: {gridUrl} -> {(int)downloadResponse.StatusCode}");
@@ -205,15 +242,19 @@ namespace Codec.Services.Fetching
                 }
 
                 await using var remoteStream = await downloadResponse.Content.ReadAsStreamAsync();
-                await using var localStream = File.Create(filePath);
-                await remoteStream.CopyToAsync(localStream);
+                await WriteStreamAtomicallyAsync(remoteStream, filePath).ConfigureAwait(false);
 
                 return filePath;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"GridDB cover download failed for {gridDbId}: {ex.Message}");
+                    return null;
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                Debug.WriteLine($"GridDB cover download failed for {gridDbId}: {ex.Message}");
-                return null;
+                assetGate.Release();
             }
         }
 
@@ -221,7 +262,7 @@ namespace Codec.Services.Fetching
         {
             try
             {
-                string json = await _http.GetStringAsync($"https://store.steampowered.com/api/appdetails?appids={steamId}").ConfigureAwait(false);
+                string json = await GetStringAsync($"https://store.steampowered.com/api/appdetails?appids={steamId}").ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement.GetProperty(steamId.ToString());
                 if (!root.TryGetProperty("success", out var success) || !success.GetBoolean())
@@ -270,12 +311,16 @@ namespace Codec.Services.Fetching
                 return localAssetPath;
             }
 
+            var assetGate = _assetGates.GetOrAdd($"cache:{assetType}:{stableKey}:{sourceUrl}", _ => new SemaphoreSlim(1, 1));
+            await assetGate.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var parsedUri))
+                try
                 {
-                    return null;
-                }
+                    if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var parsedUri))
+                    {
+                        return null;
+                    }
 
                 string dir = assetType switch
                 {
@@ -299,21 +344,43 @@ namespace Codec.Services.Fetching
                     return filePath;
                 }
 
-                using var response = await _http.GetAsync(parsedUri, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var response = await GetAsync(parsedUri, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
                     return null;
                 }
 
                 await using var remoteStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                await using var localStream = File.Create(filePath);
-                await remoteStream.CopyToAsync(localStream).ConfigureAwait(false);
+                await WriteStreamAtomicallyAsync(remoteStream, filePath).ConfigureAwait(false);
                 return filePath;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Asset cache download failed for '{sourceUrl}': {ex.Message}");
+                    return null;
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                Debug.WriteLine($"Asset cache download failed for '{sourceUrl}': {ex.Message}");
-                return null;
+                assetGate.Release();
+            }
+        }
+
+        private static async Task WriteStreamAtomicallyAsync(Stream source, string destinationPath)
+        {
+            string tempPath = destinationPath + $".{Guid.NewGuid():N}.tmp";
+            try
+            {
+                await using (var destination = File.Create(tempPath))
+                {
+                    await source.CopyToAsync(destination).ConfigureAwait(false);
+                }
+
+                File.Move(tempPath, destinationPath, overwrite: true);
+            }
+            finally
+            {
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
             }
         }
 
@@ -353,7 +420,7 @@ namespace Codec.Services.Fetching
             try
             {
                 using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
-                using var headResponse = await _http.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var headResponse = await SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                 if (headResponse.IsSuccessStatusCode && headResponse.Content.Headers.ContentType?.MediaType?.Contains("image", StringComparison.OrdinalIgnoreCase) == true)
                 {
                     return true;
@@ -364,7 +431,7 @@ namespace Codec.Services.Fetching
                     return false;
                 }
 
-                using var getResponse = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var getResponse = await GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                 if (!getResponse.IsSuccessStatusCode)
                 {
                     return false;

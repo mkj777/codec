@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Codec.Models;
 using Codec.Services;
+using Codec.Services.Scanning;
+using System.Threading;
 
 namespace Codec.Services.Fetching
 {
@@ -25,16 +27,18 @@ namespace Codec.Services.Fetching
         private const string ArtworksEndpoint = ProxyBase + "/artworks";
 
         private readonly HttpClient _http;
+        private readonly ScanResourceLimiter? _resourceLimiter;
         private readonly ConcurrentDictionary<int, int> _steamIdByIgdbIdCache = new();
 
         public IgdbService()
-            : this(new HttpClient())
+            : this(new HttpClient(), null)
         {
         }
 
-        public IgdbService(HttpClient http)
+        public IgdbService(HttpClient http, ScanResourceLimiter? resourceLimiter = null)
         {
             _http = http ?? throw new ArgumentNullException(nameof(http));
+            _resourceLimiter = resourceLimiter;
         }
 
         public async Task<int?> FindIgdbIdByNameAsync(string name)
@@ -1171,20 +1175,27 @@ limit 200;";
 
         private async Task<string> PostAsync(string url, string body)
         {
-            Debug.WriteLine($"[IGDB] POST {url}");
-            Debug.WriteLine($"[IGDB] BODY: {body}");
-            using var content = new StringContent(body, Encoding.UTF8, "text/plain");
-            using var response = await _http.PostAsync(url, content).ConfigureAwait(false);
-            Debug.WriteLine($"[IGDB] HTTP {(int)response.StatusCode} {response.StatusCode} ← {url}");
-            if (!response.IsSuccessStatusCode)
+            async Task<string> SendAsync(CancellationToken cancellationToken)
             {
-                string errorBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                Debug.WriteLine($"[IGDB] ERROR RESPONSE: {errorBody}");
-                throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}). Response content: {errorBody}");
+                Debug.WriteLine($"[IGDB] POST {url}");
+                Debug.WriteLine($"[IGDB] BODY: {body}");
+                using var content = new StringContent(body, Encoding.UTF8, "text/plain");
+                using var response = await _http.PostAsync(url, content, cancellationToken).ConfigureAwait(false);
+                Debug.WriteLine($"[IGDB] HTTP {(int)response.StatusCode} {response.StatusCode} ← {url}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    Debug.WriteLine($"[IGDB] ERROR RESPONSE: {errorBody}");
+                    throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}). Response content: {errorBody}");
+                }
+                string result = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                Debug.WriteLine($"[IGDB] RESPONSE: {result}");
+                return result;
             }
-            string result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            Debug.WriteLine($"[IGDB] RESPONSE: {result}");
-            return result;
+
+            return _resourceLimiter is null
+                ? await SendAsync(CancellationToken.None).ConfigureAwait(false)
+                : await _resourceLimiter.RunNetworkAsync(SendAsync).ConfigureAwait(false);
         }
 
         private static string BuildImageUrl(string imageId, string size)

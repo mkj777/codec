@@ -935,7 +935,7 @@ namespace Codec.Views
             ViewModel.IsResetConfirmVisible = false;
 
             ViewModel.IsUiEnabled = false;
-            ViewModel.CancelImport();
+            await ViewModel.CancelImportAsync();
             ViewModel.IsDetailsVisible = false;
             ViewModel.SelectedGame = null;
             ViewModel.SidebarSelectedItem = null;

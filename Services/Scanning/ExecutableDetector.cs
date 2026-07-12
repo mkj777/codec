@@ -40,8 +40,9 @@ namespace Codec.Services.Scanning
             }
 
             // Step 3: Score each candidate with weighted heuristic model
+            long maxCandidateSize = candidates.Select(TryGetFileSize).DefaultIfEmpty(0).Max();
             var scoredCandidates = candidates
-                .Select(exe => new { Path = exe, Score = CalculateHeuristicScore(exe, gameName, gameFolderPath, candidates) })
+                .Select(exe => new { Path = exe, Score = CalculateHeuristicScore(exe, gameName, gameFolderPath, maxCandidateSize) })
                 .OrderByDescending(c => c.Score)
                 .ToList();
 
@@ -86,7 +87,7 @@ namespace Codec.Services.Scanning
             return false;
         }
 
-        private static int CalculateHeuristicScore(string exePath, string gameName, string gameFolderPath, List<string> allCandidates)
+        private static int CalculateHeuristicScore(string exePath, string gameName, string gameFolderPath, long maxCandidateSize)
         {
             int score = 0;
             var fileName = Path.GetFileNameWithoutExtension(exePath);
@@ -144,8 +145,7 @@ namespace Codec.Services.Scanning
             try
             {
                 var thisSize = new FileInfo(exePath).Length;
-                var maxSize = allCandidates.Max(c => new FileInfo(c).Length);
-                if (thisSize == maxSize) score += 25;
+                if (thisSize == maxCandidateSize) score += 25;
                 else if (thisSize > 50 * 1024 * 1024) score += 15;
                 else if (thisSize > 10 * 1024 * 1024) score += 10;
             }
@@ -172,6 +172,12 @@ namespace Codec.Services.Scanning
                 score -= 20;
 
             return score;
+        }
+
+        private static long TryGetFileSize(string path)
+        {
+            try { return new FileInfo(path).Length; }
+            catch { return 0; }
         }
 
         private static double CalculateSimilarity(string source, string target)
