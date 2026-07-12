@@ -1332,7 +1332,7 @@
                             VerticalAlignment="Center"
                             Spacing="8"
                             Opacity="0">
-                    <Image Source="ms-appx:///Assets/icon.png"
+                    <Image Source="ms-appx:///Assets/iconHigh.png"
                            Width="68"
                            Height="68"
                            Stretch="Uniform"/>
