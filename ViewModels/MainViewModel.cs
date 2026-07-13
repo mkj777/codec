@@ -615,7 +615,8 @@ namespace Codec.ViewModels
                 return;
 
             game.IsFavorite = !game.IsFavorite;
-            ApplySortToGames();
+            RefreshSidebarFilteredGames();
+            RefreshDisplayedGames();
             await _services.LibraryStorage.SaveAsync(Games.ToList());
         }
 
