@@ -445,11 +445,79 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Library toolbar -->
+        <!-- Library summary and toolbar -->
         <Grid Grid.Row="0"
               Margin="0,-20,0,8"
               Visibility="{Binding IsEmptyLibrary, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}">
-            <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <ScrollViewer Grid.Row="1"
+                          Margin="2,8,0,0"
+                          HorizontalScrollBarVisibility="Hidden"
+                          HorizontalScrollMode="Enabled"
+                          VerticalScrollBarVisibility="Disabled"
+                          VerticalScrollMode="Disabled">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding LibraryGameCount}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                   Foreground="#F3EDC9"/>
+                        <TextBlock Text="{Binding LibraryGameLabel}"
+                                   FontSize="12"
+                                   FontFamily="{StaticResource CodecRegularFontFamily}"
+                                   Foreground="#9E8E78"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding HasNotInstalledLibraryGames, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Border Width="1" Height="12" Margin="11,0" Background="#3E3830"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding InstalledLibraryGameCount}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                       Foreground="#F3EDC9"/>
+                            <TextBlock Text="installed"
+                                       FontSize="12"
+                                       FontFamily="{StaticResource CodecRegularFontFamily}"
+                                       Foreground="#9E8E78"/>
+                        </StackPanel>
+                        <Border Width="1" Height="12" Margin="11,0" Background="#3E3830"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding NotInstalledLibraryGameCount}"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                       Foreground="#F3EDC9"/>
+                            <TextBlock Text="not installed"
+                                       FontSize="12"
+                                       FontFamily="{StaticResource CodecRegularFontFamily}"
+                                       Foreground="#9E8E78"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border Width="1" Height="12" Margin="11,0" Background="#3E3830"/>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding LibraryTotalSizeText}"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                   Foreground="#F3EDC9"/>
+                        <TextBlock Text="storage"
+                                   FontSize="12"
+                                   FontFamily="{StaticResource CodecRegularFontFamily}"
+                                   Foreground="#9E8E78"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer Grid.Row="0"
+                          HorizontalScrollBarVisibility="Hidden"
                           HorizontalScrollMode="Enabled"
                           VerticalScrollBarVisibility="Disabled"
                           VerticalScrollMode="Disabled"

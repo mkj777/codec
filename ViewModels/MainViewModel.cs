@@ -12,6 +12,7 @@ using System;
 using System.Collections.Specialized;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -35,6 +36,7 @@ namespace Codec.ViewModels
         private string _appliedSearchText = string.Empty;
         private AppSettings _appSettings = new();
         private bool _suppressSettingsSave = false;
+        private readonly HashSet<Game> _trackedLibraryGames = new();
 
         public ObservableCollection<Game> Games { get; set; } = new();
         public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
@@ -76,6 +78,14 @@ namespace Codec.ViewModels
 
         public bool HasGames => Games.Count > 0;
         public bool IsEmptyLibrary => !HasGames;
+        private IEnumerable<Game> ReadyLibraryGames => Games.Where(IsReadyForLibrary);
+        public int LibraryGameCount => ReadyLibraryGames.Count();
+        public string LibraryGameLabel => LibraryGameCount == 1 ? "game" : "games";
+        public int InstalledLibraryGameCount => ReadyLibraryGames.Count(game => game.IsInstalled);
+        public int NotInstalledLibraryGameCount => LibraryGameCount - InstalledLibraryGameCount;
+        public bool HasNotInstalledLibraryGames => NotInstalledLibraryGameCount > 0;
+        public string LibraryTotalSizeText => FormatLibrarySize(
+            ReadyLibraryGames.Sum(game => Math.Max(0L, game.FolderSize)));
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsLibraryGridVisible))]
         private bool _isDetailsVisible;
@@ -551,12 +561,82 @@ namespace Codec.ViewModels
 
         private void Games_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            SyncLibraryGameSubscriptions(e);
             OnPropertyChanged(nameof(HasGames));
             OnPropertyChanged(nameof(IsEmptyLibrary));
             OnPropertyChanged(nameof(IsLibraryVisible));
+            NotifyLibrarySummaryChanged();
             RefreshSidebarFilteredGames();
             RefreshAvailableImportSources();
             RefreshDisplayedGames();
+        }
+
+        private void SyncLibraryGameSubscriptions(NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                foreach (var game in _trackedLibraryGames)
+                    game.PropertyChanged -= LibraryGame_PropertyChanged;
+
+                _trackedLibraryGames.Clear();
+                foreach (var game in Games)
+                    TrackLibraryGame(game);
+                return;
+            }
+
+            if (e.OldItems != null)
+            {
+                foreach (Game game in e.OldItems)
+                {
+                    game.PropertyChanged -= LibraryGame_PropertyChanged;
+                    _trackedLibraryGames.Remove(game);
+                }
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (Game game in e.NewItems)
+                    TrackLibraryGame(game);
+            }
+        }
+
+        private void TrackLibraryGame(Game game)
+        {
+            if (_trackedLibraryGames.Add(game))
+                game.PropertyChanged += LibraryGame_PropertyChanged;
+        }
+
+        private void LibraryGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(Game.IsInstalled) or nameof(Game.FolderSize) or
+                nameof(Game.IsSteamOwned) or nameof(Game.IsFullyImported) or nameof(Game.DisplayedAssetsReady))
+            {
+                NotifyLibrarySummaryChanged();
+            }
+        }
+
+        private void NotifyLibrarySummaryChanged()
+        {
+            OnPropertyChanged(nameof(LibraryGameCount));
+            OnPropertyChanged(nameof(LibraryGameLabel));
+            OnPropertyChanged(nameof(InstalledLibraryGameCount));
+            OnPropertyChanged(nameof(NotInstalledLibraryGameCount));
+            OnPropertyChanged(nameof(HasNotInstalledLibraryGames));
+            OnPropertyChanged(nameof(LibraryTotalSizeText));
+        }
+
+        private static string FormatLibrarySize(long bytes)
+        {
+            const double scale = 1024d;
+            double megabytes = bytes / (scale * scale);
+
+            if (megabytes < scale)
+                return $"{megabytes:F0} MB";
+
+            double gigabytes = megabytes / scale;
+            return gigabytes < scale
+                ? $"{gigabytes:F1} GB"
+                : $"{gigabytes / scale:F1} TB";
         }
 
         private bool _isUpdatingFilters = false;
