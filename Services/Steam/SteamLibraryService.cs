@@ -50,10 +50,14 @@ public sealed class SteamLibraryService
         bool useQr,
         Func<Game, CancellationToken, Task<Game?>> enrichGameAsync,
         Func<Game, bool, Task> publishGameAsync,
+        Func<string, Task>? accountConnectedAsync = null,
         Action<SteamSyncProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         SteamAccountSnapshot snapshot = await _auth.SignInAndFetchAsync(accountName, useQr, cancellationToken);
+        if (accountConnectedAsync != null)
+            await accountConnectedAsync(snapshot.AccountName);
+
         IReadOnlyList<GameCandidate> installedCandidates = await new SteamScanner().ScanAsync(cancellationToken: cancellationToken);
         var installed = installedCandidates
             .Where(candidate => candidate.SteamAppId.HasValue)

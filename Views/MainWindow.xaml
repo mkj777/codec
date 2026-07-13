@@ -1058,7 +1058,7 @@
                                             Padding="14,9"
                                             Background="#E76C2B" BorderBrush="#E76C2B"
                                             Foreground="#1C1A17" CornerRadius="7"/>
-                                    <Button Content="Sync now"
+                                    <Button Content="{Binding SteamSyncButtonText}"
                                             Command="{Binding SyncSteamLibraryCommand}"
                                             IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
                                             Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
@@ -1078,6 +1078,7 @@
                                     <Button Grid.Column="1"
                                             Content="Disconnect"
                                             Click="SteamDisconnect_Click"
+                                            IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
                                             Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
                                             Padding="12,9"
                                             Background="Transparent" BorderBrush="#5E5346"

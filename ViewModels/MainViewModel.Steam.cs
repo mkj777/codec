@@ -30,7 +30,9 @@ public partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(SteamAccountDisplay))]
     private string? _steamAccountName;
 
-    [ObservableProperty] private bool _isSteamSyncing;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SteamSyncButtonText))]
+    private bool _isSteamSyncing;
     [ObservableProperty] private bool _isSteamQrVisible;
     [ObservableProperty] private ImageSource? _steamQrCode;
     [ObservableProperty] private string _steamStatusMessage = "Connect Steam to add everything you own.";
@@ -44,6 +46,7 @@ public partial class MainViewModel
 
     public bool IsSteamConnected => !string.IsNullOrWhiteSpace(SteamAccountName) && _services.SteamLibrary.HasStoredToken;
     public string SteamAccountDisplay => IsSteamConnected ? SteamAccountName! : "Not connected";
+    public string SteamSyncButtonText => IsSteamSyncing ? "Syncing..." : "Sync now";
 
     private void InitializeSteamIntegration()
     {
@@ -100,6 +103,7 @@ public partial class MainViewModel
                 useQr,
                 (game, ct) => EnrichSteamGameAsync(game, librarySnapshot, ct),
                 PublishSteamGameAsync,
+                MarkSteamConnectedAsync,
                 QueueSteamProgress,
                 _steamLoginCts.Token);
 
@@ -157,6 +161,18 @@ public partial class MainViewModel
             ResumeSilentImageUpdate();
             _steamSyncGate.Release();
         }
+    }
+
+    private async Task MarkSteamConnectedAsync(string accountName)
+    {
+        SteamAccountName = accountName;
+        _appSettings.SteamAccountName = accountName;
+        SteamLastSyncText = "Connected · Syncing library";
+        SteamStatusMessage = "Connected. Adding your Steam games…";
+        IsSteamQrVisible = false;
+        OnPropertyChanged(nameof(IsSteamConnected));
+        OnPropertyChanged(nameof(SteamAccountDisplay));
+        await _services.AppSettings.SaveAsync(_appSettings);
     }
 
     public async Task DisconnectSteamAsync(bool removeOwnedOnlyGames)
