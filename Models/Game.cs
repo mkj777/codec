@@ -793,7 +793,7 @@ namespace Codec.Models
                 double sizeInMb = FolderSize / (1024.0 * 1024.0);
                 if (sizeInMb >= 1000)
                 {
-                    return $"{(sizeInMb / 1024.0):F1} GB";
+                    return $"{Math.Round(sizeInMb / 1024.0, MidpointRounding.AwayFromZero):F0} GB";
                 }
                 return $"{sizeInMb:F0} MB";
             }
