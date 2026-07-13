@@ -425,6 +425,33 @@
             </Setter>
         </Style>
 
+        <Style x:Key="InstallFilterLeftStyle"
+               TargetType="ToggleButton"
+               BasedOn="{StaticResource FilterToggleButtonStyle}">
+            <Setter Property="CornerRadius" Value="8,0,0,8"/>
+        </Style>
+        <Style x:Key="InstallFilterMiddleStyle"
+               TargetType="ToggleButton"
+               BasedOn="{StaticResource FilterToggleButtonStyle}">
+            <Setter Property="BorderThickness" Value="0,1,1,1"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style x:Key="InstallFilterRightStyle"
+               TargetType="ToggleButton"
+               BasedOn="{StaticResource FilterToggleButtonStyle}">
+            <Setter Property="BorderThickness" Value="0,1,1,1"/>
+            <Setter Property="CornerRadius" Value="0,8,8,0"/>
+        </Style>
+        <Style x:Key="SourceFilterToggleButtonStyle"
+               TargetType="ToggleButton"
+               BasedOn="{StaticResource FilterToggleButtonStyle}">
+            <Setter Property="Background" Value="#211F1C"/>
+            <Setter Property="BorderBrush" Value="#332F2A"/>
+            <Setter Property="Foreground" Value="#8A7C6A"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Opacity" Value="0.78"/>
+        </Style>
+
         <Style x:Key="FavoriteIconButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="36"/>
             <Setter Property="Height" Value="36"/>
@@ -635,24 +662,29 @@
                 </Button.Flyout>
                     </Button>
 
-                    <ToggleButton x:Name="InstallFilterAll"
-                                  Content="All"
-                                  Tag="0"
-                                  Click="InstallFilter_Click"
-                                  Style="{StaticResource FilterToggleButtonStyle}"/>
-                    <ToggleButton x:Name="InstallFilterInstalled"
-                                  Content="Installed"
-                                  Tag="1"
-                                  IsChecked="True"
-                                  Click="InstallFilter_Click"
-                                  Style="{StaticResource FilterToggleButtonStyle}"/>
-                    <ToggleButton x:Name="InstallFilterOwnedOnly"
-                                  Content="Not installed"
-                                  Tag="2"
-                                  Click="InstallFilter_Click"
-                                  Style="{StaticResource FilterToggleButtonStyle}"/>
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="0"
+                                Margin="8,0,0,0">
+                        <ToggleButton x:Name="InstallFilterAll"
+                                      Content="All"
+                                      Tag="0"
+                                      Click="InstallFilter_Click"
+                                      Style="{StaticResource InstallFilterLeftStyle}"/>
+                        <ToggleButton x:Name="InstallFilterInstalled"
+                                      Content="Installed"
+                                      Tag="1"
+                                      IsChecked="True"
+                                      Click="InstallFilter_Click"
+                                      Style="{StaticResource InstallFilterMiddleStyle}"/>
+                        <ToggleButton x:Name="InstallFilterOwnedOnly"
+                                      Content="Not installed"
+                                      Tag="2"
+                                      Click="InstallFilter_Click"
+                                      Style="{StaticResource InstallFilterRightStyle}"/>
+                    </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding AvailableImportSources}"
+                                  Margin="8,0,0,0"
                                   VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -663,7 +695,7 @@
                             <DataTemplate x:DataType="local:ImportFilterItem">
                                 <ToggleButton Content="{Binding Name}"
                                               IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                              Style="{StaticResource FilterToggleButtonStyle}"/>
+                                              Style="{StaticResource SourceFilterToggleButtonStyle}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

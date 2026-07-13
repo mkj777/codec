@@ -498,6 +498,7 @@
         <!-- Global app-level overlays -->
         <Grid Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Canvas.ZIndex="2"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               IsHitTestVisible="True">
@@ -692,6 +693,7 @@
         <Grid x:Name="OnboardingOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Canvas.ZIndex="2"
               Visibility="{Binding IsOnboardingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               Background="#FF1C1A17"
               IsHitTestVisible="True">
@@ -866,6 +868,7 @@
         <Grid x:Name="SettingsOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Canvas.ZIndex="2"
               Visibility="{Binding IsSettingsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               IsHitTestVisible="True">
             <Grid Background="#CC1C1A17"
@@ -1212,6 +1215,7 @@
         <Grid x:Name="ResetConfirmOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Canvas.ZIndex="2"
               Visibility="{Binding IsResetConfirmVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               IsHitTestVisible="True">
             <Grid Background="#CC1C1A17"
@@ -1381,6 +1385,7 @@
         <Grid x:Name="ResetProgressOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Canvas.ZIndex="2"
               Background="#F51C1A17"
               Visibility="Collapsed"
               IsHitTestVisible="True">
@@ -1410,6 +1415,7 @@
         <Border x:Name="StartupOverlay"
                 Grid.RowSpan="2"
                 Grid.ColumnSpan="2"
+                Canvas.ZIndex="2"
                 Background="#FF1C1A17"
                 IsHitTestVisible="True">
             <Border.RenderTransform>
@@ -1483,6 +1489,7 @@
         <StackPanel x:Name="NotificationStack"
                     Grid.RowSpan="2"
                     Grid.ColumnSpan="2"
+                    Canvas.ZIndex="1"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
                     Margin="0,0,16,16"
@@ -1775,6 +1782,7 @@
         <Grid x:Name="LoadingOverlay"
               Grid.RowSpan="2"
               Grid.ColumnSpan="2"
+              Canvas.ZIndex="2"
               Visibility="{Binding IsLoadingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
               Background="#FF1C1A17"
               IsHitTestVisible="True">

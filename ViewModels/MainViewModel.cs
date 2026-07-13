@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -651,8 +652,8 @@ namespace Codec.ViewModels
 
             double gigabytes = megabytes / scale;
             return gigabytes < scale
-                ? $"{gigabytes:F1} GB"
-                : $"{gigabytes / scale:F1} TB";
+                ? $"{gigabytes.ToString("F1", CultureInfo.InvariantCulture)} GB"
+                : $"{(gigabytes / scale).ToString("F1", CultureInfo.InvariantCulture)} TB";
         }
 
         private bool _isUpdatingFilters = false;
