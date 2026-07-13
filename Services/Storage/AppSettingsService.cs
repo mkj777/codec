@@ -9,7 +9,7 @@ namespace Codec.Services.Storage
     public class AppSettings
     {
         public bool OnboardingCompleted { get; set; }
-        public bool ScanOnStartup { get; set; } = true;
+        public bool ScanOnStartup { get; set; }
         public bool LaunchSteamSilent { get; set; }
         public string? SteamClientPath { get; set; }
         public string? EpicLauncherPath { get; set; }

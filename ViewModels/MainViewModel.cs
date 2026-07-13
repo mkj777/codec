@@ -404,23 +404,9 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand]
-        private async Task AddGameFromOnboardingAsync(string? executablePath)
-        {
-            if (string.IsNullOrWhiteSpace(executablePath))
-                return;
-
-            ImportEnqueueResult result = await AddGameCommand(executablePath);
-            if (!result.IsAccepted)
-                return;
-
-            await CompleteOnboardingAsync(scanOnStartup: true, launchSteamSilent: false);
-            IsOnboardingVisible = false;
-        }
-
-        [RelayCommand]
         private async Task MaybeLaterFromOnboardingAsync()
         {
-            await CompleteOnboardingAsync(scanOnStartup: true, launchSteamSilent: false);
+            await CompleteOnboardingAsync(scanOnStartup: false, launchSteamSilent: false);
             IsOnboardingVisible = false;
         }
 

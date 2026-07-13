@@ -808,7 +808,7 @@
                                FontWeight="Bold"
                                FontFamily="{StaticResource CodecBoldFontFamily}"
                                Foreground="#F3EDC9"/>
-                    <TextBlock Text="I can look for them, or you can add one yourself."
+                    <TextBlock Text="I can look for games on this PC."
                                FontSize="17"
                                TextWrapping="WrapWholeWords"
                                FontFamily="{StaticResource CodecRegularFontFamily}"
@@ -831,35 +831,20 @@
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#1C1A17"/>
                             </Button.Resources>
                         </Button>
-                        <Button Content="Add a game"
-                                FontWeight="SemiBold"
-                                Background="#25221F"
-                                BorderBrush="#3E3830"
-                                Foreground="#F3EDC9"
-                                CornerRadius="10"
-                                Padding="22,11"
-                                Click="OnboardingAddGame_Click">
+                        <Button Content="Maybe later"
+                                Command="{Binding MaybeLaterFromOnboardingCommand}"
+                                HorizontalAlignment="Left"
+                                Padding="12,7"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                Foreground="#9E8E78">
                             <Button.Resources>
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#332E27"/>
-                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#5E5346"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
                                 <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
                             </Button.Resources>
                         </Button>
                     </StackPanel>
-                    <Button Content="Maybe later"
-                            Command="{Binding MaybeLaterFromOnboardingCommand}"
-                            HorizontalAlignment="Left"
-                            Margin="-12,2,0,0"
-                            Padding="12,7"
-                            Background="Transparent"
-                            BorderBrush="Transparent"
-                            Foreground="#9E8E78">
-                        <Button.Resources>
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
-                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
-                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
-                        </Button.Resources>
-                    </Button>
                 </StackPanel>
             </Grid>
         </Grid>

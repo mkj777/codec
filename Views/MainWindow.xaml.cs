@@ -636,30 +636,6 @@ namespace Codec.Views
             await ViewModel.DisconnectSteamAsync(removeOwnedOnlyGames: result == ContentDialogResult.Primary);
         }
 
-        private async void OnboardingAddGame_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string? path = await PickExeFileAsync();
-                if (path == null)
-                    return;
-
-                if (ViewModel.AddGameFromOnboardingCommand.CanExecute(path))
-                    await ViewModel.AddGameFromOnboardingCommand.ExecuteAsync(path);
-            }
-            catch (Exception ex)
-            {
-                var errorDialog = new ContentDialog
-                {
-                    Title = "Couldn't add this game",
-                    Content = ex.Message,
-                    CloseButtonText = "Close",
-                    XamlRoot = Content.XamlRoot
-                };
-                await errorDialog.ShowAsync();
-            }
-        }
-
         private async void DebugCheckIds_Click(object sender, RoutedEventArgs e)
         {
             ViewModel.IsUiEnabled = false;
