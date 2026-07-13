@@ -87,7 +87,7 @@ namespace Codec.ViewModels
             LaunchFeedbackState.Launching => "LAUNCHING",
             LaunchFeedbackState.RequestingInstall => "REQUESTING",
             LaunchFeedbackState.Failed => SelectedGame?.CanInstall == true ? "REQUEST FAILED" : "COULDN'T START",
-            _ => SelectedGame?.CanInstall == true ? "INSTALL" : SelectedGame?.CanLaunch == true ? "PLAY" : "MISSING"
+            _ => SelectedGame?.CanInstall == true ? "INSTALL" : SelectedGame?.IsNotInstalled == true ? "NOT INSTALLED" : SelectedGame?.CanLaunch == true ? "PLAY" : "MISSING"
         };
 
         public double PlayButtonOpacity => CanPlaySelectedGame ? 1d : 0.46d;
@@ -97,7 +97,7 @@ namespace Codec.ViewModels
             LaunchFeedbackState.Launching => "Launching game",
             LaunchFeedbackState.RequestingInstall => "Requesting install from Steam",
             LaunchFeedbackState.Failed => SelectedGame?.CanInstall == true ? "Steam install request failed" : "Codec couldn't start this game",
-            _ => SelectedGame?.CanInstall == true ? "Install through Steam" : SelectedGame?.CanLaunch == true ? "Launch game" : "Missing launch target"
+            _ => SelectedGame?.CanInstall == true ? "Install through Steam" : SelectedGame?.IsNotInstalled == true ? "Game is not installed" : SelectedGame?.CanLaunch == true ? "Launch game" : "Missing launch target"
         };
 
         partial void OnSelectedGameChanged(Game? oldValue, Game? newValue)

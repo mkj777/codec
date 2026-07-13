@@ -38,11 +38,13 @@ namespace Codec.Services
         public UpdateService Updates { get; }
         public ScanConcurrencyOptions ScanConcurrency { get; }
         public ScanResourceLimiter ScanResources { get; }
+        public HeuristicInstallStateService HeuristicInstallState { get; }
 
         public ServiceHost()
         {
             ScanConcurrency = ScanConcurrencyOptions.CreateAdaptive();
             ScanResources = new ScanResourceLimiter(ScanConcurrency);
+            HeuristicInstallState = new HeuristicInstallStateService(ScanResources);
             Cache = new MetadataCache(ScanResources);
             LibraryStorage = new LibraryStorageService();
             AppSettings = new AppSettingsService();

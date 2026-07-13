@@ -58,11 +58,14 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
+        [NotifyPropertyChangedFor(nameof(CanInstall))]
         [NotifyPropertyChangedFor(nameof(IsAlsoOwnedOnSteam))]
+        [NotifyPropertyChangedFor(nameof(IsHeuristicScan))]
         private string importedFrom;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsOwnedOnly))]
+        [NotifyPropertyChangedFor(nameof(IsNotInstalled))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
         [NotifyPropertyChangedFor(nameof(CanInstall))]
         [NotifyPropertyChangedFor(nameof(LibraryCardOpacity))]
@@ -100,6 +103,7 @@ namespace Codec.Models
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
         [NotifyPropertyChangedFor(nameof(CanLaunch))]
+        [NotifyPropertyChangedFor(nameof(CanInstall))]
         [NotifyPropertyChangedFor(nameof(EffectiveSteamMetadataAppId))]
         [NotifyPropertyChangedFor(nameof(UsesAlternateMetadataLookupName))]
         [NotifyPropertyChangedFor(nameof(IsAlsoOwnedOnSteam))]
@@ -400,6 +404,11 @@ namespace Codec.Models
         {
             get
             {
+                if (IsHeuristicScan && !IsInstalled)
+                {
+                    return false;
+                }
+
                 if (HasCustomLaunchScript && HasExistingFile(LaunchScript))
                 {
                     return true;
@@ -473,7 +482,16 @@ namespace Codec.Models
         public bool IsOwnedOnly => IsSteamOwned && !IsInstalled;
 
         [JsonIgnore]
-        public bool CanInstall => IsOwnedOnly && SteamID.HasValue;
+        public bool IsNotInstalled => !IsInstalled;
+
+        [JsonIgnore]
+        public bool IsHeuristicScan => string.Equals(
+            PlatformSourceNames.NormalizeImportSource(ImportedFrom),
+            PlatformSourceNames.HeuristicScan,
+            StringComparison.OrdinalIgnoreCase);
+
+        [JsonIgnore]
+        public bool CanInstall => IsOwnedOnly && IsSteamLaunchTarget;
 
         [JsonIgnore]
         public double LibraryCardOpacity => IsOwnedOnly ? 0.68d : 1d;

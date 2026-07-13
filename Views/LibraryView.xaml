@@ -652,7 +652,7 @@
                                         VerticalAlignment="Bottom"
                                         Margin="10"
                                         Padding="7,4"
-                                        Visibility="{x:Bind IsOwnedOnly, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        Visibility="{x:Bind IsNotInstalled, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                                     <TextBlock Text="NOT INSTALLED"
                                                FontSize="9"
                                                CharacterSpacing="45"

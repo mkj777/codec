@@ -325,6 +325,7 @@ namespace Codec.ViewModels
 
             await _services.LibraryStorage.SaveAsync(sortedSavedGames);
             QueueBackgroundPrefetch(Games);
+            _ = RefreshHeuristicInstallStatesAsync();
 
             SetLoadingState(false);
             IsInitialLoading = false;
@@ -458,6 +459,8 @@ namespace Codec.ViewModels
         {
             IsOnboardingVisible = false;
             await _importCoordinator.StartScanAsync();
+            await _importCoordinator.WaitForIdleAsync();
+            await RefreshHeuristicInstallStatesAsync();
             IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
         }
 
@@ -465,6 +468,8 @@ namespace Codec.ViewModels
         {
             IsStartupScanToastVisible = true;
             await _importCoordinator.StartScanAsync();
+            await _importCoordinator.WaitForIdleAsync();
+            await RefreshHeuristicInstallStatesAsync();
         }
 
         public async Task<ImportEnqueueResult> AddGameCommand(string executablePath)
