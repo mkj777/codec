@@ -95,6 +95,31 @@
                 <Setter Property="Foreground"
                         Value="#F3EDC9"/>
             </Style>
+            <Style x:Key="NotificationCardStyle"
+                   TargetType="Border">
+                <Setter Property="Width" Value="320"/>
+                <Setter Property="Padding" Value="16,14"/>
+                <Setter Property="Background" Value="#25221F"/>
+                <Setter Property="BorderBrush" Value="#3E3830"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="12"/>
+            </Style>
+            <Style x:Key="NotificationTitleStyle"
+                   TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="Foreground" Value="#F3EDC9"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <Style x:Key="NotificationDetailStyle"
+                   TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}"/>
+                <Setter Property="Foreground" Value="#9E8E78"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
             <Style x:Key="SidebarSettingsButtonStyle"
                    TargetType="Button">
                 <Setter Property="Height" Value="30"/>
@@ -1466,15 +1491,10 @@
 
             <!-- Update: downloading toast -->
             <Border Visibility="{Binding IsUpdateDownloadingVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1490,21 +1510,15 @@
                         <StackPanel Orientation="Horizontal"
                                     Spacing="6">
                             <TextBlock Text="Downloading update"
-                                       FontSize="13"
-                                       FontWeight="SemiBold"
-                                       Foreground="#F3EDC9"
+                                       Style="{StaticResource NotificationTitleStyle}"
                                        VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                       TextWrapping="NoWrap"/>
                             <TextBlock Text="{Binding UpdateDownloadProgress}"
-                                       FontSize="13"
-                                       Foreground="#9E8E78"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                       Style="{StaticResource NotificationDetailStyle}"
+                                       VerticalAlignment="Center"/>
                             <TextBlock Text="%"
-                                       FontSize="13"
-                                       Foreground="#9E8E78"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                       Style="{StaticResource NotificationDetailStyle}"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
                         <ProgressBar Value="{Binding UpdateDownloadProgress}"
                                      Minimum="0"
@@ -1517,15 +1531,10 @@
 
             <!-- Update: error toast -->
             <Border Visibility="{Binding IsUpdateErrorVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
@@ -1539,30 +1548,19 @@
                                 Spacing="2"
                                 VerticalAlignment="Center">
                         <TextBlock Text="Update failed"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="#E76C2B"
-                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationTitleStyle}"/>
                         <TextBlock Text="{Binding UpdateErrorMessage}"
-                                   FontSize="11"
-                                   Foreground="#9E8E78"
-                                   TextWrapping="Wrap"
-                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationDetailStyle}"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Update: ready banner -->
             <Border Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
@@ -1577,15 +1575,9 @@
                                 Spacing="2"
                                 VerticalAlignment="Center">
                         <TextBlock Text="Update available"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="#9E8E78"
-                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationTitleStyle}"/>
                         <TextBlock Text="Downloaded and ready to install"
-                                   FontSize="11"
-                                   Foreground="#F3EDC9"
-                                   TextWrapping="Wrap"
-                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationDetailStyle}"/>
                     </StackPanel>
                     
                     <Button Grid.Column="2"
@@ -1603,12 +1595,7 @@
 
             <!-- Steam sync status card -->
             <Border Visibility="{Binding IsSteamSyncProgressVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="340">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="24"/>
@@ -1635,15 +1622,9 @@
                                 Spacing="7"
                                 VerticalAlignment="Center">
                         <TextBlock Text="{Binding SteamSyncProgressTitle, Mode=OneWay}"
-                                   FontSize="13"
-                                   FontWeight="SemiBold"
-                                   Foreground="#F3EDC9"
-                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationTitleStyle}"/>
                         <TextBlock Text="{Binding SteamSyncProgressMessage, Mode=OneWay}"
-                                   FontSize="11"
-                                   Foreground="#9E8E78"
-                                   TextWrapping="Wrap"
-                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationDetailStyle}"/>
                         <ProgressBar Value="{Binding SteamSyncProgressValue, Mode=OneWay}"
                                      Maximum="{Binding SteamSyncProgressMaximum, Mode=OneWay}"
                                      Minimum="0"
@@ -1656,15 +1637,10 @@
 
             <!-- Import status card -->
             <Border Visibility="{Binding IsImportStatusVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1674,36 +1650,26 @@
                                   Height="20"
                                   VerticalAlignment="Center"/>
 
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                Spacing="16"
-                                VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="Adding games"
+                                   Style="{StaticResource NotificationTitleStyle}"/>
                         <StackPanel Orientation="Horizontal"
                                     Spacing="6"
                                     VerticalAlignment="Center">
                             <TextBlock Text="{Binding AddedCount, Mode=OneWay}"
-                                       FontSize="20"
-                                       FontWeight="Bold"
-                                       Foreground="#F3EDC9"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecBoldFontFamily}"/>
-                            <TextBlock Text="added"
-                                       FontSize="12"
-                                       Foreground="#9E8E78"
+                                       Style="{StaticResource NotificationDetailStyle}"
                                        VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="6"
-                                    VerticalAlignment="Center">
+                            <TextBlock Text="added"
+                                       Style="{StaticResource NotificationDetailStyle}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="·"
+                                       Style="{StaticResource NotificationDetailStyle}"
+                                       VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding ImportRemainingCount, Mode=OneWay}"
-                                       FontSize="20"
-                                       FontWeight="Bold"
-                                       Foreground="#9E8E78"
-                                       VerticalAlignment="Center"
-                                       FontFamily="{StaticResource CodecBoldFontFamily}"/>
+                                       Style="{StaticResource NotificationDetailStyle}"
+                                       VerticalAlignment="Center"/>
                             <TextBlock Text="processing"
-                                       FontSize="12"
-                                       Foreground="#9E8E78"
+                                       Style="{StaticResource NotificationDetailStyle}"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
@@ -1712,15 +1678,10 @@
 
             <!-- Scan complete card -->
             <Border Visibility="{Binding IsScanCompleteEffectiveVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1730,35 +1691,25 @@
                               Foreground="#D4A832"
                               VerticalAlignment="Center"/>
 
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                Spacing="6"
-                                VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="Library updated"
+                                   Style="{StaticResource NotificationTitleStyle}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="{Binding ScanCompleteAddedCount, Mode=OneWay}"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#F3EDC9"
-                                   VerticalAlignment="Center"
-                                   FontFamily="{StaticResource CodecBoldFontFamily}"/>
+                                   Style="{StaticResource NotificationDetailStyle}"/>
                         <TextBlock Text="games added"
-                                   FontSize="12"
-                                   Foreground="#9E8E78"
-                                   VerticalAlignment="Center"/>
+                                   Style="{StaticResource NotificationDetailStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Game not added toast -->
             <Border Visibility="{Binding IsGameNotAddedToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1770,25 +1721,17 @@
 
                     <TextBlock Grid.Column="1"
                                Text="Game could not be added"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="#F3EDC9"
-                               VerticalAlignment="Center"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                               Style="{StaticResource NotificationTitleStyle}"
+                               VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
             <!-- Game already in library toast -->
             <Border Visibility="{Binding IsGameAlreadyAddedToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1800,25 +1743,17 @@
 
                     <TextBlock Grid.Column="1"
                                Text="Game already in library"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="#F3EDC9"
-                               VerticalAlignment="Center"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                               Style="{StaticResource NotificationTitleStyle}"
+                               VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
             <!-- Startup background scan toast -->
             <Border Visibility="{Binding IsStartupScanToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Background="#25221F"
-                    BorderBrush="#3E3830"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="16,14"
-                    Width="320">
+                    Style="{StaticResource NotificationCardStyle}">
                 <Grid ColumnSpacing="14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="24"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1830,11 +1765,8 @@
 
                     <TextBlock Grid.Column="1"
                                Text="Looking for new games"
-                               FontSize="13"
-                               FontWeight="SemiBold"
-                               Foreground="#F3EDC9"
-                               VerticalAlignment="Center"
-                               FontFamily="{StaticResource CodecSemiBoldFontFamily}"/>
+                               Style="{StaticResource NotificationTitleStyle}"
+                               VerticalAlignment="Center"/>
                 </Grid>
             </Border>
         </StackPanel>

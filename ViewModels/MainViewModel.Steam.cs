@@ -37,8 +37,8 @@ public partial class MainViewModel
     [ObservableProperty] private string _steamLastSyncText = "Never synced";
     [ObservableProperty] private bool _isSteamSyncProgressVisible;
     [ObservableProperty] private bool _isSteamSyncProgressIndeterminate = true;
-    [ObservableProperty] private string _steamSyncProgressTitle = "Checking Steam library…";
-    [ObservableProperty] private string _steamSyncProgressMessage = "Finding owned games";
+    [ObservableProperty] private string _steamSyncProgressTitle = "Syncing Steam library";
+    [ObservableProperty] private string _steamSyncProgressMessage = "Looking for new owned games";
     [ObservableProperty] private int _steamSyncProgressValue;
     [ObservableProperty] private int _steamSyncProgressMaximum = 1;
 
@@ -85,8 +85,8 @@ public partial class MainViewModel
         SteamStatusMessage = useQr ? "Starting secure Steam sign-in…" : "Checking your Steam library…";
         IsSteamSyncProgressVisible = true;
         IsSteamSyncProgressIndeterminate = true;
-        SteamSyncProgressTitle = "Checking Steam library…";
-        SteamSyncProgressMessage = "Finding owned games";
+        SteamSyncProgressTitle = "Syncing Steam library";
+        SteamSyncProgressMessage = "Looking for new owned games";
         SteamSyncProgressValue = 0;
         SteamSyncProgressMaximum = 1;
 
@@ -115,10 +115,8 @@ public partial class MainViewModel
                 : $"{steamLibraryTotal} games added through Steam Library";
             IsSteamSyncProgressIndeterminate = false;
             SteamSyncProgressValue = SteamSyncProgressMaximum;
-            SteamSyncProgressTitle = "Steam library ready";
-            SteamSyncProgressMessage = result.FailedCount > 0
-                ? $"{result.AddedCount} games added · {result.FailedCount} will retry"
-                : $"{result.AddedCount} games added";
+            SteamSyncProgressTitle = "Syncing Steam library";
+            SteamSyncProgressMessage = "Looking for new owned games";
             IsSteamQrVisible = false;
             await _services.AppSettings.SaveAsync(_appSettings);
             await _services.LibraryStorage.SaveAsync(Games.ToList());
@@ -252,7 +250,7 @@ public partial class MainViewModel
             SteamSyncProgressMaximum = Math.Max(1, latest.TotalCount);
             SteamSyncProgressValue = latest.ProcessedCount;
             SteamSyncProgressTitle = "Syncing Steam library";
-            SteamSyncProgressMessage = $"{latest.AddedCount} games added · {latest.ProcessedCount} of {latest.TotalCount} prepared · Fetching details and artwork";
+            SteamSyncProgressMessage = "Looking for new owned games";
         }
 
         SteamSyncProgress? pending = Volatile.Read(ref _pendingSteamProgress);
