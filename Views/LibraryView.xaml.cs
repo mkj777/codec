@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using Windows.UI.ViewManagement;
 
@@ -75,7 +76,13 @@ namespace Codec.Views
 
         private void LibraryCover_ImageOpened(object sender, RoutedEventArgs e)
         {
-            if (!_uiSettings.AnimationsEnabled || sender is not Image image)
+            if (sender is not Image image)
+                return;
+
+            bool isWideArtwork = image.Source is BitmapSource bitmap && bitmap.PixelWidth > bitmap.PixelHeight;
+            ApplyLibraryCoverLayout(image, isWideArtwork);
+
+            if (!_uiSettings.AnimationsEnabled)
                 return;
 
             double targetOpacity = (image.DataContext as Game)?.LibraryCardOpacity ?? 1d;
@@ -87,11 +94,32 @@ namespace Codec.Views
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
                 FillBehavior = FillBehavior.Stop
             };
-            Storyboard.SetTarget(fade, image);
+            DependencyObject animationTarget = image.Parent is Grid artwork ? artwork : image;
+            Storyboard.SetTarget(fade, animationTarget);
             Storyboard.SetTargetProperty(fade, "Opacity");
             var storyboard = new Storyboard();
             storyboard.Children.Add(fade);
             storyboard.Begin();
+        }
+
+        private void LibraryCover_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            if (sender is Image image)
+                ApplyLibraryCoverLayout(image, false);
+        }
+
+        private static void ApplyLibraryCoverLayout(Image image, bool isWideArtwork)
+        {
+            image.Stretch = isWideArtwork ? Stretch.Uniform : Stretch.UniformToFill;
+
+            if (image.RenderTransform is TranslateTransform translate)
+                translate.Y = isWideArtwork ? -image.ActualHeight * 0.1 : 0;
+
+            if (image.FindName("WideArtworkBackdrop") is UIElement backdrop)
+                backdrop.Visibility = isWideArtwork ? Visibility.Visible : Visibility.Collapsed;
+
+            if (image.FindName("WideArtworkBlur") is UIElement blur)
+                blur.Visibility = isWideArtwork ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void InstallFilter_Click(object sender, RoutedEventArgs e)

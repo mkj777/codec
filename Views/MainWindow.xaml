@@ -1051,8 +1051,17 @@
                                             Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
                                             HorizontalAlignment="Stretch"
                                             Padding="14,9"
-                                            Background="#E76C2B" BorderBrush="#E76C2B"
-                                            Foreground="#1C1A17" CornerRadius="7"/>
+                                            Background="#C85B24" BorderBrush="#C85B24"
+                                            Foreground="#F3EDC9" CornerRadius="7">
+                                        <Button.Resources>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#D7652A"/>
+                                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#D7652A"/>
+                                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#F3EDC9"/>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#B84C1B"/>
+                                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#B84C1B"/>
+                                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#F3EDC9"/>
+                                        </Button.Resources>
+                                    </Button>
                                     <Button Grid.Column="1"
                                             Content="Disconnect"
                                             Click="SteamDisconnect_Click"

@@ -58,20 +58,20 @@
 
                                     <VisualState x:Name="Checked">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#E76C2B"/>
-                                            <Setter Target="ContentPresenter.Foreground" Value="#1C1A17"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#C85B24"/>
+                                            <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="CheckedPointerOver">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#F87D3C"/>
-                                            <Setter Target="ContentPresenter.Foreground" Value="#1C1A17"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#D7652A"/>
+                                            <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="CheckedPressed">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#D65C1A"/>
-                                            <Setter Target="ContentPresenter.Foreground" Value="#1C1A17"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#B84C1B"/>
+                                            <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="CheckedDisabled"/>
@@ -397,23 +397,23 @@
                                     
                                     <VisualState x:Name="Checked">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#E76C2B"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#E76C2B"/>
-                                            <Setter Target="ContentPresenter.Foreground" Value="#1C1A17"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#C85B24"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#C85B24"/>
+                                            <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="CheckedPointerOver">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#F87D3C"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#F87D3C"/>
-                                            <Setter Target="ContentPresenter.Foreground" Value="#1C1A17"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#D7652A"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#D7652A"/>
+                                            <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="CheckedPressed">
                                         <VisualState.Setters>
-                                            <Setter Target="BackgroundBorder.Background" Value="#D65C1A"/>
-                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#D65C1A"/>
-                                            <Setter Target="ContentPresenter.Foreground" Value="#1C1A17"/>
+                                            <Setter Target="BackgroundBorder.Background" Value="#B84C1B"/>
+                                            <Setter Target="BackgroundBorder.BorderBrush" Value="#B84C1B"/>
+                                            <Setter Target="ContentPresenter.Foreground" Value="#F3EDC9"/>
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="CheckedDisabled"/>
@@ -706,10 +706,32 @@
                                 <Grid>
                                 <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                         CornerRadius="8">
-                                    <Image Source="{x:Bind LibraryCapsule}"
-                                           Stretch="UniformToFill"
-                                           ImageOpened="LibraryCover_ImageOpened"
-                                           Opacity="{x:Bind LibraryCardOpacity, Mode=OneWay}"/>
+                                    <Grid x:Name="LibraryArtwork"
+                                          Opacity="{x:Bind LibraryCardOpacity, Mode=OneWay}">
+                                        <Image x:Name="WideArtworkBackdrop"
+                                               Source="{x:Bind LibraryCapsule}"
+                                               Stretch="UniformToFill"
+                                               Opacity="0.55"
+                                               Visibility="Collapsed"/>
+                                        <Border x:Name="WideArtworkBlur"
+                                                Visibility="Collapsed">
+                                            <Border.Background>
+                                                <AcrylicBrush TintColor="#1C1A17"
+                                                              TintOpacity="0.58"
+                                                              TintLuminosityOpacity="0.35"
+                                                              FallbackColor="#D91C1A17"/>
+                                            </Border.Background>
+                                        </Border>
+                                        <Image x:Name="LibraryCoverImage"
+                                               Source="{x:Bind LibraryCapsule}"
+                                               Stretch="UniformToFill"
+                                               ImageOpened="LibraryCover_ImageOpened"
+                                               DataContextChanged="LibraryCover_DataContextChanged">
+                                            <Image.RenderTransform>
+                                                <TranslateTransform/>
+                                            </Image.RenderTransform>
+                                        </Image>
+                                    </Grid>
                                 </Border>
 
                                 <Border Background="#E61C1A17"
