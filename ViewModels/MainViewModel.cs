@@ -77,9 +77,9 @@ namespace Codec.ViewModels
         // Observable Properties
         // ---------------------------------------------------------------------------------
 
-        public bool HasGames => Games.Count > 0;
-        public bool IsEmptyLibrary => !HasGames;
         private IEnumerable<Game> ReadyLibraryGames => Games.Where(IsReadyForLibrary);
+        public bool HasGames => ReadyLibraryGames.Any();
+        public bool IsEmptyLibrary => !HasGames;
         public int LibraryGameCount => ReadyLibraryGames.Count();
         public string LibraryGameLabel => LibraryGameCount == 1 ? "game" : "games";
         public int InstalledLibraryGameCount => ReadyLibraryGames.Count(game => game.IsInstalled);
@@ -565,6 +565,9 @@ namespace Codec.ViewModels
         private void Games_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             SyncLibraryGameSubscriptions(e);
+            if (IsSteamSyncing)
+                return;
+
             OnPropertyChanged(nameof(HasGames));
             OnPropertyChanged(nameof(IsEmptyLibrary));
             OnPropertyChanged(nameof(IsLibraryVisible));
@@ -705,7 +708,7 @@ namespace Codec.ViewModels
 
         private void RefreshAvailableImportSources()
         {
-            var sources = Games
+            var sources = ReadyLibraryGames
                 .Select(g => g.ImportedFromDisplay)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -804,8 +807,9 @@ namespace Codec.ViewModels
             return IsReadyForLibrary(game) && MatchesImportFilter(game) && MatchesInstallFilter(game);
         }
 
-        private static bool IsReadyForLibrary(Game game)
-            => !game.IsSteamOwned || (game.IsFullyImported && game.DisplayedAssetsReady);
+        private bool IsReadyForLibrary(Game game)
+            => (IsSteamConnected || !game.IsOwnedOnly) &&
+               (!game.IsSteamOwned || (game.IsFullyImported && game.DisplayedAssetsReady));
 
         private bool MatchesImportFilter(Game game)
             => string.IsNullOrEmpty(SelectedImportFilter) ||

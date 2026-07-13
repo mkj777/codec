@@ -126,7 +126,7 @@ public sealed class SteamLibraryService
         var options = new ParallelOptions
         {
             CancellationToken = cancellationToken,
-            MaxDegreeOfParallelism = 32
+            MaxDegreeOfParallelism = 16
         };
 
         await Parallel.ForEachAsync(toEnrich, options, async (workItem, ct) =>
@@ -170,14 +170,6 @@ public sealed class SteamLibraryService
     }
 
     public Task DeleteTokenAsync() => _auth.DeleteTokenAsync();
-
-    public static int RemoveOwnedOnlyGames(IList<Game> library)
-    {
-        Game[] removable = library.Where(game => game.IsSteamOwned && !game.IsInstalled).ToArray();
-        foreach (Game game in removable)
-            library.Remove(game);
-        return removable.Length;
-    }
 
     private sealed record SteamEnrichmentWorkItem(Game Game, bool IsNew);
 }

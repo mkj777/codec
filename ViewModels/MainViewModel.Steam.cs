@@ -127,6 +127,7 @@ public partial class MainViewModel
             RefreshAvailableImportSources();
             RefreshSidebarFilteredGames();
             RefreshDisplayedGames();
+            NotifySteamLibraryVisibilityChanged();
             OnPropertyChanged(nameof(IsSteamConnected));
             OnPropertyChanged(nameof(SteamAccountDisplay));
             if (Games.Count > 0)
@@ -172,14 +173,16 @@ public partial class MainViewModel
         IsSteamQrVisible = false;
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
+        RefreshAvailableImportSources();
+        RefreshSidebarFilteredGames();
+        RefreshDisplayedGames();
+        NotifySteamLibraryVisibilityChanged();
         await _services.AppSettings.SaveAsync(_appSettings);
     }
 
-    public async Task DisconnectSteamAsync(bool removeOwnedOnlyGames)
+    public async Task DisconnectSteamAsync()
     {
         await _services.SteamLibrary.DeleteTokenAsync();
-        if (removeOwnedOnlyGames)
-            SteamLibraryService.RemoveOwnedOnlyGames(Games);
 
         SteamAccountName = null;
         _appSettings.SteamAccountName = null;
@@ -189,10 +192,19 @@ public partial class MainViewModel
         IsSteamSyncProgressVisible = false;
         await _services.AppSettings.SaveAsync(_appSettings);
         await _services.LibraryStorage.SaveAsync(Games.ToList());
+        RefreshAvailableImportSources();
         RefreshSidebarFilteredGames();
         RefreshDisplayedGames();
+        NotifySteamLibraryVisibilityChanged();
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
+    }
+
+    private void NotifySteamLibraryVisibilityChanged()
+    {
+        OnPropertyChanged(nameof(HasGames));
+        OnPropertyChanged(nameof(IsEmptyLibrary));
+        NotifyLibrarySummaryChanged();
     }
 
     private async Task<Game?> EnrichSteamGameAsync(
@@ -230,15 +242,9 @@ public partial class MainViewModel
         {
             Game? existing = Games.FirstOrDefault(game => game.Id == enriched.Id);
             if (existing != null)
-            {
                 existing.ApplyHydrationSnapshot(enriched);
-                RefreshSidebarFilteredGames();
-                RefreshDisplayedGames();
-            }
             else if (isNew)
-            {
                 InsertGameSorted(enriched);
-            }
 
             IsOnboardingVisible = false;
         });

@@ -625,15 +625,16 @@ namespace Codec.Views
             var dialog = new ContentDialog
             {
                 Title = "Disconnect Steam",
-                Content = "Keep owned but not installed Steam apps in your Codec library? Installed apps always stay.",
-                PrimaryButtonText = "Remove online apps",
-                SecondaryButtonText = "Keep apps",
-                DefaultButton = ContentDialogButton.Secondary,
+                Content = "Your Steam games will be hidden until you connect again. Installed games stay visible.",
+                PrimaryButtonText = "Disconnect",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = Content.XamlRoot
             };
 
             ContentDialogResult result = await dialog.ShowAsync();
-            await ViewModel.DisconnectSteamAsync(removeOwnedOnlyGames: result == ContentDialogResult.Primary);
+            if (result == ContentDialogResult.Primary)
+                await ViewModel.DisconnectSteamAsync();
         }
 
         private async void DebugCheckIds_Click(object sender, RoutedEventArgs e)
