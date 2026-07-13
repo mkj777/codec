@@ -46,6 +46,7 @@ namespace Codec.ViewModels
         public ObservableCollection<ImportFilterItem> AvailableImportSources { get; } = new();
 
         public bool HasStartupCovers => StartupCoverGames.Count > 0;
+        public bool HasMultipleImportSources => AvailableImportSources.Count > 1;
 
         [ObservableProperty]
         private string? _selectedImportFilter;
@@ -729,10 +730,11 @@ namespace Codec.ViewModels
                 }
             }
 
-            if (SelectedImportFilter != null && !sources.Contains(SelectedImportFilter, StringComparer.OrdinalIgnoreCase))
-            {
+            if (sources.Count <= 1 ||
+                SelectedImportFilter != null && !sources.Contains(SelectedImportFilter, StringComparer.OrdinalIgnoreCase))
                 SelectedImportFilter = null;
-            }
+
+            OnPropertyChanged(nameof(HasMultipleImportSources));
         }
 
         private void RefreshDisplayedGames()

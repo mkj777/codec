@@ -684,6 +684,7 @@
                     </StackPanel>
 
                     <ItemsControl ItemsSource="{Binding AvailableImportSources}"
+                                  Visibility="{Binding HasMultipleImportSources, Converter={StaticResource BoolToVisibilityConverter}}"
                                   Margin="8,0,0,0"
                                   VerticalAlignment="Center">
                         <ItemsControl.ItemsPanel>
