@@ -13,6 +13,10 @@ namespace Codec.ViewModels
 {
     public partial class MainViewModel
     {
+        private readonly object _silentImageUpdatePauseLock = new();
+        private int _silentImageUpdatePauseCount;
+        private TaskCompletionSource<bool>? _silentImageUpdateResumeSignal;
+
         // ---------------------------------------------------------------------------------
         // Cover Management
         // ---------------------------------------------------------------------------------
@@ -88,6 +92,8 @@ namespace Codec.ViewModels
 
             foreach (var game in games)
             {
+                await WaitForSilentImageUpdateResumeAsync().ConfigureAwait(false);
+
                 try
                 {
                     // Create hydration snapshot of the game
@@ -194,6 +200,49 @@ namespace Codec.ViewModels
                 string term = Uri.EscapeDataString(game.EffectiveMetadataLookupName);
                 _services.Cache.QueueWarmup("rawg", $"https://codec-api-proxy.vercel.app/api/rawg/search?term={term}", TimeSpan.FromDays(1));
             }
+        }
+
+        private void PauseSilentImageUpdate()
+        {
+            lock (_silentImageUpdatePauseLock)
+            {
+                if (_silentImageUpdatePauseCount++ == 0)
+                {
+                    _silentImageUpdateResumeSignal = new TaskCompletionSource<bool>(
+                        TaskCreationOptions.RunContinuationsAsynchronously);
+                    Debug.WriteLine("[SilentUpdate] Pause requested by priority work.");
+                }
+            }
+        }
+
+        private void ResumeSilentImageUpdate()
+        {
+            TaskCompletionSource<bool>? resumeSignal = null;
+
+            lock (_silentImageUpdatePauseLock)
+            {
+                if (_silentImageUpdatePauseCount == 0 || --_silentImageUpdatePauseCount != 0)
+                    return;
+
+                resumeSignal = _silentImageUpdateResumeSignal;
+                _silentImageUpdateResumeSignal = null;
+            }
+
+            Debug.WriteLine("[SilentUpdate] Priority work finished; resuming.");
+            resumeSignal?.TrySetResult(true);
+        }
+
+        private async Task WaitForSilentImageUpdateResumeAsync()
+        {
+            Task? resumeTask;
+            lock (_silentImageUpdatePauseLock)
+                resumeTask = _silentImageUpdateResumeSignal?.Task;
+
+            if (resumeTask == null)
+                return;
+
+            Debug.WriteLine("[SilentUpdate] Paused before next game.");
+            await resumeTask.ConfigureAwait(false);
         }
 
         // ---------------------------------------------------------------------------------

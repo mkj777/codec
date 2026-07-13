@@ -467,19 +467,35 @@ namespace Codec.ViewModels
         [RelayCommand]
         private async Task ScanGamesAsync()
         {
-            IsOnboardingVisible = false;
-            await _importCoordinator.StartScanAsync();
-            await _importCoordinator.WaitForIdleAsync();
-            await RefreshHeuristicInstallStatesAsync();
-            IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
+            PauseSilentImageUpdate();
+            try
+            {
+                IsOnboardingVisible = false;
+                await _importCoordinator.StartScanAsync();
+                await _importCoordinator.WaitForIdleAsync();
+                await RefreshHeuristicInstallStatesAsync();
+                IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
+            }
+            finally
+            {
+                ResumeSilentImageUpdate();
+            }
         }
 
         private async Task ScanGamesOnStartupAsync()
         {
-            IsStartupScanToastVisible = true;
-            await _importCoordinator.StartScanAsync();
-            await _importCoordinator.WaitForIdleAsync();
-            await RefreshHeuristicInstallStatesAsync();
+            PauseSilentImageUpdate();
+            try
+            {
+                IsStartupScanToastVisible = true;
+                await _importCoordinator.StartScanAsync();
+                await _importCoordinator.WaitForIdleAsync();
+                await RefreshHeuristicInstallStatesAsync();
+            }
+            finally
+            {
+                ResumeSilentImageUpdate();
+            }
         }
 
         public async Task<ImportEnqueueResult> AddGameCommand(string executablePath)

@@ -90,6 +90,7 @@ public partial class MainViewModel
         SteamSyncProgressValue = 0;
         SteamSyncProgressMaximum = 1;
 
+        PauseSilentImageUpdate();
         try
         {
             IReadOnlyCollection<Game> librarySnapshot = Games.ToList();
@@ -155,6 +156,7 @@ public partial class MainViewModel
             IsSteamSyncing = false;
             _steamLoginCts.Dispose();
             _steamLoginCts = null;
+            ResumeSilentImageUpdate();
             _steamSyncGate.Release();
         }
     }
