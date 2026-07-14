@@ -36,6 +36,10 @@ namespace Codec.Views
         private readonly TaskCompletionSource<bool> _libraryReadyForStartup = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _startupSequenceStarted;
         private bool _isResetting;
+        private bool _allowWindowClose;
+        private bool _closePromptVisible;
+        private TaskCompletionSource<bool?>? _closeChoiceCompletion;
+        private SystemTrayIcon? _trayIcon;
 
         public MainViewModel ViewModel { get; }
 
@@ -51,6 +55,7 @@ namespace Codec.Views
             RootGrid.DataContext = ViewModel;
             ExtendsContentIntoTitleBar = true;
             AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"));
+            AppWindow.Closing += AppWindow_Closing;
             ConfigureWindowConstraints();
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
@@ -83,6 +88,9 @@ namespace Codec.Views
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(ViewModel.CloseToTray) && !ViewModel.CloseToTray)
+                DisposeTrayIcon();
+
             if (e.PropertyName == nameof(ViewModel.IsMediaOverlayOpen) && !ViewModel.IsMediaOverlayOpen)
                 DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
                     () => StopAllMediaPlayers(MediaOverlayFlipView));
@@ -103,6 +111,13 @@ namespace Codec.Views
 
         private void RootGrid_KeyDown(object sender, KeyRoutedEventArgs e)
         {
+            if (e.Key == VirtualKey.Escape && _closePromptVisible)
+            {
+                CompleteCloseChoice(null);
+                e.Handled = true;
+                return;
+            }
+
             bool controlDown = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
                 & CoreVirtualKeyStates.Down) == CoreVirtualKeyStates.Down;
 
@@ -521,6 +536,110 @@ namespace Codec.Views
                 else
                     StopAllMediaPlayers(child);
             }
+        }
+
+        private async void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
+        {
+            if (_allowWindowClose)
+            {
+                DisposeTrayIcon();
+                return;
+            }
+
+            args.Cancel = true;
+
+            if (_closePromptVisible)
+                return;
+
+            if (ViewModel.HasCloseBehaviorChoice)
+            {
+                if (ViewModel.CloseToTray)
+                    HideToTray();
+                else
+                    CloseCompletely();
+                return;
+            }
+
+            _closePromptVisible = true;
+            try
+            {
+                _closeChoiceCompletion = new TaskCompletionSource<bool?>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+                CloseChoiceOverlay.Visibility = Visibility.Visible;
+                KeepCodecOpenButton.Focus(FocusState.Programmatic);
+
+                bool? keepOpen = await _closeChoiceCompletion.Task;
+                if (keepOpen == true)
+                {
+                    await ViewModel.SetCloseToTrayAsync(true);
+                    HideToTray();
+                }
+                else if (keepOpen == false)
+                {
+                    await ViewModel.SetCloseToTrayAsync(false);
+                    CloseCompletely();
+                }
+            }
+            finally
+            {
+                CloseChoiceOverlay.Visibility = Visibility.Collapsed;
+                _closeChoiceCompletion = null;
+                _closePromptVisible = false;
+            }
+        }
+
+        private void KeepCodecOpen_Click(object sender, RoutedEventArgs e)
+            => CompleteCloseChoice(true);
+
+        private void CloseCodec_Click(object sender, RoutedEventArgs e)
+            => CompleteCloseChoice(false);
+
+        private void CloseChoiceCancel_Click(object sender, RoutedEventArgs e)
+            => CompleteCloseChoice(null);
+
+        private void CloseChoiceScrim_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+            => CompleteCloseChoice(null);
+
+        private void CompleteCloseChoice(bool? keepOpen)
+            => _closeChoiceCompletion?.TrySetResult(keepOpen);
+
+        private void HideToTray()
+        {
+            EnsureTrayIcon();
+            AppWindow.Hide();
+        }
+
+        private void RestoreFromTray()
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                AppWindow.Show();
+                Activate();
+            });
+        }
+
+        private void CloseCompletely()
+        {
+            _allowWindowClose = true;
+            DisposeTrayIcon();
+            Close();
+        }
+
+        private void EnsureTrayIcon()
+        {
+            if (_trayIcon is not null)
+                return;
+
+            _trayIcon = new SystemTrayIcon(
+                Path.Combine(AppContext.BaseDirectory, "assets", "icon.ico"),
+                RestoreFromTray,
+                () => DispatcherQueue.TryEnqueue(CloseCompletely));
+        }
+
+        private void DisposeTrayIcon()
+        {
+            _trayIcon?.Dispose();
+            _trayIcon = null;
         }
 
         private void ConfigureWindowConstraints()

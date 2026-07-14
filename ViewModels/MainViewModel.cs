@@ -164,6 +164,8 @@ namespace Codec.ViewModels
         private bool _isSidebarCollapsed;
         [ObservableProperty] private bool _scanOnStartup;
         [ObservableProperty] private bool _launchSteamSilent;
+        [ObservableProperty] private bool _closeToTray;
+        public bool HasCloseBehaviorChoice => _appSettings.CloseToTray.HasValue;
         [ObservableProperty] private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
         private bool _isBackgroundStartupScan;
@@ -323,9 +325,11 @@ namespace Codec.ViewModels
             _suppressSettingsSave = true;
             ScanOnStartup = _appSettings.ScanOnStartup;
             LaunchSteamSilent = _appSettings.LaunchSteamSilent;
+            CloseToTray = _appSettings.CloseToTray ?? false;
             SelectedSortIndex = _appSettings.SelectedSortIndex;
             IsSidebarCollapsed = _appSettings.IsSidebarCollapsed;
             _suppressSettingsSave = false;
+            OnPropertyChanged(nameof(HasCloseBehaviorChoice));
             InitializeSteamIntegration();
 
             var saved = await _services.LibraryStorage.LoadAsync();
@@ -451,6 +455,24 @@ namespace Codec.ViewModels
             if (_suppressSettingsSave) return;
             _appSettings.LaunchSteamSilent = value;
             _ = _services.AppSettings.SaveAsync(_appSettings);
+        }
+
+        partial void OnCloseToTrayChanged(bool value)
+        {
+            if (_suppressSettingsSave) return;
+            _appSettings.CloseToTray = value;
+            OnPropertyChanged(nameof(HasCloseBehaviorChoice));
+            _ = _services.AppSettings.SaveAsync(_appSettings);
+        }
+
+        public async Task SetCloseToTrayAsync(bool value)
+        {
+            _suppressSettingsSave = true;
+            CloseToTray = value;
+            _suppressSettingsSave = false;
+            _appSettings.CloseToTray = value;
+            OnPropertyChanged(nameof(HasCloseBehaviorChoice));
+            await _services.AppSettings.SaveAsync(_appSettings);
         }
 
         public string? TryLaunchSteamSilent()

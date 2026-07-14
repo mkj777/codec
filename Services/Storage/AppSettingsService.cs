@@ -11,6 +11,7 @@ namespace Codec.Services.Storage
         public bool OnboardingCompleted { get; set; }
         public bool ScanOnStartup { get; set; }
         public bool LaunchSteamSilent { get; set; }
+        public bool? CloseToTray { get; set; }
         public string? SteamClientPath { get; set; }
         public string? EpicLauncherPath { get; set; }
         public int SelectedSortIndex { get; set; }
