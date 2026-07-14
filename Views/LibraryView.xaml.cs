@@ -32,6 +32,7 @@ namespace Codec.Views
             {
                 _viewModel.PropertyChanged += ViewModel_PropertyChanged;
                 UpdateSortOptionHighlight(_viewModel.SelectedSortIndex);
+                UpdateInstallFilterHighlight(_viewModel.SelectedInstallFilter);
             }
         }
 
@@ -39,6 +40,9 @@ namespace Codec.Views
         {
             if (e.PropertyName == nameof(MainViewModel.SelectedSortIndex) && _viewModel != null)
                 UpdateSortOptionHighlight(_viewModel.SelectedSortIndex);
+
+            if (e.PropertyName == nameof(MainViewModel.SelectedInstallFilter) && _viewModel != null)
+                UpdateInstallFilterHighlight(_viewModel.SelectedInstallFilter);
         }
 
         private void LibraryItem_Click(object sender, RoutedEventArgs e)
@@ -119,11 +123,16 @@ namespace Codec.Views
             if (sender is not ToggleButton selected || !int.TryParse(selected.Tag?.ToString(), out int value))
                 return;
 
+            UpdateInstallFilterHighlight(value);
+            if (ViewModel != null)
+                ViewModel.SelectedInstallFilter = value;
+        }
+
+        private void UpdateInstallFilterHighlight(int value)
+        {
             InstallFilterAll.IsChecked = value == 0;
             InstallFilterInstalled.IsChecked = value == 1;
             InstallFilterOwnedOnly.IsChecked = value == 2;
-            if (ViewModel != null)
-                ViewModel.SelectedInstallFilter = value;
         }
 
         private void UpdateSortOptionHighlight(int activeIndex)

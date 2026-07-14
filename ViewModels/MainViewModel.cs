@@ -722,6 +722,7 @@ namespace Codec.ViewModels
 
         partial void OnSelectedImportFilterChanged(string? value)
         {
+            SynchronizeImportFilterSelection();
             RefreshSidebarFilteredGames();
             RefreshDisplayedGames();
         }
@@ -771,7 +772,28 @@ namespace Codec.ViewModels
                 SelectedImportFilter != null && !sources.Contains(SelectedImportFilter, StringComparer.OrdinalIgnoreCase))
                 SelectedImportFilter = null;
 
+            SynchronizeImportFilterSelection();
             OnPropertyChanged(nameof(HasMultipleImportSources));
+        }
+
+        private void SynchronizeImportFilterSelection()
+        {
+            bool wasUpdatingFilters = _isUpdatingFilters;
+            _isUpdatingFilters = true;
+            try
+            {
+                foreach (var item in AvailableImportSources)
+                {
+                    item.IsSelected = string.Equals(
+                        item.Name,
+                        SelectedImportFilter,
+                        StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            finally
+            {
+                _isUpdatingFilters = wasUpdatingFilters;
+            }
         }
 
         private void RefreshDisplayedGames()
