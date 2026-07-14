@@ -327,8 +327,10 @@
                                   ItemsSource="{Binding SidebarFilteredGames}"
                                   SelectedItem="{Binding SidebarSelectedItem, Mode=TwoWay}"
                                   IsEnabled="{Binding IsUiEnabled}"
+                                  IsItemClickEnabled="True"
                                   SelectionMode="Single"
                                   SelectionChanged="SidebarGameList_SelectionChanged"
+                                  ItemClick="SidebarGameList_ItemClick"
                                   ContainerContentChanging="SidebarGameList_ContainerContentChanging"
                                   BorderThickness="0"
                                   Background="Transparent">

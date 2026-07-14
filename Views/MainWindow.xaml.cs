@@ -545,8 +545,11 @@ namespace Codec.Views
                 return;
 
             UpdateSidebarGameListForegrounds(list);
+        }
 
-            if (list.SelectedItem is Game game)
+        private void SidebarGameList_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (e.ClickedItem is Game game)
                 ViewModel.SelectGameCommand.Execute(game);
         }
 
