@@ -637,6 +637,18 @@ namespace Codec.ViewModels
             if (IsSteamSyncing)
                 return;
 
+            if (e.PropertyName == nameof(Game.IsLibraryCoverReady))
+            {
+                OnPropertyChanged(nameof(HasGames));
+                OnPropertyChanged(nameof(IsEmptyLibrary));
+                OnPropertyChanged(nameof(IsLibraryVisible));
+                NotifyLibrarySummaryChanged();
+                RefreshSidebarFilteredGames();
+                RefreshAvailableImportSources();
+                RefreshDisplayedGames();
+                return;
+            }
+
             if (e.PropertyName is nameof(Game.IsInstalled) or nameof(Game.FolderSize) or
                 nameof(Game.IsSteamOwned) or nameof(Game.IsFullyImported) or nameof(Game.DisplayedAssetsReady))
             {
@@ -765,7 +777,22 @@ namespace Codec.ViewModels
         private void RefreshDisplayedGames()
         {
             var sortedFiltered = GetSortedGames(Games.Where(MatchesActiveFilters)).ToList();
-            DisplayedGames.ReplaceAll(sortedFiltered);
+
+            for (int index = 0; index < sortedFiltered.Count; index++)
+            {
+                Game game = sortedFiltered[index];
+                if (index < DisplayedGames.Count && ReferenceEquals(DisplayedGames[index], game))
+                    continue;
+
+                int currentIndex = DisplayedGames.IndexOf(game);
+                if (currentIndex >= 0)
+                    DisplayedGames.Move(currentIndex, index);
+                else
+                    DisplayedGames.Insert(index, game);
+            }
+
+            while (DisplayedGames.Count > sortedFiltered.Count)
+                DisplayedGames.RemoveAt(DisplayedGames.Count - 1);
         }
 
         private void RefreshSidebarFilteredGames()
@@ -803,7 +830,8 @@ namespace Codec.ViewModels
         }
 
         private bool IsReadyForLibrary(Game game)
-            => (IsSteamConnected || !game.IsOwnedOnly) &&
+            => game.IsLibraryCoverReady &&
+               (IsSteamConnected || !game.IsOwnedOnly) &&
                (!game.IsSteamOwned || game.IsFullyImported);
 
         private bool MatchesImportFilter(Game game)

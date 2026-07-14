@@ -265,14 +265,20 @@ namespace Codec.Models
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibraryCapsule))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
+        [NotifyPropertyChangedFor(nameof(IsLibraryCoverReady))]
         [property: JsonPropertyName("LibCapsuleCache")]
         private string? libraryCapsuleCache;
         private const string PlaceholderLibraryCapsuleRelativePath = "Assets/noCover.png";
         [JsonIgnore]
         public string LibraryCapsule => GetEffectiveAssetPath(LibraryCapsuleCache, LibraryCapsuleUrl, PlaceholderLibraryCapsuleRelativePath)!;
+        [JsonIgnore]
+        public bool IsLibraryCoverReady => HasLocalAsset(LibraryCapsuleCache);
 
         internal void RefreshLibraryCapsuleBinding()
-            => OnPropertyChanged(nameof(LibraryCapsule));
+        {
+            OnPropertyChanged(nameof(LibraryCapsule));
+            OnPropertyChanged(nameof(IsLibraryCoverReady));
+        }
 
         // library_hero
         [ObservableProperty]

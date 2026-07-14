@@ -452,10 +452,12 @@ namespace Codec.Views
             storyboard.Completed += (_, _) =>
             {
                 StartupOverlay.Visibility = Visibility.Collapsed;
-                if (ViewModel.IsOnboardingVisible)
-                    PlayOnboardingEntranceAnimation();
                 completion.TrySetResult(true);
             };
+
+            if (ViewModel.IsOnboardingVisible)
+                PlayOnboardingEntranceAnimation();
+
             storyboard.Begin();
             return completion.Task;
         }
