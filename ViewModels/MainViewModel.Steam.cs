@@ -36,7 +36,6 @@ public partial class MainViewModel
     private bool _isSteamSyncing;
     [ObservableProperty] private bool _isSteamQrVisible;
     [ObservableProperty] private ImageSource? _steamQrCode;
-    [ObservableProperty] private string _steamStatusMessage = "Connect Steam to add everything you own.";
     [ObservableProperty] private string _steamLastSyncText = "Never synced";
     [ObservableProperty] private bool _isSteamSyncProgressVisible;
     [ObservableProperty] private bool _isSteamSyncProgressIndeterminate = true;
@@ -67,7 +66,6 @@ public partial class MainViewModel
         {
             SteamQrCode = await CreateImageSourceAsync(png);
             IsSteamQrVisible = true;
-            SteamStatusMessage = "Scan with the Steam Mobile app and confirm the sign-in.";
         });
     }
 
@@ -87,7 +85,6 @@ public partial class MainViewModel
         int syncGeneration = Interlocked.Increment(ref _steamSyncGeneration);
         _steamProgressFinalized = false;
         IsSteamSyncing = true;
-        SteamStatusMessage = useQr ? "Starting secure Steam sign-in…" : "Checking your Steam library…";
         IsSteamSyncProgressVisible = !isBackground;
         IsSteamSyncProgressIndeterminate = true;
         SteamSyncProgressTitle = "Syncing Steam library";
@@ -114,11 +111,6 @@ public partial class MainViewModel
             _appSettings.SteamAccountName = result.AccountName;
             _appSettings.LastSteamSyncUtc = DateTime.UtcNow;
             SteamLastSyncText = $"Last synced {DateTime.Now:g}";
-            int steamLibraryTotal = Games.Count(game =>
-                game.IsSteamOwned && game.IsFullyImported && game.DisplayedAssetsReady);
-            SteamStatusMessage = steamLibraryTotal == 1
-                ? "1 game added through Steam Library"
-                : $"{steamLibraryTotal} games added through Steam Library";
             IsSteamSyncProgressIndeterminate = false;
             SteamSyncProgressValue = SteamSyncProgressMaximum;
             SteamSyncProgressTitle = "Syncing Steam library";
@@ -140,7 +132,6 @@ public partial class MainViewModel
         catch (OperationCanceledException)
         {
             FinalizeSteamProgress();
-            SteamStatusMessage = "Steam sign-in was cancelled.";
             SteamSyncProgressTitle = "Steam sync cancelled";
             SteamSyncProgressMessage = "No unfinished games were added";
             IsSteamSyncProgressIndeterminate = false;
@@ -151,7 +142,6 @@ public partial class MainViewModel
         {
             FinalizeSteamProgress();
             Debug.WriteLine($"[Steam] Sync failed: {ex}");
-            SteamStatusMessage = ex.Message;
             IsSteamQrVisible = false;
             SteamSyncProgressTitle = "Steam sync stopped";
             SteamSyncProgressMessage = ex.Message;
@@ -174,7 +164,6 @@ public partial class MainViewModel
         SteamAccountName = accountName;
         _appSettings.SteamAccountName = accountName;
         SteamLastSyncText = "Connected · Syncing library";
-        SteamStatusMessage = "Connected. Adding your Steam games…";
         IsSteamQrVisible = false;
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
@@ -193,7 +182,6 @@ public partial class MainViewModel
         _appSettings.SteamAccountName = null;
         _appSettings.LastSteamSyncUtc = null;
         SteamLastSyncText = "Never synced";
-        SteamStatusMessage = "Steam disconnected.";
         IsSteamSyncProgressVisible = false;
         await _services.AppSettings.SaveAsync(_appSettings);
         await _services.LibraryStorage.SaveAsync(Games.ToList());

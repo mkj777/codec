@@ -1036,10 +1036,6 @@
                                         Foreground="#9E8E78"
                                         Visibility="{Binding IsSteamQrVisible, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
-                                <TextBlock Text="{Binding SteamStatusMessage}"
-                                           FontSize="11.5" Foreground="#9E8E78"
-                                           TextWrapping="WrapWholeWords"/>
-
                                 <ProgressBar IsIndeterminate="True"
                                              Height="3"
                                              Foreground="#E76C2B"
