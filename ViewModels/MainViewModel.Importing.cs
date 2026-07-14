@@ -67,13 +67,14 @@ namespace Codec.ViewModels
 
                 IsScanning = snapshot.IsScanning;
                 IsImportActive = snapshot.IsActive;
-                IsImportStatusVisible = snapshot.IsActive && !IsStartupScanToastVisible;
+                IsImportStatusVisible = snapshot.IsActive && !_isBackgroundStartupScan;
                 AddedCount = snapshot.AddedCount;
                 ImportRemainingCount = snapshot.QueuedCount + snapshot.ProcessingCount;
                 IsOnboardingVisible = Games.Count == 0 && !snapshot.IsActive;
                 if (!snapshot.IsActive)
                 {
-                    IsStartupScanToastVisible = false;
+                    bool wasBackgroundStartupScan = _isBackgroundStartupScan;
+                    _isBackgroundStartupScan = false;
                     bool settingsChanged = false;
                     string? detectedSteam = _importCoordinator.DetectedSteamClientPath;
                     if (!string.IsNullOrEmpty(detectedSteam) && detectedSteam != _appSettings.SteamClientPath)
@@ -94,7 +95,7 @@ namespace Codec.ViewModels
                         _ = _services.AppSettings.SaveAsync(_appSettings);
                     }
 
-                    if (wasActive)
+                    if (wasActive && (!wasBackgroundStartupScan || snapshot.AddedCount > 0))
                     {
                         ScanCompleteAddedCount = snapshot.AddedCount;
                         IsScanCompleteVisible = true;

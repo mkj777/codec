@@ -1742,27 +1742,6 @@
                 </Grid>
             </Border>
 
-            <!-- Startup background scan toast -->
-            <Border Visibility="{Binding IsStartupScanToastVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                    Style="{StaticResource NotificationCardStyle}">
-                <Grid ColumnSpacing="14">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="24"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <ProgressRing Grid.Column="0"
-                                  IsActive="True"
-                                  Width="20"
-                                  Height="20"
-                                  VerticalAlignment="Center"/>
-
-                    <TextBlock Grid.Column="1"
-                               Text="Looking for new games"
-                               Style="{StaticResource NotificationTitleStyle}"
-                               VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
         </StackPanel>
 
         <!-- Loading overlay for initial load or scanning -->

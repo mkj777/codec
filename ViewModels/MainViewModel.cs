@@ -166,7 +166,7 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _launchSteamSilent;
         [ObservableProperty] private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
-        [ObservableProperty] private bool _isStartupScanToastVisible;
+        private bool _isBackgroundStartupScan;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsScanCompleteEffectiveVisible))]
@@ -349,7 +349,7 @@ namespace Codec.ViewModels
             await RunMaintenanceStepAsync("install states", RefreshHeuristicInstallStatesAsync);
 
             if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
-                await RunMaintenanceStepAsync("startup scan", () => ScanGamesOnStartupAsync(silent: true));
+                await RunMaintenanceStepAsync("startup scan", ScanGamesOnStartupAsync);
 
             if (IsSteamConnected)
                 await RunMaintenanceStepAsync("Steam sync", () => SyncSteamLibraryCoreAsync(useQr: false, isBackground: true));
@@ -489,12 +489,12 @@ namespace Codec.ViewModels
             }
         }
 
-        private async Task ScanGamesOnStartupAsync(bool silent = false)
+        private async Task ScanGamesOnStartupAsync()
         {
             PauseSilentImageUpdate();
             try
             {
-                IsStartupScanToastVisible = !silent;
+                _isBackgroundStartupScan = true;
                 await _importCoordinator.StartScanAsync();
                 await _importCoordinator.WaitForIdleAsync();
                 await RefreshHeuristicInstallStatesAsync();
