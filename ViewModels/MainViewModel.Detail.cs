@@ -294,7 +294,8 @@ namespace Codec.ViewModels
             if (SelectedGame == null || (!SelectedGame.CanLaunch && !SelectedGame.CanInstall))
                 return;
 
-            SetLaunchFeedbackState(SelectedGame.CanInstall
+            bool isInstallRequest = SelectedGame.CanInstall;
+            SetLaunchFeedbackState(isInstallRequest
                 ? LaunchFeedbackState.RequestingInstall
                 : LaunchFeedbackState.Launching);
             bool launched = false;
@@ -366,7 +367,7 @@ namespace Codec.ViewModels
                 return;
             }
 
-            await Task.Delay(12000);
+            await Task.Delay(isInstallRequest ? 4000 : 12000);
             SetLaunchFeedbackState(LaunchFeedbackState.Idle);
         }
 
