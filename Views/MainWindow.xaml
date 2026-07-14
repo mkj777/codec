@@ -479,7 +479,8 @@
                 </Border>
 
                 <!-- Library grid UserControl -->
-                <views:LibraryView Grid.Column="1"
+                <views:LibraryView x:Name="LibraryHost"
+                                   Grid.Column="1"
                                    Margin="22,32,22,0"
                                    HorizontalAlignment="Stretch"
                                    VerticalAlignment="Stretch"

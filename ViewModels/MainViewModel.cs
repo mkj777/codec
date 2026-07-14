@@ -1,4 +1,5 @@
 using Codec.Models;
+using Codec.Helpers;
 using Codec.Services;
 using Codec.Services.Importing;
 using Codec.Services.Resolving;
@@ -38,10 +39,11 @@ namespace Codec.ViewModels
         private AppSettings _appSettings = new();
         private bool _suppressSettingsSave = false;
         private readonly HashSet<Game> _trackedLibraryGames = new();
+        private Task? _backgroundMaintenanceTask;
 
-        public ObservableCollection<Game> Games { get; set; } = new();
-        public ObservableCollection<Game> SidebarFilteredGames { get; } = new();
-        public ObservableCollection<Game> DisplayedGames { get; } = new();
+        public RangeObservableCollection<Game> Games { get; } = new();
+        public RangeObservableCollection<Game> SidebarFilteredGames { get; } = new();
+        public RangeObservableCollection<Game> DisplayedGames { get; } = new();
         public ObservableCollection<Game> StartupCoverGames { get; } = new();
         public ObservableCollection<ImportFilterItem> AvailableImportSources { get; } = new();
 
@@ -328,28 +330,45 @@ namespace Codec.ViewModels
 
             var saved = await _services.LibraryStorage.LoadAsync();
             PrepareStartupCoverGames(saved);
-            await EnsureCoversAsync(saved);
-            var sortedSavedGames = GetSortedGames(saved).ToList();
+            int selectedSortIndex = SelectedSortIndex;
+            var sortedSavedGames = await Task.Run(() => GetSortedGames(saved, selectedSortIndex).ToList());
 
-            Games.Clear();
-            foreach (var g in sortedSavedGames)
-                Games.Add(g);
-
-            await _services.LibraryStorage.SaveAsync(sortedSavedGames);
-            QueueBackgroundPrefetch(Games);
-            _ = RefreshHeuristicInstallStatesAsync();
+            Games.ReplaceAll(sortedSavedGames);
 
             SetLoadingState(false);
             IsInitialLoading = false;
             IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
 
-            if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
-                _ = ScanGamesOnStartupAsync();
+        }
 
-            _ = SilentUpdateImagesAsync(Games);
+        public Task StartBackgroundMaintenanceAsync()
+            => _backgroundMaintenanceTask ??= _services.ScanResources.RunAsBackgroundAsync(RunBackgroundMaintenanceCoreAsync);
+
+        private async Task RunBackgroundMaintenanceCoreAsync()
+        {
+            await RunMaintenanceStepAsync("install states", RefreshHeuristicInstallStatesAsync);
+
+            if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
+                await RunMaintenanceStepAsync("startup scan", () => ScanGamesOnStartupAsync(silent: true));
 
             if (IsSteamConnected)
-                _ = SyncSteamLibraryCoreAsync(useQr: false);
+                await RunMaintenanceStepAsync("Steam sync", () => SyncSteamLibraryCoreAsync(useQr: false, isBackground: true));
+
+            var librarySnapshot = Games.ToList();
+            await RunMaintenanceStepAsync("image refresh", () => SilentUpdateImagesAsync(librarySnapshot));
+            QueueBackgroundPrefetch(librarySnapshot);
+        }
+
+        private static async Task RunMaintenanceStepAsync(string name, Func<Task> work)
+        {
+            try
+            {
+                await work();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Maintenance] {name} failed: {ex.Message}");
+            }
         }
 
         private void PrepareStartupCoverGames(IReadOnlyList<Game> games)
@@ -470,12 +489,12 @@ namespace Codec.ViewModels
             }
         }
 
-        private async Task ScanGamesOnStartupAsync()
+        private async Task ScanGamesOnStartupAsync(bool silent = false)
         {
             PauseSilentImageUpdate();
             try
             {
-                IsStartupScanToastVisible = true;
+                IsStartupScanToastVisible = !silent;
                 await _importCoordinator.StartScanAsync();
                 await _importCoordinator.WaitForIdleAsync();
                 await RefreshHeuristicInstallStatesAsync();
@@ -615,6 +634,9 @@ namespace Codec.ViewModels
 
         private void LibraryGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (IsSteamSyncing)
+                return;
+
             if (e.PropertyName is nameof(Game.IsInstalled) or nameof(Game.FolderSize) or
                 nameof(Game.IsSteamOwned) or nameof(Game.IsFullyImported) or nameof(Game.DisplayedAssetsReady))
             {
@@ -630,6 +652,9 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(NotInstalledLibraryGameCount));
             OnPropertyChanged(nameof(HasNotInstalledLibraryGames));
             OnPropertyChanged(nameof(LibraryTotalSizeText));
+
+            if (!HasNotInstalledLibraryGames && SelectedInstallFilter != 1)
+                SelectedInstallFilter = 1;
         }
 
         private static string FormatLibrarySize(long bytes)
@@ -740,24 +765,7 @@ namespace Codec.ViewModels
         private void RefreshDisplayedGames()
         {
             var sortedFiltered = GetSortedGames(Games.Where(MatchesActiveFilters)).ToList();
-
-            for (int targetIndex = 0; targetIndex < sortedFiltered.Count; targetIndex++)
-            {
-                var game = sortedFiltered[targetIndex];
-                int existingIndex = DisplayedGames.IndexOf(game);
-
-                if (existingIndex == targetIndex)
-                    continue;
-
-                if (existingIndex >= 0)
-                    DisplayedGames.Move(existingIndex, targetIndex);
-                else
-                    DisplayedGames.Insert(targetIndex, game);
-            }
-
-            for (int index = DisplayedGames.Count - 1; index >= sortedFiltered.Count; index--)
-                DisplayedGames.RemoveAt(index);
-
+            DisplayedGames.ReplaceAll(sortedFiltered);
         }
 
         private void RefreshSidebarFilteredGames()
@@ -772,22 +780,7 @@ namespace Codec.ViewModels
                 .ThenBy(game => game.Id)
                 .ToList();
 
-            for (int targetIndex = 0; targetIndex < filteredGames.Count; targetIndex++)
-            {
-                var game = filteredGames[targetIndex];
-                int existingIndex = SidebarFilteredGames.IndexOf(game);
-
-                if (existingIndex == targetIndex)
-                    continue;
-
-                if (existingIndex >= 0)
-                    SidebarFilteredGames.Move(existingIndex, targetIndex);
-                else
-                    SidebarFilteredGames.Insert(targetIndex, game);
-            }
-
-            for (int index = SidebarFilteredGames.Count - 1; index >= filteredGames.Count; index--)
-                SidebarFilteredGames.RemoveAt(index);
+            SidebarFilteredGames.ReplaceAll(filteredGames);
 
             if (SidebarSelectedItem != null && !filteredGames.Contains(SidebarSelectedItem))
                 SidebarSelectedItem = null;
@@ -811,7 +804,7 @@ namespace Codec.ViewModels
 
         private bool IsReadyForLibrary(Game game)
             => (IsSteamConnected || !game.IsOwnedOnly) &&
-               (!game.IsSteamOwned || (game.IsFullyImported && game.DisplayedAssetsReady));
+               (!game.IsSteamOwned || game.IsFullyImported);
 
         private bool MatchesImportFilter(Game game)
             => string.IsNullOrEmpty(SelectedImportFilter) ||
@@ -835,7 +828,9 @@ namespace Codec.ViewModels
             }
         }
 
-        private IEnumerable<Game> GetSortedGames(IEnumerable<Game> source) => SelectedSortIndex switch
+        private IEnumerable<Game> GetSortedGames(IEnumerable<Game> source) => GetSortedGames(source, SelectedSortIndex);
+
+        private static IEnumerable<Game> GetSortedGames(IEnumerable<Game> source, int selectedSortIndex) => selectedSortIndex switch
         {
             0 => source.OrderByDescending(g => g.IsFavorite).ThenBy(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
             1 => source.OrderByDescending(g => g.IsFavorite).ThenByDescending(g => g.Name ?? string.Empty, GameNameComparer).ThenBy(g => g.Id),
@@ -848,17 +843,8 @@ namespace Codec.ViewModels
 
         private void ApplySortToGames()
         {
-            Games.CollectionChanged -= Games_CollectionChanged;
             var sorted = GetSortedGames(Games).ToList();
-            Games.Clear();
-            foreach (var g in sorted)
-                Games.Add(g);
-            Games.CollectionChanged += Games_CollectionChanged;
-            OnPropertyChanged(nameof(HasGames));
-            OnPropertyChanged(nameof(IsEmptyLibrary));
-            OnPropertyChanged(nameof(IsLibraryVisible));
-            RefreshSidebarFilteredGames();
-            RefreshDisplayedGames();
+            Games.ReplaceAll(sorted);
         }
 
         private void InsertGameSorted(Game game)

@@ -271,6 +271,9 @@ namespace Codec.Models
         [JsonIgnore]
         public string LibraryCapsule => GetEffectiveAssetPath(LibraryCapsuleCache, LibraryCapsuleUrl, PlaceholderLibraryCapsuleRelativePath)!;
 
+        internal void RefreshLibraryCapsuleBinding()
+            => OnPropertyChanged(nameof(LibraryCapsule));
+
         // library_hero
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibraryHero))]

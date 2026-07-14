@@ -492,7 +492,9 @@ namespace Codec.ViewModels
 
                 var persistedSnapshot = await RunOnUiThreadAsync(() =>
                 {
+                    string? previousCoverPath = game.LibraryCapsuleCache;
                     game.ApplyHydrationSnapshot(snapshot);
+                    NotifySamePathCoverRefresh(game, previousCoverPath);
                     return Games.ToList();
                 });
 

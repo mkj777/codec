@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Codec.Services.Scanning;
 
 namespace Codec.Services.Steam;
 
@@ -19,6 +20,15 @@ public sealed record SteamAccountSnapshot(string AccountName, IReadOnlyList<Stea
 
 public sealed class SteamAuthService
 {
+    private readonly ScanResourceLimiter? _resourceLimiter;
+    private readonly int _backgroundWorkers;
+
+    public SteamAuthService(ScanResourceLimiter? resourceLimiter = null, ScanConcurrencyOptions? concurrency = null)
+    {
+        _resourceLimiter = resourceLimiter;
+        _backgroundWorkers = concurrency?.BackgroundWorkers ?? 4;
+    }
+
     private static readonly ELicenseFlags InvalidLicenseFlags =
         ELicenseFlags.Expired |
         ELicenseFlags.CancelledByUser |
@@ -174,31 +184,42 @@ public sealed class SteamAuthService
         }
     }
 
-    private static async Task<IReadOnlyList<SteamOwnedApp>> ResolveOwnedAppsAsync(
+    private async Task<IReadOnlyList<SteamOwnedApp>> ResolveOwnedAppsAsync(
         SteamApps steamApps,
         IReadOnlyList<SteamApps.LicenseListCallback.License> licenses,
         CancellationToken cancellationToken)
     {
+        using var batchGate = new SemaphoreSlim(_backgroundWorkers, _backgroundWorkers);
+
         async Task<HashSet<uint>> ResolvePackageBatchAsync(SteamApps.LicenseListCallback.License[] batch)
         {
-            var packageRequests = batch.Select(license => new SteamApps.PICSRequest(license.PackageID, license.AccessToken));
-            var result = await steamApps.PICSGetProductInfo(apps: Array.Empty<SteamApps.PICSRequest>(), packages: packageRequests)
-                .ToTask().WaitAsync(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
-
-            var ids = new HashSet<uint>();
-            foreach (var callback in result.Results ?? Enumerable.Empty<SteamApps.PICSProductInfoCallback>())
-            foreach (var package in callback.Packages.Values)
+            await batchGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                var idsNode = package.KeyValues["appids"];
-                if (idsNode == KeyValue.Invalid) continue;
-                foreach (var child in idsNode.Children)
-                {
-                    if (uint.TryParse(child.Value, out uint id) || uint.TryParse(child.Name, out id))
-                        ids.Add(id);
-                }
-            }
+                var packageRequests = batch.Select(license => new SteamApps.PICSRequest(license.PackageID, license.AccessToken));
+                var result = await RunPicsAsync(ct => steamApps
+                    .PICSGetProductInfo(apps: Array.Empty<SteamApps.PICSRequest>(), packages: packageRequests)
+                    .ToTask().WaitAsync(TimeSpan.FromSeconds(30), ct), cancellationToken).ConfigureAwait(false);
 
-            return ids;
+                var ids = new HashSet<uint>();
+                foreach (var callback in result.Results ?? Enumerable.Empty<SteamApps.PICSProductInfoCallback>())
+                foreach (var package in callback.Packages.Values)
+                {
+                    var idsNode = package.KeyValues["appids"];
+                    if (idsNode == KeyValue.Invalid) continue;
+                    foreach (var child in idsNode.Children)
+                    {
+                        if (uint.TryParse(child.Value, out uint id) || uint.TryParse(child.Name, out id))
+                            ids.Add(id);
+                    }
+                }
+
+                return ids;
+            }
+            finally
+            {
+                batchGate.Release();
+            }
         }
 
         HashSet<uint>[] packageAppIds = await Task.WhenAll(
@@ -207,27 +228,36 @@ public sealed class SteamAuthService
 
         async Task<List<SteamOwnedApp>> ResolveAppBatchAsync(uint[] ids)
         {
-            var tokens = await steamApps.PICSGetAccessTokens(ids, Array.Empty<uint>())
-                .ToTask().WaitAsync(TimeSpan.FromSeconds(20), cancellationToken).ConfigureAwait(false);
-            var requests = ids.Select(id => new SteamApps.PICSRequest(
-                id,
-                tokens.AppTokens.TryGetValue(id, out ulong token) ? token : 0));
-            var result = await steamApps.PICSGetProductInfo(apps: requests, packages: Array.Empty<SteamApps.PICSRequest>())
-                .ToTask().WaitAsync(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
-
-            var apps = new List<SteamOwnedApp>(ids.Length);
-            foreach (var callback in result.Results ?? Enumerable.Empty<SteamApps.PICSProductInfoCallback>())
-            foreach (var app in callback.Apps)
+            await batchGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                var common = app.Value.KeyValues["common"];
-                string name = common["name"].Value ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(name)) continue;
-                string type = common["type"].Value ?? "app";
-                if (!IsGameAppType(type)) continue;
-                apps.Add(new SteamOwnedApp(app.Key, name, type));
-            }
+                var tokens = await RunPicsAsync(ct => steamApps.PICSGetAccessTokens(ids, Array.Empty<uint>())
+                    .ToTask().WaitAsync(TimeSpan.FromSeconds(20), ct), cancellationToken).ConfigureAwait(false);
+                var requests = ids.Select(id => new SteamApps.PICSRequest(
+                    id,
+                    tokens.AppTokens.TryGetValue(id, out ulong token) ? token : 0));
+                var result = await RunPicsAsync(ct => steamApps
+                    .PICSGetProductInfo(apps: requests, packages: Array.Empty<SteamApps.PICSRequest>())
+                    .ToTask().WaitAsync(TimeSpan.FromSeconds(30), ct), cancellationToken).ConfigureAwait(false);
 
-            return apps;
+                var apps = new List<SteamOwnedApp>(ids.Length);
+                foreach (var callback in result.Results ?? Enumerable.Empty<SteamApps.PICSProductInfoCallback>())
+                foreach (var app in callback.Apps)
+                {
+                    var common = app.Value.KeyValues["common"];
+                    string name = common["name"].Value ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+                    string type = common["type"].Value ?? "app";
+                    if (!IsGameAppType(type)) continue;
+                    apps.Add(new SteamOwnedApp(app.Key, name, type));
+                }
+
+                return apps;
+            }
+            finally
+            {
+                batchGate.Release();
+            }
         }
 
         List<SteamOwnedApp>[] resolvedBatches = await Task.WhenAll(
@@ -235,6 +265,11 @@ public sealed class SteamAuthService
         var owned = resolvedBatches.SelectMany(batch => batch).DistinctBy(app => app.AppId).ToList();
         return owned.OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
+
+    private Task<T> RunPicsAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken cancellationToken)
+        => _resourceLimiter == null
+            ? work(cancellationToken)
+            : _resourceLimiter.RunNetworkAsync(work, cancellationToken);
 
     internal static bool IsGameAppType(string? appType) =>
         string.Equals(appType, "game", StringComparison.OrdinalIgnoreCase);

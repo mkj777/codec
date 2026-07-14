@@ -664,7 +664,8 @@
 
                     <StackPanel Orientation="Horizontal"
                                 Spacing="0"
-                                Margin="8,0,0,0">
+                                Margin="8,0,0,0"
+                                Visibility="{Binding HasNotInstalledLibraryGames, Converter={StaticResource BoolToVisibilityConverter}}">
                         <ToggleButton x:Name="InstallFilterAll"
                                       Content="All"
                                       Tag="0"
@@ -727,7 +728,7 @@
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="local:Game">
-                        <Grid>
+                        <Grid x:Name="LibraryCardRoot" Tag="{x:Bind}">
                             <Button Click="LibraryItem_Click"
                                     Style="{StaticResource LibraryCoverButtonStyle}"
                                     ClickMode="Press"
@@ -742,7 +743,7 @@
                                     <Grid x:Name="LibraryArtwork"
                                           Opacity="{x:Bind LibraryCardOpacity, Mode=OneWay}">
                                         <Image x:Name="WideArtworkBackdrop"
-                                               Source="{x:Bind LibraryCapsule}"
+                                               Source="{x:Bind LibraryCapsule, Mode=OneWay}"
                                                Stretch="UniformToFill"
                                                Opacity="0.55"
                                                Visibility="Collapsed"/>
@@ -756,7 +757,7 @@
                                             </Border.Background>
                                         </Border>
                                         <Image x:Name="LibraryCoverImage"
-                                               Source="{x:Bind LibraryCapsule}"
+                                               Source="{x:Bind LibraryCapsule, Mode=OneWay}"
                                                Stretch="UniformToFill"
                                                ImageOpened="LibraryCover_ImageOpened"
                                                DataContextChanged="LibraryCover_DataContextChanged">

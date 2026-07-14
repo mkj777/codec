@@ -1,4 +1,3 @@
-using Codec.Helpers;
 using Codec.Models;
 using Codec.Services.Fetching;
 using System;
@@ -7,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Codec.ViewModels
@@ -21,37 +21,6 @@ namespace Codec.ViewModels
         // Cover Management
         // ---------------------------------------------------------------------------------
 
-        private async Task EnsureCoversAsync(IEnumerable<Game> games)
-        {
-            foreach (var g in games)
-            {
-                bool needsCover = IsPlaceholder(g.LibraryCapsule) || LocalFileMissing(g.LibraryCapsule);
-
-                if (g.SteamID.HasValue && needsCover)
-                {
-                    try
-                    {
-                        Debug.WriteLine($"Fetching cover for {g.Name} (SteamID {g.SteamID})");
-                        var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value);
-                        if (!string.IsNullOrEmpty(cover))
-                            g.LibraryCapsuleCache = cover;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Cover fetch failed for {g.Name} ({g.SteamID}): {ex.Message}");
-                    }
-                    await Task.Delay(75);
-                }
-                else if (!g.SteamID.HasValue && needsCover)
-                {
-                    await _services.GridDb.TryPopulateGridAssetsAsync(g);
-                    await Task.Delay(75);
-                }
-            }
-        }
-
-        private Task EnsureCoverForGameAsync(Game game) => EnsureCoversAsync(new[] { game });
-
         public async Task RefreshCoversAsync()
         {
             ShowScanProgress("Fetching Covers...", Games.Count == 0);
@@ -64,12 +33,14 @@ namespace Codec.ViewModels
                 {
                     var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
                     if (!string.IsNullOrEmpty(cover))
-                        g.LibraryCapsuleCache = cover;
+                        SetLibraryCoverPath(g, cover);
                     await Task.Delay(75);
                 }
                 else
                 {
+                    string? previousCoverPath = g.LibraryCapsuleCache;
                     await _services.GridDb.TryPopulateGridAssetsAsync(g, forceCoverDownload: true);
+                    NotifySamePathCoverRefresh(g, previousCoverPath);
                     await Task.Delay(75);
                 }
 
@@ -83,26 +54,25 @@ namespace Codec.ViewModels
 
         private async Task SilentUpdateImagesAsync(IEnumerable<Game> gamesToUpdate)
         {
-            // Wait a short time to allow UI startup animations to complete smoothly
-            await Task.Delay(3000).ConfigureAwait(false);
             await _importCoordinator.WaitForIdleAsync().ConfigureAwait(false);
 
-            var games = gamesToUpdate.ToList();
-            bool anyChanged = false;
+            DateTime staleBefore = DateTime.UtcNow.AddDays(-7);
+            var games = gamesToUpdate.Where(game => NeedsImageRefresh(game, staleBefore)).ToList();
+            int anyChanged = 0;
+            var options = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = _services.ScanConcurrency.BackgroundWorkers
+            };
 
-            foreach (var game in games)
+            await Parallel.ForEachAsync(games, options, async (game, _) =>
             {
                 await WaitForSilentImageUpdateResumeAsync().ConfigureAwait(false);
 
                 try
                 {
-                    // Create hydration snapshot of the game
                     var snapshot = game.CreateHydrationSnapshot();
-
-                    // Force redownload of assets on background thread
-                    var displayedAssets = await _services.DisplayedAssets.EnsureDisplayedAssetsAsync(snapshot, force: true).ConfigureAwait(false);
-
-                    // Check if anything actually changed
+                    var displayedAssets = await _services.DisplayedAssets
+                        .EnsureDisplayedAssetsAsync(snapshot, force: true).ConfigureAwait(false);
                     bool changed = snapshot.GridDbId != game.GridDbId ||
                                    snapshot.LibraryCapsuleCache != game.LibraryCapsuleCache ||
                                    snapshot.HasHeroAssetSource != game.HasHeroAssetSource ||
@@ -121,26 +91,28 @@ namespace Codec.ViewModels
                                    displayedAssets.LogoCachePath != game.LibraryLogoCache;
 
                     if (changed)
-                    {
-                        anyChanged = true;
+                        Interlocked.Exchange(ref anyChanged, 1);
 
-                        await RunOnUiThreadAsync(() =>
+                    await RunOnUiThreadAsync(() =>
+                    {
+                        string? previousCoverPath = game.LibraryCapsuleCache;
+                        if (changed)
                         {
                             ApplyDisplayedAssetHydration(game, displayedAssets);
-                            game.IsFullyImported = displayedAssets.AreRequiredAssetsReady;
-                        }).ConfigureAwait(false);
-                    }
+                            if (displayedAssets.AreRequiredAssetsReady)
+                                game.IsFullyImported = true;
+                        }
+                        NotifySamePathCoverRefresh(game, previousCoverPath);
+                    }).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[SilentUpdate] Failed to update assets for {game.Name}: {ex.Message}");
                 }
 
-                // Small delay to respect rate limits
-                await Task.Delay(250).ConfigureAwait(false);
-            }
+            }).ConfigureAwait(false);
 
-            if (anyChanged)
+            if (anyChanged != 0)
             {
                 try
                 {
@@ -202,6 +174,19 @@ namespace Codec.ViewModels
             }
         }
 
+        private void SetLibraryCoverPath(Game game, string path)
+        {
+            string? previousPath = game.LibraryCapsuleCache;
+            game.LibraryCapsuleCache = path;
+            NotifySamePathCoverRefresh(game, previousPath);
+        }
+
+        private void NotifySamePathCoverRefresh(Game game, string? previousPath)
+        {
+            if (string.Equals(previousPath, game.LibraryCapsuleCache, StringComparison.OrdinalIgnoreCase))
+                game.RefreshLibraryCapsuleBinding();
+        }
+
         private void PauseSilentImageUpdate()
         {
             lock (_silentImageUpdatePauseLock)
@@ -212,6 +197,37 @@ namespace Codec.ViewModels
                         TaskCreationOptions.RunContinuationsAsynchronously);
                     Debug.WriteLine("[SilentUpdate] Pause requested by priority work.");
                 }
+            }
+        }
+
+        private static bool NeedsImageRefresh(Game game, DateTime staleBefore)
+        {
+            if (IsMissingOrStale(game.LibraryCapsuleCache, staleBefore))
+                return true;
+
+            if ((game.HasHeroAssetSource || !string.IsNullOrWhiteSpace(game.LibraryHeroUrl)) &&
+                IsMissingOrStale(game.LibraryHeroCache, staleBefore))
+                return true;
+
+            return (game.HasLogoAssetSource || !string.IsNullOrWhiteSpace(game.LibraryLogoUrl)) &&
+                   IsMissingOrStale(game.LibraryLogoCache, staleBefore);
+        }
+
+        private static bool IsMissingOrStale(string? path, DateTime staleBefore)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return true;
+
+            try
+            {
+                string localPath = Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.IsFile
+                    ? uri.LocalPath
+                    : path;
+                return !File.Exists(localPath) || File.GetLastWriteTimeUtc(localPath) < staleBefore;
+            }
+            catch
+            {
+                return true;
             }
         }
 
@@ -293,25 +309,5 @@ namespace Codec.ViewModels
             SetLoadingState(false);
         }
 
-        // ---------------------------------------------------------------------------------
-        // Utility
-        // ---------------------------------------------------------------------------------
-
-        private static bool IsPlaceholder(string? uri) =>
-            string.IsNullOrWhiteSpace(uri) ||
-            uri.StartsWith("https://placehold.co/", StringComparison.OrdinalIgnoreCase) ||
-            AssetUriResolver.IsBundledAssetReference(uri, "Assets/noCover.png");
-
-        private static bool LocalFileMissing(string? uri)
-        {
-            if (string.IsNullOrWhiteSpace(uri)) return true;
-            if (File.Exists(uri)) return false;
-            if (!Uri.TryCreate(uri, UriKind.Absolute, out var parsed)) return true;
-            if (parsed.IsFile)
-            {
-                try { return !File.Exists(parsed.LocalPath); } catch { return true; }
-            }
-            return false;
-        }
     }
 }

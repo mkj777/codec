@@ -230,7 +230,11 @@ namespace Codec.Services.Storage
 
                     try
                     {
-                        await GetOrFetchAsync(request.Partition, request.Url, request.MaxAge).ConfigureAwait(false);
+                        if (_resourceLimiter == null)
+                            await GetOrFetchAsync(request.Partition, request.Url, request.MaxAge).ConfigureAwait(false);
+                        else
+                            await _resourceLimiter.RunAsBackgroundAsync(
+                                () => GetOrFetchAsync(request.Partition, request.Url, request.MaxAge)).ConfigureAwait(false);
                     }
                     catch
                     {

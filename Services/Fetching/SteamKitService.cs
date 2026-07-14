@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Codec.Services.Scanning;
 
 namespace Codec.Services.Fetching
 {
@@ -22,6 +23,7 @@ namespace Codec.Services.Fetching
         private readonly CallbackManager _manager;
         private readonly SteamUser _steamUser;
         private readonly SteamApps _steamApps;
+        private readonly ScanResourceLimiter? _resourceLimiter;
 
         private readonly ConcurrentDictionary<uint, SteamLibraryAssets> _assetCache = new();
         private readonly SemaphoreSlim _connectGate = new(1, 1);
@@ -35,8 +37,9 @@ namespace Codec.Services.Fetching
         private volatile bool _isLoggedOn;
         private volatile bool _disposed;
 
-        public SteamKitService()
+        public SteamKitService(ScanResourceLimiter? resourceLimiter = null)
         {
+            _resourceLimiter = resourceLimiter;
             Log("ctor: initializing SteamClient");
             _client = new SteamClient();
             _manager = new CallbackManager(_client);
@@ -140,9 +143,9 @@ namespace Codec.Services.Fetching
             try
             {
                 Log($"appId={appId} issuing PICSGetProductInfo");
-                var request = new SteamApps.PICSRequest(appId);
-                var job = _steamApps.PICSGetProductInfo(request, package: null);
-                var result = await job.ToTask().WaitAsync(TimeSpan.FromSeconds(15), ct).ConfigureAwait(false);
+                var result = _resourceLimiter == null
+                    ? await FetchProductInfoAsync(appId, ct).ConfigureAwait(false)
+                    : await _resourceLimiter.RunNetworkAsync(innerCt => FetchProductInfoAsync(appId, innerCt), ct).ConfigureAwait(false);
 
                 int callbackCount = result.Results?.Count ?? 0;
                 Log($"appId={appId} PICS returned {callbackCount} callback(s) in {sw.ElapsedMilliseconds}ms (Complete={result.Complete}, Failed={result.Failed})");
@@ -195,6 +198,13 @@ namespace Codec.Services.Fetching
             }
 
             return null;
+        }
+
+        private async Task<AsyncJobMultiple<SteamApps.PICSProductInfoCallback>.ResultSet> FetchProductInfoAsync(uint appId, CancellationToken cancellationToken)
+        {
+            var request = new SteamApps.PICSRequest(appId);
+            var job = _steamApps.PICSGetProductInfo(request, package: null);
+            return await job.ToTask().WaitAsync(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
         }
 
         private static SteamLibraryAssets? ExtractAssets(uint appId, KeyValue root)
@@ -350,6 +360,7 @@ namespace Codec.Services.Fetching
             {
                 DumpKv(child, depth + 1, maxDepth);
             }
+
         }
 
         private static string Trunc(string s, int max) => s.Length <= max ? s : s[..max] + "...";

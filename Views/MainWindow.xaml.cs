@@ -55,12 +55,13 @@ namespace Codec.Views
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
             RootGrid.AddHandler(UIElement.RightTappedEvent, new RightTappedEventHandler(RootGrid_RightTapped), true);
-            _ = ViewModel.LoadLibraryAsync();
             RootGrid.Loaded += MainWindow_Loaded;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            RootGrid.Loaded -= MainWindow_Loaded;
+            _ = ViewModel.LoadLibraryAsync();
             _ = PlayStartupOpenAnimationAsync();
 
             using var identity = WindowsIdentity.GetCurrent();
@@ -314,8 +315,7 @@ namespace Codec.Views
                     tile.Opacity = 0.42;
 
                 StartupBrand.Opacity = 1;
-                await Task.WhenAll(Task.Delay(450), _libraryReadyForStartup.Task);
-                await FadeStartupOverlayAsync(180);
+                await FinishStartupAsync(450, 180);
                 return;
             }
 
@@ -413,8 +413,17 @@ namespace Codec.Views
             intro.Children.Add(showBrand);
 
             intro.Begin();
-            await Task.WhenAll(Task.Delay(2200), _libraryReadyForStartup.Task);
-            await FadeStartupOverlayAsync(300);
+            await FinishStartupAsync(2200, 300);
+        }
+
+        private async Task FinishStartupAsync(int minimumDurationMs, int fadeDurationMs)
+        {
+            await Task.WhenAll(
+                Task.Delay(minimumDurationMs),
+                _libraryReadyForStartup.Task);
+
+            await FadeStartupOverlayAsync(fadeDurationMs);
+            _ = ViewModel.StartBackgroundMaintenanceAsync();
         }
 
         private Task FadeStartupOverlayAsync(int durationMs)

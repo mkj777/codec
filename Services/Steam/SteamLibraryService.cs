@@ -1,8 +1,10 @@
 using Codec.Helpers;
 using Codec.Models;
 using Codec.Services.Scanning.Scanners;
+using Codec.Services.Scanning;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -30,11 +32,18 @@ public sealed record SteamSyncResult(
     int OwnedCount,
     int FailedCount);
 
+public sealed record SteamEnrichedGame(Game Game, bool IsNew);
+
 public sealed class SteamLibraryService
 {
     private readonly SteamAuthService _auth;
+    private readonly ScanConcurrencyOptions _concurrency;
 
-    public SteamLibraryService(SteamAuthService auth) => _auth = auth;
+    public SteamLibraryService(SteamAuthService auth, ScanConcurrencyOptions concurrency)
+    {
+        _auth = auth;
+        _concurrency = concurrency;
+    }
 
     public event Action<byte[]>? QrCodeChanged
     {
@@ -49,7 +58,7 @@ public sealed class SteamLibraryService
         string? accountName,
         bool useQr,
         Func<Game, CancellationToken, Task<Game?>> enrichGameAsync,
-        Func<Game, bool, Task> publishGameAsync,
+        Func<IReadOnlyList<SteamEnrichedGame>, Task> publishGamesAsync,
         Func<string, Task>? accountConnectedAsync = null,
         Action<SteamSyncProgress>? progress = null,
         CancellationToken cancellationToken = default)
@@ -121,12 +130,13 @@ public sealed class SteamLibraryService
         int added = 0;
         int processed = 0;
         int failed = 0;
+        var enrichedGames = new ConcurrentQueue<SteamEnrichedGame>();
         progress?.Invoke(new SteamSyncProgress(SteamSyncPhase.Enriching, toEnrich.Count, 0, 0, 0));
 
         var options = new ParallelOptions
         {
             CancellationToken = cancellationToken,
-            MaxDegreeOfParallelism = 16
+            MaxDegreeOfParallelism = _concurrency.BackgroundWorkers
         };
 
         await Parallel.ForEachAsync(toEnrich, options, async (workItem, ct) =>
@@ -137,7 +147,7 @@ public sealed class SteamLibraryService
                 Game? enriched = await enrichGameAsync(workItem.Game, ct).ConfigureAwait(false);
                 if (enriched != null)
                 {
-                    await publishGameAsync(enriched, workItem.IsNew).ConfigureAwait(false);
+                    enrichedGames.Enqueue(new SteamEnrichedGame(enriched, workItem.IsNew));
                     if (workItem.IsNew)
                         Interlocked.Increment(ref added);
                     succeeded = true;
@@ -164,6 +174,9 @@ public sealed class SteamLibraryService
                     Volatile.Read(ref failed)));
             }
         }).ConfigureAwait(false);
+
+        foreach (SteamEnrichedGame[] batch in enrichedGames.Chunk(8))
+            await publishGamesAsync(batch).ConfigureAwait(false);
 
         progress?.Invoke(new SteamSyncProgress(SteamSyncPhase.Completed, toEnrich.Count, processed, added, failed));
         return new SteamSyncResult(snapshot.AccountName, added, updated, snapshot.Apps.Count, failed);

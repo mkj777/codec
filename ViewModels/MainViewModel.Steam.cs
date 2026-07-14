@@ -70,15 +70,15 @@ public partial class MainViewModel
     }
 
     [RelayCommand]
-    private Task ConnectSteamAsync() => SyncSteamLibraryCoreAsync(useQr: true);
+    private Task ConnectSteamAsync() => SyncSteamLibraryCoreAsync(useQr: true, isBackground: false);
 
     [RelayCommand]
-    private Task SyncSteamLibraryAsync() => SyncSteamLibraryCoreAsync(useQr: false);
+    private Task SyncSteamLibraryAsync() => SyncSteamLibraryCoreAsync(useQr: false, isBackground: false);
 
     [RelayCommand]
     private void CancelSteamSignIn() => _steamLoginCts?.Cancel();
 
-    private async Task SyncSteamLibraryCoreAsync(bool useQr)
+    private async Task SyncSteamLibraryCoreAsync(bool useQr, bool isBackground)
     {
         if (!await _steamSyncGate.WaitAsync(0)) return;
         _steamLoginCts = new CancellationTokenSource();
@@ -86,7 +86,7 @@ public partial class MainViewModel
         _steamProgressFinalized = false;
         IsSteamSyncing = true;
         SteamStatusMessage = useQr ? "Starting secure Steam sign-in…" : "Checking your Steam library…";
-        IsSteamSyncProgressVisible = true;
+        IsSteamSyncProgressVisible = !isBackground;
         IsSteamSyncProgressIndeterminate = true;
         SteamSyncProgressTitle = "Syncing Steam library";
         SteamSyncProgressMessage = "Looking for new owned games";
@@ -102,7 +102,7 @@ public partial class MainViewModel
                 SteamAccountName,
                 useQr,
                 (game, ct) => EnrichSteamGameAsync(game, librarySnapshot, ct),
-                PublishSteamGameAsync,
+                PublishSteamGamesAsync,
                 MarkSteamConnectedAsync,
                 QueueSteamProgress,
                 _steamLoginCts.Token);
@@ -132,7 +132,8 @@ public partial class MainViewModel
             OnPropertyChanged(nameof(SteamAccountDisplay));
             if (Games.Count > 0)
                 IsOnboardingVisible = false;
-            _ = DismissSteamSyncProgressAsync(syncGeneration);
+            if (!isBackground)
+                _ = DismissSteamSyncProgressAsync(syncGeneration);
         }
         catch (OperationCanceledException)
         {
@@ -141,7 +142,8 @@ public partial class MainViewModel
             SteamSyncProgressTitle = "Steam sync cancelled";
             SteamSyncProgressMessage = "No unfinished games were added";
             IsSteamSyncProgressIndeterminate = false;
-            _ = DismissSteamSyncProgressAsync(syncGeneration);
+            if (!isBackground)
+                _ = DismissSteamSyncProgressAsync(syncGeneration);
         }
         catch (Exception ex)
         {
@@ -152,7 +154,8 @@ public partial class MainViewModel
             SteamSyncProgressTitle = "Steam sync stopped";
             SteamSyncProgressMessage = ex.Message;
             IsSteamSyncProgressIndeterminate = false;
-            _ = DismissSteamSyncProgressAsync(syncGeneration);
+            if (!isBackground)
+                _ = DismissSteamSyncProgressAsync(syncGeneration);
         }
         finally
         {
@@ -237,17 +240,36 @@ public partial class MainViewModel
         return enriched.IsFullyImported && enriched.DisplayedAssetsReady ? enriched : null;
     }
 
-    private Task PublishSteamGameAsync(Game enriched, bool isNew)
-        => RunOnUiThreadAsync(() =>
+    private Task PublishSteamGamesAsync(IReadOnlyList<SteamEnrichedGame> enrichedGames)
+    {
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_dispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
-            Game? existing = Games.FirstOrDefault(game => game.Id == enriched.Id);
-            if (existing != null)
-                existing.ApplyHydrationSnapshot(enriched);
-            else if (isNew)
-                InsertGameSorted(enriched);
+            try
+            {
+                foreach (SteamEnrichedGame item in enrichedGames)
+                {
+                    Game? existing = Games.FirstOrDefault(game => game.Id == item.Game.Id);
+                    if (existing != null)
+                        existing.ApplyHydrationSnapshot(item.Game);
+                    else if (item.IsNew)
+                        InsertGameSorted(item.Game);
+                }
 
-            IsOnboardingVisible = false;
-        });
+                IsOnboardingVisible = false;
+                completion.TrySetResult(true);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+        }))
+        {
+            completion.TrySetException(new InvalidOperationException("Could not publish Steam games."));
+        }
+
+        return completion.Task;
+    }
 
     private void QueueSteamProgress(SteamSyncProgress progress)
     {

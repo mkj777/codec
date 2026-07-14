@@ -72,7 +72,7 @@ namespace Codec.Services.Storage
                     return new List<Game>();
 
                 await using var fs = File.OpenRead(path);
-                var data = await JsonSerializer.DeserializeAsync<List<Game>>(fs, _jsonOptions);
+                var data = await JsonSerializer.DeserializeAsync<List<Game>>(fs, _jsonOptions).ConfigureAwait(false);
                 var games = data ?? new List<Game>();
                 foreach (var game in games)
                 {

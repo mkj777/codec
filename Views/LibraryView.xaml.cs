@@ -1,21 +1,17 @@
 using Codec.Models;
 using Codec.ViewModels;
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
-using Windows.UI.ViewManagement;
 
 namespace Codec.Views
 {
     public sealed partial class LibraryView : UserControl
     {
         private MainViewModel? _viewModel;
-        private readonly UISettings _uiSettings = new();
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
@@ -28,9 +24,7 @@ namespace Codec.Views
         private void LibraryView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
         {
             if (_viewModel != null)
-            {
                 _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            }
 
             _viewModel = args.NewValue as MainViewModel;
 
@@ -44,9 +38,7 @@ namespace Codec.Views
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(MainViewModel.SelectedSortIndex) && _viewModel != null)
-            {
                 UpdateSortOptionHighlight(_viewModel.SelectedSortIndex);
-            }
         }
 
         private void LibraryItem_Click(object sender, RoutedEventArgs e)
@@ -64,11 +56,11 @@ namespace Codec.Views
             if (sender is FrameworkElement fe && int.TryParse(fe.Tag?.ToString(), out int idx))
             {
                 if (fe is ToggleButton tb)
-                {
                     tb.IsChecked = true;
-                }
+
                 if (ViewModel != null)
                     ViewModel.SelectedSortIndex = idx;
+
                 SortFlyout.Hide();
                 UpdateSortOptionHighlight(idx);
             }
@@ -81,25 +73,6 @@ namespace Codec.Views
 
             bool isWideArtwork = image.Source is BitmapSource bitmap && bitmap.PixelWidth > bitmap.PixelHeight;
             ApplyLibraryCoverLayout(image, isWideArtwork);
-
-            if (!_uiSettings.AnimationsEnabled)
-                return;
-
-            double targetOpacity = (image.DataContext as Game)?.LibraryCardOpacity ?? 1d;
-            var fade = new DoubleAnimation
-            {
-                From = 0,
-                To = targetOpacity,
-                Duration = new Duration(TimeSpan.FromMilliseconds(180)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-                FillBehavior = FillBehavior.Stop
-            };
-            DependencyObject animationTarget = image.Parent is Grid artwork ? artwork : image;
-            Storyboard.SetTarget(fade, animationTarget);
-            Storyboard.SetTargetProperty(fade, "Opacity");
-            var storyboard = new Storyboard();
-            storyboard.Children.Add(fade);
-            storyboard.Begin();
         }
 
         private void LibraryCover_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -115,11 +88,30 @@ namespace Codec.Views
             if (image.RenderTransform is TranslateTransform translate)
                 translate.Y = isWideArtwork ? -image.ActualHeight * 0.1 : 0;
 
-            if (image.FindName("WideArtworkBackdrop") is UIElement backdrop)
+            if (image.Parent is DependencyObject artwork &&
+                FindNamedDescendant<Image>(artwork, "WideArtworkBackdrop") is Image backdrop)
                 backdrop.Visibility = isWideArtwork ? Visibility.Visible : Visibility.Collapsed;
 
-            if (image.FindName("WideArtworkBlur") is UIElement blur)
+            if (image.Parent is DependencyObject parent &&
+                FindNamedDescendant<FrameworkElement>(parent, "WideArtworkBlur") is UIElement blur)
                 blur.Visibility = isWideArtwork ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private static T? FindNamedDescendant<T>(DependencyObject root, string name) where T : FrameworkElement
+        {
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
+            for (int index = 0; index < childCount; index++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(root, index);
+                if (child is T match && match.Name == name)
+                    return match;
+
+                T? descendant = FindNamedDescendant<T>(child, name);
+                if (descendant != null)
+                    return descendant;
+            }
+
+            return null;
         }
 
         private void InstallFilter_Click(object sender, RoutedEventArgs e)
@@ -136,12 +128,12 @@ namespace Codec.Views
 
         private void UpdateSortOptionHighlight(int activeIndex)
         {
-            SortAlphaAscButton.IsChecked = (activeIndex == 0);
-            SortAlphaDescButton.IsChecked = (activeIndex == 1);
-            SortFolderDescButton.IsChecked = (activeIndex == 2);
-            SortFolderAscButton.IsChecked = (activeIndex == 3);
-            SortDateDescButton.IsChecked = (activeIndex == 4);
-            SortDateAscButton.IsChecked = (activeIndex == 5);
+            SortAlphaAscButton.IsChecked = activeIndex == 0;
+            SortAlphaDescButton.IsChecked = activeIndex == 1;
+            SortFolderDescButton.IsChecked = activeIndex == 2;
+            SortFolderAscButton.IsChecked = activeIndex == 3;
+            SortDateDescButton.IsChecked = activeIndex == 4;
+            SortDateAscButton.IsChecked = activeIndex == 5;
         }
     }
 }

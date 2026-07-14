@@ -53,9 +53,9 @@ namespace Codec.Services
             GameDetails = new GameDetailsService(Cache);
             GameName = new GameNameService(GameDetails, maxConcurrentApiRequests: 32);
 
-            SteamKit = new SteamKitService();
-            SteamAuth = new SteamAuthService();
-            SteamLibrary = new SteamLibraryService(SteamAuth);
+            SteamKit = new SteamKitService(ScanResources);
+            SteamAuth = new SteamAuthService(ScanResources, ScanConcurrency);
+            SteamLibrary = new SteamLibraryService(SteamAuth, ScanConcurrency);
             SteamDetails = new SteamDetailsService(Cache, SteamKit, ScanResources);
             RawgDetails = new RawgDetailsService(Cache);
             Igdb = new IgdbService(new System.Net.Http.HttpClient(), ScanResources);
