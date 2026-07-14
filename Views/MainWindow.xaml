@@ -1052,7 +1052,7 @@
                                     </Grid.ColumnDefinitions>
                                     <Button Content="Connect Steam"
                                             Command="{Binding ConnectSteamCommand}"
-                                            IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            IsEnabled="{Binding AreSteamActionsEnabled}"
                                             Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Center"
@@ -1061,7 +1061,7 @@
                                             Foreground="#1C1A17" CornerRadius="7"/>
                                     <Button Content="{Binding SteamSyncButtonText}"
                                             Command="{Binding SyncSteamLibraryCommand}"
-                                            IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            IsEnabled="{Binding AreSteamActionsEnabled}"
                                             Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
                                             HorizontalAlignment="Stretch"
                                             Padding="14,9"
@@ -1079,7 +1079,7 @@
                                     <Button Grid.Column="1"
                                             Content="Disconnect"
                                             Click="SteamDisconnect_Click"
-                                            IsEnabled="{Binding IsSteamSyncing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"
+                                            IsEnabled="{Binding AreSteamActionsEnabled}"
                                             Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"
                                             Padding="12,9"
                                             Background="Transparent" BorderBrush="#5E5346"

@@ -32,6 +32,7 @@ public partial class MainViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SteamSyncButtonText))]
+    [NotifyPropertyChangedFor(nameof(AreSteamActionsEnabled))]
     private bool _isSteamSyncing;
     [ObservableProperty] private bool _isSteamQrVisible;
     [ObservableProperty] private ImageSource? _steamQrCode;
@@ -47,6 +48,7 @@ public partial class MainViewModel
     public bool IsSteamConnected => !string.IsNullOrWhiteSpace(SteamAccountName) && _services.SteamLibrary.HasStoredToken;
     public string SteamAccountDisplay => IsSteamConnected ? SteamAccountName! : "Not connected";
     public string SteamSyncButtonText => IsSteamSyncing ? "Syncing..." : "Sync now";
+    public bool AreSteamActionsEnabled => !IsSteamSyncing;
 
     private void InitializeSteamIntegration()
     {
