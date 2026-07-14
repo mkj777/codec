@@ -13,7 +13,7 @@ Hopefully a place for everything you need.
 ### Features
 Scans your PC and gives you Information about your favourite Games.  
 Works together with Steam, Epic Games, Riot Games and more to come!  
-Now has an Steam Integration to add all your owned Games from Steam.
+Now has an Steam Integration to add all your owned Games from Steam.  
 Launch them through Codec and add launch scripts for specific cases :)
 
 ### Installation
