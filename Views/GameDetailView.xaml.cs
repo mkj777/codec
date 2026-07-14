@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -66,6 +67,7 @@ namespace Codec.Views
         private const double RemoveGameConfirmationPopoverEdgePadding = 12d;
 
         private MainViewModel? ViewModel => DataContext as MainViewModel;
+        private double _heroArtworkAspect;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -335,10 +337,62 @@ namespace Codec.Views
             => RemoveGameConfirmationPopover.Visibility = Visibility.Collapsed;
 
         private void GameDetailView_Loaded(object sender, RoutedEventArgs e)
-            => UpdateResponsiveLayoutState();
+        {
+            UpdateResponsiveLayoutState();
+            UpdateHeroArtworkSize();
+        }
 
         private void GameDetailView_SizeChanged(object sender, SizeChangedEventArgs e)
             => UpdateResponsiveLayoutState();
+
+        private void HeroBackdropImage_ImageOpened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Image image || image.Source is not BitmapSource bitmap ||
+                bitmap.PixelWidth <= 0 || bitmap.PixelHeight <= 0)
+            {
+                ResetHeroArtworkLayout();
+                return;
+            }
+
+            _heroArtworkAspect = (double)bitmap.PixelWidth / bitmap.PixelHeight;
+            HeroBackdropImage.Opacity = 0.72;
+            HeroBackdropBlur.Visibility = Visibility.Visible;
+            HeroForegroundLayer.Visibility = Visibility.Visible;
+            UpdateHeroArtworkSize();
+        }
+
+        private void HeroBackdropImage_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+            => ResetHeroArtworkLayout();
+
+        private void HeroArtworkLayer_SizeChanged(object sender, SizeChangedEventArgs e)
+            => UpdateHeroArtworkSize();
+
+        private void UpdateHeroArtworkSize()
+        {
+            if (_heroArtworkAspect <= 0 || HeroArtworkLayer.ActualHeight <= 0 ||
+                HeroForegroundLayer.ActualWidth <= 0)
+                return;
+
+            double height = HeroArtworkLayer.ActualHeight;
+            HeroForegroundImage.Height = height;
+            HeroForegroundImage.Width = height * _heroArtworkAspect;
+            HeroForegroundLayer.Clip = new RectangleGeometry
+            {
+                Rect = new Rect(0, 0, HeroForegroundLayer.ActualWidth, height)
+            };
+        }
+
+        private void ResetHeroArtworkLayout()
+        {
+            if (HeroBackdropImage == null)
+                return;
+
+            _heroArtworkAspect = 0;
+            HeroBackdropImage.Opacity = 1;
+            HeroBackdropBlur.Visibility = Visibility.Collapsed;
+            HeroForegroundLayer.Visibility = Visibility.Collapsed;
+            HeroForegroundLayer.Clip = null;
+        }
 
         private void UpdateResponsiveLayoutState()
         {

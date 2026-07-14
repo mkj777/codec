@@ -408,11 +408,44 @@
                 </Grid.RowDefinitions>
 
                 <!-- Hero covers upper half -->
-                <Grid Grid.Row="0">
-                        <Image x:Name="HeroBackdropImage"
-                               Source="{Binding SelectedGame.LibraryHero}"
-                               Stretch="UniformToFill"
-                               Margin="-24,0,0,0"/>
+                <Grid x:Name="HeroArtworkLayer"
+                      Grid.Row="0"
+                      SizeChanged="HeroArtworkLayer_SizeChanged">
+                        <Border x:Name="HeroBackdropImage"
+                                Margin="-24,0,0,0">
+                                <Border.Background>
+                                        <ImageBrush ImageSource="{Binding SelectedGame.LibraryHero}"
+                                                    Stretch="UniformToFill"
+                                                    AlignmentY="Bottom"/>
+                                </Border.Background>
+                        </Border>
+                        <Image Source="{Binding SelectedGame.LibraryHero}"
+                               Width="1"
+                               Height="1"
+                               Opacity="0"
+                               ImageOpened="HeroBackdropImage_ImageOpened"
+                               ImageFailed="HeroBackdropImage_ImageFailed"
+                               IsHitTestVisible="False"/>
+                        <Border x:Name="HeroBackdropBlur"
+                                Margin="-24,0,0,0"
+                                Visibility="Collapsed">
+                                <Border.Background>
+                                        <AcrylicBrush TintColor="#1C1A17"
+                                                      TintOpacity="0.32"
+                                                      TintLuminosityOpacity="0.18"
+                                                      FallbackColor="#991C1A17"/>
+                                </Border.Background>
+                        </Border>
+                        <Grid x:Name="HeroForegroundLayer"
+                              Margin="-24,0,0,0"
+                              Visibility="Collapsed"
+                              IsHitTestVisible="False">
+                                <Image x:Name="HeroForegroundImage"
+                                       Source="{Binding SelectedGame.LibraryHero}"
+                                       Stretch="Fill"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Bottom"/>
+                        </Grid>
                         <Grid Background="#441C1A17"
                               Margin="-24,0,0,0"/>
                         <Grid x:Name="HeroOverlay"
@@ -545,17 +578,6 @@
                                                        IsHitTestVisible="False"
                                                        Margin="36,78,0,0"
                                                        Visibility="{Binding SelectedGame.HasLogo, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                <TextBlock Text="{Binding SelectedGame.Name}"
-                                                           HorizontalAlignment="Left"
-                                                           VerticalAlignment="Top"
-                                                           IsHitTestVisible="False"
-                                                           Margin="78,48,0,0"
-                                                           FontSize="42"
-                                                           FontWeight="Bold"
-                                                           FontFamily="{StaticResource CodecBoldFontFamily}"
-                                                           TextWrapping="Wrap"
-                                                           MaxWidth="600"
-                                                           Visibility="{Binding SelectedGame.HasLogo, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Reverse}"/>
                                         </Grid>
                                 </Grid>
 
