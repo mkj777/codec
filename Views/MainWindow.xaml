@@ -1617,8 +1617,6 @@
                                 VerticalAlignment="Center">
                         <TextBlock Text="{Binding SteamSyncProgressTitle, Mode=OneWay}"
                                    Style="{StaticResource NotificationTitleStyle}"/>
-                        <TextBlock Text="{Binding SteamSyncProgressMessage, Mode=OneWay}"
-                                   Style="{StaticResource NotificationDetailStyle}"/>
                         <ProgressBar Value="{Binding SteamSyncProgressValue, Mode=OneWay}"
                                      Maximum="{Binding SteamSyncProgressMaximum, Mode=OneWay}"
                                      Minimum="0"
