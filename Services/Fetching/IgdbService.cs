@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -25,10 +26,23 @@ namespace Codec.Services.Fetching
         private const string CollectionsEndpoint = ProxyBase + "/collections";
         private const string TimeToBeatsEndpoint = ProxyBase + "/game_time_to_beats";
         private const string ArtworksEndpoint = ProxyBase + "/artworks";
+        private const string MultiQueryEndpoint = ProxyBase + "/multiquery";
+        private const int MaxMultiQuerySize = 10;
+        private static readonly TimeSpan MultiQueryCollectionWindow = TimeSpan.FromMilliseconds(25);
+        private static readonly TimeSpan RequestInterval = TimeSpan.FromMilliseconds(250);
+        private static readonly TimeSpan[] RateLimitBackoffs =
+        {
+            TimeSpan.FromMilliseconds(250),
+            TimeSpan.FromMilliseconds(500),
+            TimeSpan.FromSeconds(1)
+        };
 
         private readonly HttpClient _http;
         private readonly ScanResourceLimiter? _resourceLimiter;
         private readonly ConcurrentDictionary<int, int> _steamIdByIgdbIdCache = new();
+        private readonly ConcurrentQueue<IgdbQueuedRequest> _pendingRequests = new();
+        private readonly SemaphoreSlim _dispatcherGate = new(1, 1);
+        private DateTime _nextRequestStartUtc = DateTime.MinValue;
 
         public IgdbService()
             : this(new HttpClient(), null)
@@ -1175,27 +1189,177 @@ limit 200;";
 
         private async Task<string> PostAsync(string url, string body)
         {
+            var request = new IgdbQueuedRequest(url, GetEndpointName(url), body);
+            _pendingRequests.Enqueue(request);
+            _ = DispatchQueuedRequestsAsync();
+            return await request.Completion.Task.ConfigureAwait(false);
+        }
+
+        private async Task DispatchQueuedRequestsAsync()
+        {
+            if (!await _dispatcherGate.WaitAsync(0).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            try
+            {
+                while (!_pendingRequests.IsEmpty)
+                {
+                    await Task.Delay(MultiQueryCollectionWindow).ConfigureAwait(false);
+
+                    var batch = new List<IgdbQueuedRequest>(MaxMultiQuerySize);
+                    if (!_pendingRequests.TryDequeue(out var first))
+                    {
+                        continue;
+                    }
+                    batch.Add(first);
+
+                    if (!first.IsDirectSearch)
+                    {
+                        while (batch.Count < MaxMultiQuerySize &&
+                               _pendingRequests.TryPeek(out var next) &&
+                               !next.IsDirectSearch &&
+                               _pendingRequests.TryDequeue(out var queued))
+                        {
+                            batch.Add(queued);
+                        }
+                    }
+
+                    try
+                    {
+                        if (first.IsDirectSearch)
+                        {
+                            Debug.WriteLine($"[IGDB] Direct search: {first.Endpoint}");
+                            string result = await SendRequestAsync(first.Url, first.Body).ConfigureAwait(false);
+                            first.Completion.TrySetResult(result);
+                            continue;
+                        }
+
+                        IReadOnlyDictionary<string, string> results = await SendMultiQueryAsync(batch).ConfigureAwait(false);
+                        for (int i = 0; i < batch.Count; i++)
+                        {
+                            string queryName = $"q{i}";
+                            if (results.TryGetValue(queryName, out string? result))
+                            {
+                                batch[i].Completion.TrySetResult(result);
+                            }
+                            else
+                            {
+                                batch[i].Completion.TrySetException(
+                                    new InvalidOperationException($"IGDB multi-query response did not contain '{queryName}'."));
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        foreach (var queued in batch)
+                        {
+                            queued.Completion.TrySetException(ex);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _dispatcherGate.Release();
+                if (!_pendingRequests.IsEmpty)
+                {
+                    _ = DispatchQueuedRequestsAsync();
+                }
+            }
+        }
+
+        private async Task<IReadOnlyDictionary<string, string>> SendMultiQueryAsync(IReadOnlyList<IgdbQueuedRequest> batch)
+        {
+            string body = string.Join("\n", batch.Select((request, index) =>
+                $"query {request.Endpoint} \"q{index}\" {{\n{request.Body}\n}};"));
+
+            Debug.WriteLine($"[IGDB] Multi-query batch: {batch.Count}");
+            string json = await SendRequestAsync(MultiQueryEndpoint, body).ConfigureAwait(false);
+
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidOperationException("IGDB multi-query response was not an array.");
+            }
+
+            var results = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.Object &&
+                    item.TryGetProperty("name", out var nameNode) &&
+                    nameNode.ValueKind == JsonValueKind.String &&
+                    item.TryGetProperty("result", out var resultNode))
+                {
+                    string? name = nameNode.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        results[name] = resultNode.GetRawText();
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        private async Task<string> SendRequestAsync(string url, string body)
+        {
             async Task<string> SendAsync(CancellationToken cancellationToken)
             {
-                Debug.WriteLine($"[IGDB] POST {url}");
-                Debug.WriteLine($"[IGDB] BODY: {body}");
-                using var content = new StringContent(body, Encoding.UTF8, "text/plain");
-                using var response = await _http.PostAsync(url, content, cancellationToken).ConfigureAwait(false);
-                Debug.WriteLine($"[IGDB] HTTP {(int)response.StatusCode} {response.StatusCode} ← {url}");
-                if (!response.IsSuccessStatusCode)
+                for (int attempt = 0; ; attempt++)
                 {
-                    string errorBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                    Debug.WriteLine($"[IGDB] ERROR RESPONSE: {errorBody}");
-                    throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}). Response content: {errorBody}");
+                    if (attempt > 0)
+                    {
+                        await Task.Delay(RateLimitBackoffs[attempt - 1], cancellationToken).ConfigureAwait(false);
+                    }
+
+                    TimeSpan throttleDelay = _nextRequestStartUtc - DateTime.UtcNow;
+                    if (throttleDelay > TimeSpan.Zero)
+                    {
+                        await Task.Delay(throttleDelay, cancellationToken).ConfigureAwait(false);
+                    }
+                    _nextRequestStartUtc = DateTime.UtcNow + RequestInterval;
+
+                    using var content = new StringContent(body, Encoding.UTF8, "text/plain");
+                    using var response = await _http.PostAsync(url, content, cancellationToken).ConfigureAwait(false);
+                    Debug.WriteLine($"[IGDB] HTTP {(int)response.StatusCode} {response.StatusCode} ← {url}");
+
+                    if (response.StatusCode == HttpStatusCode.TooManyRequests && attempt < RateLimitBackoffs.Length)
+                    {
+                        Debug.WriteLine($"[IGDB] 429; retry {attempt + 1}/{RateLimitBackoffs.Length} in {RateLimitBackoffs[attempt].TotalMilliseconds:0}ms");
+                        continue;
+                    }
+
+                    string responseBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Debug.WriteLine($"[IGDB] ERROR RESPONSE: {responseBody}");
+                        throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}). Response content: {responseBody}");
+                    }
+
+                    return responseBody;
                 }
-                string result = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                Debug.WriteLine($"[IGDB] RESPONSE: {result}");
-                return result;
             }
 
             return _resourceLimiter is null
                 ? await SendAsync(CancellationToken.None).ConfigureAwait(false)
                 : await _resourceLimiter.RunNetworkAsync(SendAsync).ConfigureAwait(false);
+        }
+
+        private static string GetEndpointName(string url)
+        {
+            int separator = url.LastIndexOf('/');
+            return separator >= 0 ? url[(separator + 1)..] : url;
+        }
+
+        private sealed record IgdbQueuedRequest(string Url, string Endpoint, string Body)
+        {
+            public bool IsDirectSearch =>
+                Body.TrimStart().StartsWith("search ", StringComparison.OrdinalIgnoreCase);
+
+            public TaskCompletionSource<string> Completion { get; } =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         private static string BuildImageUrl(string imageId, string size)
