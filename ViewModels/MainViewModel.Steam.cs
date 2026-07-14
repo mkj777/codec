@@ -102,6 +102,8 @@ public partial class MainViewModel
                 useQr,
                 (game, ct) => EnrichSteamGameAsync(game, librarySnapshot, ct),
                 PublishSteamGamesAsync,
+                PublishSteamAchievementUpdatesAsync,
+                _appSettings.SteamAchievementsRetryAfterUtc,
                 MarkSteamConnectedAsync,
                 QueueSteamProgress,
                 _steamLoginCts.Token);
@@ -109,6 +111,8 @@ public partial class MainViewModel
             FinalizeSteamProgress();
             SteamAccountName = result.AccountName;
             _appSettings.SteamAccountName = result.AccountName;
+            _appSettings.SteamId64 = result.SteamId64;
+            _appSettings.SteamAchievementsRetryAfterUtc = result.AchievementRetryAfterUtc;
             _appSettings.LastSteamSyncUtc = DateTime.UtcNow;
             SteamLastSyncText = $"Last synced {DateTime.Now:g}";
             IsSteamSyncProgressIndeterminate = false;
@@ -159,10 +163,11 @@ public partial class MainViewModel
         }
     }
 
-    private async Task MarkSteamConnectedAsync(string accountName)
+    private async Task MarkSteamConnectedAsync(string accountName, ulong steamId64)
     {
         SteamAccountName = accountName;
         _appSettings.SteamAccountName = accountName;
+        _appSettings.SteamId64 = steamId64;
         SteamLastSyncText = "Connected · Syncing library";
         IsSteamQrVisible = false;
         OnPropertyChanged(nameof(IsSteamConnected));
@@ -181,6 +186,8 @@ public partial class MainViewModel
         SteamAccountName = null;
         _appSettings.SteamAccountName = null;
         _appSettings.LastSteamSyncUtc = null;
+        _appSettings.SteamId64 = null;
+        _appSettings.SteamAchievementsRetryAfterUtc = null;
         SteamLastSyncText = "Never synced";
         IsSteamSyncProgressVisible = false;
         await _services.AppSettings.SaveAsync(_appSettings);
@@ -227,7 +234,83 @@ public partial class MainViewModel
         enriched.IsSteamOwned = true;
         enriched.IsInstalled = game.IsInstalled;
         enriched.SteamAppType = game.SteamAppType;
+        enriched.SteamAchievementsUnlocked = game.SteamAchievementsUnlocked;
+        enriched.SteamAchievementsTotal = game.SteamAchievementsTotal;
+        enriched.SteamAchievementsLastCheckedUtc = game.SteamAchievementsLastCheckedUtc;
+        enriched.LastPlayedUtc = game.LastPlayedUtc;
         return enriched.IsFullyImported && enriched.DisplayedAssetsReady ? enriched : null;
+    }
+
+    private Task PublishSteamAchievementUpdatesAsync(IReadOnlyList<SteamAchievementUpdate> updates)
+    {
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        if (!_dispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+        {
+            try
+            {
+                foreach (SteamAchievementUpdate update in updates)
+                {
+                    Game? game = Games.FirstOrDefault(item => item.SteamID == update.AppId);
+                    if (game == null)
+                        continue;
+
+                    if (update.LastPlayedUtc.HasValue &&
+                        (!game.LastPlayedUtc.HasValue || update.LastPlayedUtc > game.LastPlayedUtc))
+                    {
+                        game.LastPlayedUtc = update.LastPlayedUtc;
+                    }
+
+                    if (update.CheckedUtc.HasValue)
+                        game.SteamAchievementsLastCheckedUtc = update.CheckedUtc;
+                    if (update.TotalCount is > 0 && update.UnlockedCount.HasValue)
+                    {
+                        game.SteamAchievementsUnlocked = update.UnlockedCount;
+                        game.SteamAchievementsTotal = update.TotalCount;
+                    }
+                }
+
+                await _services.LibraryStorage.SaveAsync(Games.ToList());
+                completion.TrySetResult(true);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+        }))
+        {
+            completion.TrySetException(new InvalidOperationException("Could not publish Steam achievements."));
+        }
+
+        return completion.Task;
+    }
+
+    private async Task RefreshSteamAchievementsMaintenanceAsync()
+    {
+        if (!IsSteamConnected || !_appSettings.SteamId64.HasValue ||
+            !await _steamSyncGate.WaitAsync(0))
+        {
+            return;
+        }
+
+        try
+        {
+            List<Game> librarySnapshot = Games.ToList();
+            SteamAchievementRefreshResult result = await _services.SteamLibrary.RefreshAchievementsAsync(
+                librarySnapshot,
+                _appSettings.SteamId64.Value,
+                _appSettings.SteamAchievementsRetryAfterUtc,
+                PublishSteamAchievementUpdatesAsync);
+            _appSettings.SteamAchievementsRetryAfterUtc = result.RetryAfterUtc;
+            await _services.AppSettings.SaveAsync(_appSettings);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Steam] Achievement maintenance failed: {ex.Message}");
+        }
+        finally
+        {
+            _steamSyncGate.Release();
+        }
     }
 
     private Task PublishSteamGamesAsync(IReadOnlyList<SteamEnrichedGame> enrichedGames)
@@ -284,7 +367,9 @@ public partial class MainViewModel
             SteamSyncProgressMaximum = Math.Max(1, latest.TotalCount);
             SteamSyncProgressValue = latest.ProcessedCount;
             SteamSyncProgressTitle = "Syncing Steam library";
-            SteamSyncProgressMessage = "Looking for new owned games";
+            SteamSyncProgressMessage = latest.Phase == SteamSyncPhase.Achievements
+                ? "Updating achievements"
+                : "Looking for new owned games";
         }
 
         SteamSyncProgress? pending = Volatile.Read(ref _pendingSteamProgress);

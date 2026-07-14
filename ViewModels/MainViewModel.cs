@@ -361,6 +361,13 @@ namespace Codec.ViewModels
             var librarySnapshot = Games.ToList();
             await RunMaintenanceStepAsync("image refresh", () => SilentUpdateImagesAsync(librarySnapshot));
             QueueBackgroundPrefetch(librarySnapshot);
+
+            while (true)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(30));
+                if (IsSteamConnected)
+                    await RunMaintenanceStepAsync("Steam achievements", RefreshSteamAchievementsMaintenanceAsync);
+            }
         }
 
         private static async Task RunMaintenanceStepAsync(string name, Func<Task> work)

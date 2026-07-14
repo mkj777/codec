@@ -48,6 +48,8 @@ namespace Codec.Models
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(DateAddedDisplay))]
         private DateTime dateAdded = DateTime.Now;
+        [ObservableProperty] private DateTime? lastPlayedUtc;
+        [ObservableProperty] private DateTime? steamAchievementsLastCheckedUtc;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
@@ -168,6 +170,14 @@ namespace Codec.Models
         [ObservableProperty] private double? steamRating;
         [ObservableProperty] private string? steamReviewSummary;
         [ObservableProperty] private int? steamReviewTotal;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasSteamAchievementProgress))]
+        [NotifyPropertyChangedFor(nameof(SteamAchievementProgressDisplay))]
+        private int? steamAchievementsUnlocked;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasSteamAchievementProgress))]
+        [NotifyPropertyChangedFor(nameof(SteamAchievementProgressDisplay))]
+        private int? steamAchievementsTotal;
         [ObservableProperty] private string? ageRating;
         [ObservableProperty] private int? timeToCompleteMainStory;
         [ObservableProperty] private int? timeToCompleteCompletionist;
@@ -215,6 +225,15 @@ namespace Codec.Models
             : string.Empty;
 
         public double SteamReviewOpacity => GetAvailabilityOpacity(HasSteamReview);
+
+        [JsonIgnore]
+        public bool HasSteamAchievementProgress =>
+            SteamAchievementsTotal is > 0 && SteamAchievementsUnlocked.HasValue;
+
+        [JsonIgnore]
+        public string SteamAchievementProgressDisplay => HasSteamAchievementProgress
+            ? $"{SteamAchievementsUnlocked}/{SteamAchievementsTotal}"
+            : string.Empty;
 
         public string DisplayMainStory => FormatCompletionTime(TimeToCompleteMainStory);
 
@@ -692,6 +711,8 @@ namespace Codec.Models
             {
                 Id = Id,
                 DateAdded = DateAdded,
+                LastPlayedUtc = LastPlayedUtc,
+                SteamAchievementsLastCheckedUtc = SteamAchievementsLastCheckedUtc,
                 Executable = Executable,
                 FolderLocation = FolderLocation,
                 FolderSize = FolderSize,
@@ -729,6 +750,8 @@ namespace Codec.Models
                 SteamRating = SteamRating,
                 SteamReviewSummary = SteamReviewSummary,
                 SteamReviewTotal = SteamReviewTotal,
+                SteamAchievementsUnlocked = SteamAchievementsUnlocked,
+                SteamAchievementsTotal = SteamAchievementsTotal,
                 AgeRating = AgeRating,
                 TimeToCompleteMainStory = TimeToCompleteMainStory,
                 TimeToCompleteCompletionist = TimeToCompleteCompletionist,
@@ -763,6 +786,8 @@ namespace Codec.Models
             }
 
             DateAdded = source.DateAdded;
+            LastPlayedUtc = source.LastPlayedUtc;
+            SteamAchievementsLastCheckedUtc = source.SteamAchievementsLastCheckedUtc;
             Executable = source.Executable;
             FolderLocation = source.FolderLocation;
             FolderSize = source.FolderSize;
@@ -800,6 +825,8 @@ namespace Codec.Models
             SteamRating = source.SteamRating;
             SteamReviewSummary = source.SteamReviewSummary;
             SteamReviewTotal = source.SteamReviewTotal;
+            SteamAchievementsUnlocked = source.SteamAchievementsUnlocked;
+            SteamAchievementsTotal = source.SteamAchievementsTotal;
             AgeRating = source.AgeRating;
             TimeToCompleteMainStory = source.TimeToCompleteMainStory;
             TimeToCompleteCompletionist = source.TimeToCompleteCompletionist;

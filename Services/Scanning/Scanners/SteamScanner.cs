@@ -74,6 +74,103 @@ namespace Codec.Services.Scanning.Scanners
             return candidates;
         }
 
+        public async Task<IReadOnlyDictionary<int, DateTime>> ReadLastPlayedAsync(
+            ulong steamId64,
+            CancellationToken cancellationToken = default)
+        {
+            const ulong individualAccountBase = 76561197960265728UL;
+            if (steamId64 < individualAccountBase || steamId64 - individualAccountBase > uint.MaxValue)
+                return new Dictionary<int, DateTime>();
+
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+                string? steamPath = key?.GetValue("SteamPath") as string;
+                if (string.IsNullOrWhiteSpace(steamPath))
+                    return new Dictionary<int, DateTime>();
+
+                uint accountId = (uint)(steamId64 - individualAccountBase);
+                string localConfigPath = Path.Combine(
+                    NormalizePath(steamPath),
+                    "userdata",
+                    accountId.ToString(),
+                    "config",
+                    "localconfig.vdf");
+                if (!File.Exists(localConfigPath))
+                    return new Dictionary<int, DateTime>();
+
+                var result = new Dictionary<int, DateTime>();
+                DateTime latestAllowed = DateTime.UtcNow.AddDays(1);
+                string[] lines = await File.ReadAllLinesAsync(localConfigPath, cancellationToken).ConfigureAwait(false);
+                bool waitingForAppsBlock = false;
+                bool inAppsBlock = false;
+                int depth = 0;
+                int? pendingAppId = null;
+                int? currentAppId = null;
+
+                foreach (string rawLine in lines)
+                {
+                    string line = rawLine.Trim();
+                    if (!inAppsBlock)
+                    {
+                        if (line.Equals("\"apps\"", StringComparison.OrdinalIgnoreCase))
+                            waitingForAppsBlock = true;
+                        else if (waitingForAppsBlock && line == "{")
+                        {
+                            inAppsBlock = true;
+                            waitingForAppsBlock = false;
+                        }
+                        continue;
+                    }
+
+                    if (line == "{")
+                    {
+                        depth++;
+                        if (depth == 1 && pendingAppId.HasValue)
+                            currentAppId = pendingAppId;
+                        pendingAppId = null;
+                        continue;
+                    }
+
+                    if (line == "}")
+                    {
+                        if (depth == 0)
+                            break;
+                        if (depth == 1)
+                            currentAppId = null;
+                        depth--;
+                        continue;
+                    }
+
+                    if (depth == 0 && line.Length > 2 && line[0] == '"' && line[^1] == '"' &&
+                        int.TryParse(line[1..^1], out int appId))
+                    {
+                        pendingAppId = appId;
+                        continue;
+                    }
+
+                    if (depth != 1 || !currentAppId.HasValue ||
+                        !line.StartsWith("\"LastPlayed\"", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    string[] values = line.Split('"', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if (values.Length < 2 || !long.TryParse(values[^1], out long unixSeconds))
+                        continue;
+
+                    DateTime playedUtc = DateTimeOffset.FromUnixTimeSeconds(unixSeconds).UtcDateTime;
+                    if (playedUtc.Year >= 2003 && playedUtc <= latestAllowed)
+                        result[currentAppId.Value] = playedUtc;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SteamScanner] Last-played lookup failed: {ex.Message}");
+                return new Dictionary<int, DateTime>();
+            }
+        }
+
         /// <summary>
         /// Returns false when Steam left the install dir behind after uninstall — directory missing,
         /// or present but contains no files at any depth. Walks lazily; bails on the first file found.

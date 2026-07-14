@@ -16,7 +16,7 @@ namespace Codec.Services.Steam;
 
 public sealed record SteamOwnedApp(uint AppId, string Name, string AppType);
 
-public sealed record SteamAccountSnapshot(string AccountName, IReadOnlyList<SteamOwnedApp> Apps);
+public sealed record SteamAccountSnapshot(string AccountName, ulong SteamId64, IReadOnlyList<SteamOwnedApp> Apps);
 
 public sealed class SteamAuthService
 {
@@ -132,7 +132,7 @@ public sealed class SteamAuthService
                 .ToList();
 
             IReadOnlyList<SteamOwnedApp> ownedApps = await ResolveOwnedAppsAsync(apps, ownLicenses, cancellationToken).ConfigureAwait(false);
-            return new SteamAccountSnapshot(accountName, ownedApps);
+            return new SteamAccountSnapshot(accountName, steamId.ConvertToUInt64(), ownedApps);
         }
         finally
         {

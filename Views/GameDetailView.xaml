@@ -1240,6 +1240,31 @@
                                                             Grid.Column="1"
                                                             Spacing="{x:Bind DetailsSectionSpacing, Mode=OneWay}"
                                                             VerticalAlignment="Top">
+                                                        <StackPanel Spacing="4"
+                                                                    Visibility="{Binding SelectedGame.HasSteamAchievementProgress, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                <Grid ColumnSpacing="12">
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Text="Steam Achievements"
+                                                                                   Style="{StaticResource DetailMetaLabelTextStyle}"
+                                                                                   FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                        <TextBlock Text="{Binding SelectedGame.SteamAchievementProgressDisplay}"
+                                                                                   Grid.Column="1"
+                                                                                   HorizontalAlignment="Right"
+                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
+                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"/>
+                                                                </Grid>
+                                                                <ProgressBar Minimum="0"
+                                                                             Maximum="{Binding SelectedGame.SteamAchievementsTotal, FallbackValue=1}"
+                                                                             Value="{Binding SelectedGame.SteamAchievementsUnlocked, FallbackValue=0}"
+                                                                             Height="4"
+                                                                             CornerRadius="2"
+                                                                             Foreground="#D4A832"
+                                                                             Background="#3E3830"
+                                                                             HorizontalAlignment="Stretch"/>
+                                                        </StackPanel>
                                                         <StackPanel Spacing="0">
                                                                 <TextBlock Text="Steam Reviews"
                                                                            Style="{StaticResource DetailMetaLabelTextStyle}"

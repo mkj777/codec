@@ -367,6 +367,12 @@ namespace Codec.ViewModels
                 return;
             }
 
+            if (!isInstallRequest && SelectedGame != null)
+            {
+                SelectedGame.LastPlayedUtc = DateTime.UtcNow;
+                await _services.LibraryStorage.SaveAsync(Games.ToList());
+            }
+
             await Task.Delay(isInstallRequest ? 4000 : 12000);
             SetLaunchFeedbackState(LaunchFeedbackState.Idle);
         }

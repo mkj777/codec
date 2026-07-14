@@ -18,6 +18,8 @@ namespace Codec.Services.Storage
         public bool IsSidebarCollapsed { get; set; }
         public string? SteamAccountName { get; set; }
         public DateTime? LastSteamSyncUtc { get; set; }
+        public ulong? SteamId64 { get; set; }
+        public DateTime? SteamAchievementsRetryAfterUtc { get; set; }
     }
 
     public class AppSettingsService
