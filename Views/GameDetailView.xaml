@@ -1276,6 +1276,32 @@
                                                                            FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
                                                                            TextWrapping="Wrap"/>
                                                         </StackPanel>
+                                                        <StackPanel Spacing="0"
+                                                                    Visibility="{Binding SelectedGame.HasControllerInfo, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                <TextBlock Text="Controller"
+                                                                           Style="{StaticResource DetailMetaLabelTextStyle}"
+                                                                           FontSize="{x:Bind DetailsLabelFontSize, Mode=OneWay}"/>
+                                                                <StackPanel Orientation="Horizontal"
+                                                                            Spacing="6">
+                                                                        <FontIcon Glyph="&#xE7FC;"
+                                                                                  FontFamily="Segoe MDL2 Assets"
+                                                                                  FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                                  Foreground="#D4A832"
+                                                                                  VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="{Binding SelectedGame.ControllerSupportDisplay}"
+                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
+                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
+                                                                                   TextWrapping="Wrap"
+                                                                                   VerticalAlignment="Center"/>
+                                                                        <TextBlock Text="· Recommended"
+                                                                                   FontFamily="{StaticResource CodecSemiBoldFontFamily}"
+                                                                                   FontWeight="SemiBold"
+                                                                                   FontSize="{x:Bind DetailsInlineFontSize, Mode=OneWay}"
+                                                                                   Foreground="#C4956A"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Visibility="{Binding SelectedGame.HasControllerRecommendation, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                                                </StackPanel>
+                                                        </StackPanel>
                                                 </StackPanel>
                                         </Grid>
 

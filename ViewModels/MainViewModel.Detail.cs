@@ -430,11 +430,18 @@ namespace Codec.ViewModels
         {
             SelectedGame = game;
             IsDetailsVisible = true;
+
+            if (game.EffectiveSteamMetadataAppId.HasValue && game.ControllerSupport == ControllerSupportLevel.Unknown)
+            {
+                _ = RefreshGameMetadataAsync(game);
+            }
         }
 
         private async Task RefreshGameMetadataAsync(Game game)
         {
-            if (game.IsFullyImported && game.DisplayedAssetsReady)
+            bool needsControllerMetadata = game.EffectiveSteamMetadataAppId.HasValue &&
+                                           game.ControllerSupport == ControllerSupportLevel.Unknown;
+            if (game.IsFullyImported && game.DisplayedAssetsReady && !needsControllerMetadata)
             {
                 return;
             }

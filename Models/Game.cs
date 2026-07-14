@@ -10,6 +10,14 @@ using System.Text.Json.Serialization;
 
 namespace Codec.Models
 {
+    public enum ControllerSupportLevel
+    {
+        Unknown,
+        NotListed,
+        Partial,
+        Full
+    }
+
     public partial class Game : ObservableObject
     {
         private const string NotAvailableText = "Not Available";
@@ -163,6 +171,13 @@ namespace Codec.Models
         [ObservableProperty] private string? ageRating;
         [ObservableProperty] private int? timeToCompleteMainStory;
         [ObservableProperty] private int? timeToCompleteCompletionist;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasControllerInfo))]
+        [NotifyPropertyChangedFor(nameof(ControllerSupportDisplay))]
+        private ControllerSupportLevel controllerSupport;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasControllerRecommendation))]
+        private bool isControllerRecommended;
         [ObservableProperty] private bool isFullyImported;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
@@ -208,6 +223,18 @@ namespace Codec.Models
         public string DisplayCompletionist => FormatCompletionTime(TimeToCompleteCompletionist);
 
         public double CompletionistOpacity => GetAvailabilityOpacity(HasCompletionTime(TimeToCompleteCompletionist));
+
+        public bool HasControllerInfo => ControllerSupport != ControllerSupportLevel.Unknown;
+
+        public bool HasControllerRecommendation => IsControllerRecommended;
+
+        public string ControllerSupportDisplay => ControllerSupport switch
+        {
+            ControllerSupportLevel.Full => "Full support",
+            ControllerSupportLevel.Partial => "Partial support",
+            ControllerSupportLevel.NotListed => "No support listed",
+            _ => string.Empty
+        };
 
         public bool IsRemakeOrRemaster => IgdbCategory is 8 or 9;
 
@@ -705,6 +732,8 @@ namespace Codec.Models
                 AgeRating = AgeRating,
                 TimeToCompleteMainStory = TimeToCompleteMainStory,
                 TimeToCompleteCompletionist = TimeToCompleteCompletionist,
+                ControllerSupport = ControllerSupport,
+                IsControllerRecommended = IsControllerRecommended,
                 IsFullyImported = IsFullyImported,
                 HasHeroAssetSource = HasHeroAssetSource,
                 HasLogoAssetSource = HasLogoAssetSource,
@@ -774,6 +803,8 @@ namespace Codec.Models
             AgeRating = source.AgeRating;
             TimeToCompleteMainStory = source.TimeToCompleteMainStory;
             TimeToCompleteCompletionist = source.TimeToCompleteCompletionist;
+            ControllerSupport = source.ControllerSupport;
+            IsControllerRecommended = source.IsControllerRecommended;
             HasHeroAssetSource = source.HasHeroAssetSource;
             HasLogoAssetSource = source.HasLogoAssetSource;
             LibraryCapsuleUrl = source.LibraryCapsuleUrl;

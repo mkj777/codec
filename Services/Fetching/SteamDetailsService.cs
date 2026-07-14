@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Codec.Models;
 using Codec.Services.Storage;
@@ -13,6 +15,21 @@ namespace Codec.Services.Fetching
 {
     public class SteamDetailsService
     {
+        private static readonly Regex HtmlTagRegex = new("<[^>]+>", RegexOptions.Compiled);
+        private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+        private static readonly Regex NegativeControllerRecommendationRegex = new(
+            @"\b(?:controller|gamepad)\b.{0,32}\bnot\s+recommended\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex ControllerFirstRecommendationRegex = new(
+            @"\b(?:controller|gamepad)\b.{0,32}\b(?:recommended|preferred)\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex RecommendationFirstControllerRegex = new(
+            @"\b(?:recommended|preferred)\b.{0,32}\b(?:controller|gamepad)\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        private static readonly Regex BestWithControllerRegex = new(
+            @"\bbest\s+(?:played|experienced)\s+with\s+(?:a\s+)?(?:controller|gamepad)\b",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
         private readonly HttpClient _http = new();
         private readonly MetadataCache _cache;
         private readonly SteamKitService _steamKit;
@@ -162,6 +179,10 @@ namespace Codec.Services.Fetching
 
                 // Categories (disabled per request)
 
+                var controllerMetadata = ParseControllerMetadata(data);
+                game.ControllerSupport = controllerMetadata.Support;
+                game.IsControllerRecommended = controllerMetadata.IsRecommended;
+
                 Task priceTask = PopulatePriceAsync(game, steamId);
                 Task reviewsTask = PopulateReviewsAsync(game, steamId);
                 Task<SteamLibraryAssets?> picsAssetsTask = _steamKit.GetLibraryAssetsAsync((uint)steamId);
@@ -267,6 +288,74 @@ namespace Codec.Services.Fetching
                 // Ignore fetch errors; leave existing data
             }
 
+        }
+
+        internal static (ControllerSupportLevel Support, bool IsRecommended) ParseControllerMetadata(JsonElement data)
+        {
+            ControllerSupportLevel support = ControllerSupportLevel.NotListed;
+
+            if (data.TryGetProperty("controller_support", out var supportNode) && supportNode.ValueKind == JsonValueKind.String)
+            {
+                support = supportNode.GetString()?.Trim().ToLowerInvariant() switch
+                {
+                    "full" => ControllerSupportLevel.Full,
+                    "partial" => ControllerSupportLevel.Partial,
+                    _ => support
+                };
+            }
+
+            if (data.TryGetProperty("categories", out var categoriesNode) && categoriesNode.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var category in categoriesNode.EnumerateArray())
+                {
+                    if (!category.TryGetProperty("description", out var descriptionNode) || descriptionNode.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    string description = descriptionNode.GetString() ?? string.Empty;
+                    if (description.Equals("Full controller support", StringComparison.OrdinalIgnoreCase))
+                    {
+                        support = ControllerSupportLevel.Full;
+                        break;
+                    }
+
+                    if (support != ControllerSupportLevel.Full &&
+                        description.Equals("Partial Controller Support", StringComparison.OrdinalIgnoreCase))
+                    {
+                        support = ControllerSupportLevel.Partial;
+                    }
+                }
+            }
+
+            string requirements = GetWindowsRequirementsText(data);
+            bool recommended = !NegativeControllerRecommendationRegex.IsMatch(requirements) &&
+                               (ControllerFirstRecommendationRegex.IsMatch(requirements) ||
+                                RecommendationFirstControllerRegex.IsMatch(requirements) ||
+                                BestWithControllerRegex.IsMatch(requirements));
+
+            return (support, recommended);
+        }
+
+        private static string GetWindowsRequirementsText(JsonElement data)
+        {
+            if (!data.TryGetProperty("pc_requirements", out var requirementsNode) ||
+                requirementsNode.ValueKind != JsonValueKind.Object)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>(2);
+            foreach (string key in new[] { "minimum", "recommended" })
+            {
+                if (requirementsNode.TryGetProperty(key, out var valueNode) && valueNode.ValueKind == JsonValueKind.String)
+                {
+                    parts.Add(valueNode.GetString() ?? string.Empty);
+                }
+            }
+
+            string decoded = WebUtility.HtmlDecode(HtmlTagRegex.Replace(string.Join(" ", parts), " "));
+            return WhitespaceRegex.Replace(decoded, " ").Trim();
         }
 
         private string MapEsrbRating(string rating)
