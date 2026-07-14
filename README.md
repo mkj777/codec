@@ -13,6 +13,7 @@ Hopefully a place for everything you need.
 ### Features
 Scans your PC and gives you Information about your favourite Games.  
 Works together with Steam, Epic Games, Riot Games and more to come!  
+Now has an Steam Integration to add all your owned Games from Steam.  
 Launch them through Codec and add launch scripts for specific cases :)
 
 ### Installation
@@ -31,9 +32,8 @@ thanks to [SteamKit2](https://github.com/SteamRE/SteamKit) for the steam integra
 thanks to [Stefan Gabriel Craescu](https://github.com/Deadlock-too) for [howlongtobeat-ts](https://github.com/Deadlock-too/howlongtobeat-ts) to integrate HowLongToBeat  
 
 ### Screenshots
+<img width="1903" height="1047" alt="image" src="https://github.com/user-attachments/assets/4f19a25d-71aa-401a-801e-21d0fb7a71eb" />
 
-<img width="1586" height="931" alt="image" src="https://github.com/user-attachments/assets/5ec33d6f-18de-4234-af4b-11c8d8919e5d" />
+<img width="1751" height="1060" alt="image" src="https://github.com/user-attachments/assets/c3dc8ba1-c1fa-48ef-96d4-732291b982b8" />
 
-<img width="1586" height="931" alt="image" src="https://github.com/user-attachments/assets/5160a527-acb6-4345-a6f9-cbcee8dbcd85" />
-
-<img width="1586" height="931" alt="image" src="https://github.com/user-attachments/assets/7f5cf22d-1e6d-4ae8-a107-58686b0379c6" />
+<img width="1751" height="1060" alt="image" src="https://github.com/user-attachments/assets/d7fbf338-87bc-46a4-8f94-1fd7ce7bbff4" />
