@@ -1059,8 +1059,10 @@
                                                    FontSize="14" FontWeight="SemiBold"
                                                    FontFamily="{StaticResource CodecSemiBoldFontFamily}"
                                                    Foreground="#F3EDC9"/>
-                                        <TextBlock Text="{Binding SteamLastSyncText}"
-                                                   FontSize="11" Foreground="#9E8E78"/>
+                                        <TextBlock Text="Connected"
+                                                   FontSize="11"
+                                                   Foreground="#9E8E78"
+                                                   Visibility="{Binding IsSteamConnected, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                     </StackPanel>
                                 </Grid>
 

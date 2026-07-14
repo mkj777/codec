@@ -36,7 +36,6 @@ public partial class MainViewModel
     private bool _isSteamSyncing;
     [ObservableProperty] private bool _isSteamQrVisible;
     [ObservableProperty] private ImageSource? _steamQrCode;
-    [ObservableProperty] private string _steamLastSyncText = "Never synced";
     [ObservableProperty] private bool _isSteamSyncProgressVisible;
     [ObservableProperty] private bool _isSteamSyncProgressIndeterminate = true;
     [ObservableProperty] private string _steamSyncProgressTitle = "Syncing Steam library";
@@ -53,9 +52,6 @@ public partial class MainViewModel
     {
         _services.SteamLibrary.QrCodeChanged += SteamLibrary_QrCodeChanged;
         SteamAccountName = _appSettings.SteamAccountName;
-        SteamLastSyncText = _appSettings.LastSteamSyncUtc.HasValue
-            ? $"Last synced {_appSettings.LastSteamSyncUtc.Value.ToLocalTime():g}"
-            : "Never synced";
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
     }
@@ -114,7 +110,6 @@ public partial class MainViewModel
             _appSettings.SteamId64 = result.SteamId64;
             _appSettings.SteamAchievementsRetryAfterUtc = result.AchievementRetryAfterUtc;
             _appSettings.LastSteamSyncUtc = DateTime.UtcNow;
-            SteamLastSyncText = $"Last synced {DateTime.Now:g}";
             IsSteamSyncProgressIndeterminate = false;
             SteamSyncProgressValue = SteamSyncProgressMaximum;
             SteamSyncProgressTitle = "Syncing Steam library";
@@ -168,7 +163,6 @@ public partial class MainViewModel
         SteamAccountName = accountName;
         _appSettings.SteamAccountName = accountName;
         _appSettings.SteamId64 = steamId64;
-        SteamLastSyncText = "Connected · Syncing library";
         IsSteamQrVisible = false;
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
@@ -188,7 +182,6 @@ public partial class MainViewModel
         _appSettings.LastSteamSyncUtc = null;
         _appSettings.SteamId64 = null;
         _appSettings.SteamAchievementsRetryAfterUtc = null;
-        SteamLastSyncText = "Never synced";
         IsSteamSyncProgressVisible = false;
         await _services.AppSettings.SaveAsync(_appSettings);
         await _services.LibraryStorage.SaveAsync(Games.ToList());
