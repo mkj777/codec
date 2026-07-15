@@ -442,7 +442,7 @@
                               IsHitTestVisible="False">
                                 <Image x:Name="HeroForegroundImage"
                                        Source="{Binding SelectedGame.LibraryHero}"
-                                       Stretch="Fill"
+                                       Stretch="Uniform"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Bottom"/>
                         </Grid>
