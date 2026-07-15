@@ -77,6 +77,50 @@ namespace Codec.Tests
         }
 
         [Fact]
+        public async Task FindIgdbMatchByNameAsync_UsesExactTitleFallbackForSimCity2013()
+        {
+            int gamesCalls = 0;
+            string? exactBody = null;
+            var service = CreateService((uri, body) =>
+            {
+                if (uri.Contains("/external_games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("[]");
+                }
+
+                gamesCalls++;
+                if (body.StartsWith("search ", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse($$"""
+                    [{
+                      "id": 24780,
+                      "name": "SimCity 4 Deluxe Edition",
+                      "first_release_date": {{UnixDate(2010, 7, 20)}}
+                    }]
+                    """);
+                }
+
+                exactBody = body;
+                return JsonResponse($$"""
+                [{
+                  "id": 1274,
+                  "name": "SimCity",
+                  "first_release_date": {{UnixDate(2013, 3, 5)}},
+                  "release_dates": [{ "date": {{UnixDate(2013, 3, 5)}} }]
+                }]
+                """);
+            });
+
+            var match = await service.FindIgdbMatchByNameAsync("SimCity", new HashSet<int> { 2013 });
+
+            Assert.Equal(1274, match.Id);
+            Assert.Equal(2013, match.ReleaseYear);
+            Assert.Equal(2, gamesCalls);
+            Assert.Contains("where name = \"SimCity\";", exactBody);
+            Assert.Contains("limit 50;", exactBody);
+        }
+
+        [Fact]
         public async Task FindIgdbMatchByNameAsync_PrefersNewestSteamBackedExactName()
         {
             string? capturedExternalBody = null;
@@ -837,6 +881,40 @@ namespace Codec.Tests
             Assert.Equal(new DateTime(2007, 8, 21), entries[1].OriginalReleaseDate?.Date);
             Assert.Equal("BioShock", entries[1].OriginalGameName);
             Assert.Equal(9, entries[1].IgdbCategory);
+        }
+
+        [Fact]
+        public async Task PopulateFromIgdbAsync_AppliesOfficialWebsiteAndPrefersEsrbRating()
+        {
+            var service = CreateService((uri, _) =>
+            {
+                if (!uri.EndsWith("/games", StringComparison.OrdinalIgnoreCase))
+                {
+                    return JsonResponse("[]");
+                }
+
+                return JsonResponse("""
+                [{
+                  "id": 1274,
+                  "name": "SimCity",
+                  "game_type": { "type": "Main Game" },
+                  "websites": [
+                    { "url": "https://example.com/wiki", "type": { "type": "Wikipedia" } },
+                    { "url": "https://simcity.example", "type": { "type": "Official Website" } }
+                  ],
+                  "age_ratings": [
+                    { "organization": { "name": "PEGI" }, "rating_category": { "rating": "7" } },
+                    { "organization": { "name": "ESRB" }, "rating_category": { "rating": "E10+" } }
+                  ]
+                }]
+                """);
+            });
+            var game = new Game { Name = "SimCity", IgdbId = 1274 };
+
+            await service.PopulateFromIgdbAsync(game);
+
+            Assert.Equal("https://simcity.example", game.OfficialWebsiteUrl);
+            Assert.Equal("ESRB E10+", game.AgeRating);
         }
 
         private static IgdbService CreateService(Func<string, string, HttpResponseMessage> responder)

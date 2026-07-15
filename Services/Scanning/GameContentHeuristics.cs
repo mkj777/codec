@@ -48,7 +48,6 @@ namespace Codec.Services.Scanning
             "origin games",
             "ea games",
             "battlenet\\games",
-            "rockstar games\\launcher",
             "xboxgames",
             "windowsapps",
             "riot games"

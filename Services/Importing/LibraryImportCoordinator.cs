@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
@@ -553,11 +554,13 @@ namespace Codec.Services.Importing
             {
                 if (ScanLogFile.IsSessionActive)
                 {
+                    ScanLogFile.WriteSummary($"Import results:    {snapshot.AddedCount} added, {snapshot.SkippedCount} skipped, {snapshot.FailedCount} failed");
+
                     var activeSw = _clickStopwatch;
                     if (activeSw != null && activeSw.IsRunning)
                     {
                         activeSw.Stop();
-                        GameScanner.LogSession($"=== TOTAL TIME (scan + pipeline): {activeSw.Elapsed.TotalSeconds:0.0}s ===");
+                        ScanLogFile.WriteSummary($"Total time:       {activeSw.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture)}s (scan + pipeline)");
                     }
 
                     ScanLogFile.EndSession();
@@ -577,11 +580,13 @@ namespace Codec.Services.Importing
                 _lastCompletedSessionTotal = sessionTotal;
             }
 
+            ScanLogFile.WriteSummary($"Import results:    {snapshot.AddedCount} added, {snapshot.SkippedCount} skipped, {snapshot.FailedCount} failed");
+
             var sw = _clickStopwatch;
             if (sw != null && sw.IsRunning)
             {
                 sw.Stop();
-                GameScanner.LogSession($"=== TOTAL TIME (scan + pipeline): {sw.Elapsed.TotalSeconds:0.0}s ===");
+                ScanLogFile.WriteSummary($"Total time:       {sw.Elapsed.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture)}s (scan + pipeline)");
             }
 
             ScanLogFile.EndSession();

@@ -470,23 +470,21 @@ namespace Codec.ViewModels
 
                 int? steamMetadataId = snapshot.EffectiveSteamMetadataAppId;
                 var steamTask = steamMetadataId.HasValue ? _services.SteamDetails.PopulateFromSteamAsync(snapshot) : Task.CompletedTask;
-                var rawgTask = !steamMetadataId.HasValue && snapshot.RawgID.HasValue
-                    ? _services.RawgDetails.PopulateAsync(snapshot)
-                    : Task.CompletedTask;
                 var folderSizeTask = FolderSizeService.CalculateAsync(snapshot.FolderLocation);
 
-                await Task.WhenAll(steamTask, rawgTask, folderSizeTask);
+                await Task.WhenAll(steamTask, folderSizeTask);
 
-                if (steamMetadataId.HasValue)
+                if (steamMetadataId.HasValue && !snapshot.IgdbId.HasValue)
                 {
-                    if (!snapshot.IgdbId.HasValue)
-                    {
-                        snapshot.IgdbId = await _services.Igdb.FindIgdbIdBySteamIdAsync(steamMetadataId.Value);
-                    }
-                    if (snapshot.IgdbId.HasValue)
-                    {
-                        await _services.Igdb.PopulateFromIgdbAsync(snapshot);
-                    }
+                    snapshot.IgdbId = await _services.Igdb.FindIgdbIdBySteamIdAsync(steamMetadataId.Value);
+                }
+                if (snapshot.IgdbId.HasValue)
+                {
+                    await _services.Igdb.PopulateFromIgdbAsync(snapshot);
+                }
+                else if (!steamMetadataId.HasValue && snapshot.RawgID.HasValue)
+                {
+                    await _services.RawgDetails.PopulateAsync(snapshot);
                 }
 
                 var displayedAssets = await _services.DisplayedAssets.EnsureDisplayedAssetsAsync(snapshot);

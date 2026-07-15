@@ -80,7 +80,14 @@ namespace Codec.Services.Scanning
             "EA Javelin Anticheat",
             "GOG Galaxy",
             "Ubisoft Connect",
-            "Everything"
+            "Everything",
+            "HandBrake",
+            "Chatterino",
+            "RealWorld Cursor Editor",
+            "Social Club",
+            "GRYPHLINK",
+            "Rockstar Games Launcher",
+            "Steamworks Common Redistributables"
         };
 
         private static readonly string[] VendorTokens =
@@ -116,6 +123,7 @@ namespace Codec.Services.Scanning
             "\\epic games launcher",
             "\\epic games\\launcher",
             "\\gog galaxy",
+            "\\rockstar games\\launcher",
             "\\system volume information"
         };
 

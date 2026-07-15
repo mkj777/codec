@@ -11,17 +11,6 @@ using Codec.Services.Storage;
 
 namespace Codec.Services.Resolving
 {
-    public enum RawgValidationMode
-    {
-        Strict,
-        SteamBacked,
-        /// <summary>
-        /// Steam ID was provided directly by a platform launcher (confidence ≈ 100%).
-        /// Very lenient RAWG threshold — name-match is used for enrichment only.
-        /// </summary>
-        HighConfidenceSteam
-    }
-
     /// <summary>
     /// Service for validating games via RAWG.io API
     /// </summary>
@@ -32,11 +21,8 @@ namespace Codec.Services.Resolving
         private readonly MetadataCache _cache;
         private readonly HttpClient _httpClient = new();
         private const string RawgSearchUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
-        private const string RawgStoreUrl = "https://codec-api-proxy.vercel.app/api/rawg/store";
         private const int DefaultPageSize = 5;
         private const double StrictScoreThreshold = 0.88;
-        private const double SteamBackedScoreThreshold = 0.82;
-        private const double HighConfidenceSteamScoreThreshold = 0.60;
         private const double MinimumScoreDelta = 0.08;
         private const int MinimumRatingsCount = 5;
 
@@ -48,7 +34,7 @@ namespace Codec.Services.Resolving
         /// <summary>
         /// Validates if a game name exists in RAWG database with strict filtering and scoring.
         /// </summary>
-        public async Task<int?> ValidateGameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
+        public async Task<int?> ValidateGameAsync(string gameName)
         {
             if (string.IsNullOrWhiteSpace(gameName))
             {
@@ -62,7 +48,7 @@ namespace Codec.Services.Resolving
             }
 
             string searchName = ApplyGameNameOverrides(cleanedName);
-            var settings = RawgValidationSettings.FromMode(mode);
+            var settings = new RawgValidationSettings(StrictScoreThreshold, MinimumScoreDelta, DefaultPageSize);
 
             try
             {
@@ -339,50 +325,8 @@ namespace Codec.Services.Resolving
             return name.Trim();
         }
 
-        /// <summary>
-        /// Deterministic RAWG lookup by Steam store ID — no fuzzy matching, no false positives.
-        /// Calls /api/rawg/store?store=1&amp;game_id={steamId} on the proxy.
-        /// </summary>
-        public async Task<int?> FindRawgIdBySteamIdAsync(int steamId)
-        {
-            try
-            {
-                string url = $"{RawgStoreUrl}?store=1&game_id={steamId}";
-                string response = await _cache.GetOrFetchAsync("rawg-store", url, TimeSpan.FromDays(30));
-                using var doc = JsonDocument.Parse(response);
-
-                if (!doc.RootElement.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
-                    return null;
-
-                var first = results.EnumerateArray().FirstOrDefault();
-                if (first.ValueKind == JsonValueKind.Object &&
-                    first.TryGetProperty("id", out var idProp) &&
-                    idProp.TryGetInt32(out int id) && id > 0)
-                {
-                    Debug.WriteLine($"  ✓ RAWG store-lookup steam={steamId} -> rawg={id}");
-                    return id;
-                }
-
-                Debug.WriteLine($"  ✗ RAWG store-lookup: no result for steam={steamId}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"  ✗ RAWG store-lookup failed steam={steamId}: {ex.Message}");
-                return null;
-            }
-        }
-
         private sealed record RawgCandidate(int RawgId, string Name, double Score);
 
-        private sealed record RawgValidationSettings(double MinimumScore, double MinimumDelta, int PageSize)
-        {
-            public static RawgValidationSettings FromMode(RawgValidationMode mode) => mode switch
-            {
-                RawgValidationMode.HighConfidenceSteam => new RawgValidationSettings(HighConfidenceSteamScoreThreshold, MinimumScoreDelta, DefaultPageSize),
-                RawgValidationMode.SteamBacked => new RawgValidationSettings(SteamBackedScoreThreshold, MinimumScoreDelta, DefaultPageSize),
-                _ => new RawgValidationSettings(StrictScoreThreshold, MinimumScoreDelta, DefaultPageSize)
-            };
-        }
+        private sealed record RawgValidationSettings(double MinimumScore, double MinimumDelta, int PageSize);
     }
 }

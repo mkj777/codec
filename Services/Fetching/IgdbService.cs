@@ -177,6 +177,24 @@ namespace Codec.Services.Fetching
             string body = $"search \"{escaped}\"; fields id, name, first_release_date, release_dates.date, game_type.type; limit 10;";
             string json = await PostAsync(GamesEndpoint, body).ConfigureAwait(false);
 
+            var candidates = ParseNameCandidates(json, queryName, scoringName, allowedReleaseYears);
+            if (candidates.Count > 0 || allowedReleaseYears is null || allowedReleaseYears.Count == 0)
+            {
+                return candidates;
+            }
+
+            Debug.WriteLine($"[IGDB] SearchAndParseCandidatesAsync: retry exact title for '{queryName}' allowed={FormatYears(allowedReleaseYears)}");
+            body = $"fields id, name, first_release_date, release_dates.date, game_type.type; where name = \"{escaped}\"; limit 50;";
+            json = await PostAsync(GamesEndpoint, body).ConfigureAwait(false);
+            return ParseNameCandidates(json, queryName, scoringName, allowedReleaseYears);
+        }
+
+        private static List<IgdbNameCandidate> ParseNameCandidates(
+            string json,
+            string queryName,
+            string scoringName,
+            IReadOnlySet<int>? allowedReleaseYears)
+        {
             var candidates = new List<IgdbNameCandidate>();
             if (string.IsNullOrWhiteSpace(json))
                 return candidates;
@@ -615,11 +633,10 @@ namespace Codec.Services.Fetching
   involved_companies.company.name,
   involved_companies.developer,
   involved_companies.publisher,
-  age_ratings.rating,
-  age_ratings.category,
-  age_ratings.rating_cover_url,
+  age_ratings.organization.name,
+  age_ratings.rating_category.rating,
   websites.url,
-  websites.category,
+  websites.type.type,
   aggregated_rating,
   aggregated_rating_count,
   total_rating,
@@ -837,6 +854,56 @@ limit 1;";
                 if (!string.IsNullOrWhiteSpace(pub) && ShouldOverwrite(game.Publisher, game.SteamID))
                 {
                     game.Publisher = pub;
+                }
+            }
+
+            if (ShouldOverwrite(game.OfficialWebsiteUrl, game.SteamID) &&
+                root.TryGetProperty("websites", out var websites) && websites.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var website in websites.EnumerateArray())
+                {
+                    string? type = website.TryGetProperty("type", out var typeNode) && typeNode.ValueKind == JsonValueKind.Object
+                        ? GetString(typeNode, "type")
+                        : null;
+                    string? url = GetString(website, "url");
+                    if (type?.Equals("Official Website", StringComparison.OrdinalIgnoreCase) == true && !string.IsNullOrWhiteSpace(url))
+                    {
+                        game.OfficialWebsiteUrl = url;
+                        break;
+                    }
+                }
+            }
+
+            if (ShouldOverwrite(game.AgeRating, game.SteamID) &&
+                root.TryGetProperty("age_ratings", out var ageRatings) && ageRatings.ValueKind == JsonValueKind.Array)
+            {
+                string? selected = null;
+                int selectedRank = int.MaxValue;
+                foreach (var ageRating in ageRatings.EnumerateArray())
+                {
+                    string? organization = ageRating.TryGetProperty("organization", out var organizationNode) && organizationNode.ValueKind == JsonValueKind.Object
+                        ? GetString(organizationNode, "name")
+                        : null;
+                    string? rating = ageRating.TryGetProperty("rating_category", out var ratingNode) && ratingNode.ValueKind == JsonValueKind.Object
+                        ? GetString(ratingNode, "rating")
+                        : null;
+                    int rank = organization?.ToUpperInvariant() switch
+                    {
+                        "ESRB" => 0,
+                        "PEGI" => 1,
+                        _ => int.MaxValue
+                    };
+
+                    if (rank < selectedRank && !string.IsNullOrWhiteSpace(rating))
+                    {
+                        selected = $"{organization} {rating}";
+                        selectedRank = rank;
+                    }
+                }
+
+                if (selected != null)
+                {
+                    game.AgeRating = selected;
                 }
             }
 

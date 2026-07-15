@@ -44,9 +44,9 @@ namespace Codec.Services.Logging
             Debug.WriteLine(text);
 
             if (IsAddedOutcome(outcomeSymbol))
-                ScanLogFile.WriteAdded(text);
+                ScanLogFile.WriteAdded(_source, text);
             else
-                ScanLogFile.WriteRejected(text);
+                ScanLogFile.WriteRejected(_source, text);
         }
 
         private static bool IsAddedOutcome(string symbol) =>

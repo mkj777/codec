@@ -134,6 +134,31 @@ namespace Codec.Tests
         }
 
         [Fact]
+        public void CollapseNestedSameNameCandidates_KeepsOuterInstallFolder()
+        {
+            var outer = new GameCandidate("SimCity", @"E:\EA Games\SimCity", "Heuristic Scan");
+            var nested = new GameCandidate("SimCity", @"E:\EA Games\SimCity\SimCity", "Heuristic Scan");
+
+            var collapsed = HeuristicScanner.CollapseNestedSameNameCandidates(new[] { nested, outer });
+
+            var candidate = Assert.Single(collapsed);
+            Assert.Equal(outer.FolderPath, candidate.FolderPath);
+        }
+
+        [Theory]
+        [InlineData("HandBrake")]
+        [InlineData("Chatterino")]
+        [InlineData("RealWorld Cursor Editor")]
+        [InlineData("Social Club")]
+        [InlineData("GRYPHLINK")]
+        [InlineData("Steamworks Common Redistributables")]
+        public void NonGameCatalog_RejectsObservedUtilities(string name)
+        {
+            Assert.True(NonGameSoftwareCatalog.IsNonGameCandidate(
+                new GameCandidate(name, Path.Combine(@"E:\", name), "Heuristic Scan")));
+        }
+
+        [Fact]
         public void ExecuteDetectionFunnel_IgnoresInnoSetupUninstaller()
         {
             string gameDir = CreateTempDirectory(Path.Combine("Games", "LoveChoice-Steamrip.com"));

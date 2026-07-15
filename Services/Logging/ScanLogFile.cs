@@ -13,7 +13,18 @@ namespace Codec.Services.Logging
         private const int MaxLogFiles = 10;
 
         private static readonly object _gate = new();
-        private static readonly List<string> _rejectedEntries = new();
+        private static readonly string[] ScannerOrder =
+        {
+            "Steam",
+            "Epic Games",
+            "Riot Games",
+            "Heuristic Scan"
+        };
+
+        private static readonly List<string> _sessionEntries = new();
+        private static readonly List<string> _summaryEntries = new();
+        private static readonly Dictionary<string, List<string>> _addedEntries = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, List<string>> _rejectedEntries = new(StringComparer.OrdinalIgnoreCase);
         private static StreamWriter? _writer;
         private static string? _logPath;
         private static string? _baseDirectoryOverride;
@@ -57,9 +68,6 @@ namespace Codec.Services.Logging
 
                     string header = $"=== Scan log started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===";
                     _writer.WriteLine(header);
-                    _writer.WriteLine();
-                    _writer.WriteLine("=== ADDED ===");
-
                     EnforceRetention_NoLock(dir, _logPath);
                 }
                 catch (Exception ex)
@@ -69,37 +77,39 @@ namespace Codec.Services.Logging
                     _writer = null;
                     _logPath = null;
                     _isSessionActive = false;
-                    _rejectedEntries.Clear();
+                    ClearBuffers_NoLock();
                 }
             }
         }
 
-        /// <summary>Write session-wide context into the first section of the scan log.</summary>
+        /// <summary>Buffer session-wide context before scanner-specific results.</summary>
         public static void WriteSession(string text)
         {
             lock (_gate)
             {
-                TryWrite(_writer, text);
+                if (_isSessionActive) _sessionEntries.Add(text);
             }
         }
 
-        /// <summary>Write to the added-games section.</summary>
-        public static void WriteAdded(string text)
-        {
-            lock (_gate) { TryWrite(_writer, text); }
-        }
-
-        /// <summary>Buffer rejected/denied/failed entries so they can be appended after added games.</summary>
-        public static void WriteRejected(string text)
+        /// <summary>Buffer a line for the final scan summary.</summary>
+        public static void WriteSummary(string text)
         {
             lock (_gate)
             {
-                if (!_isSessionActive)
-                {
-                    return;
-                }
+                if (_isSessionActive) _summaryEntries.Add(text);
+            }
+        }
 
-                _rejectedEntries.Add(text);
+        public static void WriteAdded(string source, string text)
+        {
+            lock (_gate) { AddResult_NoLock(_addedEntries, source, text); }
+        }
+
+        public static void WriteRejected(string source, string text)
+        {
+            lock (_gate)
+            {
+                AddResult_NoLock(_rejectedEntries, source, text);
             }
         }
 
@@ -108,17 +118,18 @@ namespace Codec.Services.Logging
             lock (_gate) { EndSession_NoLock(); }
         }
 
-        private static void TryWrite(StreamWriter? writer, string text)
+        private static void AddResult_NoLock(Dictionary<string, List<string>> entries, string source, string text)
         {
-            if (writer is null) return;
-            try
+            if (!_isSessionActive) return;
+
+            string key = string.IsNullOrWhiteSpace(source) ? "Other" : source.Trim();
+            if (!entries.TryGetValue(key, out var sourceEntries))
             {
-                writer.WriteLine(text);
+                sourceEntries = new List<string>();
+                entries[key] = sourceEntries;
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"ScanLogFile: write failed: {ex.Message}");
-            }
+
+            sourceEntries.Add(text);
         }
 
         private static void EndSession_NoLock()
@@ -127,19 +138,21 @@ namespace Codec.Services.Logging
             {
                 try
                 {
-                    _writer.WriteLine();
-                    _writer.WriteLine("=== REJECTED / SKIPPED / FAILED ===");
-
-                    if (_rejectedEntries.Count == 0)
+                    foreach (string entry in _sessionEntries)
                     {
-                        _writer.WriteLine("(none)");
+                        _writer.WriteLine(entry);
                     }
-                    else
+
+                    foreach (string source in GetOrderedSources_NoLock())
                     {
-                        foreach (string entry in _rejectedEntries)
-                        {
-                            _writer.WriteLine(entry);
-                        }
+                        WriteScannerSection_NoLock(source);
+                    }
+
+                    _writer.WriteLine();
+                    _writer.WriteLine("=== SCAN COMPLETE ===");
+                    foreach (string entry in _summaryEntries)
+                    {
+                        _writer.WriteLine(entry);
                     }
 
                     _writer.WriteLine();
@@ -155,6 +168,59 @@ namespace Codec.Services.Logging
             _writer = null;
             _logPath = null;
             _isSessionActive = false;
+            ClearBuffers_NoLock();
+        }
+
+        private static IEnumerable<string> GetOrderedSources_NoLock()
+        {
+            var present = _addedEntries.Keys
+                .Concat(_rejectedEntries.Keys)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string source in ScannerOrder)
+            {
+                yield return source;
+                present.Remove(source);
+            }
+
+            foreach (string source in present.OrderBy(source => source, StringComparer.OrdinalIgnoreCase))
+            {
+                yield return source;
+            }
+        }
+
+        private static void WriteScannerSection_NoLock(string source)
+        {
+            string heading = source.Equals("Heuristic Scan", StringComparison.OrdinalIgnoreCase)
+                ? "HEURISTIC SCANNER"
+                : $"{source.ToUpperInvariant()} SCANNER";
+
+            _writer!.WriteLine();
+            _writer.WriteLine($"=== {heading} ===");
+            WriteResultGroup_NoLock("ADDED", _addedEntries, source);
+            WriteResultGroup_NoLock("REJECTED / SKIPPED / FAILED", _rejectedEntries, source);
+        }
+
+        private static void WriteResultGroup_NoLock(string heading, Dictionary<string, List<string>> entries, string source)
+        {
+            _writer!.WriteLine($"--- {heading} ---");
+            if (!entries.TryGetValue(source, out var sourceEntries) || sourceEntries.Count == 0)
+            {
+                _writer.WriteLine("(none)");
+                return;
+            }
+
+            foreach (string entry in sourceEntries)
+            {
+                _writer.WriteLine(entry);
+            }
+        }
+
+        private static void ClearBuffers_NoLock()
+        {
+            _sessionEntries.Clear();
+            _summaryEntries.Clear();
+            _addedEntries.Clear();
             _rejectedEntries.Clear();
         }
 

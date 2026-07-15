@@ -382,8 +382,6 @@ namespace Codec.Services.Resolving
             return string.Join("/", years.Order());
         }
 
-        public Task<int?> FindRawgIdBySteamIdAsync(int steamId) => _gameDetails.FindRawgIdBySteamIdAsync(steamId);
-
         public async Task<bool> SteamAppMatchesNameAsync(int steamId, string nameHint)
             => await SteamAppMatchesLocalGameAsync(steamId, nameHint, executablePath: null).ConfigureAwait(false);
 
@@ -1420,14 +1418,14 @@ namespace Codec.Services.Resolving
                 return null;
             }
 
-            return await FindRawgIdByNameAsync(bestName, RawgValidationMode.Strict);
+            return await FindRawgIdByNameAsync(bestName);
         }
 
-        public async Task<int?> FindRawgIdByNameAsync(string gameName, RawgValidationMode mode = RawgValidationMode.Strict)
+        public async Task<int?> FindRawgIdByNameAsync(string gameName)
         {
             string cleanedName = GameNameCleaner.RemoveTrailingDomainTag(gameName);
             if (string.IsNullOrWhiteSpace(cleanedName)) return null;
-            return await _gameDetails.ValidateGameAsync(cleanedName, mode);
+            return await _gameDetails.ValidateGameAsync(cleanedName);
         }
 
         private bool TryParseRoman(string token, out int value)

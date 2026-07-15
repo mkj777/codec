@@ -33,7 +33,7 @@ namespace Codec.Tests
         }
 
         [Fact]
-        public void EndSession_AppendsRejectedSectionAfterAddedSection()
+        public void EndSession_GroupsResultsByScannerAndFinishesWithSummary()
         {
             string baseDir = CreateTempBaseDirectory();
             try
@@ -42,17 +42,24 @@ namespace Codec.Tests
 
                 ScanLogFile.BeginSession();
                 string logPath = Assert.IsType<string>(ScanLogFile.LogPath);
-                ScanLogFile.WriteRejected("rejected first");
-                ScanLogFile.WriteAdded("added second");
+                ScanLogFile.WriteRejected("Heuristic Scan", "heuristic rejected");
+                ScanLogFile.WriteAdded("Steam", "steam added");
+                ScanLogFile.WriteAdded("Epic Games", "epic added");
+                ScanLogFile.WriteSummary("Total time: 12.3s");
                 ScanLogFile.EndSession();
 
                 string text = File.ReadAllText(logPath);
-                int addedIndex = text.IndexOf("added second", StringComparison.Ordinal);
-                int rejectedIndex = text.IndexOf("rejected first", StringComparison.Ordinal);
+                int steamIndex = text.IndexOf("=== STEAM SCANNER ===", StringComparison.Ordinal);
+                int epicIndex = text.IndexOf("=== EPIC GAMES SCANNER ===", StringComparison.Ordinal);
+                int riotIndex = text.IndexOf("=== RIOT GAMES SCANNER ===", StringComparison.Ordinal);
+                int heuristicIndex = text.IndexOf("=== HEURISTIC SCANNER ===", StringComparison.Ordinal);
+                int completeIndex = text.IndexOf("=== SCAN COMPLETE ===", StringComparison.Ordinal);
 
-                Assert.True(addedIndex >= 0, "Expected added entry in log.");
-                Assert.True(rejectedIndex >= 0, "Expected rejected entry in log.");
-                Assert.True(addedIndex < rejectedIndex, "Expected added entries before rejected entries.");
+                Assert.True(steamIndex < epicIndex && epicIndex < riotIndex && riotIndex < heuristicIndex);
+                Assert.True(heuristicIndex < completeIndex);
+                Assert.True(text.IndexOf("steam added", StringComparison.Ordinal) < completeIndex);
+                Assert.True(text.IndexOf("heuristic rejected", StringComparison.Ordinal) < completeIndex);
+                Assert.True(text.IndexOf("Total time: 12.3s", StringComparison.Ordinal) > completeIndex);
             }
             finally
             {

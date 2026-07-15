@@ -158,10 +158,14 @@ namespace Codec.Services.Importing
                 int? steamMetadataAppId = null;
                 int? rawgId = request.RawgId;
                 int? igdbId = request.IgdbId;
-                var executableCopyright = !string.IsNullOrEmpty(normalizedExePath)
+                bool needsCopyrightValidation = !steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isRiotSource;
+                var executableCopyright = needsCopyrightValidation && !string.IsNullOrEmpty(normalizedExePath)
                     ? _gameName.TryGetExeCopyrightInfo(normalizedExePath)
                     : GameNameService.ExeCopyrightInfo.Empty;
-                LogExecutableCopyright(batch, normalizedExePath, executableCopyright);
+                if (needsCopyrightValidation)
+                {
+                    LogExecutableCopyright(batch, normalizedExePath, executableCopyright);
+                }
                 IReadOnlySet<int> executableCopyrightYears = executableCopyright.Years;
 
                 bool isSteamLauncherSource = string.Equals(normalizedImportSource, PlatformSourceNames.Steam, StringComparison.OrdinalIgnoreCase);
@@ -249,7 +253,7 @@ namespace Codec.Services.Importing
 
                     if (!igdbId.HasValue && executableCopyrightYears.Count == 0)
                     {
-                        rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName, RawgValidationMode.Strict).ConfigureAwait(false);
+                        rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName).ConfigureAwait(false);
                     }
                 }
 
@@ -297,7 +301,7 @@ namespace Codec.Services.Importing
 
                 if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isRiotSource && executableCopyrightYears.Count == 0)
                 {
-                    rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName, RawgValidationMode.Strict).ConfigureAwait(false);
+                    rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName).ConfigureAwait(false);
                 }
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
@@ -355,40 +359,27 @@ namespace Codec.Services.Importing
                     var igdbIdTask = game.IgdbId.HasValue
                         ? Task.FromResult<int?>(game.IgdbId.Value)
                         : _igdb.FindIgdbIdBySteamIdAsync(steamMetadataId.Value);
-                    var rawgIdTask = _gameDetails.FindRawgIdBySteamIdAsync(steamMetadataId.Value);
-                    await Task.WhenAll(hltbTask, igdbIdTask, rawgIdTask).ConfigureAwait(false);
+                    await Task.WhenAll(hltbTask, igdbIdTask).ConfigureAwait(false);
 
                     game.IgdbId = igdbIdTask.Result;
-                    game.RawgID = rawgIdTask.Result;
 
                     if (game.IgdbId.HasValue)
                     {
                         await _igdb.PopulateFromIgdbAsync(game).ConfigureAwait(false);
                     }
-
-                    // RAWG populate (non-validating) — fills RawgSlug/RawgUrl for link display; Steam/IGDB fields protected by ShouldOverwrite
-                    if (game.RawgID.HasValue)
-                    {
-                        await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
-                    }
                 }
                 else
                 {
-                    // Non-Steam: HLTB first (preferred TTB source), then IGDB for metadata, then RAWG always to store RawgID
+                    // Non-Steam: HLTB first, then IGDB. RAWG is only a metadata fallback.
                     await _hltb.PopulateAsync(game).ConfigureAwait(false);
 
                     if (game.IgdbId.HasValue)
                     {
                         await _igdb.PopulateFromIgdbAsync(game).ConfigureAwait(false);
                     }
-
-                    if (game.RawgID.HasValue)
+                    else if (game.RawgID.HasValue)
                     {
                         await _rawgDetails.PopulateAsync(game).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await _rawgDetails.TryPopulateRawgFromSearchAsync(game).ConfigureAwait(false);
                     }
                 }
 

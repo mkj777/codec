@@ -29,6 +29,7 @@ namespace Codec.Services.Scanning.Scanners
 
         private IReadOnlyList<string> _excludedPaths = Array.Empty<string>();
         public void SetExcludedPaths(IReadOnlyList<string> paths) => _excludedPaths = paths;
+        public int LastNestedDuplicateCount { get; private set; }
 
         private static readonly string[] ScanRoots =
         {
@@ -142,10 +143,40 @@ namespace Codec.Services.Scanning.Scanners
                 }, ct).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
-            return candidates
+            var uniqueCandidates = candidates
                 .GroupBy(c => c.FolderPath, StringComparer.OrdinalIgnoreCase)
                 .Select(g => g.First())
                 .ToList();
+
+            var collapsed = CollapseNestedSameNameCandidates(uniqueCandidates);
+            LastNestedDuplicateCount = uniqueCandidates.Count - collapsed.Count;
+            return collapsed;
+        }
+
+        internal static List<GameCandidate> CollapseNestedSameNameCandidates(IEnumerable<GameCandidate> candidates)
+        {
+            var result = new List<GameCandidate>();
+            foreach (var group in candidates.GroupBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                foreach (var candidate in group.OrderBy(candidate => candidate.FolderPath.Length))
+                {
+                    if (!result.Any(existing =>
+                            existing.Name.Equals(candidate.Name, StringComparison.OrdinalIgnoreCase) &&
+                            IsDescendantPath(candidate.FolderPath, existing.FolderPath)))
+                    {
+                        result.Add(candidate);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static bool IsDescendantPath(string path, string parentPath)
+        {
+            string parent = parentPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return path.StartsWith(parent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                   path.StartsWith(parent + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
         }
 
         private List<(string Path, string Name)> DiscoverCandidateDirectories(IProgress<string>? progress, CancellationToken cancellationToken)
