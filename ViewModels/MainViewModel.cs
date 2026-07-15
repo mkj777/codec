@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AppSettings = Codec.Services.Storage.AppSettings;
@@ -36,6 +37,7 @@ namespace Codec.ViewModels
         private CancellationTokenSource? _sidebarSearchDebounceCts;
         private int _updateNotificationDismissVersion;
         private string _appliedSearchText = string.Empty;
+        private string[] _appliedSearchTokens = Array.Empty<string>();
         private AppSettings _appSettings = new();
         private bool _suppressSettingsSave = false;
         private readonly HashSet<Game> _trackedLibraryGames = new();
@@ -600,9 +602,11 @@ namespace Codec.ViewModels
                     return;
 
                 _appliedSearchText = searchText;
+                _appliedSearchTokens = searchText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 _sidebarSearchDebounceCts = null;
                 debounceCts.Dispose();
                 RefreshSidebarFilteredGames();
+                RefreshDisplayedGames();
             }
 
             if (_dispatcherQueue.HasThreadAccess)
@@ -849,14 +853,14 @@ namespace Codec.ViewModels
         private void RefreshSidebarFilteredGames()
         {
             var filteredGames = Games
-                .Where(IsReadyForLibrary)
-                .Where(MatchesImportFilter)
-                .Where(game => !string.IsNullOrWhiteSpace(_appliedSearchText) || MatchesInstallFilter(game))
-                .Where(MatchesSidebarSearch)
+                .Where(MatchesActiveFilters)
                 .OrderByDescending(game => game.IsFavorite)
                 .ThenBy(game => game.Name ?? string.Empty, GameNameComparer)
                 .ThenBy(game => game.Id)
                 .ToList();
+
+            if (!string.IsNullOrEmpty(_appliedSearchText))
+                SidebarSelectedItem = null;
 
             SidebarFilteredGames.ReplaceAll(filteredGames);
 
@@ -864,20 +868,31 @@ namespace Codec.ViewModels
                 SidebarSelectedItem = null;
 
             if (!string.IsNullOrEmpty(_appliedSearchText) && filteredGames.Count > 0)
-                SidebarSelectedItem = filteredGames[0];
+            {
+                Game firstResult = filteredGames[0];
+
+                SidebarSelectedItem = firstResult;
+
+                if (IsDetailsVisible && !ReferenceEquals(SelectedGame, firstResult))
+                    SelectGame(firstResult);
+            }
         }
 
-        private bool MatchesSidebarSearch(Game game)
+        private bool MatchesSearch(Game game)
         {
-            if (string.IsNullOrWhiteSpace(_appliedSearchText))
+            if (_appliedSearchTokens.Length == 0)
                 return true;
 
-            return game.Name?.Contains(_appliedSearchText, StringComparison.OrdinalIgnoreCase) == true;
+            string normalizedName = NormalizeSearchText(game.Name);
+            return _appliedSearchTokens.All(token => normalizedName.Contains(token, StringComparison.Ordinal));
         }
 
         private bool MatchesActiveFilters(Game game)
         {
-            return IsReadyForLibrary(game) && MatchesImportFilter(game) && MatchesInstallFilter(game);
+            return IsReadyForLibrary(game) &&
+                   MatchesImportFilter(game) &&
+                   (!string.IsNullOrWhiteSpace(_appliedSearchText) || MatchesInstallFilter(game)) &&
+                   MatchesSearch(game);
         }
 
         private bool IsReadyForLibrary(Game game)
@@ -953,7 +968,36 @@ namespace Codec.ViewModels
             return left.Id.CompareTo(right.Id);
         }
 
-        private static string NormalizeSearchText(string? value) => value?.Trim() ?? string.Empty;
+        private static string NormalizeSearchText(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            string decomposed = value.Normalize(NormalizationForm.FormD);
+            var normalized = new StringBuilder(decomposed.Length);
+            bool needsSpace = false;
+
+            foreach (char character in decomposed)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark)
+                    continue;
+
+                if (char.IsLetterOrDigit(character))
+                {
+                    if (needsSpace && normalized.Length > 0)
+                        normalized.Append(' ');
+
+                    normalized.Append(char.ToLowerInvariant(character));
+                    needsSpace = false;
+                }
+                else
+                {
+                    needsSpace = normalized.Length > 0;
+                }
+            }
+
+            return normalized.ToString();
+        }
     }
 
     public sealed class FranchiseTimelineItem
