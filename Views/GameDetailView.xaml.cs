@@ -71,31 +71,11 @@ namespace Codec.Views
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private double _detailsLabelFontSize = 13d;
         private double _detailsValueFontSize = 15d;
-        private double _detailsInlineFontSize = 12d;
-        private double _detailsLinkFontSize = 14d;
         private double _detailsPlatformIconHeight = 22d;
-        private double _detailsSectionSpacing = 8d;
-        private double _detailsDataSetSpacing = 14d;
-        private double _detailsDescriptionSpacing = 10d;
-        private double _detailsInnerColumnSpacing = 20d;
-        private double _detailsOuterColumnSpacing = 20d;
-        private double _detailsDescriptionMaxWidth = 420d;
-        private Thickness _detailsScrollViewerPadding = new(10, 4, 0, 0);
 
-        public double DetailsLabelFontSize => _detailsLabelFontSize;
         public double DetailsValueFontSize => _detailsValueFontSize;
-        public double DetailsInlineFontSize => _detailsInlineFontSize;
-        public double DetailsLinkFontSize => _detailsLinkFontSize;
         public double DetailsPlatformIconHeight => _detailsPlatformIconHeight;
-        public double DetailsSectionSpacing => _detailsSectionSpacing;
-        public double DetailsDataSetSpacing => _detailsDataSetSpacing;
-        public double DetailsDescriptionSpacing => _detailsDescriptionSpacing;
-        public double DetailsInnerColumnSpacing => _detailsInnerColumnSpacing;
-        public double DetailsOuterColumnSpacing => _detailsOuterColumnSpacing;
-        public double DetailsDescriptionMaxWidth => _detailsDescriptionMaxWidth;
-        public Thickness DetailsScrollViewerPadding => _detailsScrollViewerPadding;
 
         public GameDetailView()
         {
@@ -445,21 +425,8 @@ namespace Codec.Views
         {
             double paneWidth = GetDetailsPaneWidth();
 
-            SetResponsiveProperty(ref _detailsLabelFontSize, ScaleResponsiveValue(paneWidth, 12d, 13d), nameof(DetailsLabelFontSize));
             SetResponsiveProperty(ref _detailsValueFontSize, ScaleResponsiveValue(paneWidth, 13d, 15d), nameof(DetailsValueFontSize));
-            SetResponsiveProperty(ref _detailsInlineFontSize, ScaleResponsiveValue(paneWidth, 11d, 12d), nameof(DetailsInlineFontSize));
-            SetResponsiveProperty(ref _detailsLinkFontSize, ScaleResponsiveValue(paneWidth, 12d, 14d), nameof(DetailsLinkFontSize));
             SetResponsiveProperty(ref _detailsPlatformIconHeight, ScaleResponsiveValue(paneWidth, 16d, 22d), nameof(DetailsPlatformIconHeight));
-            SetResponsiveProperty(ref _detailsSectionSpacing, ScaleResponsiveValue(paneWidth, 4d, 8d), nameof(DetailsSectionSpacing));
-            SetResponsiveProperty(ref _detailsDataSetSpacing, ScaleResponsiveValue(paneWidth, 10d, 18d), nameof(DetailsDataSetSpacing));
-            SetResponsiveProperty(ref _detailsDescriptionSpacing, ScaleResponsiveValue(paneWidth, 8d, 14d), nameof(DetailsDescriptionSpacing));
-            SetResponsiveProperty(ref _detailsInnerColumnSpacing, ScaleResponsiveValue(paneWidth, 12d, 22d), nameof(DetailsInnerColumnSpacing));
-            SetResponsiveProperty(ref _detailsOuterColumnSpacing, ScaleResponsiveValue(paneWidth, 4d, 10d), nameof(DetailsOuterColumnSpacing));
-            SetResponsiveProperty(ref _detailsDescriptionMaxWidth, ScaleResponsiveValue(paneWidth, 220d, 460d), nameof(DetailsDescriptionMaxWidth));
-
-            double horizontalPadding = ScaleResponsiveValue(paneWidth, 0d, 4d);
-            double topPadding = ScaleResponsiveValue(paneWidth, 0d, 3d);
-            SetResponsiveProperty(ref _detailsScrollViewerPadding, new Thickness(horizontalPadding, topPadding, 0, 0), nameof(DetailsScrollViewerPadding));
         }
 
         private double GetDetailsPaneWidth()

@@ -4,6 +4,7 @@ using Codec.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -217,12 +218,24 @@ namespace Codec.Models
             : NotAvailableText;
 
         public string DisplaySteamReviewSummary => HasSteamReview
-            ? SteamReviewSummary!
+            ? GetSteamReviewDescription(SteamReviewSummary!)
             : NotAvailableText;
 
-        public string DisplaySteamReviewCount => HasSteamReview
-            ? $" ({SteamReviewTotal})"
-            : string.Empty;
+        public string DisplaySteamReviewCount
+        {
+            get
+            {
+                if (!HasSteamReview)
+                {
+                    return string.Empty;
+                }
+
+                string total = SteamReviewTotal!.Value.ToString("N0", CultureInfo.InvariantCulture);
+                return SteamRating.HasValue
+                    ? FormattableString.Invariant($"{SteamRating.Value:0}% · {total} reviews")
+                    : $"{total} reviews";
+            }
+        }
 
         public double SteamReviewOpacity => GetAvailabilityOpacity(HasSteamReview);
 
@@ -359,7 +372,15 @@ namespace Codec.Models
 
         // media
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasMedia))]
+        [NotifyPropertyChangedFor(nameof(PrimaryMedia))]
         private List<string> media = new();
+
+        [JsonIgnore]
+        public bool HasMedia => Media?.Count > 0;
+
+        [JsonIgnore]
+        public string? PrimaryMedia => Media?.FirstOrDefault();
 
         // external links
         [ObservableProperty] private string? officialWebsiteUrl;
@@ -635,6 +656,9 @@ namespace Codec.Models
             OnPropertyChanged(nameof(SteamReviewOpacity));
         }
 
+        partial void OnSteamRatingChanged(double? value)
+            => OnPropertyChanged(nameof(DisplaySteamReviewCount));
+
         partial void OnTimeToCompleteMainStoryChanged(int? value)
         {
             OnPropertyChanged(nameof(DisplayMainStory));
@@ -650,6 +674,25 @@ namespace Codec.Models
         private bool HasSteamReview =>
             !IsUnavailableText(SteamReviewSummary, "N/A") &&
             SteamReviewTotal is > 0;
+
+        private static string GetSteamReviewDescription(string summary)
+        {
+            string normalized = summary.Trim();
+            int percentIndex = normalized.IndexOf('%');
+
+            if (percentIndex > 0 &&
+                double.TryParse(
+                    normalized[..percentIndex].Trim(),
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out _))
+            {
+                string description = normalized[(percentIndex + 1)..].Trim();
+                return string.IsNullOrWhiteSpace(description) ? normalized : description;
+            }
+
+            return normalized;
+        }
 
         private static bool HasCompletionTime(int? seconds) => seconds is > 0;
 
