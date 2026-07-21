@@ -374,6 +374,10 @@ namespace Codec.Models
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasMedia))]
         [NotifyPropertyChangedFor(nameof(PrimaryMedia))]
+        [NotifyPropertyChangedFor(nameof(MediaCount))]
+        [NotifyPropertyChangedFor(nameof(MediaPreviewItems))]
+        [NotifyPropertyChangedFor(nameof(HasAdditionalMedia))]
+        [NotifyPropertyChangedFor(nameof(AdditionalMediaDisplay))]
         private List<string> media = new();
 
         [JsonIgnore]
@@ -381,6 +385,18 @@ namespace Codec.Models
 
         [JsonIgnore]
         public string? PrimaryMedia => Media?.FirstOrDefault();
+
+        [JsonIgnore]
+        public int MediaCount => Media?.Count ?? 0;
+
+        [JsonIgnore]
+        public IEnumerable<string> MediaPreviewItems => Media?.Take(3) ?? Enumerable.Empty<string>();
+
+        [JsonIgnore]
+        public bool HasAdditionalMedia => MediaCount > 3;
+
+        [JsonIgnore]
+        public string AdditionalMediaDisplay => $"+{Math.Max(0, MediaCount - 3)}";
 
         // external links
         [ObservableProperty] private string? officialWebsiteUrl;

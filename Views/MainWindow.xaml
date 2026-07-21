@@ -610,6 +610,7 @@
 
                         <FlipView x:Name="MediaOverlayFlipView"
                                   ItemsSource="{Binding SelectedGame.Media}"
+                                  SelectedIndex="{Binding SelectedMediaIndex, Mode=TwoWay}"
                                   HorizontalAlignment="Stretch"
                                   VerticalAlignment="Stretch"
                                   HorizontalContentAlignment="Center"

@@ -36,8 +36,13 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand]
-        private void OpenMediaOverlay()
+        private void OpenMediaOverlay(string? media)
         {
+            int index = string.IsNullOrWhiteSpace(media)
+                ? 0
+                : SelectedGame?.Media.IndexOf(media) ?? 0;
+
+            SelectedMediaIndex = Math.Max(0, index);
             IsMediaOverlayOpen = true;
         }
 

@@ -140,6 +140,7 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isAppSpinnerActive;
         [ObservableProperty] private bool _isGameSettingsOpen;
         [ObservableProperty] private bool _isMediaOverlayOpen;
+        [ObservableProperty] private int _selectedMediaIndex;
         [ObservableProperty] private bool _isFranchiseOverlayOpen;
         [ObservableProperty] private List<FranchiseTimelineItem>? _franchiseTimelineItems;
         // 0 = Mainline only, 1 = Extended, 2 = All

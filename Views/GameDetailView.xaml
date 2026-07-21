@@ -310,9 +310,9 @@
                                         <VisualState.Setters>
                                                 <Setter Target="DetailsScrollViewer.VerticalScrollBarVisibility" Value="Hidden"/>
                                                 <Setter Target="DetailsScrollViewer.VerticalScrollMode" Value="Disabled"/>
-                                                <Setter Target="DetailsRailColumn.Width" Value="260"/>
-                                                <Setter Target="DetailsMainCard.(Grid.ColumnSpan)" Value="1"/>
-                                                <Setter Target="DetailsRightRail.(Grid.Row)" Value="0"/>
+                                                <Setter Target="DetailsRailColumn.Width" Value="300"/>
+                                                <Setter Target="DetailsInfoCard.(Grid.ColumnSpan)" Value="1"/>
+                                                <Setter Target="DetailsRightRail.(Grid.Row)" Value="1"/>
                                                 <Setter Target="DetailsRightRail.(Grid.Column)" Value="1"/>
                                                 <Setter Target="DetailsRightRail.(Grid.ColumnSpan)" Value="1"/>
                                                 <Setter Target="DetailsRightRail.Margin" Value="0"/>
@@ -334,9 +334,11 @@
                                                 <Setter Target="MetricController.(Grid.ColumnSpan)" Value="1"/>
                                                 <Setter Target="DetailsDescriptionColumn.Width" Value="*"/>
                                                 <Setter Target="DetailsDescriptionSection.(Grid.Row)" Value="0"/>
-                                                <Setter Target="DetailsDescriptionSection.(Grid.Column)" Value="1"/>
+                                                <Setter Target="DetailsDescriptionSection.(Grid.Column)" Value="2"/>
                                                 <Setter Target="DetailsDescriptionSection.(Grid.ColumnSpan)" Value="1"/>
-                                                <Setter Target="DetailsMainCard.Padding" Value="20"/>
+                                                <Setter Target="DetailsMetadataDivider.Visibility" Value="Visible"/>
+                                                <Setter Target="DetailsMetricsCard.Padding" Value="18,14"/>
+                                                <Setter Target="DetailsInfoCard.Padding" Value="20"/>
                                                 <Setter Target="DetailsRightRail.Padding" Value="18"/>
                                         </VisualState.Setters>
                                 </VisualState>
@@ -345,9 +347,9 @@
                                         <VisualState.Setters>
                                                 <Setter Target="DetailsScrollViewer.VerticalScrollBarVisibility" Value="Hidden"/>
                                                 <Setter Target="DetailsScrollViewer.VerticalScrollMode" Value="Disabled"/>
-                                                <Setter Target="DetailsRailColumn.Width" Value="210"/>
-                                                <Setter Target="DetailsMainCard.(Grid.ColumnSpan)" Value="1"/>
-                                                <Setter Target="DetailsRightRail.(Grid.Row)" Value="0"/>
+                                                <Setter Target="DetailsRailColumn.Width" Value="260"/>
+                                                <Setter Target="DetailsInfoCard.(Grid.ColumnSpan)" Value="1"/>
+                                                <Setter Target="DetailsRightRail.(Grid.Row)" Value="1"/>
                                                 <Setter Target="DetailsRightRail.(Grid.Column)" Value="1"/>
                                                 <Setter Target="DetailsRightRail.(Grid.ColumnSpan)" Value="1"/>
                                                 <Setter Target="DetailsRightRail.Margin" Value="0"/>
@@ -369,9 +371,11 @@
                                                 <Setter Target="MetricController.(Grid.ColumnSpan)" Value="1"/>
                                                 <Setter Target="DetailsDescriptionColumn.Width" Value="*"/>
                                                 <Setter Target="DetailsDescriptionSection.(Grid.Row)" Value="0"/>
-                                                <Setter Target="DetailsDescriptionSection.(Grid.Column)" Value="1"/>
+                                                <Setter Target="DetailsDescriptionSection.(Grid.Column)" Value="2"/>
                                                 <Setter Target="DetailsDescriptionSection.(Grid.ColumnSpan)" Value="1"/>
-                                                <Setter Target="DetailsMainCard.Padding" Value="16"/>
+                                                <Setter Target="DetailsMetadataDivider.Visibility" Value="Visible"/>
+                                                <Setter Target="DetailsMetricsCard.Padding" Value="14,12"/>
+                                                <Setter Target="DetailsInfoCard.Padding" Value="16"/>
                                                 <Setter Target="DetailsRightRail.Padding" Value="14"/>
                                         </VisualState.Setters>
                                 </VisualState>
@@ -381,11 +385,11 @@
                                                 <Setter Target="DetailsScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
                                                 <Setter Target="DetailsScrollViewer.VerticalScrollMode" Value="Enabled"/>
                                                 <Setter Target="DetailsRailColumn.Width" Value="0"/>
-                                                <Setter Target="DetailsMainCard.(Grid.ColumnSpan)" Value="2"/>
-                                                <Setter Target="DetailsRightRail.(Grid.Row)" Value="1"/>
+                                                <Setter Target="DetailsInfoCard.(Grid.ColumnSpan)" Value="2"/>
+                                                <Setter Target="DetailsRightRail.(Grid.Row)" Value="2"/>
                                                 <Setter Target="DetailsRightRail.(Grid.Column)" Value="0"/>
                                                 <Setter Target="DetailsRightRail.(Grid.ColumnSpan)" Value="2"/>
-                                                <Setter Target="DetailsRightRail.Margin" Value="0,14,0,0"/>
+                                                <Setter Target="DetailsRightRail.Margin" Value="0"/>
                                                 <Setter Target="MetricColumn1.Width" Value="*"/>
                                                 <Setter Target="MetricColumn2.Width" Value="*"/>
                                                 <Setter Target="MetricColumn3.Width" Value="0"/>
@@ -405,8 +409,10 @@
                                                 <Setter Target="DetailsDescriptionColumn.Width" Value="0"/>
                                                 <Setter Target="DetailsDescriptionSection.(Grid.Row)" Value="1"/>
                                                 <Setter Target="DetailsDescriptionSection.(Grid.Column)" Value="0"/>
-                                                <Setter Target="DetailsDescriptionSection.(Grid.ColumnSpan)" Value="2"/>
-                                                <Setter Target="DetailsMainCard.Padding" Value="14"/>
+                                                <Setter Target="DetailsDescriptionSection.(Grid.ColumnSpan)" Value="3"/>
+                                                <Setter Target="DetailsMetadataDivider.Visibility" Value="Collapsed"/>
+                                                <Setter Target="DetailsMetricsCard.Padding" Value="14,12"/>
+                                                <Setter Target="DetailsInfoCard.Padding" Value="14"/>
                                                 <Setter Target="DetailsRightRail.Padding" Value="14"/>
                                         </VisualState.Setters>
                                 </VisualState>
@@ -600,7 +606,7 @@
                                               ItemsSource="{Binding SelectedGame.Genres}"
                                               HorizontalAlignment="Left"
                                               VerticalAlignment="Bottom"
-                                              Margin="0,0,0,116"
+                                              Margin="0,0,0,92"
                                               MaxWidth="620">
                                         <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -631,7 +637,7 @@
                                       Height="58"
                                       HorizontalAlignment="Left"
                                       VerticalAlignment="Bottom"
-                                      Margin="184,0,0,42"
+                                      Margin="184,0,0,18"
                                       RenderTransformOrigin="0.5,0.5">
                                         <Grid.RenderTransform>
                                                 <CompositeTransform x:Name="DetailsSettingsTransform"
@@ -704,7 +710,7 @@
                                       Height="58"
                                       HorizontalAlignment="Left"
                                       VerticalAlignment="Bottom"
-                                      Margin="0,0,0,42"
+                                      Margin="0,0,0,18"
                                       ToolTipService.ToolTip="{Binding PlayButtonToolTip, Mode=OneWay}"
                                       RenderTransformOrigin="0.5,0.5">
                                         <Grid.RenderTransform>
@@ -1138,7 +1144,7 @@
                 <!-- The dashboard overlaps the hero slightly, matching the reference hierarchy. -->
                 <Grid x:Name="DetailsLowerGrid"
                       Grid.Row="1"
-                      Margin="0,-26,0,0"
+                      Margin="0,-14,0,0"
                       Padding="20,0,20,18"
                       Canvas.ZIndex="2">
                         <ScrollViewer x:Name="DetailsScrollViewer"
@@ -1149,28 +1155,22 @@
                                         <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition x:Name="DetailsRailColumn" Width="260"/>
+                                                <ColumnDefinition x:Name="DetailsRailColumn" Width="300"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <Border x:Name="DetailsMainCard"
+                                        <Border x:Name="DetailsMetricsCard"
                                                 Grid.Row="0"
-                                                Grid.Column="0"
+                                                Grid.ColumnSpan="2"
                                                 Background="{StaticResource CodecSurfaceBrush}"
                                                 BorderBrush="{StaticResource CodecBorderBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="16"
-                                                Padding="20">
-                                                <Grid>
-                                                        <Grid.RowDefinitions>
-                                                                <RowDefinition Height="Auto"/>
-                                                                <RowDefinition Height="Auto"/>
-                                                                <RowDefinition Height="Auto"/>
-                                                        </Grid.RowDefinitions>
-
-                                                        <Grid x:Name="DetailsMetricsGrid" ColumnSpacing="10" RowSpacing="12">
+                                                Padding="18,14">
+                                                <Grid x:Name="DetailsMetricsGrid" ColumnSpacing="10" RowSpacing="12">
                                                                 <Grid.RowDefinitions>
                                                                         <RowDefinition Height="Auto"/>
                                                                         <RowDefinition Height="Auto"/>
@@ -1184,116 +1184,57 @@
                                                                         <ColumnDefinition x:Name="MetricColumn5" Width="*"/>
                                                                 </Grid.ColumnDefinitions>
 
-                                                                <StackPanel x:Name="MetricReviews" Grid.Column="0" Spacing="1" Padding="4,0">
+                                                        <Grid x:Name="MetricReviews" Grid.Column="0" Padding="4,0,12,0" ColumnSpacing="10">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                <FontIcon Glyph="&#xE8E1;" FontFamily="Segoe Fluent Icons" FontSize="22" Foreground="{StaticResource CodecAccentBrush}" VerticalAlignment="Center"/>
+                                                                <StackPanel Grid.Column="1" Spacing="1">
                                                                         <TextBlock Text="Steam reviews" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                        <TextBlock Text="{Binding SelectedGame.DisplaySteamReviewSummary, FallbackValue='Not available'}"
-                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
-                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                                   Opacity="{Binding SelectedGame.SteamReviewOpacity, FallbackValue=0.6}"
-                                                                                   TextTrimming="CharacterEllipsis"/>
-                                                                        <TextBlock Text="{Binding SelectedGame.DisplaySteamReviewCount, FallbackValue=''}"
-                                                                                   FontSize="11"
-                                                                                   Foreground="{StaticResource CodecTextMutedBrush}"/>
-                                                                </StackPanel>
-                                                                <StackPanel x:Name="MetricMainStory" Grid.Column="1" Spacing="1" Padding="4,0">
-                                                                        <TextBlock Text="Main story" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                        <TextBlock Text="{Binding SelectedGame.DisplayMainStory, FallbackValue='Not available'}"
-                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
-                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                                   Opacity="{Binding SelectedGame.MainStoryOpacity, FallbackValue=0.6}"/>
-                                                                        <TextBlock Text="HowLongToBeat" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/>
-                                                                </StackPanel>
-                                                                <StackPanel x:Name="MetricCompletionist" Grid.Column="2" Spacing="1" Padding="4,0">
-                                                                        <TextBlock Text="Completionist" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                        <TextBlock Text="{Binding SelectedGame.DisplayCompletionist, FallbackValue='Not available'}"
-                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
-                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                                   Opacity="{Binding SelectedGame.CompletionistOpacity, FallbackValue=0.6}"/>
-                                                                        <TextBlock Text="HowLongToBeat" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/>
-                                                                </StackPanel>
-                                                                <StackPanel x:Name="MetricReleaseDate" Grid.Column="3" Spacing="1" Padding="4,0">
-                                                                        <TextBlock Text="Release date" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                        <TextBlock Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='Not available'}"
-                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
-                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                                   TextWrapping="Wrap"/>
-                                                                        <TextBlock Text="{Binding SelectedGame.OriginalReleaseDisplay, FallbackValue=''}"
-                                                                                   Visibility="{Binding SelectedGame.HasOriginalReleaseDate, Converter={StaticResource BoolToVisibilityConverter}}"
-                                                                                   FontSize="11"
-                                                                                   Foreground="{StaticResource CodecTextMutedBrush}"/>
-                                                                </StackPanel>
-                                                                <StackPanel x:Name="MetricController" Grid.Column="4" Spacing="1" Padding="4,0">
-                                                                        <TextBlock Text="Controller" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                        <Grid ColumnSpacing="6">
-                                                                                <Grid.ColumnDefinitions>
-                                                                                        <ColumnDefinition Width="Auto"/>
-                                                                                        <ColumnDefinition Width="*"/>
-                                                                                </Grid.ColumnDefinitions>
-                                                                                <FontIcon Glyph="&#xE7FC;"
-                                                                                          FontFamily="Segoe MDL2 Assets"
-                                                                                          FontSize="11"
-                                                                                          Foreground="{StaticResource CodecAccentBrush}"
-                                                                                          VerticalAlignment="Center"/>
-                                                                                <StackPanel Grid.Column="1" Spacing="0">
-                                                                                        <TextBlock Text="{Binding SelectedGame.ControllerSupportDisplay, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not available', FallbackValue='Not available'}"
-                                                                                                   Style="{StaticResource DetailMetaValueTextStyle}"
-                                                                                                   FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}"
-                                                                                                   TextWrapping="Wrap"/>
-                                                                                        <TextBlock Text="· Recommended"
-                                                                                                   FontSize="11"
-                                                                                                   Foreground="{StaticResource CodecSecondaryBrush}"
-                                                                                                   Visibility="{Binding SelectedGame.HasControllerRecommendation, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                                                                </StackPanel>
-                                                                        </Grid>
+                                                                        <TextBlock Text="{Binding SelectedGame.DisplaySteamReviewSummary, FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}" Opacity="{Binding SelectedGame.SteamReviewOpacity, FallbackValue=0.6}" TextTrimming="CharacterEllipsis"/>
+                                                                        <TextBlock Text="{Binding SelectedGame.DisplaySteamReviewCount, FallbackValue=''}" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/>
                                                                 </StackPanel>
                                                         </Grid>
+                                                        <Grid x:Name="MetricMainStory" Grid.Column="1" Padding="4,0,12,0" ColumnSpacing="10">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                <FontIcon Glyph="&#xE823;" FontFamily="Segoe Fluent Icons" FontSize="21" Foreground="{StaticResource CodecAccentBrush}" VerticalAlignment="Center"/>
+                                                                <StackPanel Grid.Column="1" Spacing="1"><TextBlock Text="Main story" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.DisplayMainStory, FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}" Opacity="{Binding SelectedGame.MainStoryOpacity, FallbackValue=0.6}"/><TextBlock Text="HowLongToBeat" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/></StackPanel>
+                                                        </Grid>
+                                                        <Grid x:Name="MetricCompletionist" Grid.Column="2" Padding="4,0,12,0" ColumnSpacing="10">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                <FontIcon Glyph="&#xE81C;" FontFamily="Segoe Fluent Icons" FontSize="21" Foreground="{StaticResource CodecAccentBrush}" VerticalAlignment="Center"/>
+                                                                <StackPanel Grid.Column="1" Spacing="1"><TextBlock Text="Completionist" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.DisplayCompletionist, FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}" Opacity="{Binding SelectedGame.CompletionistOpacity, FallbackValue=0.6}"/><TextBlock Text="HowLongToBeat" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/></StackPanel>
+                                                        </Grid>
+                                                        <Grid x:Name="MetricReleaseDate" Grid.Column="3" Padding="4,0,12,0" ColumnSpacing="10">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                <FontIcon Glyph="&#xE787;" FontFamily="Segoe Fluent Icons" FontSize="21" Foreground="{StaticResource CodecAccentBrush}" VerticalAlignment="Center"/>
+                                                                <StackPanel Grid.Column="1" Spacing="1"><TextBlock Text="Release date" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateToStringConverter}, FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}" TextWrapping="Wrap"/><TextBlock Text="{Binding SelectedGame.OriginalReleaseDisplay, FallbackValue=''}" Visibility="{Binding SelectedGame.HasOriginalReleaseDate, Converter={StaticResource BoolToVisibilityConverter}}" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/></StackPanel>
+                                                        </Grid>
+                                                        <Grid x:Name="MetricController" Grid.Column="4" Padding="4,0" ColumnSpacing="10">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                <FontIcon Glyph="&#xE7FC;" FontFamily="Segoe MDL2 Assets" FontSize="21" Foreground="{StaticResource CodecAccentBrush}" VerticalAlignment="Center"/>
+                                                                <StackPanel Grid.Column="1" Spacing="1"><TextBlock Text="Controller" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.ControllerSupportDisplay, Converter={StaticResource NullOrEmptyToFallbackConverter}, ConverterParameter='Not available', FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="{x:Bind DetailsValueFontSize, Mode=OneWay}" TextWrapping="Wrap"/><TextBlock Text="Recommended" FontSize="11" Foreground="{StaticResource CodecSecondaryBrush}" Visibility="{Binding SelectedGame.HasControllerRecommendation, Converter={StaticResource BoolToVisibilityConverter}}"/></StackPanel>
+                                                        </Grid>
+                                                </Grid>
+                                        </Border>
 
-                                                        <Border Grid.Row="1"
-                                                                Height="1"
-                                                                Margin="0,6,0,12"
-                                                                Background="{StaticResource CodecBorderBrush}"/>
-
-                                                        <Grid x:Name="DetailsBodyGrid" Grid.Row="2" ColumnSpacing="24" RowSpacing="18">
+                                        <Border x:Name="DetailsInfoCard" Grid.Row="1" Grid.Column="0" Background="{StaticResource CodecSurfaceBrush}" BorderBrush="{StaticResource CodecBorderBrush}" BorderThickness="1" CornerRadius="16" Padding="20">
+                                                <Grid x:Name="DetailsBodyGrid" ColumnSpacing="24" RowSpacing="18">
                                                                 <Grid.RowDefinitions>
                                                                         <RowDefinition Height="Auto"/>
                                                                         <RowDefinition Height="Auto"/>
                                                                 </Grid.RowDefinitions>
                                                                 <Grid.ColumnDefinitions>
                                                                         <ColumnDefinition x:Name="DetailsMetadataColumn" Width="250"/>
+                                                                        <ColumnDefinition Width="1"/>
                                                                         <ColumnDefinition x:Name="DetailsDescriptionColumn" Width="*"/>
                                                                 </Grid.ColumnDefinitions>
-
-                                                                <Grid x:Name="DetailsMetadataSection" Grid.Column="0" ColumnSpacing="16" RowSpacing="9">
-                                                                        <Grid.ColumnDefinitions>
-                                                                                <ColumnDefinition Width="*"/>
-                                                                                <ColumnDefinition Width="*"/>
-                                                                        </Grid.ColumnDefinitions>
-                                                                        <Grid.RowDefinitions>
-                                                                                <RowDefinition Height="Auto"/>
-                                                                                <RowDefinition Height="Auto"/>
-                                                                        </Grid.RowDefinitions>
-                                                                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="0">
-                                                                                <TextBlock Text="Developer" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                                <TextBlock Text="{Binding SelectedGame.Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="0">
-                                                                                <TextBlock Text="Publisher" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                                <TextBlock Text="{Binding SelectedGame.Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="0">
-                                                                                <TextBlock Text="Age rating" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                                <TextBlock Text="{Binding SelectedGame.DisplayAgeRating, FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" Opacity="{Binding SelectedGame.AgeRatingOpacity, FallbackValue=0.6}" TextWrapping="Wrap"/>
-                                                                        </StackPanel>
-                                                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="0">
-                                                                                <TextBlock Text="Price" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
-                                                                                <TextBlock Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" TextWrapping="Wrap">
-                                                                                        <Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/>
-                                                                                        <Run Text="{Binding SelectedGame.PriceDiscount, FallbackValue=''}" FontSize="11" Foreground="{StaticResource CodecSecondaryBrush}"/>
-                                                                                </TextBlock>
-                                                                        </StackPanel>
-                                                                </Grid>
-
-                                                                <StackPanel x:Name="DetailsDescriptionSection" Grid.Column="1" Spacing="12">
+                                                                <StackPanel x:Name="DetailsMetadataSection" Grid.Column="0" Spacing="13">
+                                                                        <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><FontIcon Glyph="&#xE7FB;" FontFamily="Segoe Fluent Icons" FontSize="13" Foreground="{StaticResource CodecTextMutedBrush}"/><StackPanel Grid.Column="1"><TextBlock Text="Developer" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.Developer, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" TextWrapping="Wrap"/></StackPanel></Grid>
+                                                                        <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><FontIcon Glyph="&#xE719;" FontFamily="Segoe Fluent Icons" FontSize="13" Foreground="{StaticResource CodecTextMutedBrush}"/><StackPanel Grid.Column="1"><TextBlock Text="Publisher" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.Publisher, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" TextWrapping="Wrap"/></StackPanel></Grid>
+                                                                        <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><FontIcon Glyph="&#xE77B;" FontFamily="Segoe Fluent Icons" FontSize="13" Foreground="{StaticResource CodecTextMutedBrush}"/><StackPanel Grid.Column="1"><TextBlock Text="Age rating" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Text="{Binding SelectedGame.DisplayAgeRating, FallbackValue='Not available'}" Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" Opacity="{Binding SelectedGame.AgeRatingOpacity, FallbackValue=0.6}" TextWrapping="Wrap"/></StackPanel></Grid>
+                                                                        <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><FontIcon Glyph="&#xE8C7;" FontFamily="Segoe Fluent Icons" FontSize="13" Foreground="{StaticResource CodecTextMutedBrush}"/><StackPanel Grid.Column="1"><TextBlock Text="Price" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><TextBlock Style="{StaticResource DetailMetaValueTextStyle}" FontSize="13" TextWrapping="Wrap"><Run Text="{Binding SelectedGame.Price, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"/><Run Text="{Binding SelectedGame.PriceDiscount, FallbackValue=''}" FontSize="11" Foreground="{StaticResource CodecSecondaryBrush}"/></TextBlock></StackPanel></Grid>
+                                                                </StackPanel>
+                                                                <Border x:Name="DetailsMetadataDivider" Grid.Column="1" Width="1" Background="{StaticResource CodecBorderBrush}"/>
+                                                                <StackPanel x:Name="DetailsDescriptionSection" Grid.Column="2" Spacing="12">
                                                                         <StackPanel Spacing="3">
                                                                                 <TextBlock Text="Description" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/>
                                                                                 <TextBlock Text="{Binding SelectedGame.Description, Converter={StaticResource NullOrEmptyToFallbackConverter}, FallbackValue='N/A'}"
@@ -1303,64 +1244,6 @@
                                                                                            MaxLines="4"
                                                                                            TextTrimming="CharacterEllipsis"/>
                                                                         </StackPanel>
-                                                                        <Viewbox MaxWidth="320"
-                                                                                 HorizontalAlignment="Left"
-                                                                                 Stretch="Uniform"
-                                                                                 StretchDirection="DownOnly"
-                                                                                 Visibility="{Binding SelectedGame.HasMedia, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                                                <Border Width="320"
-                                                                                        Height="180"
-                                                                                        Background="{StaticResource CodecBackgroundBrush}"
-                                                                                        BorderBrush="{StaticResource CodecBorderBrush}"
-                                                                                        BorderThickness="1"
-                                                                                        CornerRadius="12">
-                                                                                        <Grid>
-                                                                                                <MediaPlayerElement Source="{Binding SelectedGame.PrimaryMedia, Converter={StaticResource UriToMediaSourceConverter}}"
-                                                                                                                    AutoPlay="False"
-                                                                                                                    AreTransportControlsEnabled="False"
-                                                                                                                    Stretch="UniformToFill"
-                                                                                                                    IsHitTestVisible="False"
-                                                                                                                    Visibility="{Binding SelectedGame.PrimaryMedia, Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
-                                                                                                <Image Source="{Binding SelectedGame.PrimaryMedia}"
-                                                                                                       Stretch="UniformToFill"
-                                                                                                       IsHitTestVisible="False"
-                                                                                                       Visibility="{Binding SelectedGame.PrimaryMedia, Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=image}"/>
-                                                                                                <Border Width="44"
-                                                                                                        Height="44"
-                                                                                                        HorizontalAlignment="Center"
-                                                                                                        VerticalAlignment="Center"
-                                                                                                        Background="{StaticResource HeroActionPlayFallbackFillBrush}"
-                                                                                                        BorderBrush="{StaticResource HeroActionPlayFallbackBorderBrush}"
-                                                                                                        BorderThickness="1"
-                                                                                                        CornerRadius="22"
-                                                                                                        IsHitTestVisible="False"
-                                                                                                        Visibility="{Binding SelectedGame.PrimaryMedia, Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}">
-                                                                                                        <FontIcon Glyph="&#xE768;"
-                                                                                                                  FontFamily="Segoe Fluent Icons"
-                                                                                                                  FontSize="17"
-                                                                                                                  Foreground="{StaticResource HeroActionPlayFallbackForegroundBrush}"/>
-                                                                                                </Border>
-                                                                                                <Button Background="#01000000"
-                                                                                                        BorderBrush="Transparent"
-                                                                                                        BorderThickness="0"
-                                                                                                        HorizontalAlignment="Stretch"
-                                                                                                        VerticalAlignment="Stretch"
-                                                                                                        Command="{Binding OpenMediaOverlayCommand}"
-                                                                                                        UseSystemFocusVisuals="True"
-                                                                                                        AutomationProperties.Name="Open media"
-                                                                                                        ToolTipService.ToolTip="Open media">
-                                                                                                        <Button.Resources>
-                                                                                                                <SolidColorBrush x:Key="ButtonBackground" Color="#01000000"/>
-                                                                                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#12F3EDC9"/>
-                                                                                                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#20F3EDC9"/>
-                                                                                                                <SolidColorBrush x:Key="ButtonBorderBrush" Color="#00FFFFFF"/>
-                                                                                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#00FFFFFF"/>
-                                                                                                                <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#00FFFFFF"/>
-                                                                                                        </Button.Resources>
-                                                                                                </Button>
-                                                                                        </Grid>
-                                                                                </Border>
-                                                                        </Viewbox>
                                                                         <StackPanel Spacing="5"
                                                                                     Visibility="{Binding SelectedGame.HasSteamAchievementProgress, Converter={StaticResource BoolToVisibilityConverter}}">
                                                                                 <Grid ColumnSpacing="12">
@@ -1380,12 +1263,11 @@
                                                                                              Background="{StaticResource CodecBorderBrush}"/>
                                                                         </StackPanel>
                                                                 </StackPanel>
-                                                        </Grid>
                                                 </Grid>
                                         </Border>
 
                                         <Border x:Name="DetailsRightRail"
-                                                Grid.Row="0"
+                                                Grid.Row="1"
                                                 Grid.Column="1"
                                                 Background="{StaticResource CodecSurfaceBrush}"
                                                 BorderBrush="{StaticResource CodecBorderBrush}"
@@ -1410,6 +1292,7 @@
                                                         </ItemsControl>
 
                                                         <Button Style="{StaticResource DetailRailButtonStyle}"
+                                                                BorderBrush="{StaticResource CodecPrimaryBrush}"
                                                                 Command="{Binding OpenFranchiseOverlayCommand}"
                                                                 Visibility="{Binding SelectedGame.FranchiseGames, Converter={StaticResource NullToVisibilityConverter}}">
                                                                 <Grid ColumnSpacing="12">
@@ -1427,7 +1310,32 @@
                                                                 </Grid>
                                                         </Button>
 
-                                                        <StackPanel x:Name="DetailsLinksPanel" Spacing="0" Margin="0,6,0,0">
+                                                        <Border Background="{StaticResource CodecBackgroundBrush}" BorderBrush="{StaticResource CodecBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10" Visibility="{Binding SelectedGame.HasMedia, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                                <StackPanel Spacing="8">
+                                                                        <Grid><TextBlock Text="Media" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11"/><Border HorizontalAlignment="Right" Background="{StaticResource CodecSurfaceBrush}" CornerRadius="5" Padding="6,1"><TextBlock Text="{Binding SelectedGame.MediaCount}" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/></Border></Grid>
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                                <ItemsControl ItemsSource="{Binding SelectedGame.MediaPreviewItems}">
+                                                                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                                                                        <ItemsControl.ItemTemplate>
+                                                                                                <DataTemplate>
+                                                                                                        <Border Width="52" Height="34" CornerRadius="7" BorderBrush="{StaticResource CodecBorderBrush}" BorderThickness="1" Background="{StaticResource CodecSurfaceBrush}">
+                                                                                                                <Grid>
+                                                                                                                        <MediaPlayerElement Source="{Binding Converter={StaticResource UriToMediaSourceConverter}}" AutoPlay="False" AreTransportControlsEnabled="False" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
+                                                                                                                        <Image Source="{Binding}" Stretch="UniformToFill" IsHitTestVisible="False" Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=image}"/>
+                                                                                                                        <FontIcon Glyph="&#xE768;" FontFamily="Segoe Fluent Icons" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource MediaTypeToVisibilityConverter}, ConverterParameter=video}"/>
+                                                                                                                        <Button Background="#01000000" BorderThickness="0" Command="{Binding DataContext.OpenMediaOverlayCommand, ElementName=RootLayout}" CommandParameter="{Binding}" AutomationProperties.Name="Open media item" ToolTipService.ToolTip="Open media"/>
+                                                                                                                </Grid>
+                                                                                                        </Border>
+                                                                                                </DataTemplate>
+                                                                                        </ItemsControl.ItemTemplate>
+                                                                                </ItemsControl>
+                                                                                <Button Width="38" Height="34" Padding="0" Background="{StaticResource CodecSurfaceBrush}" BorderBrush="{StaticResource CodecBorderBrush}" BorderThickness="1" CornerRadius="7" Command="{Binding OpenMediaOverlayCommand}" Visibility="{Binding SelectedGame.HasAdditionalMedia, Converter={StaticResource BoolToVisibilityConverter}}" AutomationProperties.Name="Open all media"><TextBlock Text="{Binding SelectedGame.AdditionalMediaDisplay}" FontSize="11" Foreground="{StaticResource CodecTextMutedBrush}"/></Button>
+                                                                        </StackPanel>
+                                                                </StackPanel>
+                                                        </Border>
+
+                                                        <Border Background="{StaticResource CodecBackgroundBrush}" BorderBrush="{StaticResource CodecBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="10">
+                                                        <StackPanel x:Name="DetailsLinksPanel" Spacing="0">
                                                                 <TextBlock Text="External links" Style="{StaticResource DetailMetaLabelTextStyle}" FontSize="11" Margin="0,0,0,3"/>
                                                                 <HyperlinkButton Style="{StaticResource DetailRailLinkStyle}" NavigateUri="{Binding SelectedGame.OfficialWebsiteUrl}" Visibility="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToVisibilityConverter}}">
                                                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Website"/><FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontFamily="Segoe Fluent Icons" FontSize="11"/></Grid>
@@ -1445,6 +1353,7 @@
                                                                         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="HowLongToBeat"/><FontIcon Grid.Column="1" Glyph="&#xE8A7;" FontFamily="Segoe Fluent Icons" FontSize="11"/></Grid>
                                                                 </HyperlinkButton>
                                                         </StackPanel>
+                                                        </Border>
                                                 </StackPanel>
                                         </Border>
                                 </Grid>
