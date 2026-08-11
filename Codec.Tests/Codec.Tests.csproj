@@ -20,6 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Codec.csproj" />
+    <ProjectReference Include="..\Codec.Core\Codec.Core.csproj" />
   </ItemGroup>
 </Project>

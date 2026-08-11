@@ -68,7 +68,7 @@
 - Consumes: Existing namespaces under `Codec.Models`, `Codec.Services`, and `Codec.Helpers`.
 - Produces: `Codec.Core.dll` with `Codec.Services.ServiceHost`, `Codec.Models.Game`, storage, scanning, provider, Steam, import, and update services.
 
-- [ ] **Step 1: Verify exact move targets and preserve the legacy UI files**
+- [x] **Step 1: Verify exact move targets and preserve the legacy UI files**
 
 Run:
 
@@ -81,7 +81,7 @@ git status --short
 
 Expected: every resolved path is inside the repository and the worktree contains only the approved plan document before implementation starts.
 
-- [ ] **Step 2: Create the Core project definition**
+- [x] **Step 2: Create the Core project definition**
 
 Create `Codec.Core/Codec.Core.csproj` with the following project contract:
 
@@ -98,6 +98,7 @@ Create `Codec.Core/Codec.Core.csproj` with the following project contract:
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Gameloop.Vdf" Version="0.6.2" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="SteamKit2" Version="3.4.0" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.7" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.9" />
@@ -106,11 +107,11 @@ Create `Codec.Core/Codec.Core.csproj` with the following project contract:
 </Project>
 ```
 
-- [ ] **Step 3: Move the model, service, and helper sources**
+- [x] **Step 3: Move the model, service, and helper sources**
 
 Move the approved source files while retaining their existing namespaces. Leave `Services/SystemTrayIcon.cs` and all WinUI converters in the legacy tree. Do not copy sources into both product projects.
 
-- [ ] **Step 4: Point the existing test project at Core**
+- [x] **Step 4: Point the existing test project at Core**
 
 Replace the project reference with:
 
@@ -120,7 +121,7 @@ Replace the project reference with:
 
 Do not run the tests.
 
-- [ ] **Step 5: Register Core in the solution**
+- [x] **Step 5: Register Core in the solution**
 
 Add these project entries to `Codec.slnx`:
 
@@ -131,7 +132,7 @@ Add these project entries to `Codec.slnx`:
 
 Keep the legacy `Codec.csproj` entry until final cutover.
 
-- [ ] **Step 6: Restore and build Core**
+- [x] **Step 6: Restore and build Core**
 
 Run:
 
@@ -142,7 +143,7 @@ dotnet build Codec.Core\Codec.Core.csproj --no-restore -p:Platform=x64 -p:Output
 
 Expected: `0 Error(s)`.
 
-- [ ] **Step 7: Prove Core is UI-framework-neutral**
+- [x] **Step 7: Prove Core is UI-framework-neutral**
 
 Run:
 
@@ -152,7 +153,7 @@ rg -n 'Microsoft\.UI|Microsoft\.WindowsAppSDK|Windows\.UI\.Xaml|Avalonia\.(Contr
 
 Expected: no matches. Windows Registry, DPAPI, paths, and process APIs are allowed.
 
-- [ ] **Step 8: Commit the Core extraction**
+- [x] **Step 8: Commit the Core extraction**
 
 ```powershell
 git add Codec.Core Codec.Tests\Codec.Tests.csproj Codec.slnx Models Services Helpers
