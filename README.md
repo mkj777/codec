@@ -28,6 +28,14 @@ Codec is a Windows x64 C# desktop application using .NET 9 and Avalonia UI.
 `Codec.Avalonia/Codec.Avalonia.csproj` is the executable project; `Codec.Core` contains models and services.  
 Velopack remains responsible for installation and updates.
 
+Create a Windows x64 release with the existing Codec package identity:
+
+```powershell
+.\scripts\package.ps1 -Version 0.8.0
+```
+
+Publish output is written to `obj\publish-avalonia`; Velopack artifacts are written to `obj\velopack-releases`.
+
 thanks to [Leon Terme](https://github.com/LeMIT2427) for the idea and help with the concept  
 thanks to [SteamKit2](https://github.com/SteamRE/SteamKit) for the steam integration to reliably fetch steam assets  
 thanks to [Stefan Gabriel Craescu](https://github.com/Deadlock-too) for [howlongtobeat-ts](https://github.com/Deadlock-too/howlongtobeat-ts) to integrate HowLongToBeat  

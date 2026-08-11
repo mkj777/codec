@@ -802,7 +802,7 @@ git commit -m "refactor: replace WinUI with Avalonia"
 - Consumes: final `Codec.Avalonia` executable with `AssemblyName=Codec` and Velopack 0.0.1298 startup integration.
 - Produces: publish output and packaging inputs that continue to identify `Codec.exe` as the main executable.
 
-- [ ] **Step 1: Add a repeatable packaging script for the established Codec identity**
+- [x] **Step 1: Add a repeatable packaging script for the established Codec identity**
 
 Create `scripts/package.ps1` with this contract:
 
@@ -831,7 +831,7 @@ exit $LASTEXITCODE
 
 This keeps `Codec` as pack ID, title, and executable identity and does not change channel, feed, or signing behavior.
 
-- [ ] **Step 2: Publish the Avalonia executable**
+- [x] **Step 2: Publish the Avalonia executable**
 
 Run:
 
@@ -841,7 +841,7 @@ dotnet publish Codec.Avalonia\Codec.Avalonia.csproj -c Release -r win-x64 --self
 
 Expected: `obj\publish-avalonia\Codec.exe` exists with its Avalonia, native, and media dependencies.
 
-- [ ] **Step 3: Exercise non-destructive Velopack startup hooks from publish output**
+- [x] **Step 3: Exercise non-destructive Velopack startup hooks from publish output**
 
 Run:
 
@@ -852,7 +852,7 @@ Run:
 
 Expected: each hook exits promptly without opening the Avalonia window. Do not invoke `--veloapp-uninstall` against the user's profile because the existing uninstall hook deletes Codec app data; verify that hook by code inspection.
 
-- [ ] **Step 4: Run the established Velopack packaging command against the new output**
+- [x] **Step 4: Run the established Velopack packaging command against the new output**
 
 Run:
 
@@ -866,7 +866,9 @@ Expected: packages are written under `obj\velopack-releases` using `Codec.exe` a
 
 Confirm the installed app starts the Avalonia UI, loads existing data, checks for updates without blocking startup, and retains the stable Codec shortcut/executable identity.
 
-- [ ] **Step 6: Record packaging evidence and commit**
+Not exercised on the development machine: Codec 0.8.0 is already installed under the same stable identity. The generated portable package was launched instead so the existing installation was not replaced by an unsigned same-version verification build.
+
+- [x] **Step 6: Record packaging evidence and commit**
 
 Add the publish command, package command, generated installer filename, hook results, and installed-launch result to the parity document, then run:
 

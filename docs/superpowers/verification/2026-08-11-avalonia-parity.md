@@ -34,6 +34,11 @@ The local Codec data directory contained `settings.json` but no `library.json`. 
 | Direct close | Pass | Isolated process exited after a normal close request. |
 | Update check | Pass in development mode | Startup check reached the expected development-mode failure path without crashing. |
 | Update restart | Not applicable | No installed Velopack update was available. |
+| Release publish | Pass | Self-contained Windows x64 publish produced `Codec.exe`, Codec.Core, Avalonia, LibVLC, and native dependencies under `obj\publish-avalonia`. |
+| Velopack install and update hooks | Pass | `--veloapp-install 0.8.0` and `--veloapp-updated 0.8.0` both exited promptly with code 0 and no application window. The destructive uninstall hook was inspected but not invoked. |
+| Velopack package | Pass | `.\scripts\package.ps1 -Version 0.8.0` produced `Codec-0.8.0-full.nupkg`, `Codec-win-Portable.zip`, and `Codec-win-Setup.exe`; Velopack verified `VelopackApp.Run()` in `Codec.Program.Main`. |
+| Packaged launch | Pass (portable) | The Velopack portable bootstrapper launched `current\Codec.exe`; the packaged Avalonia window opened and closed normally. |
+| Installed launch | Not exercised | Codec 0.8.0 is already installed under the same product identity. Replacing that user installation with an unsigned same-version verification build was intentionally avoided. |
 
 ## Visual findings
 
@@ -42,6 +47,13 @@ The local Codec data directory contained `settings.json` but no `library.json`. 
 - The broad Impeccable scan only reported three vendored LibVLC HTML files under generated verification output. A source-only scan of `Views`, `Styles`, and `Media` returned no findings.
 - Covers remain caption-free. No Continue hero was introduced.
 
+## Packaging findings
+
+- `Codec` remains the package ID, title, assembly name, and main executable identity.
+- The locally available Velopack CLI is 1.2.0 while the intentionally unchanged application package is 0.0.1298. Packaging completed, with Velopack warning that this version difference can occasionally cause compatibility issues.
+- Verification artifacts are unsigned because no signing parameters were supplied. The packaging script does not change existing signing, feed, or channel behavior.
+- The generated full package SHA-256 was `3FB280382215A019CDCEEFBB98646049458BFE9AAE4055D4E9A86450EB55B6AE`.
+
 ## Remaining runtime evidence needed
 
-Before release, repeat the behavior rows marked Not exercised on a machine with a populated library, a disposable Steam sign-in, and an installed Velopack build. These are release-verification gaps, not compile failures.
+Before release, repeat the behavior rows marked Not exercised on a machine with a populated library, a disposable Steam sign-in, and a safely replaceable installed Velopack build. These are release-verification gaps, not compile failures.
