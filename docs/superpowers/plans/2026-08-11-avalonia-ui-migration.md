@@ -664,27 +664,27 @@ git commit -m "feat: complete Avalonia desktop lifecycle"
 - Consumes: every migrated surface and command.
 - Produces: a checked parity record and a visually coherent Avalonia candidate ready for cutover.
 
-- [ ] **Step 1: Record the parity matrix**
+- [x] **Step 1: Record the parity matrix**
 
 Create the verification document with explicit rows for startup, onboarding, library loading, sidebar search, grid search, sorting, source filter, install filter, favorite, Add, Scan, cancellation, Details, Play, install request, paths, remove, media, franchise, settings, Steam connect/sync/disconnect, achievements maintenance, notifications, reset, tray, close choice, update check, and update restart.
 
-- [ ] **Step 2: Run one bounded visual inspection pass**
+- [x] **Step 2: Run one bounded visual inspection pass**
 
 Capture Library, Game Details, empty state, onboarding first/final steps, Settings, Steam QR, and one modal overlay at the reference window size. Compare typography, spacing, alignment, border use, radii, colors, and control order against the approved references and current WinUI layouts.
 
-- [ ] **Step 3: Fix all issues found in the first pass**
+- [x] **Step 3: Fix all issues found in the first pass**
 
 Apply one grouped correction pass. Preserve Library cover-only presentation, current toolbar organization, current Game Details composition, and original hero-artwork behavior.
 
-- [ ] **Step 4: Run the second and final visual confirmation pass**
+- [x] **Step 4: Run the second and final visual confirmation pass**
 
 Recapture the affected surfaces once. Record the resolved findings in the parity document; do not start an open-ended screenshot loop.
 
-- [ ] **Step 5: Run the complete focused behavior check**
+- [x] **Step 5: Run the complete focused behavior check**
 
 Use existing persisted library data and verify every parity-matrix row manually. Record Pass, Not Applicable, or a concrete blocking observation. Do not record a feature as passing without exercising it.
 
-- [ ] **Step 6: Build and scan dependencies**
+- [x] **Step 6: Build and scan dependencies**
 
 Run:
 
@@ -695,7 +695,7 @@ rg -n 'Microsoft\.UI|Microsoft\.WindowsAppSDK|Windows\.UI\.Xaml|WinRT' Codec.Cor
 
 Expected: `0 Error(s)` and no WinUI dependency matches in the product projects.
 
-- [ ] **Step 7: Commit parity corrections**
+- [x] **Step 7: Commit parity corrections**
 
 ```powershell
 git add Codec.Avalonia docs\superpowers\verification\2026-08-11-avalonia-parity.md
