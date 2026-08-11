@@ -251,19 +251,19 @@ git commit -m "style: unify Avalonia action icons"
 - Consumes: completed shell and icon changes.
 - Produces: fresh evidence that the approved reference hierarchy, collapsed behavior, and build gate are satisfied.
 
-- [ ] **Step 1: Capture the open sidebar state**
+- [x] **Step 1: Capture the open sidebar state**
 
 Launch `obj\verify-shell-complete\Codec.exe`, capture the initial Library shell, and compare brand position, search treatment, sidebar content order, mascot scale, button height, settings separator, titlebar controls, and empty-state hierarchy against the approved references.
 
-- [ ] **Step 2: Capture the collapsed sidebar state**
+- [x] **Step 2: Capture the collapsed sidebar state**
 
 Collapse the sidebar, confirm no rail remains, confirm Library or Details receives the full width, and capture the visible content-side `PanelLeftOpen` action. Reopen the sidebar and confirm state persistence still works.
 
-- [ ] **Step 3: Apply only evidence-driven refinements**
+- [x] **Step 3: Apply only evidence-driven refinements**
 
 If either screenshot violates an exact spec value, patch that existing style or AXAML value. Do not add new components or alter Library/Game Details composition.
 
-- [ ] **Step 4: Run the final evidence gate**
+- [x] **Step 4: Run the final evidence gate**
 
 ```powershell
 dotnet build Codec.Avalonia\Codec.Avalonia.csproj --no-restore -p:Platform=x64 -p:OutputPath=obj\verify-shell-final\
@@ -274,7 +274,7 @@ git status --short
 
 Expected: build has `0 Error(s)`, action-glyph scan has no matches, diff check is clean, and status contains only intentional shell-refinement files.
 
-- [ ] **Step 5: Commit any final visual calibration**
+- [x] **Step 5: Commit any final visual calibration**
 
 If Step 3 changed files:
 
