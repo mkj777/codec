@@ -1,0 +1,24 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Border.surface">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="CornerRadius" Value="12" />
+  </Style>
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+  </Style>
+  <Style Selector="Border.overlay">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Border.notification">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16,13" />
+  </Style>
+</Styles>

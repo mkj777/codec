@@ -19,5 +19,6 @@
     <Deploy Solution="Release|Any CPU" />
   </Project>
   <Project Path="Codec.Core\Codec.Core.csproj" />
+  <Project Path="Codec.Avalonia\Codec.Avalonia.csproj" />
   <Project Path="Codec.Tests\Codec.Tests.csproj" />
 </Solution>

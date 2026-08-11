@@ -1,0 +1,36 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <FontFamily x:Key="CodecRegularFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
+    <FontFamily x:Key="CodecMediumFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
+    <FontFamily x:Key="CodecSemiBoldFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
+    <FontFamily x:Key="CodecBoldFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
+  </Styles.Resources>
+
+  <Style Selector="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource CodecRegularFontFamily}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{StaticResource CodecBoldFontFamily}" />
+    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontWeight" Value="700" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="600" />
+  </Style>
+  <Style Selector="TextBlock.body">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="LineHeight" Value="21" />
+  </Style>
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{StaticResource CodecMediumFontFamily}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="500" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+</Styles>

@@ -7,7 +7,7 @@ namespace Codec.Services.Storage;
 
 public sealed class AppResetService
 {
-    internal static void DeleteAppData()
+    public static void DeleteAppData()
     {
         string targetDirectory = GetValidatedAppDataDirectory();
         if (Directory.Exists(targetDirectory))

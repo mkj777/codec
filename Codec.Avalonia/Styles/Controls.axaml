@@ -1,0 +1,85 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Button">
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+    <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}" />
+    <Setter Property="FontWeight" Value="600" />
+  </Style>
+  <Style Selector="Button:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceHoverBrush}" />
+  </Style>
+  <Style Selector="Button:pressed">
+    <Setter Property="Opacity" Value="0.82" />
+  </Style>
+  <Style Selector="Button:disabled">
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextDisabledBrush}" />
+    <Setter Property="Opacity" Value="0.58" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecBackgroundBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryHoverBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryPressedBrush}" />
+  </Style>
+
+  <Style Selector="ToggleButton">
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+  <Style Selector="ToggleButton:checked">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="ProgressBar">
+    <Setter Property="MinHeight" Value="4" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CodecBorderBrush}" />
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="Padding" Value="9,6" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+</Styles>

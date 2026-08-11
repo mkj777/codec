@@ -1,0 +1,19 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Codec.App"
+             RequestedThemeVariant="Dark">
+  <!--
+    THESIS: Codec is a quiet shelf for a real game collection, not a Fluent dashboard or launcher storefront.
+    OWN-WORLD: Near-black shelf surfaces, warm cream type, restrained orange actions, gold favorite marks, compact Nunito typography.
+    STORY: The player's collection remains primary; Codec makes finding, understanding, and launching a game feel immediate.
+    FIRST VIEWPORT: A narrow library sidebar anchors the left while the cover grid or current game details owns the remaining canvas.
+    FORM: Operate mode, approved Codec v2 reference direction, with the sleeping red panda as the single memorable brand signature.
+  -->
+  <Application.Styles>
+    <SimpleTheme />
+    <StyleInclude Source="avares://Codec/Styles/Colors.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/Typography.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/Controls.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/Surfaces.axaml" />
+  </Application.Styles>
+</Application>

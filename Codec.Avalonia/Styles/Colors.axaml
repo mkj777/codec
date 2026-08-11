@@ -1,0 +1,36 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <Color x:Key="CodecBackgroundColor">#1C1A17</Color>
+    <Color x:Key="CodecSidebarColor">#181613</Color>
+    <Color x:Key="CodecSurfaceColor">#25221F</Color>
+    <Color x:Key="CodecSurfaceRaisedColor">#292622</Color>
+    <Color x:Key="CodecSurfaceHoverColor">#2E2A25</Color>
+    <Color x:Key="CodecBorderColor">#3E3830</Color>
+    <Color x:Key="CodecPrimaryColor">#E76C2B</Color>
+    <Color x:Key="CodecPrimaryHoverColor">#F07A39</Color>
+    <Color x:Key="CodecPrimaryPressedColor">#CF5920</Color>
+    <Color x:Key="CodecAccentColor">#D4A832</Color>
+    <Color x:Key="CodecSecondaryColor">#C4956A</Color>
+    <Color x:Key="CodecTextColor">#F3EDC9</Color>
+    <Color x:Key="CodecTextMutedColor">#9E8E78</Color>
+    <Color x:Key="CodecTextDisabledColor">#62584B</Color>
+    <Color x:Key="CodecScrimColor">#B8141311</Color>
+
+    <SolidColorBrush x:Key="CodecBackgroundBrush" Color="{StaticResource CodecBackgroundColor}" />
+    <SolidColorBrush x:Key="CodecSidebarBrush" Color="{StaticResource CodecSidebarColor}" />
+    <SolidColorBrush x:Key="CodecSurfaceBrush" Color="{StaticResource CodecSurfaceColor}" />
+    <SolidColorBrush x:Key="CodecSurfaceRaisedBrush" Color="{StaticResource CodecSurfaceRaisedColor}" />
+    <SolidColorBrush x:Key="CodecSurfaceHoverBrush" Color="{StaticResource CodecSurfaceHoverColor}" />
+    <SolidColorBrush x:Key="CodecBorderBrush" Color="{StaticResource CodecBorderColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryBrush" Color="{StaticResource CodecPrimaryColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryHoverBrush" Color="{StaticResource CodecPrimaryHoverColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryPressedBrush" Color="{StaticResource CodecPrimaryPressedColor}" />
+    <SolidColorBrush x:Key="CodecAccentBrush" Color="{StaticResource CodecAccentColor}" />
+    <SolidColorBrush x:Key="CodecSecondaryBrush" Color="{StaticResource CodecSecondaryColor}" />
+    <SolidColorBrush x:Key="CodecTextBrush" Color="{StaticResource CodecTextColor}" />
+    <SolidColorBrush x:Key="CodecTextMutedBrush" Color="{StaticResource CodecTextMutedColor}" />
+    <SolidColorBrush x:Key="CodecTextDisabledBrush" Color="{StaticResource CodecTextDisabledColor}" />
+    <SolidColorBrush x:Key="CodecScrimBrush" Color="{StaticResource CodecScrimColor}" />
+  </Styles.Resources>
+</Styles>

@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Codec.Views.MainWindow"
+        Title="Codec"
+        Width="1280"
+        Height="760"
+        MinWidth="980"
+        MinHeight="620"
+        Background="{DynamicResource CodecBackgroundBrush}"
+        Foreground="{DynamicResource CodecTextBrush}"
+        Icon="/Assets/icon.ico"
+        WindowStartupLocation="CenterScreen">
+  <Grid>
+    <TextBlock Classes="title"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Text="Codec" />
+  </Grid>
+</Window>

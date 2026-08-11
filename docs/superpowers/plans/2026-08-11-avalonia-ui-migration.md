@@ -179,7 +179,7 @@ git commit -m "refactor: extract Codec core from WinUI"
 - Consumes: `Codec.Core`, bundled assets under the legacy `Assets` directory, and Velopack startup hooks.
 - Produces: Windows executable assembly named `Codec`, `App.Services`, Codec theme resources, and an empty `MainWindow` host.
 
-- [ ] **Step 1: Create the Avalonia project**
+- [x] **Step 1: Create the Avalonia project**
 
 Use this project contract:
 
@@ -209,7 +209,7 @@ Use this project contract:
 </Project>
 ```
 
-- [ ] **Step 2: Add the Velopack-first Avalonia bootstrap**
+- [x] **Step 2: Add the Velopack-first Avalonia bootstrap**
 
 `Program.Main` must keep Velopack ahead of Avalonia initialization:
 
@@ -230,7 +230,7 @@ public static AppBuilder BuildAvaloniaApp() =>
         .LogToTrace();
 ```
 
-- [ ] **Step 3: Create application composition**
+- [x] **Step 3: Create application composition**
 
 Expose the service graph from `App.axaml.cs`:
 
@@ -240,7 +240,7 @@ public static ServiceHost Services { get; } = new();
 
 On framework initialization, construct the Avalonia root view model and assign one `MainWindow` to `IClassicDesktopStyleApplicationLifetime.MainWindow`.
 
-- [ ] **Step 4: Define the exact palette resources**
+- [x] **Step 4: Define the exact palette resources**
 
 `Colors.axaml` must expose semantic brushes with these base values:
 
@@ -256,11 +256,11 @@ On framework initialization, construct the Avalonia root view model and assign o
 <Color x:Key="CodecTextMutedColor">#9E8E78</Color>
 ```
 
-- [ ] **Step 5: Define typography and control ownership**
+- [x] **Step 5: Define typography and control ownership**
 
 Register Nunito Regular, Medium, SemiBold, and Bold from `Assets/fonts`. Apply Codec-owned themes for `Button`, `ToggleButton`, `TextBox`, `ComboBox`, `ListBoxItem`, `ScrollBar`, `ProgressBar`, and `ToolTip`. Use 8-12 pixel standard radii, no ripple/reveal effects, and orange only for primary or selected states.
 
-- [ ] **Step 6: Register the project and perform the first Avalonia build**
+- [x] **Step 6: Register the project and perform the first Avalonia build**
 
 Run:
 
@@ -271,7 +271,7 @@ dotnet build Codec.Avalonia\Codec.Avalonia.csproj --no-restore -p:Platform=x64 -
 
 Expected: `0 Error(s)` and an executable named `Codec.exe` in the isolated output.
 
-- [ ] **Step 7: Commit the Avalonia foundation**
+- [x] **Step 7: Commit the Avalonia foundation**
 
 ```powershell
 git add Codec.Avalonia Codec.slnx
