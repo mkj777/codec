@@ -109,22 +109,22 @@ git commit -m "style: establish Codec shell icon system"
 - Consumes: `MainViewModel.IsSidebarCollapsed`, `ToggleSidebarCommand`, existing window closing lifecycle, and Lucide controls from Task 1.
 - Produces: a 240 DIP open sidebar, zero-width collapsed sidebar, content-side reopen button, and custom Minimize/Maximize/Close caption actions.
 
-- [ ] **Step 1: Make the sidebar collapse completely**
+- [x] **Step 1: Make the sidebar collapse completely**
 
-Change the converter defaults and resource values to:
+Replace the mismatched `GridLength` converter with a double converter because the binding target is `Border.Width`:
 
 ```csharp
-public GridLength Expanded { get; set; } = new(240);
-public GridLength Collapsed { get; set; } = new(0);
+public double Expanded { get; set; } = 240;
+public double Collapsed { get; set; }
 ```
 
 ```xml
-<converters:BooleanToGridLengthConverter x:Key="SidebarWidthConverter"
-                                          Expanded="240"
-                                          Collapsed="0" />
+<converters:BooleanToDoubleConverter x:Key="SidebarWidthConverter"
+                                     Expanded="240"
+                                     Collapsed="0" />
 ```
 
-- [ ] **Step 2: Replace the drawn caption chrome with three actions**
+- [x] **Step 2: Replace the drawn caption chrome with three actions**
 
 Set `ExtendClientAreaChromeHints="NoChrome"` on the window and keep the 34 DIP titlebar row. Put a right-aligned caption group above the drag region with Lucide `Minus`, `Square`, and `X` icons. There is no fullscreen button.
 
@@ -145,7 +145,7 @@ private void CloseWindow_Click(object? sender, RoutedEventArgs e)
 
 Keep `TitleBar_PointerPressed` unchanged so drag and double-click maximize continue to work.
 
-- [ ] **Step 3: Reorder and resize the sidebar**
+- [x] **Step 3: Reorder and resize the sidebar**
 
 Use 20 DIP horizontal insets and rows in this order:
 
@@ -161,11 +161,11 @@ Settings separator + Settings
 
 Use Lucide `PanelLeftClose`, `Search`, `Plus`, `ScanSearch`, and `Settings` icons. Mascot height is 104 DIPs. Add and Scan are 34 DIPs high with 8 DIP spacing. Settings is a 40 DIP row beneath a one-pixel separator.
 
-- [ ] **Step 4: Add the collapsed-state reopen action**
+- [x] **Step 4: Add the collapsed-state reopen action**
 
 Place a 34 DIP quiet button inside the content surface at `Margin="14,12,0,0"`, visible only while `IsSidebarCollapsed`, using Lucide `PanelLeftOpen` and the existing `ToggleSidebarCommand`. Give it a Z-index above Library and Game Details without affecting their margins.
 
-- [ ] **Step 5: Build and launch the shell**
+- [x] **Step 5: Build and launch the shell**
 
 Run:
 
@@ -175,7 +175,7 @@ dotnet build Codec.Avalonia\Codec.Avalonia.csproj --no-restore -p:Platform=x64 -
 
 Launch the isolated executable and verify open sidebar, zero-width collapse, reopen action, titlebar drag, minimize, maximize or restore, close flow, and absence of a fullscreen action.
 
-- [ ] **Step 6: Commit the shell layout**
+- [x] **Step 6: Commit the shell layout**
 
 ```powershell
 git add Codec.Avalonia\Views\MainWindow.axaml Codec.Avalonia\Views\MainWindow.axaml.cs Codec.Avalonia\Converters\ValueConverters.cs

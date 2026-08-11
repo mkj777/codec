@@ -15,11 +15,11 @@ public sealed class BooleanNegationConverter : IValueConverter
         => value is bool flag ? !flag : AvaloniaProperty.UnsetValue;
 }
 
-public sealed class BooleanToGridLengthConverter : IValueConverter
+public sealed class BooleanToDoubleConverter : IValueConverter
 {
-    public GridLength Expanded { get; set; } = new(224);
+    public double Expanded { get; set; } = 240;
 
-    public GridLength Collapsed { get; set; } = new(72);
+    public double Collapsed { get; set; }
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is true ? Collapsed : Expanded;

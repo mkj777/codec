@@ -138,6 +138,17 @@ public sealed partial class MainWindow : Window
             BeginMoveDrag(e);
     }
 
+    private void MinimizeWindow_Click(object? sender, RoutedEventArgs e)
+        => WindowState = WindowState.Minimized;
+
+    private void MaximizeWindow_Click(object? sender, RoutedEventArgs e)
+        => WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+
+    private void CloseWindow_Click(object? sender, RoutedEventArgs e)
+        => Close();
+
     private void Sidebar_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.RightButtonPressed ||

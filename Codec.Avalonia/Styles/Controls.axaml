@@ -118,6 +118,10 @@
   <Style Selector="TextBox.sidebar-search:focus">
     <Setter Property="BorderThickness" Value="0" />
   </Style>
+  <Style Selector="TextBox.sidebar-search /template/ TextBlock#PART_Watermark">
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
 
   <Style Selector="ComboBox">
     <Setter Property="MinHeight" Value="36" />

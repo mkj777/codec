@@ -15,20 +15,57 @@
         Icon="/Assets/icon.ico"
         WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaTitleBarHeightHint="34">
   <Window.Resources>
     <converters:BooleanNegationConverter x:Key="NotConverter" />
-    <converters:BooleanToGridLengthConverter x:Key="SidebarWidthConverter"
-                                              Expanded="224"
-                                              Collapsed="72" />
+    <converters:BooleanToDoubleConverter x:Key="SidebarWidthConverter"
+                                         Expanded="240"
+                                         Collapsed="0" />
   </Window.Resources>
 
   <Grid ColumnDefinitions="Auto,*"
         RowDefinitions="34,*">
-    <Border x:Name="DragRegion"
-            Grid.ColumnSpan="2"
-            Background="#10181613"
-            PointerPressed="TitleBar_PointerPressed" />
+    <Grid Grid.ColumnSpan="2">
+      <Border x:Name="DragRegion"
+              Background="#141210"
+              PointerPressed="TitleBar_PointerPressed" />
+
+      <Button Classes="icon-quiet"
+              Width="34"
+              Height="34"
+              Margin="8,0,0,0"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Command="{Binding ToggleSidebarCommand}"
+              IsVisible="{Binding IsSidebarCollapsed}"
+              AutomationProperties.Name="Open sidebar"
+              ToolTip.Tip="Open sidebar">
+        <LucideIcon Kind="PanelLeftOpen" Size="18" StrokeWidth="1.75" />
+      </Button>
+
+      <StackPanel HorizontalAlignment="Right"
+                  Orientation="Horizontal">
+        <Button Classes="chrome"
+                Click="MinimizeWindow_Click"
+                AutomationProperties.Name="Minimize"
+                ToolTip.Tip="Minimize">
+          <LucideIcon Kind="Minus" Size="16" StrokeWidth="1.75" />
+        </Button>
+        <Button Classes="chrome"
+                Click="MaximizeWindow_Click"
+                AutomationProperties.Name="Maximize or restore"
+                ToolTip.Tip="Maximize or restore">
+          <LucideIcon Kind="Square" Size="14" StrokeWidth="1.75" />
+        </Button>
+        <Button Classes="chrome"
+                Click="CloseWindow_Click"
+                AutomationProperties.Name="Close"
+                ToolTip.Tip="Close">
+          <LucideIcon Kind="X" Size="17" StrokeWidth="1.75" />
+        </Button>
+      </StackPanel>
+    </Grid>
 
     <Border x:Name="Sidebar"
             Grid.Row="1"
@@ -37,42 +74,46 @@
             Background="{DynamicResource CodecSidebarBrush}"
             BorderBrush="{DynamicResource CodecBorderBrush}"
             BorderThickness="0,0,1,0"
+            ClipToBounds="True"
             PointerPressed="Sidebar_PointerPressed">
-      <Grid Margin="12,10,12,12"
+      <Grid Margin="20,12,20,0"
             RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
         <Grid ColumnDefinitions="*,Auto"
-              Margin="4,0,0,14">
-          <TextBlock Classes="heading"
+              Margin="0,0,0,14">
+          <TextBlock Classes="brand"
                      VerticalAlignment="Center"
-                     FontSize="18"
-                     Text="Codec"
-                     IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
+                     Text="Codec" />
           <Button Grid.Column="1"
-                  Width="32"
-                  Height="32"
-                  MinHeight="0"
-                  Padding="0"
-                  Background="Transparent"
-                  BorderThickness="0"
+                  Classes="icon-quiet"
                   Command="{Binding ToggleSidebarCommand}"
-                  ToolTip.Tip="Toggle sidebar">
-            <TextBlock FontSize="18"
-                       Text="☰" />
+                  AutomationProperties.Name="Close sidebar"
+                  ToolTip.Tip="Close sidebar">
+            <LucideIcon Kind="PanelLeftClose" Size="18" StrokeWidth="1.75" />
           </Button>
         </Grid>
 
-        <TextBox x:Name="SearchBox"
-                 Grid.Row="1"
-                 Margin="0,0,0,10"
-                 PlaceholderText="Search"
-                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
+        <Border Grid.Row="1"
+                Margin="0,0,0,12"
+                BorderBrush="{DynamicResource CodecBorderBrush}"
+                BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="16,10,*">
+            <LucideIcon VerticalAlignment="Center"
+                        Foreground="{DynamicResource CodecTextMutedBrush}"
+                        Kind="Search"
+                        Size="16"
+                        StrokeWidth="1.75" />
+            <TextBox x:Name="SearchBox"
+                     Grid.Column="2"
+                     Classes="sidebar-search"
+                     PlaceholderText="Search"
+                     Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          </Grid>
+        </Border>
 
         <ListBox Grid.Row="2"
                  Classes="sidebar-list"
                  ItemsSource="{Binding SidebarFilteredGames}"
-                 SelectedItem="{Binding SidebarSelectedItem, Mode=TwoWay}"
-                 IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}">
+                 SelectedItem="{Binding SidebarSelectedItem, Mode=TwoWay}">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Button Classes="sidebar-game"
@@ -87,49 +128,48 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
-        <Grid Grid.Row="3"
+        <Image Grid.Row="3"
+               Margin="0,8,0,12"
+               Height="104"
+               Stretch="Uniform"
+               Source="/Assets/shrimpSleep.png" />
+
+        <Grid Grid.Row="4"
               ColumnDefinitions="*,*"
               ColumnSpacing="8"
-              Margin="0,12,0,0"
-              IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}">
+              Margin="0,0,0,12">
           <Button Grid.Column="0"
-                  Classes="primary"
-                  Padding="10,8"
+                  Classes="primary sidebar-action"
                   Command="{Binding AddGameFromPickerCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="＋" />
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <LucideIcon Kind="Plus" Size="16" StrokeWidth="1.75" />
               <TextBlock Text="Add" />
             </StackPanel>
           </Button>
           <Button Grid.Column="1"
-                  Padding="10,8"
+                  Classes="sidebar-action"
                   Command="{Binding ScanGamesCommand}"
                   IsEnabled="{Binding CanStartScan}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBlock Text="⌕" />
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <LucideIcon Kind="Search" Size="16" StrokeWidth="1.75" />
               <TextBlock Text="Scan" />
             </StackPanel>
           </Button>
         </Grid>
 
-        <Image Grid.Row="4"
-               Margin="0,8,0,-2"
-               Height="118"
-               Stretch="Uniform"
-               Source="/Assets/shrimpSleep.png"
-               IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
-
-        <Button Grid.Row="5"
-                Background="Transparent"
-                BorderThickness="0"
-                HorizontalContentAlignment="Left"
-                Click="SettingsButton_Click">
-          <StackPanel Orientation="Horizontal" Spacing="9">
-            <TextBlock Text="⚙" FontSize="17" />
-            <TextBlock Text="Settings"
-                       IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
-          </StackPanel>
-        </Button>
+        <Border Grid.Row="5"
+                Margin="-20,0,-20,0"
+                Padding="20,4,20,0"
+                BorderBrush="{DynamicResource CodecBorderBrush}"
+                BorderThickness="0,1,0,0">
+          <Button Classes="sidebar-settings"
+                  Click="SettingsButton_Click">
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <LucideIcon Kind="Settings" Size="16" StrokeWidth="1.75" />
+              <TextBlock Text="Settings" />
+            </StackPanel>
+          </Button>
+        </Border>
       </Grid>
     </Border>
 
