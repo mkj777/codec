@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:Codec.Converters"
+             x:Class="Codec.Views.OnboardingView"
+             x:CompileBindings="False"
+             Background="{DynamicResource CodecBackgroundBrush}">
+  <UserControl.Resources>
+    <converters:PngBytesToBitmapConverter x:Key="PngConverter" />
+  </UserControl.Resources>
+
+  <Grid>
+    <TextBlock Margin="46,28" Classes="heading" Text="Codec" />
+
+    <Grid x:Name="IntroStep" Margin="78" ColumnDefinitions="*,*" ColumnSpacing="70">
+      <StackPanel VerticalAlignment="Center" Spacing="24">
+        <TextBlock Classes="title"
+                   FontSize="50"
+                   LineHeight="58"
+                   Text="A quiet home&#x0a;for your games." />
+        <TextBlock Classes="body"
+                   Width="470"
+                   HorizontalAlignment="Left"
+                   Foreground="{DynamicResource CodecTextMutedBrush}"
+                   Text="Codec gathers everything you own into one shelf, then gets out of the way."
+                   TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="primary" Width="126" Content="Begin" Click="Begin_Click" />
+          <Button Background="Transparent" BorderThickness="0" Content="Skip" Click="Skip_Click" />
+        </StackPanel>
+      </StackPanel>
+      <Image Grid.Column="1" Width="360" Stretch="Uniform" Source="/Assets/shrimpSleep.png" />
+    </Grid>
+
+    <Grid x:Name="SetupStep" Margin="110" IsVisible="False" ColumnDefinitions="*,360" ColumnSpacing="70">
+      <StackPanel VerticalAlignment="Center" Spacing="22">
+        <TextBlock Classes="title" FontSize="40" Text="Bring your shelf together." />
+        <TextBlock Classes="body" Foreground="{DynamicResource CodecTextMutedBrush}" Text="Find games on this PC, or connect Steam. You can change this later." />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Classes="primary" Content="Find games" Click="FindGames_Click" />
+          <Button Content="Connect Steam" Command="{Binding ConnectSteamCommand}" />
+          <Button Background="Transparent" BorderThickness="0" Content="Continue" Click="Continue_Click" />
+        </StackPanel>
+        <Border Classes="detail-surface" Width="260" Padding="14" HorizontalAlignment="Left" IsVisible="{Binding IsSteamQrVisible}">
+          <StackPanel Spacing="10">
+            <Image Width="220" Height="220" Source="{Binding SteamQrCodePng, Converter={StaticResource PngConverter}}" />
+            <TextBlock Classes="caption" Text="Scan with the Steam mobile app." HorizontalAlignment="Center" />
+            <Button Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <Image Grid.Column="1" Width="320" Stretch="Uniform" Source="/Assets/shrimpStand.png" />
+    </Grid>
+
+    <StackPanel x:Name="ReadyStep"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="18"
+                IsVisible="False">
+      <TextBlock Classes="title" FontSize="34" Text="Your shelf is ready." />
+      <Border Width="296" Height="1" Background="{DynamicResource CodecPrimaryBrush}" />
+      <Button Classes="primary" Width="184" Content="Open library" Click="OpenLibrary_Click" />
+    </StackPanel>
+
+    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="78,0,0,54" Orientation="Horizontal" Spacing="7">
+      <Border x:Name="Progress0" Width="20" Height="5" CornerRadius="3" Background="{DynamicResource CodecPrimaryBrush}" />
+      <Border x:Name="Progress1" Width="5" Height="5" CornerRadius="3" Background="{DynamicResource CodecBorderBrush}" />
+      <Border x:Name="Progress2" Width="5" Height="5" CornerRadius="3" Background="{DynamicResource CodecBorderBrush}" />
+    </StackPanel>
+  </Grid>
+</UserControl>

@@ -170,6 +170,7 @@ public partial class MainViewModel
         await _services.AppSettings.SaveAsync(_appSettings);
     }
 
+    [RelayCommand]
     public async Task DisconnectSteamAsync()
     {
         await _services.SteamLibrary.DeleteTokenAsync();

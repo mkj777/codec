@@ -549,31 +549,31 @@ git commit -m "feat: migrate game details to Avalonia"
 - Consumes: onboarding, scan/import, Steam, update, reset, settings, and notification state already exposed by `MainViewModel`.
 - Produces: approved three-stage onboarding, settings overlay, Steam QR/sign-in flow, quiet progress, update feedback, and in-app confirmations.
 
-- [ ] **Step 1: Build the onboarding frame**
+- [x] **Step 1: Build the onboarding frame**
 
 Use a full-window surface without the Library shell. The first step contains `A quiet home for your games.`, the approved supporting copy, `Begin`, and `Skip`. The final step contains exactly `Your shelf is ready.` and `Open library`. Use the mascot and a minimal three-position progress indicator.
 
-- [ ] **Step 2: Connect onboarding to existing behavior**
+- [x] **Step 2: Connect onboarding to existing behavior**
 
 `Begin` advances through setup and existing scan/Steam choices. `Skip` uses the existing no-scan path. `Open library` calls the existing completion command and does not create a second initialization route.
 
-- [ ] **Step 3: Build Settings as an in-app overlay**
+- [x] **Step 3: Build Settings as an in-app overlay**
 
 Preserve scan-on-startup, Steam launch behavior, close-to-tray choice, Steam connection/sync/disconnect, update check, cover refresh, reset, debug-only actions, app version, and external project links. Use one clear panel and short section labels rather than nested card stacks.
 
-- [ ] **Step 4: Bind Steam QR and progress**
+- [x] **Step 4: Bind Steam QR and progress**
 
 Convert `SteamQrCodePng` to an Avalonia bitmap. Preserve immediate connection feedback, cancel/disconnect behavior, and the compact progress contract: one activity label and one progress value.
 
-- [ ] **Step 5: Port notifications and confirmations**
+- [x] **Step 5: Port notifications and confirmations**
 
 Migrate update, scan complete, already added, not added, admin warning, and failure notifications to a shared bottom-right stack. Reset, close choice, remove game, and destructive actions use in-app overlays with a dimmed backdrop and safe cancellation.
 
-- [ ] **Step 6: Preserve overlay layering and dismissal**
+- [x] **Step 6: Preserve overlay layering and dismissal**
 
 Global notifications render beneath modal overlays. Back/Escape closes the top transient layer before navigating. Clicking a scrim dismisses only overlays that are currently light-dismissible.
 
-- [ ] **Step 7: Build and perform a focused runtime check**
+- [x] **Step 7: Build and perform a focused runtime check**
 
 Run:
 
@@ -584,7 +584,7 @@ dotnet run --project Codec.Avalonia\Codec.Avalonia.csproj -p:Platform=x64
 
 Confirm onboarding navigation, scan choice, settings open/close, Steam QR, Steam cancellation/disconnect, progress copy, notification placement, reset confirmation, and Escape/back layering.
 
-- [ ] **Step 8: Commit onboarding and overlays**
+- [x] **Step 8: Commit onboarding and overlays**
 
 ```powershell
 git add Codec.Avalonia\Views\OnboardingView* Codec.Avalonia\Views\SettingsView* Codec.Avalonia\Views\Overlays Codec.Avalonia\Views\MainWindow*

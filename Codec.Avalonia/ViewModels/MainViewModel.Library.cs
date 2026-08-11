@@ -148,6 +148,7 @@ namespace Codec.ViewModels
         // Cover Management
         // ---------------------------------------------------------------------------------
 
+        [CommunityToolkit.Mvvm.Input.RelayCommand]
         public async Task RefreshCoversAsync()
         {
             ShowScanProgress("Fetching Covers...", Games.Count == 0);

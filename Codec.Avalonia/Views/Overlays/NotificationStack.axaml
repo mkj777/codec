@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Codec.Views.Overlays.NotificationStack"
+             x:CompileBindings="False">
+  <StackPanel Width="320" Spacing="9">
+    <Border Classes="notification" BorderBrush="{DynamicResource CodecAccentBrush}" IsVisible="{Binding IsAdminWarningVisible}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Classes="meta-value" Text="Running as Administrator" />
+          <TextBlock Classes="caption" Text="Some features may behave differently." />
+        </StackPanel>
+        <Button Grid.Column="1" Width="28" Height="28" MinHeight="0" Padding="0" Background="Transparent" BorderThickness="0" Click="DismissAdmin_Click" Content="×" />
+      </Grid>
+    </Border>
+
+    <Border Classes="notification" IsVisible="{Binding IsUpdateCheckingVisible}">
+      <StackPanel Spacing="6"><TextBlock Classes="meta-value" Text="Checking for updates" /><ProgressBar IsIndeterminate="True" /></StackPanel>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsUpdateDownloadingVisible}">
+      <StackPanel Spacing="6"><TextBlock Classes="meta-value" Text="Downloading update" /><ProgressBar Minimum="0" Maximum="100" Value="{Binding UpdateDownloadProgress}" /></StackPanel>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsUpdateBannerVisible}">
+      <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Classes="meta-value" Text="Update available" /><TextBlock Classes="caption" Text="Ready to restart." /></StackPanel><Button Grid.Column="1" Classes="primary" Content="Restart" Command="{Binding RestartToUpdateCommand}" /></Grid>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsUpdateErrorVisible}">
+      <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Classes="meta-value" Text="Update failed" /><TextBlock Classes="caption" Text="{Binding UpdateErrorMessage}" TextWrapping="Wrap" /></StackPanel><Button Grid.Column="1" Width="28" Height="28" MinHeight="0" Padding="0" Background="Transparent" BorderThickness="0" Click="DismissUpdateError_Click" Content="×" /></Grid>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsUpdateNoUpdateVisible}">
+      <Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Classes="meta-value" Text="Codec is up to date" /><TextBlock Classes="caption" Text="Nothing else to do." /></StackPanel><Button Grid.Column="1" Width="28" Height="28" MinHeight="0" Padding="0" Background="Transparent" BorderThickness="0" Click="DismissNoUpdate_Click" Content="×" /></Grid>
+    </Border>
+
+    <Border Classes="notification" IsVisible="{Binding IsImportStatusVisible}">
+      <StackPanel Spacing="6"><TextBlock Classes="meta-value" Text="{Binding ImportStatusMessage}" /><ProgressBar IsIndeterminate="True" /></StackPanel>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsScanCompleteEffectiveVisible}">
+      <StackPanel><TextBlock Classes="meta-value" Text="Scan complete" /><TextBlock Classes="caption" Text="{Binding ScanCompleteAddedCount, StringFormat='{}{0} games added.'}" /></StackPanel>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsGameNotAddedToastVisible}">
+      <StackPanel><TextBlock Classes="meta-value" Text="Game not added" /><TextBlock Classes="caption" Text="Choose a valid game executable." /></StackPanel>
+    </Border>
+    <Border Classes="notification" IsVisible="{Binding IsGameAlreadyAddedToastVisible}">
+      <StackPanel><TextBlock Classes="meta-value" Text="Already in your library" /><TextBlock Classes="caption" Text="Nothing changed." /></StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

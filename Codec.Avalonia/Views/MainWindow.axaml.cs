@@ -38,14 +38,26 @@ public sealed partial class MainWindow : Window
 
         if (e.Key is not (Key.Back or Key.Escape) ||
             e.Source is TextBox ||
-            DataContext is not MainViewModel viewModel ||
-            !viewModel.IsDetailsVisible)
+            DataContext is not MainViewModel viewModel)
         {
             return;
         }
 
-        if (viewModel.BackCommand.CanExecute(null))
+        if (viewModel.IsResetConfirmVisible)
+            viewModel.IsResetConfirmVisible = false;
+        else if (viewModel.IsSettingsVisible)
+            viewModel.IsSettingsVisible = false;
+        else if (viewModel.IsMediaOverlayOpen)
+            viewModel.CloseMediaOverlayCommand.Execute(null);
+        else if (viewModel.IsFranchiseOverlayOpen)
+            viewModel.CloseFranchiseOverlayCommand.Execute(null);
+        else if (viewModel.IsGameSettingsOpen)
+            viewModel.CloseGameSettingsCommand.Execute(null);
+        else if (viewModel.IsDetailsVisible && viewModel.BackCommand.CanExecute(null))
             viewModel.BackCommand.Execute(null);
+        else
+            return;
+
         e.Handled = true;
     }
 
@@ -77,5 +89,12 @@ public sealed partial class MainWindow : Window
     {
         if (DataContext is MainViewModel viewModel)
             viewModel.IsSettingsVisible = true;
+    }
+
+    private void SettingsScrim_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is MainViewModel viewModel)
+            viewModel.IsSettingsVisible = false;
+        e.Handled = true;
     }
 }

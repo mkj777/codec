@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="using:Codec.Converters"
+        xmlns:overlays="using:Codec.Views.Overlays"
         xmlns:views="using:Codec.Views"
         x:Class="Codec.Views.MainWindow"
         x:CompileBindings="False"
@@ -139,5 +140,38 @@
 
       <views:GameDetailView IsVisible="{Binding IsDetailsVisible}" />
     </Grid>
+
+    <overlays:NotificationStack Grid.RowSpan="2"
+                                Grid.ColumnSpan="2"
+                                ZIndex="20"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Margin="0,0,18,18" />
+
+    <Grid Grid.RowSpan="2"
+          Grid.ColumnSpan="2"
+          ZIndex="30"
+          Background="{DynamicResource CodecScrimBrush}"
+          IsVisible="{Binding IsScanProgressVisible}">
+      <Border Classes="overlay" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Width="330" Spacing="12">
+          <TextBlock Classes="heading" HorizontalAlignment="Center" Text="{Binding ScanProgressMessage}" />
+          <ProgressBar Minimum="{Binding ScanProgressMinimum}" Maximum="{Binding ScanProgressMaximum}" Value="{Binding ScanProgressValue}" IsIndeterminate="{Binding ScanProgressIsIndeterminate}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Grid Grid.RowSpan="2"
+          Grid.ColumnSpan="2"
+          ZIndex="40"
+          IsVisible="{Binding IsSettingsVisible}">
+      <Border Background="{DynamicResource CodecScrimBrush}" PointerPressed="SettingsScrim_PointerPressed" />
+      <views:SettingsView HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Grid>
+
+    <views:OnboardingView Grid.RowSpan="2"
+                          Grid.ColumnSpan="2"
+                          ZIndex="50"
+                          IsVisible="{Binding IsOnboardingVisible}" />
   </Grid>
 </Window>

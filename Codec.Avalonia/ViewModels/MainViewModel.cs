@@ -17,6 +17,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -211,6 +213,9 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isUpdateErrorVisible;
         [ObservableProperty] private string _updateErrorMessage = string.Empty;
         [ObservableProperty] private bool _isUpdateNoUpdateVisible;
+        [ObservableProperty] private bool _isAdminWarningVisible = IsAdministrator();
+
+        public string AppVersion => $"v{Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?"}";
 
         [ObservableProperty]
         private bool _isDebugMode =
@@ -273,15 +278,15 @@ namespace Codec.ViewModels
             _uiDispatcher.Post(() =>
             {
                 var s = _services.Updates;
-                IsUpdateCheckingVisible = false;
+                IsUpdateCheckingVisible = s.Status == UpdateStatus.Checking;
                 IsUpdateDownloadingVisible = s.Status == UpdateStatus.Downloading;
                 IsUpdateBannerVisible = s.Status == UpdateStatus.Ready;
-                IsUpdateNoUpdateVisible = false;
+                IsUpdateNoUpdateVisible = s.Status == UpdateStatus.NoUpdateFound;
                 IsUpdateErrorVisible = s.Status == UpdateStatus.Error;
                 UpdateDownloadProgress = s.DownloadProgress;
                 UpdateErrorMessage = s.ErrorMessage ?? string.Empty;
 
-                if (s.Status == UpdateStatus.Error)
+                if (s.Status is UpdateStatus.Error or UpdateStatus.NoUpdateFound)
                     ScheduleUpdateNotificationDismissal(s.Status);
                 else
                     Interlocked.Increment(ref _updateNotificationDismissVersion);
@@ -354,6 +359,18 @@ namespace Codec.ViewModels
             IsInitialLoading = false;
             IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
 
+        }
+
+        [RelayCommand]
+        private Task CheckForUpdatesAsync() => _services.Updates.CheckAndDownloadAsync();
+
+        [RelayCommand]
+        private void ResetApplication() => _services.AppReset.StartFullResetAndRestart();
+
+        private static bool IsAdministrator()
+        {
+            using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
         }
 
         public Task StartBackgroundMaintenanceAsync()
