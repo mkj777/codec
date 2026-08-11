@@ -137,17 +137,7 @@
           Background="{DynamicResource CodecBackgroundBrush}">
       <views:LibraryView IsVisible="{Binding IsLibraryGridVisible}" />
 
-      <Grid IsVisible="{Binding IsDetailsVisible}">
-        <StackPanel HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="12">
-          <TextBlock Classes="title"
-                     Text="{Binding SelectedGame.Name}" />
-          <Button HorizontalAlignment="Center"
-                  Command="{Binding BackCommand}"
-                  Content="Back to library" />
-        </StackPanel>
-      </Grid>
+      <views:GameDetailView IsVisible="{Binding IsDetailsVisible}" />
     </Grid>
   </Grid>
 </Window>

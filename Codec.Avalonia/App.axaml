@@ -16,5 +16,6 @@
     <StyleInclude Source="avares://Codec/Styles/Controls.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Surfaces.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Library.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/GameDetails.axaml" />
   </Application.Styles>
 </Application>

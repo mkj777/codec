@@ -1,0 +1,53 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Border.detail-surface">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="TextBlock.meta-label">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="600" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.meta-value">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="600" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Border.taxonomy-chip">
+    <Setter Property="Background" Value="{DynamicResource CodecBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="9,4" />
+  </Style>
+  <Style Selector="Button.link-row">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.media-thumb">
+    <Setter Property="Width" Value="66" />
+    <Setter Property="Height" Value="46" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource CodecBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+  </Style>
+  <Style Selector="Button.hero-action">
+    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="Padding" Value="22,10" />
+    <Setter Property="CornerRadius" Value="23" />
+  </Style>
+  <Style Selector="Border.settings-drawer">
+    <Setter Property="Width" Value="390" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+  </Style>
+</Styles>

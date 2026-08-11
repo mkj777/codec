@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:Codec.Converters"
+             xmlns:media="using:Codec.Media"
+             x:Class="Codec.Views.FranchiseTimelineControl"
+             x:CompileBindings="False">
+  <UserControl.Resources>
+    <converters:IntEqualsConverter x:Key="IntEqualsConverter" />
+    <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="Auto,*">
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+      <StackPanel>
+        <TextBlock Classes="title" FontSize="24" Text="Franchise" />
+        <TextBlock Classes="caption" Text="Games across the series" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <RadioButton GroupName="FranchiseFilter"
+                     Content="{Binding FranchiseMainlineLabel}"
+                     IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0, Mode=TwoWay}" />
+        <RadioButton GroupName="FranchiseFilter"
+                     Content="{Binding FranchiseExtendedLabel}"
+                     IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1, Mode=TwoWay}" />
+        <RadioButton GroupName="FranchiseFilter"
+                     Content="{Binding FranchiseAllLabel}"
+                     IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=2, Mode=TwoWay}" />
+      </StackPanel>
+    </Grid>
+
+    <ScrollViewer Grid.Row="1"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Disabled">
+      <ItemsControl ItemsSource="{Binding FranchiseTimelineItems}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="16" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="detail-surface" Width="168" Padding="10">
+              <StackPanel Spacing="8">
+                <Border Height="210" CornerRadius="9" ClipToBounds="True" Background="{DynamicResource CodecBackgroundBrush}">
+                  <media:CodecImage Source="{Binding Entry.CoverUrl}" Stretch="UniformToFill" />
+                </Border>
+                <TextBlock Classes="meta-value"
+                           Text="{Binding Entry.Name}"
+                           TextWrapping="Wrap"
+                           MaxLines="2" />
+                <TextBlock Classes="caption" Text="{Binding ReleaseYearDisplay}" />
+                <Border Classes="taxonomy-chip" HorizontalAlignment="Left" IsVisible="{Binding BadgeText, Converter={StaticResource NullToBoolConverter}}">
+                  <TextBlock Classes="caption" Text="{Binding BadgeText}" />
+                </Border>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -471,7 +471,7 @@ git commit -m "feat: migrate shell and library to Avalonia"
 - Consumes: `SelectedGame`, launch commands, media/franchise collections, taxonomy rows, game settings state, file picker service, and external URI service.
 - Produces: current Game Details information architecture, aspect-ratio-safe hero artwork, launch feedback, media playback, franchise overlay, settings, and removal confirmation.
 
-- [ ] **Step 1: Add the Windows media dependencies**
+- [x] **Step 1: Add the Windows media dependencies**
 
 Add:
 
@@ -482,19 +482,19 @@ Add:
 
 These packages are confined to `Codec.Avalonia`; `Codec.Core` remains media-framework-neutral.
 
-- [ ] **Step 2: Recreate the current detail composition**
+- [x] **Step 2: Recreate the current detail composition**
 
 Port the hero, back button, Play and Settings actions, summary metadata, developer/publisher/age/price column, description, separate Genres/Themes/Game modes rows, media rail, external links, and franchise access. Preserve content order and compactness.
 
-- [ ] **Step 3: Preserve hero artwork rules**
+- [x] **Step 3: Preserve hero artwork rules**
 
 Use `Stretch="Uniform"` for the foreground artwork and retain full vertical image visibility. Landscape hero backdrops may fill their layer, but the special logo-less artwork case must never crop the bottom. Do not render title text when the logo is absent.
 
-- [ ] **Step 4: Recreate launch and settings behavior**
+- [x] **Step 4: Recreate launch and settings behavior**
 
 Bind Play to `PlaySelectedGameCommand`, preserve launch/install spinner timing and disabled state, and route executable/script changes through `IFilePickerService`. Keep remove-game confirmation inside Codec rather than using a stock dialog.
 
-- [ ] **Step 5: Implement deterministic video lifetime**
+- [x] **Step 5: Implement deterministic video lifetime**
 
 `CodecVideoView` owns one `LibVLC`, one `MediaPlayer`, and at most one current `Media`. Its public API is:
 
@@ -508,11 +508,11 @@ public void Stop();
 
 Changing `Source` disposes the previous `Media`. Closing or changing the media overlay calls `Stop`. Detaching the control disposes the player and LibVLC instance.
 
-- [ ] **Step 6: Migrate media and franchise overlays**
+- [x] **Step 6: Migrate media and franchise overlays**
 
 Images use `CodecImage`; videos use `CodecVideoView`. Selecting a thumbnail opens the matching index. Closing the overlay pauses/stops every video. Franchise filtering retains Mainline, Extended, and All counts and current timeline ordering.
 
-- [ ] **Step 7: Build and perform a focused runtime check**
+- [x] **Step 7: Build and perform a focused runtime check**
 
 Run:
 
@@ -524,7 +524,7 @@ dotnet run --project Codec.Avalonia\Codec.Avalonia.csproj -p:Platform=x64
 
 Confirm: back navigation, play/install, settings, path pickers, hero aspect ratio, separate taxonomy rows, external links, media selection/playback/close, franchise filters, and remove confirmation.
 
-- [ ] **Step 8: Commit Game Details**
+- [x] **Step 8: Commit Game Details**
 
 ```powershell
 git add Codec.Avalonia\Views\GameDetailView* Codec.Avalonia\Views\FranchiseTimelineControl* Codec.Avalonia\Media\CodecVideoView* Codec.Avalonia\Styles\GameDetails.axaml Codec.Avalonia\Codec.Avalonia.csproj
