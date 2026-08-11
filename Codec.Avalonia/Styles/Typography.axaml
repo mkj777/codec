@@ -18,6 +18,11 @@
     <Setter Property="FontSize" Value="28" />
     <Setter Property="FontWeight" Value="700" />
   </Style>
+  <Style Selector="TextBlock.brand">
+    <Setter Property="FontFamily" Value="{StaticResource CodecBoldFontFamily}" />
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="700" />
+  </Style>
   <Style Selector="TextBlock.heading">
     <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}" />
     <Setter Property="FontSize" Value="18" />

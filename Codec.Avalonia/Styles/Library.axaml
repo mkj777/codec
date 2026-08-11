@@ -16,10 +16,12 @@
   </Style>
   <Style Selector="Button.sidebar-game">
     <Setter Property="MinHeight" Value="34" />
-    <Setter Property="Padding" Value="8,5" />
+    <Setter Property="Padding" Value="4,5" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="500" />
   </Style>
   <Style Selector="Button.sidebar-game:pointerover">
@@ -47,8 +49,6 @@
     <Setter Property="Background" Value="#B81C1A17" />
     <Setter Property="BorderBrush" Value="#52D4A832" />
     <Setter Property="Foreground" Value="{DynamicResource CodecAccentBrush}" />
-    <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
-    <Setter Property="FontSize" Value="15" />
   </Style>
   <Style Selector="Border.cover-tag">
     <Setter Property="Background" Value="#D91C1A17" />

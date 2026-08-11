@@ -2,11 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <Color x:Key="CodecBackgroundColor">#1C1A17</Color>
-    <Color x:Key="CodecSidebarColor">#181613</Color>
-    <Color x:Key="CodecSurfaceColor">#25221F</Color>
+    <Color x:Key="CodecSidebarColor">#141210</Color>
+    <Color x:Key="CodecSurfaceColor">#24211E</Color>
     <Color x:Key="CodecSurfaceRaisedColor">#292622</Color>
-    <Color x:Key="CodecSurfaceHoverColor">#2E2A25</Color>
-    <Color x:Key="CodecBorderColor">#3E3830</Color>
+    <Color x:Key="CodecSurfaceHoverColor">#2B2722</Color>
+    <Color x:Key="CodecBorderColor">#332E28</Color>
     <Color x:Key="CodecPrimaryColor">#E76C2B</Color>
     <Color x:Key="CodecPrimaryHoverColor">#F07A39</Color>
     <Color x:Key="CodecPrimaryPressedColor">#CF5920</Color>

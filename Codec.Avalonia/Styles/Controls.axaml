@@ -9,6 +9,7 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}" />
+    <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="600" />
   </Style>
   <Style Selector="Button:pointerover">
@@ -31,6 +32,52 @@
   </Style>
   <Style Selector="Button.primary:pressed">
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryPressedBrush}" />
+  </Style>
+  <Style Selector="Button.icon-quiet">
+    <Setter Property="Width" Value="34" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.icon-quiet:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceHoverBrush}" />
+  </Style>
+  <Style Selector="Button.chrome">
+    <Setter Property="Width" Value="46" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.chrome:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceHoverBrush}" />
+  </Style>
+  <Style Selector="Button.sidebar-action">
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="600" />
+  </Style>
+  <Style Selector="Button.sidebar-settings">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="500" />
+  </Style>
+  <Style Selector="Button.sidebar-settings:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceHoverBrush}" />
   </Style>
 
   <Style Selector="ToggleButton">
@@ -58,6 +105,18 @@
   </Style>
   <Style Selector="TextBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+  <Style Selector="TextBox.sidebar-search">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="400" />
+  </Style>
+  <Style Selector="TextBox.sidebar-search:focus">
+    <Setter Property="BorderThickness" Value="0" />
   </Style>
 
   <Style Selector="ComboBox">

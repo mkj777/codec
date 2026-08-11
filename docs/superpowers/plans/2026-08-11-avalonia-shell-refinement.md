@@ -33,7 +33,7 @@
 - Consumes: existing Avalonia 12.1.0 application styles and bundled Nunito family.
 - Produces: Lucide controls available to AXAML and shared sidebar/caption control classes with exact dimensions.
 
-- [ ] **Step 1: Add the view-only package reference**
+- [x] **Step 1: Add the view-only package reference**
 
 Add beside the other Avalonia UI packages:
 
@@ -41,7 +41,7 @@ Add beside the other Avalonia UI packages:
 <PackageReference Include="Lucide.Avalonia" Version="0.1.64" />
 ```
 
-- [ ] **Step 2: Calibrate the shared color resources**
+- [x] **Step 2: Calibrate the shared color resources**
 
 Update the existing values without adding a second palette:
 
@@ -52,7 +52,7 @@ Update the existing values without adding a second palette:
 <Color x:Key="CodecBorderColor">#332E28</Color>
 ```
 
-- [ ] **Step 3: Add narrow reusable shell styles**
+- [x] **Step 3: Add narrow reusable shell styles**
 
 Add classes to `Controls.axaml` for `Button.chrome`, `Button.icon-quiet`, `Button.sidebar-action`, `Button.sidebar-settings`, and `TextBox.sidebar-search`. Their exact properties are:
 
@@ -65,7 +65,7 @@ Add classes to `Controls.axaml` for `Button.chrome`, `Button.icon-quiet`, `Butto
 
 Use 8 DIP corners on sidebar actions, transparent backgrounds on quiet/icon/settings controls, and 13 DIP/500 or 600 typography according to the design spec. The search style uses `Background="Transparent"`, `BorderThickness="0,0,0,1"`, `CornerRadius="0"`, and 13 DIP regular text.
 
-- [ ] **Step 4: Tighten sidebar list typography**
+- [x] **Step 4: Tighten sidebar list typography**
 
 In `Library.axaml`, retain the existing 34 DIP row target and set the game button to:
 
@@ -78,7 +78,7 @@ In `Library.axaml`, retain the existing 34 DIP row target and set the game butto
 
 Remove the Segoe icon-font dependency from `Button.favorite` because the content becomes a Lucide control in Task 3.
 
-- [ ] **Step 5: Restore and build the package integration**
+- [x] **Step 5: Restore and build the package integration**
 
 Run:
 
@@ -89,7 +89,7 @@ dotnet build Codec.Avalonia\Codec.Avalonia.csproj --no-restore -p:Platform=x64 -
 
 Expected: restore succeeds and build reports `0 Error(s)`.
 
-- [ ] **Step 6: Commit the icon foundation**
+- [x] **Step 6: Commit the icon foundation**
 
 ```powershell
 git add Codec.Avalonia\Codec.Avalonia.csproj Codec.Avalonia\Styles
