@@ -6,15 +6,15 @@
 
 
 ### Codec
-Codec is a lightweight Windows Game Library.  
-Hopefully a place for everything you need.  
+Codec is a clean Windows game library for everything you own.  
+It brings installed games, third-party downloads, and launcher libraries into one shelf.  
    
 ---
 ### Features
-Scans your PC and gives you Information about your favourite Games.  
-Works together with Steam, Epic Games, Riot Games and more to come!  
-Now has an Steam Integration to add all your owned Games from Steam.  
-Launch them through Codec and add launch scripts for specific cases :)
+Scans your PC and enriches games with detailed metadata and artwork.  
+Works with Steam, Epic Games, Riot Games, and manually added executables.  
+Steam integration can add owned games, sync achievements, and launch through the existing ecosystem.  
+Games can be launched directly or through custom launch scripts.
 
 ### Installation
 Download it from the Website: [Codec](https://codeclibrary.vercel.app/)  
@@ -24,8 +24,9 @@ or the installer "Codec-win-Setup.exe" from the [Releases](https://github.com/mk
 Windows 10 or later  
 
 ### Development
-Codec is a C# WinUI 3 Project using .NET 9.0  
-using Velopack for the Installer and Updates
+Codec is a Windows x64 C# desktop application using .NET 9 and Avalonia UI.  
+`Codec.Avalonia/Codec.Avalonia.csproj` is the executable project; `Codec.Core` contains models and services.  
+Velopack remains responsible for installation and updates.
 
 thanks to [Leon Terme](https://github.com/LeMIT2427) for the idea and help with the concept  
 thanks to [SteamKit2](https://github.com/SteamRE/SteamKit) for the steam integration to reliably fetch steam assets  

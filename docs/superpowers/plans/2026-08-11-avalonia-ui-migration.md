@@ -721,7 +721,7 @@ git commit -m "fix: complete Avalonia feature parity"
 - Consumes: parity-approved `Codec.Core` and `Codec.Avalonia`.
 - Produces: final solution with no WinUI project or Microsoft.WindowsAppSDK dependency and `Codec.exe` supplied by Avalonia.
 
-- [ ] **Step 1: Verify destructive targets before removal**
+- [x] **Step 1: Verify destructive targets before removal**
 
 Run:
 
@@ -738,15 +738,15 @@ git status --short
 
 Continue only when all targets resolve inside the repository and the parity commit exists.
 
-- [ ] **Step 2: Move final assets into Avalonia**
+- [x] **Step 2: Move final assets into Avalonia**
 
 Move the icon, mascot, placeholders, and Nunito font assets into `Codec.Avalonia/Assets`. Update `AvaloniaResource`, `ApplicationIcon`, and manifest paths to local project-relative paths.
 
-- [ ] **Step 3: Remove legacy WinUI files**
+- [x] **Step 3: Remove legacy WinUI files**
 
 Remove only the verified legacy project, WinUI views, WinUI converters, and obsolete native tray implementation. Preserve `.git`, `Codec.Core`, `Codec.Avalonia`, tests, documentation, assets now owned by Avalonia, and release metadata.
 
-- [ ] **Step 4: Simplify the solution**
+- [x] **Step 4: Simplify the solution**
 
 The final `Codec.slnx` contains:
 
@@ -758,11 +758,11 @@ The final `Codec.slnx` contains:
 
 Remove WinUI platform/deploy mappings that no longer apply.
 
-- [ ] **Step 5: Update project documentation**
+- [x] **Step 5: Update project documentation**
 
 Describe Codec as a Windows Avalonia desktop application, retain the existing purpose and feature description, and document `Codec.Avalonia/Codec.Avalonia.csproj` as the executable project.
 
-- [ ] **Step 6: Restore and run the final isolated build**
+- [x] **Step 6: Restore and run the final isolated build**
 
 Run:
 
@@ -773,7 +773,7 @@ dotnet build Codec.Avalonia\Codec.Avalonia.csproj --no-restore -p:Platform=x64 -
 
 Expected: `0 Error(s)`.
 
-- [ ] **Step 7: Verify the final dependency boundary**
+- [x] **Step 7: Verify the final dependency boundary**
 
 Run:
 
@@ -783,7 +783,7 @@ rg -n 'Microsoft\.UI|Microsoft\.WindowsAppSDK|UseWinUI|WinRT' Codec.Core Codec.A
 
 Expected: no matches.
 
-- [ ] **Step 8: Commit the WinUI removal**
+- [x] **Step 8: Commit the WinUI removal**
 
 ```powershell
 git add -A
