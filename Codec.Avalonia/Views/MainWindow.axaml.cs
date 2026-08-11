@@ -2,18 +2,29 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Codec.ViewModels;
+using Codec.Infrastructure;
 
 namespace Codec.Views;
 
 public sealed partial class MainWindow : Window
 {
     private bool _libraryLoaded;
+    private AvaloniaWindowService? _windowService;
+    private TrayService? _trayService;
 
     public MainWindow()
     {
         InitializeComponent();
         Opened += OnOpened;
+        Closing += OnClosing;
+        Closed += OnClosed;
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    public void ConfigureLifecycle(AvaloniaWindowService windowService, TrayService trayService)
+    {
+        _windowService = windowService;
+        _trayService = trayService;
     }
 
     private async void OnOpened(object? sender, EventArgs e)
@@ -24,6 +35,7 @@ public sealed partial class MainWindow : Window
         _libraryLoaded = true;
         await viewModel.LoadLibraryAsync();
         _ = viewModel.StartBackgroundMaintenanceAsync();
+        _ = viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
     }
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
@@ -58,6 +70,59 @@ public sealed partial class MainWindow : Window
         else
             return;
 
+        e.Handled = true;
+    }
+
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (_windowService?.IsShutdownRequested == true || DataContext is not MainViewModel viewModel)
+            return;
+
+        if (viewModel.HasCloseBehaviorChoice && !viewModel.CloseToTray)
+            return;
+
+        e.Cancel = true;
+        if (viewModel.HasCloseBehaviorChoice)
+        {
+            _trayService?.Show();
+            Hide();
+            return;
+        }
+
+        viewModel.IsCloseChoiceVisible = true;
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _trayService?.Dispose();
+        _trayService = null;
+    }
+
+    private async void KeepCodecOpen_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+            return;
+
+        viewModel.IsCloseChoiceVisible = false;
+        await viewModel.SetCloseToTrayAsync(true);
+        _trayService?.Show();
+        Hide();
+    }
+
+    private async void CloseCodec_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel)
+            return;
+
+        viewModel.IsCloseChoiceVisible = false;
+        await viewModel.SetCloseToTrayAsync(false);
+        _windowService?.CloseApplication();
+    }
+
+    private void CloseChoiceScrim_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is MainViewModel viewModel)
+            viewModel.IsCloseChoiceVisible = false;
         e.Handled = true;
     }
 

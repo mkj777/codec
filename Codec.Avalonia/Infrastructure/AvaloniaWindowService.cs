@@ -8,6 +8,8 @@ public sealed class AvaloniaWindowService(
     IClassicDesktopStyleApplicationLifetime desktop,
     Func<Window?> getMainWindow) : IWindowService
 {
+    public bool IsShutdownRequested { get; private set; }
+
     public void HideMainWindow() => getMainWindow()?.Hide();
 
     public void ShowMainWindow()
@@ -21,7 +23,14 @@ public sealed class AvaloniaWindowService(
         window.Activate();
     }
 
-    public void CloseApplication() => desktop.Shutdown();
+    public void CloseApplication()
+    {
+        if (IsShutdownRequested)
+            return;
+
+        IsShutdownRequested = true;
+        desktop.Shutdown();
+    }
 
     public Task OpenExternalUriAsync(Uri uri)
     {

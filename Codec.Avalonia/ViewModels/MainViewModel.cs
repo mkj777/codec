@@ -173,6 +173,7 @@ namespace Codec.ViewModels
         public string FranchiseAllLabel => $"All ({FranchiseAllCount})";
         [ObservableProperty] private bool _isSettingsVisible;
         [ObservableProperty] private bool _isResetConfirmVisible;
+        [ObservableProperty] private bool _isCloseChoiceVisible;
         [ObservableProperty]
         private bool _isSidebarCollapsed;
         [ObservableProperty] private bool _scanOnStartup;

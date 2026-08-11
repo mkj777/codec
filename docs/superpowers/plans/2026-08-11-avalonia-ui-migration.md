@@ -607,15 +607,15 @@ git commit -m "feat: migrate onboarding and overlays to Avalonia"
 - Consumes: `CloseToTray`, `HasCloseBehaviorChoice`, update service state, Avalonia desktop lifetime, and the bundled icon.
 - Produces: minimum-size window behavior, close-choice overlay, hide/restore tray lifecycle, final shutdown, and Velopack update restart.
 
-- [ ] **Step 1: Set the main-window contract**
+- [x] **Step 1: Set the main-window contract**
 
 Apply the existing minimum client dimensions, dark title-bar treatment, icon, centered first launch, and normal resize behavior. Avoid custom window chrome that interferes with Windows snapping or system controls.
 
-- [ ] **Step 2: Implement tray behavior with Avalonia APIs**
+- [x] **Step 2: Implement tray behavior with Avalonia APIs**
 
 Create one `TrayIcon` with the Codec icon, Open Codec, and Exit actions. Open restores and activates the existing window. Exit bypasses close-to-tray and shuts down the desktop lifetime exactly once.
 
-- [ ] **Step 3: Implement the close decision flow**
+- [x] **Step 3: Implement the close decision flow**
 
 On window close:
 
@@ -626,11 +626,11 @@ On window close:
 
 Persist the selected behavior through the existing settings service.
 
-- [ ] **Step 4: Complete update lifecycle**
+- [x] **Step 4: Complete update lifecycle**
 
 Run update checking after the main service graph exists, preserve existing progress state, and route restart/apply through the existing `UpdateService`. Keep `VelopackApp.Build().Run()` as the first application startup operation.
 
-- [ ] **Step 5: Build and perform a focused runtime check**
+- [x] **Step 5: Build and perform a focused runtime check**
 
 Run:
 
@@ -641,7 +641,7 @@ dotnet run --project Codec.Avalonia\Codec.Avalonia.csproj -p:Platform=x64
 
 Confirm first-close choice, hide, tray restore, tray exit, direct close, minimum sizing, and update-state presentation.
 
-- [ ] **Step 6: Commit lifecycle integration**
+- [x] **Step 6: Commit lifecycle integration**
 
 ```powershell
 git add Codec.Avalonia\Infrastructure Codec.Avalonia\Views\MainWindow.axaml.cs Codec.Avalonia\App.axaml.cs Codec.Avalonia\Program.cs Codec.Avalonia\Codec.Avalonia.csproj

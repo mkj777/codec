@@ -173,5 +173,22 @@
                           Grid.ColumnSpan="2"
                           ZIndex="50"
                           IsVisible="{Binding IsOnboardingVisible}" />
+
+    <Grid Grid.RowSpan="2"
+          Grid.ColumnSpan="2"
+          ZIndex="60"
+          IsVisible="{Binding IsCloseChoiceVisible}">
+      <Border Background="{DynamicResource CodecScrimBrush}" PointerPressed="CloseChoiceScrim_PointerPressed" />
+      <Border Classes="overlay" Width="440" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="14">
+          <TextBlock Classes="heading" Text="Keep Codec open?" />
+          <TextBlock Classes="body" Foreground="{DynamicResource CodecTextMutedBrush}" Text="Codec can stay in the tray when you close the window." TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
+            <Button Grid.Column="0" Content="Close Codec" Click="CloseCodec_Click" />
+            <Button Grid.Column="1" Classes="primary" Content="Keep open" Click="KeepCodecOpen_Click" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </Window>
