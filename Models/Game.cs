@@ -145,7 +145,27 @@ namespace Codec.Models
         private string? metadataLookupName;
         [ObservableProperty] private string? publisher;
         [ObservableProperty] private string? developer;
-        [ObservableProperty] private List<string>? genres;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsIgdbTaxonomyChecked))]
+        [NotifyPropertyChangedFor(nameof(HasIgdbGenres))]
+        [NotifyPropertyChangedFor(nameof(HasThemes))]
+        [NotifyPropertyChangedFor(nameof(HasGameModes))]
+        [NotifyPropertyChangedFor(nameof(HasAnyIgdbTaxonomy))]
+        private List<string>? genres;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsIgdbTaxonomyChecked))]
+        [NotifyPropertyChangedFor(nameof(HasIgdbGenres))]
+        [NotifyPropertyChangedFor(nameof(HasThemes))]
+        [NotifyPropertyChangedFor(nameof(HasGameModes))]
+        [NotifyPropertyChangedFor(nameof(HasAnyIgdbTaxonomy))]
+        private List<string>? themes;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsIgdbTaxonomyChecked))]
+        [NotifyPropertyChangedFor(nameof(HasIgdbGenres))]
+        [NotifyPropertyChangedFor(nameof(HasThemes))]
+        [NotifyPropertyChangedFor(nameof(HasGameModes))]
+        [NotifyPropertyChangedFor(nameof(HasAnyIgdbTaxonomy))]
+        private List<string>? gameModes;
         [ObservableProperty] private List<string>? categories;
         [ObservableProperty] private string? price;
         [ObservableProperty] private string? priceDiscount;
@@ -257,6 +277,21 @@ namespace Codec.Models
         public double CompletionistOpacity => GetAvailabilityOpacity(HasCompletionTime(TimeToCompleteCompletionist));
 
         public bool HasControllerInfo => ControllerSupport != ControllerSupportLevel.Unknown;
+
+        [JsonIgnore]
+        public bool IsIgdbTaxonomyChecked => Genres != null && Themes != null && GameModes != null;
+
+        [JsonIgnore]
+        public bool HasIgdbGenres => IsIgdbTaxonomyChecked && Genres!.Count > 0;
+
+        [JsonIgnore]
+        public bool HasThemes => IsIgdbTaxonomyChecked && Themes!.Count > 0;
+
+        [JsonIgnore]
+        public bool HasGameModes => IsIgdbTaxonomyChecked && GameModes!.Count > 0;
+
+        [JsonIgnore]
+        public bool HasAnyIgdbTaxonomy => HasIgdbGenres || HasThemes || HasGameModes;
 
         public bool HasControllerRecommendation => IsControllerRecommended;
 
@@ -792,6 +827,8 @@ namespace Codec.Models
                 Publisher = Publisher,
                 Developer = Developer,
                 Genres = Genres == null ? null : new List<string>(Genres),
+                Themes = Themes == null ? null : new List<string>(Themes),
+                GameModes = GameModes == null ? null : new List<string>(GameModes),
                 Categories = Categories == null ? null : new List<string>(Categories),
                 Price = Price,
                 PriceDiscount = PriceDiscount,
@@ -867,6 +904,8 @@ namespace Codec.Models
             Publisher = source.Publisher;
             Developer = source.Developer;
             Genres = source.Genres == null ? null : new List<string>(source.Genres);
+            Themes = source.Themes == null ? null : new List<string>(source.Themes);
+            GameModes = source.GameModes == null ? null : new List<string>(source.GameModes);
             Categories = source.Categories == null ? null : new List<string>(source.Categories);
             Price = source.Price;
             PriceDiscount = source.PriceDiscount;

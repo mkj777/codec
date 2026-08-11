@@ -67,6 +67,7 @@ namespace Codec.ViewModels
                 new GameScanner(_services.GameName, _services.Igdb, _services.ScanResources),
                 GetLibrarySnapshotAsync,
                 CommitImportedGameAsync,
+                CompleteMissingGameMetadataAsync,
                 _services.ScanConcurrency);
             _importCoordinator.StatusChanged += ImportCoordinator_StatusChanged;
             _importCoordinator.NotificationRaised += ImportCoordinator_NotificationRaised;

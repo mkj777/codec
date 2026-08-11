@@ -601,6 +601,23 @@ namespace Codec.Services.Fetching
             Debug.WriteLine($"[IGDB] ── PopulateFromIgdbAsync END igdbId={igdbId} ──");
         }
 
+        public async Task<bool> PopulateTaxonomyFromIgdbAsync(Game game)
+        {
+            if (game == null || !game.IgdbId.HasValue)
+            {
+                return false;
+            }
+
+            JsonElement? result = await FetchGameAsync(game.IgdbId.Value).ConfigureAwait(false);
+            if (result is not JsonElement root || root.ValueKind != JsonValueKind.Object)
+            {
+                return false;
+            }
+
+            ApplyTaxonomy(game, root);
+            return true;
+        }
+
         private async Task<JsonElement?> FetchGameAsync(int igdbId)
         {
             Debug.WriteLine($"[IGDB] FetchGameAsync: requesting igdbId={igdbId}");
@@ -626,6 +643,7 @@ namespace Codec.Services.Fetching
   videos.video_id,
   videos.name,
   genres.name,
+  game_modes.name,
   platforms.name,
   collections.id,
   collections.name,
@@ -803,12 +821,7 @@ limit 1;";
                 game.Description = TruncateWithEllipsis(summary, 250);
             }
 
-            // Genres
-            var genres = GetNameList(root, "genres");
-            if (genres.Count > 0 && (game.Genres == null || game.Genres.Count == 0 || !game.SteamID.HasValue))
-            {
-                game.Genres = genres;
-            }
+            ApplyTaxonomy(game, root);
 
             // Platforms
             var platforms = GetNameList(root, "platforms");
@@ -1559,9 +1572,17 @@ limit 200;";
             _ => null
         };
 
+        private static void ApplyTaxonomy(Game game, JsonElement root)
+        {
+            game.Genres = GetNameList(root, "genres");
+            game.Themes = GetNameList(root, "themes");
+            game.GameModes = GetNameList(root, "game_modes");
+        }
+
         private static List<string> GetNameList(JsonElement root, string arrayProperty)
         {
             var list = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (root.TryGetProperty(arrayProperty, out var array) && array.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in array.EnumerateArray())
@@ -1569,7 +1590,11 @@ limit 200;";
                     string? name = GetString(item, "name");
                     if (!string.IsNullOrWhiteSpace(name))
                     {
-                        list.Add(name);
+                        string normalized = name.Trim();
+                        if (seen.Add(normalized))
+                        {
+                            list.Add(normalized);
+                        }
                     }
                 }
             }

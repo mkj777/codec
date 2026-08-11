@@ -18,7 +18,5 @@
     <Deploy Solution="*|x86" />
     <Deploy Solution="Release|Any CPU" />
   </Project>
-  <Project Path="Codec.Tests\Codec.Tests.csproj">
-    <Platform Project="x64" />
-  </Project>
+  <Project Path="Codec.Tests\Codec.Tests.csproj" />
 </Solution>

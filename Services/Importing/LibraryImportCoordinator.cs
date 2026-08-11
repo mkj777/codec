@@ -19,6 +19,7 @@ namespace Codec.Services.Importing
         private readonly IGameImportPipeline _pipeline;
         private readonly Func<Task<IReadOnlyCollection<Game>>> _librarySnapshotProvider;
         private readonly Func<Game, Task> _commitImportedGameAsync;
+        private readonly Func<CancellationToken, Task>? _postScanMaintenanceAsync;
         private readonly GameScanner _scanner;
         private sealed record ImportWorkItem(GameImportRequest Request, CancellationToken CancellationToken);
 
@@ -35,6 +36,8 @@ namespace Codec.Services.Importing
         private Stopwatch? _clickStopwatch;
 
         private bool _isScanRunning;
+        private bool _isFinalizingScan;
+        private bool _scanNeedsFinalization;
         private int _queuedCount;
         private int _processingCount;
         private int _addedCount;
@@ -54,12 +57,14 @@ namespace Codec.Services.Importing
             GameScanner scanner,
             Func<Task<IReadOnlyCollection<Game>>> librarySnapshotProvider,
             Func<Game, Task> commitImportedGameAsync,
+            Func<CancellationToken, Task>? postScanMaintenanceAsync = null,
             ScanConcurrencyOptions? concurrency = null)
         {
             _pipeline = pipeline;
             _scanner = scanner;
             _librarySnapshotProvider = librarySnapshotProvider;
             _commitImportedGameAsync = commitImportedGameAsync;
+            _postScanMaintenanceAsync = postScanMaintenanceAsync;
             _concurrency = concurrency ?? ScanConcurrencyOptions.CreateAdaptive();
             _queue = Channel.CreateBounded<ImportWorkItem>(new BoundedChannelOptions(_concurrency.ImportQueueCapacity)
             {
@@ -80,7 +85,7 @@ namespace Codec.Services.Importing
 
             lock (_stateGate)
             {
-                if (_isScanRunning || _queuedCount > 0 || _processingCount > 0)
+                if (_isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0)
                 {
                     RaiseNotification(new ImportNotification(
                         "Library Import",
@@ -93,6 +98,7 @@ namespace Codec.Services.Importing
                 ResetSessionCountsIfIdle_NoLock();
                 _idleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _isScanRunning = true;
+                _scanNeedsFinalization = true;
             }
 
             ScanLogFile.BeginSession();
@@ -129,7 +135,7 @@ namespace Codec.Services.Importing
         {
             lock (_stateGate)
             {
-                if (!_isScanRunning && _queuedCount == 0 && _processingCount == 0)
+                if (!_isScanRunning && !_isFinalizingScan && _queuedCount == 0 && _processingCount == 0)
                 {
                     return Task.CompletedTask;
                 }
@@ -173,7 +179,7 @@ namespace Codec.Services.Importing
                 }
 
                 PublishStatus();
-                RaiseCompletionNotificationIfIdle();
+                TryFinalizeScanIfIdle();
             }
         }
 
@@ -453,7 +459,7 @@ namespace Codec.Services.Importing
                         }
 
                         PublishStatus();
-                        RaiseCompletionNotificationIfIdle();
+                        TryFinalizeScanIfIdle();
                     }
                 }
             }
@@ -540,6 +546,62 @@ namespace Codec.Services.Importing
             PublishStatus();
         }
 
+        private void TryFinalizeScanIfIdle()
+        {
+            bool runMaintenance = false;
+            lock (_stateGate)
+            {
+                if (_isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0)
+                {
+                    return;
+                }
+
+                if (_scanNeedsFinalization)
+                {
+                    _scanNeedsFinalization = false;
+                    _isFinalizingScan = true;
+                    runMaintenance = true;
+                }
+            }
+
+            if (!runMaintenance)
+            {
+                RaiseCompletionNotificationIfIdle();
+                return;
+            }
+
+            PublishStatus();
+            _ = FinalizeScanAsync();
+        }
+
+        private async Task FinalizeScanAsync()
+        {
+            try
+            {
+                if (!_drainQueue && _postScanMaintenanceAsync != null)
+                {
+                    await _postScanMaintenanceAsync(_disposeCts.Token).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Post-scan metadata completion failed: {ex.Message}");
+            }
+            finally
+            {
+                lock (_stateGate)
+                {
+                    _isFinalizingScan = false;
+                }
+
+                PublishStatus();
+                RaiseCompletionNotificationIfIdle();
+            }
+        }
+
         private void RaiseCompletionNotificationIfIdle()
         {
             GameImportStatusSnapshot snapshot = GetSnapshot();
@@ -599,7 +661,7 @@ namespace Codec.Services.Importing
 
         private void ResetSessionCountsIfIdle_NoLock()
         {
-            if (_isScanRunning || _queuedCount > 0 || _processingCount > 0)
+            if (_isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0)
             {
                 return;
             }
@@ -614,12 +676,14 @@ namespace Codec.Services.Importing
         {
             lock (_stateGate)
             {
-                string mode = _isScanRunning ? "Scanning and adding games in the background" : "Adding games in the background";
+                string mode = _isFinalizingScan
+                    ? "Checking game details"
+                    : _isScanRunning ? "Scanning and adding games in the background" : "Adding games in the background";
                 string message = $"{mode}: {_addedCount} added, {_processingCount} processing, {_queuedCount} queued";
 
                 return new GameImportStatusSnapshot(
-                    IsActive: _isScanRunning || _queuedCount > 0 || _processingCount > 0,
-                    IsScanning: _isScanRunning,
+                    IsActive: _isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0,
+                    IsScanning: _isScanRunning || _isFinalizingScan,
                     Message: message,
                     QueuedCount: _queuedCount,
                     ProcessingCount: _processingCount,
@@ -653,7 +717,7 @@ namespace Codec.Services.Importing
             }
 
             PublishStatus();
-            RaiseCompletionNotificationIfIdle();
+            TryFinalizeScanIfIdle();
         }
 
         private static TaskCompletionSource<bool> CreateCompletedIdleSource()

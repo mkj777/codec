@@ -290,6 +290,39 @@ namespace Codec.Services.Fetching
 
         }
 
+        public async Task<bool> PopulateControllerMetadataAsync(Game game)
+        {
+            int? steamMetadataId = game.EffectiveSteamMetadataAppId;
+            if (!steamMetadataId.HasValue)
+            {
+                return false;
+            }
+
+            try
+            {
+                int steamId = steamMetadataId.Value;
+                string url = $"https://store.steampowered.com/api/appdetails?appids={steamId}&l=english";
+                string json = await _cache.GetOrFetchAsync("steam", url, TimeSpan.FromDays(1)).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+
+                if (!doc.RootElement.TryGetProperty(steamId.ToString(), out var appNode) ||
+                    (appNode.TryGetProperty("success", out var successNode) && successNode.ValueKind == JsonValueKind.False) ||
+                    !appNode.TryGetProperty("data", out var data))
+                {
+                    return false;
+                }
+
+                var controllerMetadata = ParseControllerMetadata(data);
+                game.ControllerSupport = controllerMetadata.Support;
+                game.IsControllerRecommended = controllerMetadata.IsRecommended;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         internal static (ControllerSupportLevel Support, bool IsRecommended) ParseControllerMetadata(JsonElement data)
         {
             ControllerSupportLevel support = ControllerSupportLevel.NotListed;
