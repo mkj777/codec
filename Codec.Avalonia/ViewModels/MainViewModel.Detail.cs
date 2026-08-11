@@ -216,6 +216,17 @@ namespace Codec.ViewModels
         }
 
         [RelayCommand]
+        private async Task ChangeLaunchScriptAsync()
+        {
+            if (SelectedGame == null)
+                return;
+
+            string? selectedPath = await _filePicker.PickLaunchScriptAsync(GetLaunchPickerInitialDirectory());
+            if (selectedPath != null)
+                await SetLaunchScriptAsync(selectedPath);
+        }
+
+        [RelayCommand]
         private async Task SetExecutableAsync(string executablePath)
         {
             if (SelectedGame == null)
@@ -234,6 +245,17 @@ namespace Codec.ViewModels
                 || SelectedGame.IsRiotLaunchTarget;
             OnPropertyChanged(nameof(SelectedGame));
             await _services.LibraryStorage.SaveAsync(Games.ToList());
+        }
+
+        [RelayCommand]
+        private async Task ChangeExecutableAsync()
+        {
+            if (SelectedGame == null)
+                return;
+
+            string? selectedPath = await _filePicker.PickExecutableAsync(GetLaunchPickerInitialDirectory());
+            if (selectedPath != null)
+                await SetExecutableAsync(selectedPath);
         }
 
         [RelayCommand]
@@ -380,6 +402,32 @@ namespace Codec.ViewModels
 
             await Task.Delay(isInstallRequest ? 4000 : 12000);
             SetLaunchFeedbackState(LaunchFeedbackState.Idle);
+        }
+
+        private string? GetLaunchPickerInitialDirectory()
+        {
+            if (SelectedGame == null)
+                return null;
+
+            return TryGetExistingDirectory(SelectedGame.LaunchScript)
+                ?? (Directory.Exists(SelectedGame.FolderLocation) ? SelectedGame.FolderLocation : null)
+                ?? TryGetExistingDirectory(SelectedGame.Executable);
+        }
+
+        private static string? TryGetExistingDirectory(string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return null;
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(filePath);
+                return Directory.Exists(directory) ? directory : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static bool TryLaunchFile(string? filePath)

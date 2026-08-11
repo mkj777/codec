@@ -1,18 +1,15 @@
 using Codec.Models;
+using Codec.Infrastructure;
 using Codec.Services.Importing;
 using Codec.Services.Steam;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage.Streams;
 
 namespace Codec.ViewModels;
 
@@ -35,7 +32,7 @@ public partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(AreSteamActionsEnabled))]
     private bool _isSteamSyncing;
     [ObservableProperty] private bool _isSteamQrVisible;
-    [ObservableProperty] private ImageSource? _steamQrCode;
+    [ObservableProperty] private byte[]? _steamQrCodePng;
     [ObservableProperty] private bool _isSteamSyncProgressVisible;
     [ObservableProperty] private bool _isSteamSyncProgressIndeterminate = true;
     [ObservableProperty] private string _steamSyncProgressTitle = "Syncing Steam library";
@@ -58,9 +55,9 @@ public partial class MainViewModel
 
     private void SteamLibrary_QrCodeChanged(byte[] png)
     {
-        _dispatcherQueue.TryEnqueue(async () =>
+        _uiDispatcher.Post(() =>
         {
-            SteamQrCode = await CreateImageSourceAsync(png);
+            SteamQrCodePng = png;
             IsSteamQrVisible = true;
         });
     }
@@ -236,45 +233,31 @@ public partial class MainViewModel
 
     private Task PublishSteamAchievementUpdatesAsync(IReadOnlyList<SteamAchievementUpdate> updates)
     {
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!_dispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+        return _uiDispatcher.InvokeAsync(async () =>
         {
-            try
+            foreach (SteamAchievementUpdate update in updates)
             {
-                foreach (SteamAchievementUpdate update in updates)
+                Game? game = Games.FirstOrDefault(item => item.SteamID == update.AppId);
+                if (game == null)
+                    continue;
+
+                if (update.LastPlayedUtc.HasValue &&
+                    (!game.LastPlayedUtc.HasValue || update.LastPlayedUtc > game.LastPlayedUtc))
                 {
-                    Game? game = Games.FirstOrDefault(item => item.SteamID == update.AppId);
-                    if (game == null)
-                        continue;
-
-                    if (update.LastPlayedUtc.HasValue &&
-                        (!game.LastPlayedUtc.HasValue || update.LastPlayedUtc > game.LastPlayedUtc))
-                    {
-                        game.LastPlayedUtc = update.LastPlayedUtc;
-                    }
-
-                    if (update.CheckedUtc.HasValue)
-                        game.SteamAchievementsLastCheckedUtc = update.CheckedUtc;
-                    if (update.TotalCount is > 0 && update.UnlockedCount.HasValue)
-                    {
-                        game.SteamAchievementsUnlocked = update.UnlockedCount;
-                        game.SteamAchievementsTotal = update.TotalCount;
-                    }
+                    game.LastPlayedUtc = update.LastPlayedUtc;
                 }
 
-                await _services.LibraryStorage.SaveAsync(Games.ToList());
-                completion.TrySetResult(true);
+                if (update.CheckedUtc.HasValue)
+                    game.SteamAchievementsLastCheckedUtc = update.CheckedUtc;
+                if (update.TotalCount is > 0 && update.UnlockedCount.HasValue)
+                {
+                    game.SteamAchievementsUnlocked = update.UnlockedCount;
+                    game.SteamAchievementsTotal = update.TotalCount;
+                }
             }
-            catch (Exception ex)
-            {
-                completion.TrySetException(ex);
-            }
-        }))
-        {
-            completion.TrySetException(new InvalidOperationException("Could not publish Steam achievements."));
-        }
 
-        return completion.Task;
+            await _services.LibraryStorage.SaveAsync(Games.ToList());
+        }, UiDispatchPriority.Background);
     }
 
     private async Task RefreshSteamAchievementsMaintenanceAsync()
@@ -308,33 +291,19 @@ public partial class MainViewModel
 
     private Task PublishSteamGamesAsync(IReadOnlyList<SteamEnrichedGame> enrichedGames)
     {
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!_dispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        return _uiDispatcher.InvokeAsync(() =>
         {
-            try
+            foreach (SteamEnrichedGame item in enrichedGames)
             {
-                foreach (SteamEnrichedGame item in enrichedGames)
-                {
-                    Game? existing = Games.FirstOrDefault(game => game.Id == item.Game.Id);
-                    if (existing != null)
-                        existing.ApplyHydrationSnapshot(item.Game);
-                    else if (item.IsNew)
-                        InsertGameSorted(item.Game);
-                }
-
-                IsOnboardingVisible = false;
-                completion.TrySetResult(true);
+                Game? existing = Games.FirstOrDefault(game => game.Id == item.Game.Id);
+                if (existing != null)
+                    existing.ApplyHydrationSnapshot(item.Game);
+                else if (item.IsNew)
+                    InsertGameSorted(item.Game);
             }
-            catch (Exception ex)
-            {
-                completion.TrySetException(ex);
-            }
-        }))
-        {
-            completion.TrySetException(new InvalidOperationException("Could not publish Steam games."));
-        }
 
-        return completion.Task;
+            IsOnboardingVisible = false;
+        }, UiDispatchPriority.Background);
     }
 
     private void QueueSteamProgress(SteamSyncProgress progress)
@@ -346,8 +315,7 @@ public partial class MainViewModel
         if (Interlocked.Exchange(ref _steamProgressUpdateQueued, 1) != 0)
             return;
 
-        if (!_dispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, ApplyQueuedSteamProgress))
-            Interlocked.Exchange(ref _steamProgressUpdateQueued, 0);
+        _uiDispatcher.Post(ApplyQueuedSteamProgress, UiDispatchPriority.Background);
     }
 
     private void ApplyQueuedSteamProgress()
@@ -379,20 +347,11 @@ public partial class MainViewModel
     private async Task DismissSteamSyncProgressAsync(int syncGeneration)
     {
         await Task.Delay(4000).ConfigureAwait(false);
-        _dispatcherQueue.TryEnqueue(() =>
+        _uiDispatcher.Post(() =>
         {
             if (syncGeneration == _steamSyncGeneration && !IsSteamSyncing)
                 IsSteamSyncProgressVisible = false;
         });
     }
 
-    private static async Task<ImageSource> CreateImageSourceAsync(byte[] png)
-    {
-        var stream = new InMemoryRandomAccessStream();
-        await stream.WriteAsync(png.AsBuffer());
-        stream.Seek(0);
-        var image = new BitmapImage();
-        await image.SetSourceAsync(stream);
-        return image;
-    }
 }

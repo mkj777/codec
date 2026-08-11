@@ -296,7 +296,7 @@ namespace Codec.ViewModels
         private void NotifySamePathCoverRefresh(Game game, string? previousPath)
         {
             if (string.Equals(previousPath, game.LibraryCapsuleCache, StringComparison.OrdinalIgnoreCase))
-                game.RefreshLibraryCapsuleBinding();
+                game.NotifyLibraryCapsuleChanged();
         }
 
         private void PauseSilentImageUpdate()

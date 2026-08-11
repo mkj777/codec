@@ -368,7 +368,7 @@ namespace Codec.Models
         [JsonIgnore]
         public bool IsLibraryCoverReady => HasLocalAsset(LibraryCapsuleCache);
 
-        internal void RefreshLibraryCapsuleBinding()
+        public void NotifyLibraryCapsuleChanged()
         {
             OnPropertyChanged(nameof(LibraryCapsule));
             OnPropertyChanged(nameof(IsLibraryCoverReady));

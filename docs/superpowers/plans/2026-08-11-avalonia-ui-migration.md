@@ -298,7 +298,7 @@ git commit -m "feat: add Avalonia application foundation"
 - Consumes: `ServiceHost`, Avalonia `Dispatcher.UIThread`, `TopLevel.StorageProvider`, and desktop lifetime.
 - Produces: `MainViewModel(ServiceHost, IUiDispatcher, IFilePickerService, IWindowService)`, framework-neutral state properties, and Avalonia converters.
 
-- [ ] **Step 1: Define the UI dispatcher contract**
+- [x] **Step 1: Define the UI dispatcher contract**
 
 ```csharp
 public enum UiDispatchPriority { Background, Normal }
@@ -312,7 +312,7 @@ public interface IUiDispatcher
 
 Map `Background` to `DispatcherPriority.Background` and `Normal` to `DispatcherPriority.Normal`.
 
-- [ ] **Step 2: Define file and window contracts**
+- [x] **Step 2: Define file and window contracts**
 
 ```csharp
 public interface IFilePickerService
@@ -332,15 +332,15 @@ public interface IWindowService
 
 The picker filters are `.exe` for executables and `.bat`, `.cmd`, `.lnk` for launch scripts.
 
-- [ ] **Step 3: Move the current view-model source into Avalonia**
+- [x] **Step 3: Move the current view-model source into Avalonia**
 
 Retain existing public property and command names wherever bindings depend on them. Remove imports of `Microsoft.UI.*`, `Windows.Storage.Streams`, and `System.Runtime.InteropServices.WindowsRuntime`.
 
-- [ ] **Step 4: Replace DispatcherQueue calls**
+- [x] **Step 4: Replace DispatcherQueue calls**
 
 Inject `IUiDispatcher` through the `MainViewModel` constructor. Replace every `TryEnqueue` with `Post` or `InvokeAsync` while retaining current low-priority versus normal ordering.
 
-- [ ] **Step 5: Replace WinUI QR image state**
+- [x] **Step 5: Replace WinUI QR image state**
 
 Change:
 
@@ -357,15 +357,15 @@ private byte[]? _steamQrCodePng;
 
 Assign the PNG returned by QRCoder directly and convert it to an Avalonia `Bitmap` only at the binding boundary.
 
-- [ ] **Step 6: Move picker-driven commands out of view code-behind**
+- [x] **Step 6: Move picker-driven commands out of view code-behind**
 
 The Add Game, change executable, and change launch-script commands request paths through `IFilePickerService` and then invoke the existing import or game-update methods. Cancellation returns without changing state or showing an error.
 
-- [ ] **Step 7: Create Avalonia value converters**
+- [x] **Step 7: Create Avalonia value converters**
 
 Port formatting behavior for bytes, dates, percentages, durations, list joining, integer equality, null/empty fallbacks, and media type checks. Use `bool` bindings instead of returning Avalonia `Visibility` wherever Avalonia's `IsVisible` accepts the value directly.
 
-- [ ] **Step 8: Build presentation state**
+- [x] **Step 8: Build presentation state**
 
 Run:
 
@@ -376,7 +376,7 @@ rg -n 'Microsoft\.UI|Windows\.Storage\.Streams|System\.Runtime\.InteropServices\
 
 Expected: `0 Error(s)` and no WinUI/WinRT matches in the migrated view models.
 
-- [ ] **Step 9: Commit presentation migration**
+- [x] **Step 9: Commit presentation migration**
 
 ```powershell
 git add Codec.Avalonia\Infrastructure Codec.Avalonia\ViewModels Codec.Avalonia\Converters ViewModels

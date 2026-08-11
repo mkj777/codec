@@ -1,5 +1,6 @@
 using Codec.Models;
 using Codec.Helpers;
+using Codec.Infrastructure;
 using Codec.Services;
 using Codec.Services.Importing;
 using Codec.Services.Resolving;
@@ -7,8 +8,6 @@ using Codec.Services.Scanning;
 using Codec.Services.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Specialized;
 using System.Collections.Generic;
@@ -31,7 +30,9 @@ namespace Codec.ViewModels
         private const int UpdateNotificationDismissDelayMs = 15000;
         private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
-        private readonly DispatcherQueue _dispatcherQueue;
+        private readonly IUiDispatcher _uiDispatcher;
+        private readonly IFilePickerService _filePicker;
+        private readonly IWindowService _windowService;
         private readonly ServiceHost _services;
         private readonly LibraryImportCoordinator _importCoordinator;
         private CancellationTokenSource? _sidebarSearchDebounceCts;
@@ -58,10 +59,16 @@ namespace Codec.ViewModels
         [ObservableProperty]
         private int _selectedInstallFilter = 1;
 
-        public MainViewModel(ServiceHost services)
+        public MainViewModel(
+            ServiceHost services,
+            IUiDispatcher uiDispatcher,
+            IFilePickerService filePicker,
+            IWindowService windowService)
         {
             _services = services;
-            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            _uiDispatcher = uiDispatcher;
+            _filePicker = filePicker;
+            _windowService = windowService;
             _importCoordinator = new LibraryImportCoordinator(
                 _services.GameImportPipeline,
                 new GameScanner(_services.GameName, _services.Igdb, _services.ScanResources),
@@ -263,7 +270,7 @@ namespace Codec.ViewModels
 
         private void OnUpdateStatusChanged()
         {
-            _dispatcherQueue.TryEnqueue(() =>
+            _uiDispatcher.Post(() =>
             {
                 var s = _services.Updates;
                 IsUpdateCheckingVisible = false;
@@ -291,7 +298,7 @@ namespace Codec.ViewModels
         {
             await Task.Delay(UpdateNotificationDismissDelayMs).ConfigureAwait(false);
 
-            _dispatcherQueue.TryEnqueue(() =>
+            _uiDispatcher.Post(() =>
             {
                 if (version != _updateNotificationDismissVersion || _services.Updates.Status != status)
                     return;
@@ -559,16 +566,31 @@ namespace Codec.ViewModels
             return result;
         }
 
+        [RelayCommand]
+        private async Task AddGameFromPickerAsync()
+        {
+            string? executablePath = await _filePicker.PickExecutableAsync();
+            if (executablePath != null)
+                await AddGameCommand(executablePath);
+        }
+
+        [RelayCommand]
+        private async Task OpenExternalLinkAsync(string? address)
+        {
+            if (Uri.TryCreate(address, UriKind.Absolute, out Uri? uri))
+                await _windowService.OpenExternalUriAsync(uri);
+        }
+
         private async Task DismissGameNotAddedToastAsync()
         {
             await Task.Delay(4000).ConfigureAwait(false);
-            _dispatcherQueue.TryEnqueue(() => IsGameNotAddedToastVisible = false);
+            _uiDispatcher.Post(() => IsGameNotAddedToastVisible = false);
         }
 
         private async Task DismissGameAlreadyAddedToastAsync()
         {
             await Task.Delay(4000).ConfigureAwait(false);
-            _dispatcherQueue.TryEnqueue(() => IsGameAlreadyAddedToastVisible = false);
+            _uiDispatcher.Post(() => IsGameAlreadyAddedToastVisible = false);
         }
 
         // ---------------------------------------------------------------------------------
@@ -611,10 +633,10 @@ namespace Codec.ViewModels
                 RefreshDisplayedGames();
             }
 
-            if (_dispatcherQueue.HasThreadAccess)
+            if (_uiDispatcher.CheckAccess)
                 ApplySearch();
             else
-                _ = _dispatcherQueue.TryEnqueue(ApplySearch);
+                _uiDispatcher.Post(ApplySearch);
         }
 
         private void Games_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

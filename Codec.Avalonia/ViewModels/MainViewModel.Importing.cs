@@ -1,7 +1,6 @@
 using Codec.Models;
 using Codec.Helpers;
 using Codec.Services.Importing;
-using Microsoft.UI.Dispatching;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -108,7 +107,7 @@ namespace Codec.ViewModels
         private async Task DismissScanCompleteAsync()
         {
             await Task.Delay(4000).ConfigureAwait(false);
-            _dispatcherQueue.TryEnqueue(() => IsScanCompleteVisible = false);
+            _uiDispatcher.Post(() => IsScanCompleteVisible = false);
         }
 
         private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification)
@@ -133,50 +132,12 @@ namespace Codec.ViewModels
 
         private Task RunOnUiThreadAsync(Action action)
         {
-            if (_dispatcherQueue.HasThreadAccess)
-            {
-                action();
-                return Task.CompletedTask;
-            }
-
-            var tcs = new TaskCompletionSource<object?>();
-            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
-            {
-                try
-                {
-                    action();
-                    tcs.SetResult(null);
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            });
-
-            return tcs.Task;
+            return _uiDispatcher.InvokeAsync(action);
         }
 
         private Task<T> RunOnUiThreadAsync<T>(Func<T> action)
         {
-            if (_dispatcherQueue.HasThreadAccess)
-            {
-                return Task.FromResult(action());
-            }
-
-            var tcs = new TaskCompletionSource<T>();
-            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
-            {
-                try
-                {
-                    tcs.SetResult(action());
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            });
-
-            return tcs.Task;
+            return _uiDispatcher.InvokeAsync(action);
         }
     }
 }
