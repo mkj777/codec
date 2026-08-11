@@ -399,15 +399,15 @@ git commit -m "refactor: migrate presentation state to Avalonia"
 - Consumes: `MainViewModel.Games`, `SidebarFilteredGames`, `DisplayedGames`, `SearchText`, filters, sort commands, favorite command, and selection commands.
 - Produces: responsive cover-only Library, sidebar navigation, incremental image loading, keyboard search focus, and details navigation.
 
-- [ ] **Step 1: Build the root window geometry**
+- [x] **Step 1: Build the root window geometry**
 
 Use a two-column grid with an expanded sidebar near the current proportional width and a compact collapsed state. Keep title-bar drag regions explicit and maintain the current minimum window dimensions. The content background must separate from the sidebar through tone and spacing, not a heavy enclosing border.
 
-- [ ] **Step 2: Build the sidebar in approved order**
+- [x] **Step 2: Build the sidebar in approved order**
 
 Create Codec branding and collapse affordance, Search, virtualized game list, Add and Scan actions, sleeping mascot, and Settings. Bind selection activation through the existing `SelectGame` behavior; a collection refresh must not accidentally select a game.
 
-- [ ] **Step 3: Implement cancellation-safe image loading**
+- [x] **Step 3: Implement cancellation-safe image loading**
 
 `CodecImage` exposes these styled properties:
 
@@ -419,23 +419,23 @@ public static readonly StyledProperty<Bitmap?> PlaceholderProperty;
 
 Each source change increments a version, cancels the previous load, opens local files asynchronously, downloads HTTPS images with one shared `HttpClient`, and applies the bitmap only when the version still matches. Dispose replaced bitmaps owned by the control.
 
-- [ ] **Step 4: Recreate the existing Library toolbar**
+- [x] **Step 4: Recreate the existing Library toolbar**
 
 Preserve current sort order choices, source filters, installed/not-installed controls, game count, and total storage. Do not replace them with `All`, `Installed`, and `Recent` tabs.
 
-- [ ] **Step 5: Create the responsive cover-only grid**
+- [x] **Step 5: Create the responsive cover-only grid**
 
 Use `ItemsRepeater` with a virtualizing uniform layout. Bind cover source, fallback artwork, favorite state, folder-size/date-added tags, opacity, and click activation. Titles are not rendered beneath covers. Covers have restrained rounding and no card border.
 
-- [ ] **Step 6: Recreate loading and empty states**
+- [x] **Step 6: Recreate loading and empty states**
 
 Keep the current loading behavior. The empty state uses the sleeping mascot, `No games here yet`, and the existing concise scan/add guidance. Search with zero results preserves the current selected details game.
 
-- [ ] **Step 7: Wire keyboard and pointer behavior**
+- [x] **Step 7: Wire keyboard and pointer behavior**
 
 Preserve search focus shortcuts, Back navigation, right-click sidebar collapse behavior where applicable, hover/press feedback, and favorite activation without navigating into details.
 
-- [ ] **Step 8: Build and perform a focused runtime check**
+- [x] **Step 8: Build and perform a focused runtime check**
 
 Run:
 
@@ -446,7 +446,7 @@ dotnet run --project Codec.Avalonia\Codec.Avalonia.csproj -p:Platform=x64
 
 Confirm: existing library data loads, search filters both sidebar and grid, clearing search restores results, source/install/sort controls work, favorites do not navigate, covers have no captions, and details navigation opens the selected game.
 
-- [ ] **Step 9: Commit the shell and Library**
+- [x] **Step 9: Commit the shell and Library**
 
 ```powershell
 git add Codec.Avalonia\Views\MainWindow* Codec.Avalonia\Views\LibraryView* Codec.Avalonia\Media\CodecImage.cs Codec.Avalonia\Styles\Library.axaml

@@ -1,7 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="using:Codec.Converters"
+        xmlns:views="using:Codec.Views"
         x:Class="Codec.Views.MainWindow"
-        Title="Codec"
+        x:CompileBindings="False"
+        Title=""
         Width="1280"
         Height="760"
         MinWidth="980"
@@ -9,11 +12,142 @@
         Background="{DynamicResource CodecBackgroundBrush}"
         Foreground="{DynamicResource CodecTextBrush}"
         Icon="/Assets/icon.ico"
-        WindowStartupLocation="CenterScreen">
-  <Grid>
-    <TextBlock Classes="title"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               Text="Codec" />
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="34">
+  <Window.Resources>
+    <converters:BooleanNegationConverter x:Key="NotConverter" />
+    <converters:BooleanToGridLengthConverter x:Key="SidebarWidthConverter"
+                                              Expanded="224"
+                                              Collapsed="72" />
+  </Window.Resources>
+
+  <Grid ColumnDefinitions="Auto,*"
+        RowDefinitions="34,*">
+    <Border x:Name="DragRegion"
+            Grid.ColumnSpan="2"
+            Background="#10181613"
+            PointerPressed="TitleBar_PointerPressed" />
+
+    <Border x:Name="Sidebar"
+            Grid.Row="1"
+            Grid.Column="0"
+            Width="{Binding IsSidebarCollapsed, Converter={StaticResource SidebarWidthConverter}}"
+            Background="{DynamicResource CodecSidebarBrush}"
+            BorderBrush="{DynamicResource CodecBorderBrush}"
+            BorderThickness="0,0,1,0"
+            PointerPressed="Sidebar_PointerPressed">
+      <Grid Margin="12,10,12,12"
+            RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+        <Grid ColumnDefinitions="*,Auto"
+              Margin="4,0,0,14">
+          <TextBlock Classes="heading"
+                     VerticalAlignment="Center"
+                     FontSize="18"
+                     Text="Codec"
+                     IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
+          <Button Grid.Column="1"
+                  Width="32"
+                  Height="32"
+                  MinHeight="0"
+                  Padding="0"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Command="{Binding ToggleSidebarCommand}"
+                  ToolTip.Tip="Toggle sidebar">
+            <TextBlock FontSize="18"
+                       Text="☰" />
+          </Button>
+        </Grid>
+
+        <TextBox x:Name="SearchBox"
+                 Grid.Row="1"
+                 Margin="0,0,0,10"
+                 PlaceholderText="Search"
+                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
+
+        <ListBox Grid.Row="2"
+                 Classes="sidebar-list"
+                 ItemsSource="{Binding SidebarFilteredGames}"
+                 SelectedItem="{Binding SidebarSelectedItem, Mode=TwoWay}"
+                 IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="sidebar-game"
+                      Command="{Binding DataContext.SelectGameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                      CommandParameter="{Binding}"
+                      Opacity="{Binding SidebarOpacity}">
+                <TextBlock Text="{Binding Name}"
+                           TextTrimming="CharacterEllipsis"
+                           MaxLines="1" />
+              </Button>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="3"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="8"
+              Margin="0,12,0,0"
+              IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}">
+          <Button Grid.Column="0"
+                  Classes="primary"
+                  Padding="10,8"
+                  Command="{Binding AddGameFromPickerCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="＋" />
+              <TextBlock Text="Add" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="1"
+                  Padding="10,8"
+                  Command="{Binding ScanGamesCommand}"
+                  IsEnabled="{Binding CanStartScan}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="⌕" />
+              <TextBlock Text="Scan" />
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <Image Grid.Row="4"
+               Margin="0,8,0,-2"
+               Height="118"
+               Stretch="Uniform"
+               Source="/Assets/shrimpSleep.png"
+               IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
+
+        <Button Grid.Row="5"
+                Background="Transparent"
+                BorderThickness="0"
+                HorizontalContentAlignment="Left"
+                Click="SettingsButton_Click">
+          <StackPanel Orientation="Horizontal" Spacing="9">
+            <TextBlock Text="⚙" FontSize="17" />
+            <TextBlock Text="Settings"
+                       IsVisible="{Binding IsSidebarCollapsed, Converter={StaticResource NotConverter}}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1"
+          Grid.Column="1"
+          Background="{DynamicResource CodecBackgroundBrush}">
+      <views:LibraryView IsVisible="{Binding IsLibraryGridVisible}" />
+
+      <Grid IsVisible="{Binding IsDetailsVisible}">
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="12">
+          <TextBlock Classes="title"
+                     Text="{Binding SelectedGame.Name}" />
+          <Button HorizontalAlignment="Center"
+                  Command="{Binding BackCommand}"
+                  Content="Back to library" />
+        </StackPanel>
+      </Grid>
+    </Grid>
   </Grid>
 </Window>

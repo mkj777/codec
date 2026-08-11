@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using System.Collections;
 using System.Globalization;
@@ -12,6 +13,19 @@ public sealed class BooleanNegationConverter : IValueConverter
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is bool flag ? !flag : AvaloniaProperty.UnsetValue;
+}
+
+public sealed class BooleanToGridLengthConverter : IValueConverter
+{
+    public GridLength Expanded { get; set; } = new(224);
+
+    public GridLength Collapsed { get; set; } = new(72);
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true ? Collapsed : Expanded;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
 }
 
 public sealed class BytesToSizeConverter : IValueConverter

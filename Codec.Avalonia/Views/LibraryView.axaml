@@ -1,0 +1,162 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:media="using:Codec.Media"
+             x:Class="Codec.Views.LibraryView"
+             x:CompileBindings="False">
+  <Grid Margin="22,18,20,18"
+        RowDefinitions="Auto,*">
+    <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+          ColumnSpacing="10"
+          Margin="0,0,0,16"
+          IsVisible="{Binding HasGames}">
+      <ComboBox Grid.Column="0"
+                Width="148"
+                SelectedIndex="{Binding SelectedSortIndex, Mode=TwoWay}">
+        <ComboBoxItem Content="Alphabetic ↓" />
+        <ComboBoxItem Content="Alphabetic ↑" />
+        <ComboBoxItem Content="Folder size ↓" />
+        <ComboBoxItem Content="Folder size ↑" />
+        <ComboBoxItem Content="Date added ↓" />
+        <ComboBoxItem Content="Date added ↑" />
+      </ComboBox>
+
+      <ComboBox Grid.Column="1"
+                Width="136"
+                SelectedIndex="{Binding SelectedInstallFilter, Mode=TwoWay}">
+        <ComboBoxItem Content="All games" />
+        <ComboBoxItem Content="Installed" />
+        <ComboBoxItem Content="Not installed" />
+      </ComboBox>
+
+      <StackPanel Grid.Column="2"
+                  Orientation="Horizontal"
+                  Spacing="8"
+                  VerticalAlignment="Center">
+        <Button Padding="11,5"
+                MinHeight="32"
+                Content="All sources"
+                Click="ClearSourceFilter_Click" />
+        <ItemsControl ItemsSource="{Binding AvailableImportSources}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="8" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <ToggleButton Classes="filter-chip"
+                            Content="{Binding Name}"
+                            IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <StackPanel Grid.Column="3"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center">
+        <TextBlock HorizontalAlignment="Right">
+          <Run Text="{Binding LibraryGameCount}" />
+          <Run Text=" " />
+          <Run Text="{Binding LibraryGameLabel}" />
+        </TextBlock>
+        <TextBlock Classes="caption"
+                   HorizontalAlignment="Right"
+                   Text="{Binding LibraryTotalSizeText}" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding HasGames}">
+        <ItemsRepeater ItemsSource="{Binding DisplayedGames}">
+          <ItemsRepeater.Layout>
+            <UniformGridLayout MinItemWidth="178"
+                               MinItemHeight="270"
+                               MinColumnSpacing="16"
+                               MinRowSpacing="16"
+                               ItemsStretch="Fill"
+                               ItemsJustification="SpaceAround" />
+          </ItemsRepeater.Layout>
+          <ItemsRepeater.ItemTemplate>
+            <DataTemplate>
+              <Grid Height="270"
+                    Margin="0,0,0,2"
+                    Opacity="{Binding LibraryCardOpacity}">
+                <Border Background="{DynamicResource CodecSurfaceBrush}"
+                        CornerRadius="11"
+                        ClipToBounds="True">
+                  <media:CodecImage Source="{Binding LibraryCapsule}"
+                                    Stretch="UniformToFill" />
+                </Border>
+
+                <Button Classes="cover-hitbox"
+                        Command="{Binding DataContext.SelectGameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}" />
+
+                <Button Classes="favorite"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="10"
+                        Content="{Binding FavoriteGlyph}"
+                        Opacity="{Binding FavoriteOpacity}"
+                        ToolTip.Tip="{Binding FavoriteToolTip}"
+                        Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}" />
+
+                <StackPanel HorizontalAlignment="Left"
+                            VerticalAlignment="Bottom"
+                            Margin="10"
+                            Spacing="6">
+                  <Border Classes="cover-tag"
+                          IsVisible="{Binding DataContext.ShowFolderSizeTag, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                    <TextBlock Classes="caption"
+                               Foreground="{DynamicResource CodecTextBrush}"
+                               Text="{Binding FolderSizeDisplay}" />
+                  </Border>
+                  <Border Classes="cover-tag"
+                          IsVisible="{Binding DataContext.ShowDateAddedTag, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                    <TextBlock Classes="caption"
+                               Foreground="{DynamicResource CodecTextBrush}"
+                               Text="{Binding DateAddedDisplay}" />
+                  </Border>
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+      </ScrollViewer>
+
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="8"
+                  IsVisible="{Binding IsEmptyLibrary}">
+        <Image Width="240"
+               Height="170"
+               Stretch="Uniform"
+               Source="/Assets/shrimpSleep.png" />
+        <TextBlock Classes="heading"
+                   HorizontalAlignment="Center"
+                   FontSize="22"
+                   Text="No games here yet" />
+        <TextBlock Classes="caption"
+                   HorizontalAlignment="Center"
+                   Text="Scan your PC or add a game by executable from the sidebar." />
+      </StackPanel>
+
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="12"
+                  IsVisible="{Binding IsInitialLoading}">
+        <ProgressBar Width="180" IsIndeterminate="True" />
+        <TextBlock Classes="heading"
+                   HorizontalAlignment="Center"
+                   Text="{Binding LoadingTitle}" />
+        <TextBlock Classes="caption"
+                   HorizontalAlignment="Center"
+                   Text="{Binding LoadingSubtitle}" />
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

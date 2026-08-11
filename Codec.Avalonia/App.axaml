@@ -15,5 +15,6 @@
     <StyleInclude Source="avares://Codec/Styles/Typography.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Controls.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Surfaces.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/Library.axaml" />
   </Application.Styles>
 </Application>
