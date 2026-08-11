@@ -44,8 +44,9 @@
                   MinHeight="0"
                   Padding="0"
                   CornerRadius="20"
-                  Command="{Binding BackCommand}"
-                  Content="‹" />
+                  Command="{Binding BackCommand}">
+            <LucideIcon Kind="ArrowLeft" Size="18" StrokeWidth="1.75" />
+          </Button>
 
           <media:CodecImage HorizontalAlignment="Left"
                             VerticalAlignment="Top"
@@ -71,8 +72,10 @@
                              Height="18"
                              IsIndeterminate="True"
                              IsVisible="{Binding IsLaunchSpinnerVisible}" />
-                <TextBlock Text="▶"
-                           IsVisible="{Binding IsPlayGlyphVisible}" />
+                <LucideIcon Kind="Play"
+                            Size="16"
+                            StrokeWidth="1.75"
+                            IsVisible="{Binding IsPlayGlyphVisible}" />
                 <TextBlock Text="{Binding PlayButtonText}" />
               </StackPanel>
             </Button>
@@ -80,8 +83,9 @@
                     Width="48"
                     Padding="0"
                     Command="{Binding ToggleGameSettingsCommand}"
-                    ToolTip.Tip="Game settings"
-                    Content="⚙" />
+                    ToolTip.Tip="Game settings">
+              <LucideIcon Kind="Settings" Size="17" StrokeWidth="1.75" />
+            </Button>
           </StackPanel>
         </Grid>
 
@@ -205,7 +209,7 @@
                     <TextBlock Classes="meta-value" Text="Franchise" />
                     <TextBlock Classes="caption" Text="Related games" />
                   </StackPanel>
-                  <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="›" FontSize="20" />
+                  <LucideIcon Grid.Column="1" VerticalAlignment="Center" Kind="ChevronRight" Size="17" StrokeWidth="1.75" />
                 </Grid>
               </Button>
 
@@ -223,7 +227,7 @@
                               CommandParameter="{Binding}">
                         <Grid>
                           <media:CodecImage Source="{Binding}" Stretch="UniformToFill" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=image}" />
-                          <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="▶" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=video}" />
+                          <LucideIcon HorizontalAlignment="Center" VerticalAlignment="Center" Kind="Play" Size="17" StrokeWidth="1.75" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=video}" />
                         </Grid>
                       </Button>
                     </DataTemplate>
@@ -233,11 +237,11 @@
 
               <StackPanel Spacing="2">
                 <TextBlock Classes="meta-label" Text="External links" Margin="0,0,0,3" />
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.OfficialWebsiteUrl}" IsVisible="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Website" /><TextBlock Grid.Column="1" Text="↗" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.SteamPageUrl}" IsVisible="{Binding SelectedGame.SteamPageUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Steam" /><TextBlock Grid.Column="1" Text="↗" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.RawgUrl}" IsVisible="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="RAWG" /><TextBlock Grid.Column="1" Text="↗" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.IgdbUrl}" IsVisible="{Binding SelectedGame.IgdbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="IGDB" /><TextBlock Grid.Column="1" Text="↗" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.HltbUrl}" IsVisible="{Binding SelectedGame.HltbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="HowLongToBeat" /><TextBlock Grid.Column="1" Text="↗" /></Grid></Button>
+                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.OfficialWebsiteUrl}" IsVisible="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Website" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
+                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.SteamPageUrl}" IsVisible="{Binding SelectedGame.SteamPageUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Steam" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
+                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.RawgUrl}" IsVisible="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="RAWG" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
+                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.IgdbUrl}" IsVisible="{Binding SelectedGame.IgdbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="IGDB" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
+                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.HltbUrl}" IsVisible="{Binding SelectedGame.HltbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="HowLongToBeat" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
               </StackPanel>
             </StackPanel>
           </Border>
@@ -252,7 +256,7 @@
       <Grid Margin="22" RowDefinitions="Auto,*,Auto">
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
           <TextBlock Classes="heading" Text="Game Settings" />
-          <Button Grid.Column="1" Width="34" Height="34" MinHeight="0" Padding="0" Command="{Binding CloseGameSettingsCommand}" Content="×" />
+          <Button Grid.Column="1" Classes="icon-quiet" Command="{Binding CloseGameSettingsCommand}" ToolTip.Tip="Close game settings"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
         </Grid>
         <ScrollViewer Grid.Row="1">
           <StackPanel Spacing="18">
@@ -294,7 +298,7 @@
         <Grid RowDefinitions="Auto,*">
           <Grid ColumnDefinitions="*,Auto" Margin="4,0,0,12">
             <TextBlock Classes="heading" Text="Media" />
-            <Button Grid.Column="1" Width="36" Height="36" MinHeight="0" Padding="0" Click="CloseMediaOverlay_Click" Content="×" />
+            <Button Grid.Column="1" Classes="icon-quiet" Width="36" Height="36" Click="CloseMediaOverlay_Click" ToolTip.Tip="Close media"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
           </Grid>
           <Carousel Grid.Row="1"
                     ItemsSource="{Binding SelectedGame.Media}"
@@ -317,7 +321,7 @@
           IsVisible="{Binding IsFranchiseOverlayOpen}">
       <Border Classes="overlay" Margin="44" Padding="22">
         <Grid RowDefinitions="Auto,*">
-          <Button HorizontalAlignment="Right" Width="36" Height="36" MinHeight="0" Padding="0" Command="{Binding CloseFranchiseOverlayCommand}" Content="×" />
+          <Button Classes="icon-quiet" HorizontalAlignment="Right" Width="36" Height="36" Command="{Binding CloseFranchiseOverlayCommand}" ToolTip.Tip="Close franchise"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
           <views:FranchiseTimelineControl Grid.Row="1" />
         </Grid>
       </Border>

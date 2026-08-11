@@ -99,11 +99,12 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Top"
                         Margin="10"
-                        Content="{Binding FavoriteGlyph}"
                         Opacity="{Binding FavoriteOpacity}"
                         ToolTip.Tip="{Binding FavoriteToolTip}"
                         Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        CommandParameter="{Binding}" />
+                        CommandParameter="{Binding}">
+                  <LucideIcon Kind="Star" Size="16" StrokeWidth="1.75" />
+                </Button>
 
                 <StackPanel HorizontalAlignment="Left"
                             VerticalAlignment="Bottom"

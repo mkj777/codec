@@ -15,7 +15,7 @@
           <TextBlock Classes="title" FontSize="26" Text="Settings" />
           <TextBlock Classes="caption" Text="{Binding AppVersion}" />
         </StackPanel>
-        <Button Grid.Column="1" Width="36" Height="36" MinHeight="0" Padding="0" Click="Close_Click" Content="×" />
+        <Button Grid.Column="1" Classes="icon-quiet" Width="36" Height="36" Click="Close_Click" ToolTip.Tip="Close settings"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
       </Grid>
 
       <ScrollViewer Grid.Row="1">
@@ -105,9 +105,13 @@
               Background="Transparent"
               BorderThickness="0"
               HorizontalAlignment="Left"
-              Content="GitHub ↗"
               Command="{Binding OpenExternalLinkCommand}"
-              CommandParameter="https://github.com/mkj777/codec" />
+              CommandParameter="https://github.com/mkj777/codec">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <TextBlock Text="GitHub" />
+          <LucideIcon Kind="ExternalLink" Size="15" StrokeWidth="1.75" />
+        </StackPanel>
+      </Button>
     </Grid>
   </Border>
 </UserControl>

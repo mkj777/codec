@@ -61,7 +61,6 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(FolderSizeDisplay))]
         private long folderSize;
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(FavoriteGlyph))]
         [NotifyPropertyChangedFor(nameof(FavoriteToolTip))]
         [NotifyPropertyChangedFor(nameof(FavoriteOpacity))]
         private bool isFavorite;
@@ -322,9 +321,6 @@ namespace Codec.Models
                        !string.Equals(displayName, metadataName, StringComparison.OrdinalIgnoreCase);
             }
         }
-
-        [JsonIgnore]
-        public string FavoriteGlyph => IsFavorite ? "\uE735" : "\uE734";
 
         [JsonIgnore]
         public string FavoriteToolTip => IsFavorite ? "Remove from favorites" : "Add to favorites";

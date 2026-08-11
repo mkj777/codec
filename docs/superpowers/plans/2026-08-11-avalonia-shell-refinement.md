@@ -197,7 +197,7 @@ git commit -m "style: refine Avalonia shell and sidebar"
 - Consumes: existing commands, click handlers, visibility bindings, favorite color/opacity bindings, and Lucide controls.
 - Produces: one consistent action-icon family across the visible Avalonia UI without changing view-model types.
 
-- [ ] **Step 1: Replace Library favorite content**
+- [x] **Step 1: Replace Library favorite content**
 
 Replace the bound font glyph with a view-owned icon while preserving favorite state bindings on the button:
 
@@ -205,15 +205,15 @@ Replace the bound font glyph with a view-owned icon while preserving favorite st
 <LucideIcon Kind="Star" Size="16" StrokeWidth="1.75" />
 ```
 
-- [ ] **Step 2: Replace Game Details action glyphs**
+- [x] **Step 2: Replace Game Details action glyphs**
 
 Replace back, settings, chevron, close, play, and external-link glyphs with `ArrowLeft`, `Settings`, `ChevronRight`, `X`, `Play`, and `ExternalLink`. Preserve every command and click handler exactly.
 
-- [ ] **Step 3: Replace Settings, timeline, and notification glyphs**
+- [x] **Step 3: Replace Settings, timeline, and notification glyphs**
 
 Use `ExternalLink` for GitHub and `X` for dismiss/close actions. Do not add icons to text-only actions that are already clear.
 
-- [ ] **Step 4: Scan for improvised action glyphs**
+- [x] **Step 4: Scan for improvised action glyphs**
 
 Run:
 
@@ -223,7 +223,7 @@ rg -n '☰|⚙|⌕|＋|×|↗|‹|›|▶' Codec.Avalonia --glob '*.axaml' --glo
 
 Expected: no remaining visible action-glyph matches. User-facing prose symbols are outside this scan's scope.
 
-- [ ] **Step 5: Build the icon-complete UI**
+- [x] **Step 5: Build the icon-complete UI**
 
 Run:
 
@@ -233,7 +233,7 @@ dotnet build Codec.Avalonia\Codec.Avalonia.csproj --no-restore -p:Platform=x64 -
 
 Expected: `0 Error(s)`.
 
-- [ ] **Step 6: Commit icon consistency**
+- [x] **Step 6: Commit icon consistency**
 
 ```powershell
 git add Codec.Avalonia\Views Codec.Avalonia\Styles\Library.axaml
