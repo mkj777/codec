@@ -13,6 +13,8 @@
     <SimpleTheme />
     <StyleInclude Source="avares://Codec/Styles/Colors.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Typography.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/Motion.axaml" />
+    <StyleInclude Source="avares://Codec/Styles/ControlThemes.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Controls.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Surfaces.axaml" />
     <StyleInclude Source="avares://Codec/Styles/Library.axaml" />

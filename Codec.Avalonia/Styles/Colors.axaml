@@ -2,13 +2,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <Color x:Key="CodecBackgroundColor">#1C1A17</Color>
-    <Color x:Key="CodecSidebarColor">#141210</Color>
     <Color x:Key="CodecSurfaceColor">#24211E</Color>
     <Color x:Key="CodecSurfaceRaisedColor">#292622</Color>
     <Color x:Key="CodecSurfaceHoverColor">#2B2722</Color>
-    <Color x:Key="CodecBorderColor">#332E28</Color>
     <Color x:Key="CodecPrimaryColor">#E76C2B</Color>
-    <Color x:Key="CodecPrimaryHoverColor">#F07A39</Color>
+    <Color x:Key="CodecPrimaryHoverColor">#F07A37</Color>
     <Color x:Key="CodecPrimaryPressedColor">#CF5920</Color>
     <Color x:Key="CodecAccentColor">#D4A832</Color>
     <Color x:Key="CodecSecondaryColor">#C4956A</Color>
@@ -17,12 +15,26 @@
     <Color x:Key="CodecTextDisabledColor">#62584B</Color>
     <Color x:Key="CodecScrimColor">#B8141311</Color>
 
+    <!-- Codec v2 separation model: warm alpha lines over whatever sits beneath them. -->
+    <Color x:Key="CodecLineColor">#17F3EDC9</Color>
+    <Color x:Key="CodecLine2Color">#0EF3EDC9</Color>
+    <Color x:Key="CodecLineStrongColor">#2EF3EDC9</Color>
+    <Color x:Key="CodecOnArtLineColor">#29F3EDC9</Color>
+    <Color x:Key="CodecSinkColor">#38000000</Color>
+    <Color x:Key="CodecHoverWashColor">#09F3EDC9</Color>
+    <Color x:Key="CodecCaptionHoverColor">#0FF3EDC9</Color>
+    <Color x:Key="CodecPrimaryWashColor">#1AE76C2B</Color>
+    <Color x:Key="CodecPrimaryLineColor">#52E76C2B</Color>
+    <Color x:Key="CodecPrimaryLineHoverColor">#99E76C2B</Color>
+    <Color x:Key="CodecPrimaryWashHoverColor">#12E76C2B</Color>
+    <!-- The cinema veils sit on #181613, one step below the canvas. -->
+    <Color x:Key="CodecVeilColor">#181613</Color>
+    <Color x:Key="CodecNoticeColor">#F0141210</Color>
+
     <SolidColorBrush x:Key="CodecBackgroundBrush" Color="{StaticResource CodecBackgroundColor}" />
-    <SolidColorBrush x:Key="CodecSidebarBrush" Color="{StaticResource CodecSidebarColor}" />
     <SolidColorBrush x:Key="CodecSurfaceBrush" Color="{StaticResource CodecSurfaceColor}" />
     <SolidColorBrush x:Key="CodecSurfaceRaisedBrush" Color="{StaticResource CodecSurfaceRaisedColor}" />
     <SolidColorBrush x:Key="CodecSurfaceHoverBrush" Color="{StaticResource CodecSurfaceHoverColor}" />
-    <SolidColorBrush x:Key="CodecBorderBrush" Color="{StaticResource CodecBorderColor}" />
     <SolidColorBrush x:Key="CodecPrimaryBrush" Color="{StaticResource CodecPrimaryColor}" />
     <SolidColorBrush x:Key="CodecPrimaryHoverBrush" Color="{StaticResource CodecPrimaryHoverColor}" />
     <SolidColorBrush x:Key="CodecPrimaryPressedBrush" Color="{StaticResource CodecPrimaryPressedColor}" />
@@ -32,5 +44,24 @@
     <SolidColorBrush x:Key="CodecTextMutedBrush" Color="{StaticResource CodecTextMutedColor}" />
     <SolidColorBrush x:Key="CodecTextDisabledBrush" Color="{StaticResource CodecTextDisabledColor}" />
     <SolidColorBrush x:Key="CodecScrimBrush" Color="{StaticResource CodecScrimColor}" />
+
+    <SolidColorBrush x:Key="CodecLineBrush" Color="{StaticResource CodecLineColor}" />
+    <SolidColorBrush x:Key="CodecLine2Brush" Color="{StaticResource CodecLine2Color}" />
+    <SolidColorBrush x:Key="CodecLineStrongBrush" Color="{StaticResource CodecLineStrongColor}" />
+    <SolidColorBrush x:Key="CodecOnArtLineBrush" Color="{StaticResource CodecOnArtLineColor}" />
+    <SolidColorBrush x:Key="CodecSinkBrush" Color="{StaticResource CodecSinkColor}" />
+    <SolidColorBrush x:Key="CodecHoverWashBrush" Color="{StaticResource CodecHoverWashColor}" />
+    <SolidColorBrush x:Key="CodecCaptionHoverBrush" Color="{StaticResource CodecCaptionHoverColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryWashBrush" Color="{StaticResource CodecPrimaryWashColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryLineBrush" Color="{StaticResource CodecPrimaryLineColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryLineHoverBrush" Color="{StaticResource CodecPrimaryLineHoverColor}" />
+    <SolidColorBrush x:Key="CodecPrimaryWashHoverBrush" Color="{StaticResource CodecPrimaryWashHoverColor}" />
+    <SolidColorBrush x:Key="CodecNoticeBrush" Color="{StaticResource CodecNoticeColor}" />
+    <SolidColorBrush x:Key="CodecScrollThumbBrush" Color="#14F3EDC9" />
+    <SolidColorBrush x:Key="CodecScrollThumbHoverBrush" Color="#26F3EDC9" />
+
+    <!-- Retained so existing references keep resolving; CodecLine is the real token. -->
+    <SolidColorBrush x:Key="CodecBorderBrush" Color="{StaticResource CodecLineColor}" />
+    <SolidColorBrush x:Key="CodecSidebarBrush" Color="{StaticResource CodecSinkColor}" />
   </Styles.Resources>
 </Styles>

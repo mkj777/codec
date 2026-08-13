@@ -2,6 +2,8 @@
 
 Codec is a quiet shelf for a real game collection. The interface should feel like a focused desktop product, not a Windows settings page or a storefront.
 
+The approved Codec v2 reference defines the current direction. `docs/superpowers/specs/2026-08-13-codec-v2-design.md` holds the exact values.
+
 ## Visual language
 
 - Background: `#1C1A17`
@@ -10,26 +12,29 @@ Codec is a quiet shelf for a real game collection. The interface should feel lik
 - Secondary accent: `#C4956A`
 - Primary text: `#F3EDC9`
 - Muted text: `#9E8E78`
-- Typeface: Nunito, with weight carrying hierarchy before size
-- Corners: 8-14 px for controls and surfaces; round only genuinely circular actions
-- Borders: one restrained warm-gray line only where separation is not already clear from tone or space
+- Typeface: Sansation carries display type - page titles, the wordmark, the Play pill. Nunito carries everything else. Weight carries hierarchy before size.
+- Corners: 8-10 px for controls, list rows, and covers; 14-20 px for surfaces; fully round only for genuinely circular actions and the Play and notice pills.
+- Separation: warm alpha lines over whatever sits beneath them, `#17F3EDC9` for structure and `#0EF3EDC9` for rows, used only where tone and space do not already separate.
 
 ## Layout rules
 
 - The sidebar owns navigation, search, Add, Scan, the mascot, and Settings in that order.
 - Library covers are the content. Never render titles beneath them and never add a Continue hero.
-- Game Details keeps the existing information order: hero actions, summary metrics, metadata and description, taxonomy, then media and links.
-- Overlays use one dimmed backdrop and one clear surface. Avoid nested cards inside settings or confirmations.
-- Use 8 px as the small spacing rhythm, 14-18 px between related groups, and 22-28 px for major insets.
+- The library header filters in two stable rows: view tabs and the library count, then source chips and sort. Controls never move as sources appear.
+- Game Details is the ambient cinema mood: sharp full-bleed artwork with the page reading as a lower third. It keeps the existing information order - hero actions, summary metrics, metadata and description, taxonomy, then media and links - continuing into a quiet second section below the first viewport.
+- Overlays use one dimmed backdrop and one clear surface. Prefer hairline-separated rows over cards; avoid nested cards anywhere.
+- Use 8 px as the small spacing rhythm, 14-22 px between related groups, and 44-68 px for major insets.
 
 ## Interaction rules
 
-- Orange is reserved for the primary next action.
-- Hover and press feedback changes tone or opacity without large motion.
-- Background work reports one activity and one progress value.
+- Orange is reserved for the primary next action. In the sidebar it speaks through color rather than fill.
+- Hover and press feedback changes tone or opacity without large motion. Covers are the one exception: they lift 7 px and take on a ring in their own artwork color.
+- Motion is short and eased on `0.2, 0.7, 0.2, 1`. Nothing bounces and nothing spins.
+- Background work reports one activity and one progress value, never a raw count or an internal stage, and never blocks the library.
+- Progress is a hairline, not a bar.
 - Copy is short, warm, and in English.
 - Destructive actions always require an in-app confirmation; light-dismissible surfaces never dismiss a destructive choice.
 
 ## Brand signature
 
-The sleeping red panda is the single memorable illustration. It belongs in onboarding, the empty state, and the sidebar rest area; do not multiply it into decorative badges or backgrounds.
+The sleeping red panda is the single memorable illustration. It belongs in onboarding, the empty state, and the sidebar rest area; do not multiply it into decorative badges or backgrounds. It appears once at a time: the sidebar hides it whenever the library is empty, so it never competes with the empty-state illustration.

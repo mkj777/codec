@@ -1,0 +1,96 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Codec.Controls">
+  <Styles.Resources>
+    <!--
+      Hairline replaces ProgressBar. One pixel of track, a sweeping gradient
+      while indeterminate, a left-anchored fill where a real value exists.
+    -->
+    <ControlTheme x:Key="{x:Type controls:Hairline}" TargetType="controls:Hairline">
+      <Setter Property="Height" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource CodecLineBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Panel Background="{TemplateBinding Background}" ClipToBounds="True">
+            <Border Name="PART_Fill"
+                    HorizontalAlignment="Left"
+                    Background="{TemplateBinding Foreground}"
+                    Width="{TemplateBinding FillWidth}"
+                    IsVisible="{TemplateBinding ShowFill}" />
+            <Border Name="PART_Sweep"
+                    HorizontalAlignment="Left"
+                    Width="{TemplateBinding SweepWidth}"
+                    IsVisible="{TemplateBinding ShowSweep}">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                  <GradientStop Offset="0" Color="#00E76C2B" />
+                  <GradientStop Offset="0.5" Color="#FFE76C2B" />
+                  <GradientStop Offset="1" Color="#00E76C2B" />
+                </LinearGradientBrush>
+              </Border.Background>
+            </Border>
+          </Panel>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+
+  <!--
+    Scrollbars. The reference uses an 8px rail with a quiet rounded thumb and no
+    arrow buttons. SimpleTheme supplies arrows and a heavy track, so the line
+    buttons are collapsed and the thumb is restyled in place.
+  -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="AllowAutoHide" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar[Orientation=Vertical]">
+    <Setter Property="Width" Value="8" />
+  </Style>
+  <Style Selector="ScrollBar[Orientation=Horizontal]">
+    <Setter Property="Height" Value="8" />
+  </Style>
+  <Style Selector="ScrollBar /template/ RepeatButton#PART_LineUpButton">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar /template/ RepeatButton#PART_LineDownButton">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar /template/ RepeatButton#PART_PageUpButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ScrollBar /template/ RepeatButton#PART_PageDownButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Border#TrackBackground">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="Background" Value="{DynamicResource CodecScrollThumbBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="MinWidth" Value="32" />
+  </Style>
+  <Style Selector="ScrollBar:pointerover /template/ Thumb">
+    <Setter Property="Background" Value="{DynamicResource CodecScrollThumbHoverBrush}" />
+  </Style>
+
+  <!--
+    Any ProgressBar left in the tree renders as a hairline rather than a block,
+    so a missed call site cannot reintroduce the square bar.
+  -->
+  <Style Selector="ProgressBar">
+    <Setter Property="MinHeight" Value="1" />
+    <Setter Property="Height" Value="1" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CodecLineBrush}" />
+  </Style>
+</Styles>

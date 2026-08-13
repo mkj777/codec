@@ -212,3 +212,50 @@ public sealed class StringToUriConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>
+/// Picks the first usable string. Cinema prefers the landscape hero and falls
+/// back to the capsule when a game has no hero art.
+/// </summary>
+public sealed class FirstNonEmptyConverter : IMultiValueConverter
+{
+    public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        foreach (object? value in values)
+        {
+            if (value is string text && !string.IsNullOrWhiteSpace(text))
+                return text;
+        }
+
+        return null;
+    }
+}
+
+public sealed class DateToYearConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is DateTime date && date != default
+            ? date.Year.ToString(CultureInfo.InvariantCulture)
+            : null;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>True when the bound collection has at least one entry.</summary>
+public sealed class FirstItemConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not IEnumerable items)
+            return null;
+
+        foreach (object? item in items)
+            return item;
+
+        return null;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

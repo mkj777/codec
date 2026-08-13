@@ -22,6 +22,13 @@ public sealed class CodecImage : Control
     public static readonly StyledProperty<Bitmap?> PlaceholderProperty =
         AvaloniaProperty.Register<CodecImage, Bitmap?>(nameof(Placeholder));
 
+    /// <summary>
+    /// Where the crop is anchored vertically, matching CSS background-position.
+    /// 0.5 centres; 0.22 keeps the upper part of an overflowing image in view.
+    /// </summary>
+    public static readonly StyledProperty<double> VerticalBiasProperty =
+        AvaloniaProperty.Register<CodecImage, double>(nameof(VerticalBias), 0.5);
+
     public string? Source
     {
         get => GetValue(SourceProperty);
@@ -40,9 +47,15 @@ public sealed class CodecImage : Control
         set => SetValue(PlaceholderProperty, value);
     }
 
+    public double VerticalBias
+    {
+        get => GetValue(VerticalBiasProperty);
+        set => SetValue(VerticalBiasProperty, value);
+    }
+
     static CodecImage()
     {
-        AffectsRender<CodecImage>(StretchProperty, PlaceholderProperty);
+        AffectsRender<CodecImage>(StretchProperty, PlaceholderProperty, VerticalBiasProperty);
         SourceProperty.Changed.AddClassHandler<CodecImage>((control, _) => control.BeginLoad());
     }
 
@@ -54,7 +67,7 @@ public sealed class CodecImage : Control
             return;
 
         Rect source = new(image.Size);
-        Rect destination = CalculateDestination(image.Size, Bounds.Size, Stretch);
+        Rect destination = CalculateDestination(image.Size, Bounds.Size, Stretch, VerticalBias);
         context.DrawImage(image, source, destination);
     }
 
@@ -147,7 +160,7 @@ public sealed class CodecImage : Control
         InvalidateVisual();
     }
 
-    private static Rect CalculateDestination(Size source, Size target, Stretch stretch)
+    private static Rect CalculateDestination(Size source, Size target, Stretch stretch, double verticalBias)
     {
         if (stretch == Stretch.Fill)
             return new Rect(target);
@@ -162,9 +175,10 @@ public sealed class CodecImage : Control
             scale = 1;
 
         Size size = new(source.Width * scale, source.Height * scale);
+        double bias = double.IsNaN(verticalBias) ? 0.5 : Math.Clamp(verticalBias, 0, 1);
         return new Rect(
             (target.Width - size.Width) / 2,
-            (target.Height - size.Height) / 2,
+            (target.Height - size.Height) * bias,
             size.Width,
             size.Height);
     }

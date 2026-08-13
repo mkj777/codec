@@ -1,41 +1,113 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
-    <FontFamily x:Key="CodecRegularFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
-    <FontFamily x:Key="CodecMediumFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
-    <FontFamily x:Key="CodecSemiBoldFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
-    <FontFamily x:Key="CodecBoldFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
+    <!--
+      Codec v2 runs two faces: Sansation carries display type, Nunito carries UI.
+      LetterSpacing is absolute in Avalonia, so the reference's -0.015em is
+      resolved per size at each class below.
+    -->
+    <FontFamily x:Key="CodecDisplayFontFamily">avares://Codec/Assets/fonts#Sansation</FontFamily>
+    <FontFamily x:Key="CodecUiFontFamily">avares://Codec/Assets/fonts#Nunito</FontFamily>
   </Styles.Resources>
 
+  <!--
+    Foreground is deliberately not set here. TextBlock inherits it, which lets a
+    button colour its own label instead of every label fighting the button.
+  -->
   <Style Selector="TextBlock">
-    <Setter Property="FontFamily" Value="{StaticResource CodecRegularFontFamily}" />
+    <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="400" />
-    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+
+  <!-- display -->
+  <Style Selector="TextBlock.wordmark, TextBlock.brand">
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="21" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.32" />
+  </Style>
+  <Style Selector="TextBlock.page-title">
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="76" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-1.14" />
+    <Setter Property="LineHeight" Value="76" />
+  </Style>
+  <Style Selector="TextBlock.ob-title">
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="66" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.99" />
+    <Setter Property="LineHeight" Value="67" />
+  </Style>
+  <Style Selector="TextBlock.ob-subtitle">
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="38" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.57" />
+  </Style>
+  <Style Selector="TextBlock.screen-title">
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="34" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.51" />
+  </Style>
+  <Style Selector="TextBlock.empty-title">
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="30" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.45" />
   </Style>
   <Style Selector="TextBlock.title">
-    <Setter Property="FontFamily" Value="{StaticResource CodecBoldFontFamily}" />
-    <Setter Property="FontSize" Value="28" />
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
+    <Setter Property="FontSize" Value="26" />
     <Setter Property="FontWeight" Value="700" />
-  </Style>
-  <Style Selector="TextBlock.brand">
-    <Setter Property="FontFamily" Value="{StaticResource CodecBoldFontFamily}" />
-    <Setter Property="FontSize" Value="18" />
-    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.39" />
   </Style>
   <Style Selector="TextBlock.heading">
-    <Setter Property="FontFamily" Value="{StaticResource CodecSemiBoldFontFamily}" />
+    <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
     <Setter Property="FontSize" Value="18" />
-    <Setter Property="FontWeight" Value="600" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="-0.27" />
   </Style>
+
+  <!-- ui -->
   <Style Selector="TextBlock.body">
     <Setter Property="FontSize" Value="14" />
     <Setter Property="LineHeight" Value="21" />
   </Style>
+  <Style Selector="TextBlock.blurb">
+    <Setter Property="FontSize" Value="16.5" />
+    <Setter Property="LineHeight" Value="27.7" />
+    <Setter Property="Foreground" Value="#E6F3EDC9" />
+  </Style>
   <Style Selector="TextBlock.caption">
-    <Setter Property="FontFamily" Value="{StaticResource CodecMediumFontFamily}" />
-    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontSize" Value="12.5" />
     <Setter Property="FontWeight" Value="500" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.factline">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="LetterSpacing" Value="0.26" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.meta-label">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.meta-value">
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="TextBlock.lib-count">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="Opacity" Value="0.8" />
+  </Style>
+  <Style Selector="TextBlock.quiet-note">
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="Opacity" Value="0.8" />
   </Style>
 </Styles>

@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Codec.Controls"
              xmlns:converters="using:Codec.Converters"
              x:Class="Codec.Views.SettingsView"
              x:CompileBindings="False">
@@ -8,108 +9,114 @@
     <converters:BooleanNegationConverter x:Key="NotConverter" />
   </UserControl.Resources>
 
-  <Border Classes="overlay" Width="560" MaxHeight="680" Padding="24">
+  <!-- One surface, rows inside it. No cards within cards. -->
+  <Border Classes="overlay" Width="560" MaxHeight="680" Padding="28">
     <Grid RowDefinitions="Auto,*,Auto">
-      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
-        <StackPanel>
-          <TextBlock Classes="title" FontSize="26" Text="Settings" />
+      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+        <StackPanel Spacing="2">
+          <TextBlock Classes="title" Text="Settings" />
           <TextBlock Classes="caption" Text="{Binding AppVersion}" />
         </StackPanel>
-        <Button Grid.Column="1" Classes="icon-quiet" Width="36" Height="36" Click="Close_Click" ToolTip.Tip="Close settings"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
+        <Button Grid.Column="1" Classes="icon-quiet" Click="Close_Click" ToolTip.Tip="Close settings"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
       </Grid>
 
       <ScrollViewer Grid.Row="1">
-        <StackPanel Spacing="22">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel>
-              <TextBlock Classes="meta-value" Text="Scan on startup" />
-              <TextBlock Classes="caption" Text="Keep installed games up to date." />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ScanOnStartup, Mode=TwoWay}" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel>
-              <TextBlock Classes="meta-value" Text="Launch Steam quietly" />
-              <TextBlock Classes="caption" Text="Start Steam without opening its window." />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding LaunchSteamSilent, Mode=TwoWay}" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel>
-              <TextBlock Classes="meta-value" Text="Close to tray" />
-              <TextBlock Classes="caption" Text="Keep Codec available in the background." />
-            </StackPanel>
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding CloseToTray, Mode=TwoWay}" />
-          </Grid>
-
-          <Border Height="1" Background="{DynamicResource CodecBorderBrush}" />
-
-          <StackPanel Spacing="10">
-            <TextBlock Classes="meta-label" Text="Steam" />
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel>
-                <TextBlock Classes="meta-value" Text="{Binding SteamAccountDisplay}" />
-                <TextBlock Classes="caption" Text="{Binding SteamSyncProgressMessage}" IsVisible="{Binding IsSteamSyncProgressVisible}" />
-              </StackPanel>
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="Connect" Command="{Binding ConnectSteamCommand}" IsVisible="{Binding IsSteamConnected, Converter={StaticResource NotConverter}}" />
-                <Button Content="Sync now" Command="{Binding SyncSteamLibraryCommand}" IsVisible="{Binding IsSteamConnected}" />
-                <Button Content="Disconnect" Click="ShowDisconnect_Click" IsVisible="{Binding IsSteamConnected}" />
-              </StackPanel>
-            </Grid>
-            <ProgressBar Minimum="0" Maximum="{Binding SteamSyncProgressMaximum}" Value="{Binding SteamSyncProgressValue}" IsIndeterminate="{Binding IsSteamSyncProgressIndeterminate}" IsVisible="{Binding IsSteamSyncProgressVisible}" />
-            <Border Classes="detail-surface" Width="260" Padding="14" HorizontalAlignment="Left" IsVisible="{Binding IsSteamQrVisible}">
-              <StackPanel Spacing="9">
-                <Image Width="220" Height="220" Source="{Binding SteamQrCodePng, Converter={StaticResource PngConverter}}" />
-                <TextBlock Classes="caption" HorizontalAlignment="Center" Text="Scan with the Steam mobile app." />
-                <Button Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
-              </StackPanel>
+        <StackPanel Spacing="30">
+          <StackPanel Spacing="0">
+            <Border Classes="meta-row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <StackPanel Spacing="2">
+                  <TextBlock Classes="meta-value" Text="Scan on startup" />
+                  <TextBlock Classes="caption" Text="Keep installed games up to date." />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding ScanOnStartup, Mode=TwoWay}" />
+              </Grid>
             </Border>
-            <Border x:Name="DisconnectConfirmation" Classes="detail-surface" Padding="14" IsVisible="False">
-              <StackPanel Spacing="10">
-                <TextBlock Classes="meta-value" Text="Disconnect Steam?" />
-                <TextBlock Classes="caption" Text="Steam-owned games will be hidden until you connect again." TextWrapping="Wrap" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                  <Button Content="Cancel" Click="HideDisconnect_Click" />
-                  <Button Grid.Column="1" Classes="primary" Content="Disconnect" Click="ConfirmDisconnect_Click" />
-                </Grid>
-              </StackPanel>
+            <Border Classes="meta-row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <StackPanel Spacing="2">
+                  <TextBlock Classes="meta-value" Text="Launch Steam quietly" />
+                  <TextBlock Classes="caption" Text="Start Steam without opening its window." />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding LaunchSteamSilent, Mode=TwoWay}" />
+              </Grid>
+            </Border>
+            <Border Classes="meta-row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <StackPanel Spacing="2">
+                  <TextBlock Classes="meta-value" Text="Close to tray" />
+                  <TextBlock Classes="caption" Text="Keep Codec available in the background." />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" IsChecked="{Binding CloseToTray, Mode=TwoWay}" />
+              </Grid>
             </Border>
           </StackPanel>
 
-          <Border Height="1" Background="{DynamicResource CodecBorderBrush}" />
-
-          <StackPanel Spacing="9">
-            <TextBlock Classes="meta-label" Text="Maintenance" />
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-              <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
-              <Button Grid.Column="1" Content="Refresh covers" Command="{Binding RefreshCoversCommand}" />
-              <Button Grid.Column="2" Content="Reset Codec" Click="ShowReset_Click" />
-            </Grid>
-            <Border x:Name="ResetConfirmation" Classes="detail-surface" Padding="14" IsVisible="False">
-              <StackPanel Spacing="10">
-                <TextBlock Classes="meta-value" Text="Reset Codec?" />
-                <TextBlock Classes="caption" Text="Library, artwork, settings, logs, and Steam sign-in will be removed." TextWrapping="Wrap" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                  <Button Content="Cancel" Click="HideReset_Click" />
-                  <Button Grid.Column="1" Classes="primary" Content="Reset" Command="{Binding ResetApplicationCommand}" />
-                </Grid>
+          <StackPanel Spacing="12">
+            <TextBlock Classes="meta-label" Text="Steam" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Classes="meta-value" Text="{Binding SteamAccountDisplay}" />
+                <TextBlock Classes="caption" Text="{Binding SteamSyncProgressMessage}" IsVisible="{Binding IsSteamSyncProgressVisible}" />
               </StackPanel>
-            </Border>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Classes="ghost ghost-primary" Content="Connect" Command="{Binding ConnectSteamCommand}" IsVisible="{Binding IsSteamConnected, Converter={StaticResource NotConverter}}" />
+                <Button Classes="ghost" Content="Sync now" Command="{Binding SyncSteamLibraryCommand}" IsVisible="{Binding IsSteamConnected}" />
+                <Button Classes="ghost" Content="Disconnect" Click="ShowDisconnect_Click" IsVisible="{Binding IsSteamConnected}" />
+              </StackPanel>
+            </Grid>
+            <controls:Hairline IsVisible="{Binding IsSteamSyncProgressVisible}"
+                               IsIndeterminate="{Binding IsSteamSyncProgressIndeterminate}"
+                               Value="{Binding SteamSyncProgressValue}"
+                               Maximum="{Binding SteamSyncProgressMaximum}" />
+
+            <StackPanel Width="260" Spacing="12" HorizontalAlignment="Left" IsVisible="{Binding IsSteamQrVisible}">
+              <Image Width="220" Height="220" Source="{Binding SteamQrCodePng, Converter={StaticResource PngConverter}}" />
+              <TextBlock Classes="caption" HorizontalAlignment="Center" Text="Scan with the Steam mobile app." />
+              <Button Classes="text-btn" HorizontalAlignment="Center" Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
+            </StackPanel>
+
+            <StackPanel x:Name="DisconnectConfirmation" Spacing="12" IsVisible="False">
+              <Border Classes="rule" />
+              <TextBlock Classes="meta-value" Text="Disconnect Steam?" />
+              <TextBlock Classes="caption" Text="Steam-owned games will be hidden until you connect again." TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="14">
+                <Button Classes="play" Click="ConfirmDisconnect_Click" Content="Disconnect" />
+                <Button Classes="text-btn" Click="HideDisconnect_Click" Content="Cancel" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="12">
+            <TextBlock Classes="meta-label" Text="Maintenance" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="ghost" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
+              <Button Classes="ghost" Content="Refresh covers" Command="{Binding RefreshCoversCommand}" />
+              <Button Classes="ghost" Content="Reset Codec" Click="ShowReset_Click" />
+            </StackPanel>
+            <StackPanel x:Name="ResetConfirmation" Spacing="12" IsVisible="False">
+              <Border Classes="rule" />
+              <TextBlock Classes="meta-value" Text="Reset Codec?" />
+              <TextBlock Classes="caption" Text="Library, artwork, settings, logs, and Steam sign-in will be removed." TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="14">
+                <Button Classes="play" Content="Reset" Command="{Binding ResetApplicationCommand}" />
+                <Button Classes="text-btn" Click="HideReset_Click" Content="Cancel" />
+              </StackPanel>
+            </StackPanel>
           </StackPanel>
         </StackPanel>
       </ScrollViewer>
 
       <Button Grid.Row="2"
-              Margin="0,18,0,0"
-              Background="Transparent"
-              BorderThickness="0"
+              Classes="text-btn"
+              Margin="0,22,0,0"
               HorizontalAlignment="Left"
+              Foreground="{DynamicResource CodecTextMutedBrush}"
               Command="{Binding OpenExternalLinkCommand}"
               CommandParameter="https://github.com/mkj777/codec">
         <StackPanel Orientation="Horizontal" Spacing="7">
-          <TextBlock Text="GitHub" />
-          <LucideIcon Kind="ExternalLink" Size="15" StrokeWidth="1.75" />
+          <TextBlock Text="GitHub" FontSize="13.5" />
+          <LucideIcon Kind="ExternalLink" Size="13" StrokeWidth="1.75" />
         </StackPanel>
       </Button>
     </Grid>

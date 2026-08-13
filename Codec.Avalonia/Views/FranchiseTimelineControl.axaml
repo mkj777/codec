@@ -39,9 +39,9 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Border Classes="detail-surface" Width="168" Padding="10">
-              <StackPanel Spacing="8">
-                <Border Height="210" CornerRadius="9" ClipToBounds="True" Background="{DynamicResource CodecBackgroundBrush}">
+            <Border Width="168" Padding="0">
+              <StackPanel Spacing="10">
+                <Border Height="210" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource CodecSurfaceBrush}" BoxShadow="0 10 26 0 #5C000000">
                   <media:CodecImage Source="{Binding Entry.CoverUrl}" Stretch="UniformToFill" />
                 </Border>
                 <TextBlock Classes="meta-value"

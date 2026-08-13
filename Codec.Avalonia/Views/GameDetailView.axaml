@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Codec.Controls"
              xmlns:converters="using:Codec.Converters"
              xmlns:media="using:Codec.Media"
              xmlns:views="using:Codec.Views"
@@ -8,6 +9,9 @@
   <UserControl.Resources>
     <converters:BooleanNegationConverter x:Key="NotConverter" />
     <converters:DateToStringConverter x:Key="DateConverter" />
+    <converters:DateToYearConverter x:Key="YearConverter" />
+    <converters:FirstItemConverter x:Key="FirstItemConverter" />
+    <converters:FirstNonEmptyConverter x:Key="FirstNonEmptyConverter" />
     <converters:MediaTypeConverter x:Key="MediaTypeConverter" />
     <converters:NullOrEmptyToFallbackConverter x:Key="FallbackConverter" />
     <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
@@ -15,237 +19,348 @@
   </UserControl.Resources>
 
   <Grid Background="{DynamicResource CodecBackgroundBrush}">
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+    <ScrollViewer x:Name="DetailScroller"
+                  HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel>
-        <Grid Height="340" ClipToBounds="True">
-          <media:CodecImage Source="{Binding SelectedGame.LibraryHero}"
-                            Stretch="UniformToFill"
-                            Opacity="0.52" />
-          <media:CodecImage Source="{Binding SelectedGame.LibraryHero}"
-                            Stretch="Uniform"
-                            Margin="90,0"
-                            IsVisible="{Binding SelectedGame.HasLogo, Converter={StaticResource NotConverter}}" />
+        <!--
+          Cinema. The art stays sharp and fills the first viewport; the page
+          reads as a lower third over it.
+        -->
+        <Grid Height="{Binding #DetailScroller.Bounds.Height}" ClipToBounds="True">
+          <media:CodecImage Stretch="UniformToFill"
+                            VerticalBias="0.22"
+                            RenderTransform="scale(1.02)">
+            <media:CodecImage.Source>
+              <MultiBinding Converter="{StaticResource FirstNonEmptyConverter}">
+                <Binding Path="SelectedGame.LibraryHero" />
+                <Binding Path="SelectedGame.LibraryCapsule" />
+              </MultiBinding>
+            </media:CodecImage.Source>
+          </media:CodecImage>
+
+          <!-- veil 1: the lower third rises out of the art -->
           <Border>
             <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                <GradientStop Offset="0" Color="#301C1A17" />
-                <GradientStop Offset="0.58" Color="#501C1A17" />
-                <GradientStop Offset="1" Color="#FF1C1A17" />
+              <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+                <GradientStop Offset="0" Color="#FB181613" />
+                <GradientStop Offset="0.17" Color="#F0181613" />
+                <GradientStop Offset="0.36" Color="#A8181613" />
+                <GradientStop Offset="0.57" Color="#33181613" />
+                <GradientStop Offset="0.76" Color="#00181613" />
               </LinearGradientBrush>
             </Border.Background>
           </Border>
 
-          <Button HorizontalAlignment="Left"
+          <!-- veil 2: settles the caption strip -->
+          <Border>
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#E0181613" />
+                <GradientStop Offset="0.22" Color="#59181613" />
+                <GradientStop Offset="0.38" Color="#00181613" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <!-- veil 3: the game's own colour, rising from the bottom centre -->
+          <Border media:ArtTint.GlowSource="{Binding SelectedGame.LibraryCapsule}" />
+
+          <Button Classes="back"
+                  HorizontalAlignment="Left"
                   VerticalAlignment="Top"
-                  Margin="22,18"
-                  Width="40"
-                  Height="40"
-                  MinHeight="0"
-                  Padding="0"
-                  CornerRadius="20"
-                  Command="{Binding BackCommand}">
-            <LucideIcon Kind="ArrowLeft" Size="18" StrokeWidth="1.75" />
+                  Margin="26,22"
+                  ZIndex="4"
+                  Command="{Binding BackCommand}"
+                  AutomationProperties.Name="Back to library"
+                  ToolTip.Tip="Back to library">
+            <LucideIcon Kind="ChevronLeft" Size="16" StrokeWidth="1.75" />
           </Button>
 
-          <media:CodecImage HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Margin="30,72,30,0"
-                            Width="430"
-                            Height="145"
-                            Source="{Binding SelectedGame.LibraryLogo}"
-                            Stretch="Uniform"
-                            IsVisible="{Binding SelectedGame.HasLogo}" />
-
-          <StackPanel HorizontalAlignment="Left"
-                      VerticalAlignment="Bottom"
-                      Margin="28,0,0,24"
-                      Orientation="Horizontal"
-                      Spacing="12">
-            <Button Classes="primary hero-action"
-                    Command="{Binding PlayGameCommand}"
-                    IsEnabled="{Binding CanPlaySelectedGame}"
-                    Opacity="{Binding PlayButtonOpacity}"
-                    ToolTip.Tip="{Binding PlayButtonToolTip}">
-              <StackPanel Orientation="Horizontal" Spacing="9">
-                <ProgressBar Width="18"
-                             Height="18"
-                             IsIndeterminate="True"
-                             IsVisible="{Binding IsLaunchSpinnerVisible}" />
-                <LucideIcon Kind="Play"
-                            Size="16"
-                            StrokeWidth="1.75"
-                            IsVisible="{Binding IsPlayGlyphVisible}" />
-                <TextBlock Text="{Binding PlayButtonText}" />
+          <Grid VerticalAlignment="Bottom"
+                Margin="68,0,68,56"
+                ZIndex="3"
+                ColumnDefinitions="*,Auto"
+                ColumnSpacing="80">
+            <StackPanel MaxWidth="720"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Spacing="22">
+              <StackPanel Orientation="Horizontal" Spacing="11">
+                <TextBlock Classes="factline shadow-meta"
+                           Text="{Binding SelectedGame.ImportedFromDisplay}" />
+                <Ellipse Classes="fact-dot" IsVisible="{Binding SelectedGame.HasIgdbGenres}" />
+                <TextBlock Classes="factline shadow-meta"
+                           IsVisible="{Binding SelectedGame.HasIgdbGenres}"
+                           Text="{Binding SelectedGame.Genres, Converter={StaticResource FirstItemConverter}}" />
+                <Ellipse Classes="fact-dot" />
+                <TextBlock Classes="factline shadow-meta"
+                           Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource YearConverter}}" />
               </StackPanel>
-            </Button>
-            <Button Classes="hero-action"
-                    Width="48"
-                    Padding="0"
-                    Command="{Binding ToggleGameSettingsCommand}"
-                    ToolTip.Tip="Game settings">
-              <LucideIcon Kind="Settings" Size="17" StrokeWidth="1.75" />
-            </Button>
-          </StackPanel>
+
+              <TextBlock Classes="page-title shadow-title"
+                         Text="{Binding SelectedGame.Name}"
+                         TextTrimming="CharacterEllipsis"
+                         MaxLines="2"
+                         TextWrapping="Wrap" />
+
+              <TextBlock Classes="blurb shadow-body"
+                         MaxWidth="620"
+                         HorizontalAlignment="Left"
+                         TextWrapping="Wrap"
+                         MaxLines="3"
+                         TextTrimming="WordEllipsis"
+                         Text="{Binding SelectedGame.Description, Converter={StaticResource FallbackConverter}}" />
+
+              <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <Button Classes="play play-lg"
+                        Command="{Binding PlayGameCommand}"
+                        IsEnabled="{Binding CanPlaySelectedGame}"
+                        ToolTip.Tip="{Binding PlayButtonToolTip}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <LucideIcon Kind="Play" Size="14" StrokeWidth="2" />
+                    <TextBlock Text="{Binding PlayButtonText}"
+                               FontFamily="{StaticResource CodecDisplayFontFamily}"
+                               FontWeight="700"
+                               FontSize="15.5" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="icon-ghost"
+                        Command="{Binding ToggleGameSettingsCommand}"
+                        ToolTip.Tip="Game settings">
+                  <LucideIcon Kind="Settings" Size="17" StrokeWidth="1.75" />
+                </Button>
+                <TextBlock Classes="quiet-note shadow-meta"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding SelectedGame.IsInstalled, Converter={StaticResource NotConverter}}"
+                           Text="Not installed" />
+              </StackPanel>
+
+              <controls:Hairline Width="120"
+                                 HorizontalAlignment="Left"
+                                 IsIndeterminate="True"
+                                 IsVisible="{Binding IsLaunchSpinnerVisible}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Width="320"
+                        Margin="0,0,0,4"
+                        VerticalAlignment="Bottom">
+              <Border Classes="meta-row on-art">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                  <TextBlock Classes="meta-label shadow-meta" Text="Developer" />
+                  <TextBlock Grid.Column="1"
+                             Classes="meta-value shadow-meta"
+                             TextAlignment="Right"
+                             TextTrimming="CharacterEllipsis"
+                             Text="{Binding SelectedGame.Developer, Converter={StaticResource FallbackConverter}}" />
+                </Grid>
+              </Border>
+              <Border Classes="meta-row on-art">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                  <TextBlock Classes="meta-label shadow-meta" Text="Released" />
+                  <TextBlock Grid.Column="1"
+                             Classes="meta-value shadow-meta"
+                             TextAlignment="Right"
+                             Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateConverter}}" />
+                </Grid>
+              </Border>
+              <Border Classes="meta-row on-art">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                  <TextBlock Classes="meta-label shadow-meta" Text="Main story" />
+                  <TextBlock Grid.Column="1"
+                             Classes="meta-value shadow-meta"
+                             TextAlignment="Right"
+                             Opacity="{Binding SelectedGame.MainStoryOpacity}"
+                             Text="{Binding SelectedGame.DisplayMainStory}" />
+                </Grid>
+              </Border>
+
+              <Button Classes="disclosure"
+                      Foreground="{DynamicResource CodecTextMutedBrush}"
+                      Command="{Binding ToggleDetailMoreCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <TextBlock Classes="shadow-meta" FontSize="12.5" Text="{Binding DetailMoreLabel}" />
+                  <LucideIcon Kind="ChevronDown" Size="11" StrokeWidth="1.75" />
+                </StackPanel>
+              </Button>
+
+              <StackPanel Classes="fade"
+                          Spacing="0"
+                          IsVisible="{Binding IsDetailMoreOpen}">
+                <Border Classes="meta-row on-art">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                    <TextBlock Classes="meta-label shadow-meta" Text="Publisher" />
+                    <TextBlock Grid.Column="1"
+                               Classes="meta-value shadow-meta"
+                               TextAlignment="Right"
+                               TextTrimming="CharacterEllipsis"
+                               Text="{Binding SelectedGame.Publisher, Converter={StaticResource FallbackConverter}}" />
+                  </Grid>
+                </Border>
+                <Border Classes="meta-row on-art">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                    <TextBlock Classes="meta-label shadow-meta" Text="Age rating" />
+                    <TextBlock Grid.Column="1"
+                               Classes="meta-value shadow-meta"
+                               TextAlignment="Right"
+                               Opacity="{Binding SelectedGame.AgeRatingOpacity}"
+                               Text="{Binding SelectedGame.DisplayAgeRating}" />
+                  </Grid>
+                </Border>
+                <Border Classes="meta-row on-art">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                    <TextBlock Classes="meta-label shadow-meta" Text="Price" />
+                    <TextBlock Grid.Column="1"
+                               Classes="meta-value shadow-meta"
+                               TextAlignment="Right"
+                               Text="{Binding SelectedGame.Price, Converter={StaticResource FallbackConverter}}" />
+                  </Grid>
+                </Border>
+                <Border Classes="meta-row on-art">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                    <TextBlock Classes="meta-label shadow-meta" Text="Completionist" />
+                    <TextBlock Grid.Column="1"
+                               Classes="meta-value shadow-meta"
+                               TextAlignment="Right"
+                               Opacity="{Binding SelectedGame.CompletionistOpacity}"
+                               Text="{Binding SelectedGame.DisplayCompletionist}" />
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
         </Grid>
 
-        <Grid Margin="20,-10,20,22"
-              RowDefinitions="Auto,Auto"
-              ColumnDefinitions="*,286"
-              ColumnSpacing="14"
-              RowSpacing="14">
-          <Border Grid.ColumnSpan="2"
-                  Classes="detail-surface"
-                  Padding="16,14">
-            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="14">
-              <StackPanel Grid.Column="0" Spacing="2">
+        <!--
+          The quiet section. Cinema carries four facts; everything else Codec
+          knows continues here in the same row language, on the canvas.
+        -->
+        <StackPanel Margin="68,48,68,72" Spacing="40">
+          <StackPanel Spacing="0">
+            <TextBlock Classes="meta-label" Margin="0,0,0,4" Text="Summary" />
+            <Border Classes="meta-row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                 <TextBlock Classes="meta-label" Text="Steam reviews" />
-                <TextBlock Classes="meta-value" Text="{Binding SelectedGame.DisplaySteamReviewSummary}" Opacity="{Binding SelectedGame.SteamReviewOpacity}" />
-                <TextBlock Classes="caption" Text="{Binding SelectedGame.DisplaySteamReviewCount}" />
-              </StackPanel>
-              <StackPanel Grid.Column="1" Spacing="2">
-                <TextBlock Classes="meta-label" Text="Main story" />
-                <TextBlock Classes="meta-value" Text="{Binding SelectedGame.DisplayMainStory}" Opacity="{Binding SelectedGame.MainStoryOpacity}" />
-                <TextBlock Classes="caption" Text="HowLongToBeat" />
-              </StackPanel>
-              <StackPanel Grid.Column="2" Spacing="2">
+                <TextBlock Grid.Column="1"
+                           Classes="meta-value"
+                           TextAlignment="Right"
+                           Opacity="{Binding SelectedGame.SteamReviewOpacity}"
+                           Text="{Binding SelectedGame.DisplaySteamReviewSummary}" />
+              </Grid>
+            </Border>
+            <Border Classes="meta-row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                 <TextBlock Classes="meta-label" Text="Completionist" />
-                <TextBlock Classes="meta-value" Text="{Binding SelectedGame.DisplayCompletionist}" Opacity="{Binding SelectedGame.CompletionistOpacity}" />
-                <TextBlock Classes="caption" Text="HowLongToBeat" />
-              </StackPanel>
-              <StackPanel Grid.Column="3" Spacing="2">
-                <TextBlock Classes="meta-label" Text="Release date" />
-                <TextBlock Classes="meta-value" Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource DateConverter}}" />
-                <TextBlock Classes="caption" Text="{Binding SelectedGame.OriginalReleaseDisplay}" IsVisible="{Binding SelectedGame.HasOriginalReleaseDate}" />
-              </StackPanel>
-              <StackPanel Grid.Column="4" Spacing="2">
+                <TextBlock Grid.Column="1"
+                           Classes="meta-value"
+                           TextAlignment="Right"
+                           Opacity="{Binding SelectedGame.CompletionistOpacity}"
+                           Text="{Binding SelectedGame.DisplayCompletionist}" />
+              </Grid>
+            </Border>
+            <Border Classes="meta-row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                 <TextBlock Classes="meta-label" Text="Controller" />
-                <TextBlock Classes="meta-value" Text="{Binding SelectedGame.ControllerSupportDisplay}" />
-                <TextBlock Classes="caption" Text="Recommended" IsVisible="{Binding SelectedGame.HasControllerRecommendation}" />
-              </StackPanel>
+                <TextBlock Grid.Column="1"
+                           Classes="meta-value"
+                           TextAlignment="Right"
+                           Text="{Binding SelectedGame.ControllerSupportDisplay}" />
+              </Grid>
+            </Border>
+            <Border Classes="meta-row" IsVisible="{Binding SelectedGame.HasSteamAchievementProgress}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                <TextBlock Classes="meta-label" Text="Steam achievements" />
+                <TextBlock Grid.Column="1"
+                           Classes="meta-value"
+                           TextAlignment="Right"
+                           Text="{Binding SelectedGame.SteamAchievementProgressDisplay}" />
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="10" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Classes="meta-label" Text="Description" />
+            <TextBlock Classes="body"
+                       Foreground="#CCF3EDC9"
+                       TextWrapping="Wrap"
+                       Text="{Binding SelectedGame.Description, Converter={StaticResource FallbackConverter}}" />
+          </StackPanel>
+
+          <StackPanel Spacing="18" IsVisible="{Binding SelectedGame.HasAnyIgdbTaxonomy}">
+            <StackPanel Spacing="8" IsVisible="{Binding SelectedGame.HasIgdbGenres}">
+              <TextBlock Classes="meta-label" Text="Genres" />
+              <ItemsControl ItemsSource="{Binding SelectedGame.Genres}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate><Border Classes="taxonomy-chip" Margin="0,0,8,8"><TextBlock Classes="caption" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <StackPanel Spacing="8" IsVisible="{Binding SelectedGame.HasThemes}">
+              <TextBlock Classes="meta-label" Text="Themes" />
+              <ItemsControl ItemsSource="{Binding SelectedGame.Themes}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate><Border Classes="taxonomy-chip" Margin="0,0,8,8"><TextBlock Classes="caption" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <StackPanel Spacing="8" IsVisible="{Binding SelectedGame.HasGameModes}">
+              <TextBlock Classes="meta-label" Text="Game modes" />
+              <ItemsControl ItemsSource="{Binding SelectedGame.GameModes}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate><Border Classes="taxonomy-chip" Margin="0,0,8,8"><TextBlock Classes="caption" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="12" IsVisible="{Binding SelectedGame.HasMedia}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Classes="meta-label" Text="Media" />
+              <TextBlock Grid.Column="1" Classes="caption" Text="{Binding SelectedGame.MediaCount}" />
             </Grid>
-          </Border>
+            <ItemsControl ItemsSource="{Binding SelectedGame.MediaPreviewItems}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="media-thumb"
+                          Command="{Binding DataContext.OpenMediaOverlayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                          CommandParameter="{Binding}">
+                    <Grid>
+                      <media:CodecImage Source="{Binding}" Stretch="UniformToFill" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=image}" />
+                      <LucideIcon HorizontalAlignment="Center" VerticalAlignment="Center" Kind="Play" Size="17" StrokeWidth="1.75" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=video}" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
 
-          <Border Grid.Row="1"
-                  Grid.Column="0"
-                  Classes="detail-surface"
-                  Padding="18">
-            <Grid ColumnDefinitions="210,1,*" ColumnSpacing="20">
-              <StackPanel Grid.Column="0" Spacing="13">
-                <StackPanel Spacing="2">
-                  <TextBlock Classes="meta-label" Text="Developer" />
-                  <TextBlock Classes="meta-value" Text="{Binding SelectedGame.Developer, Converter={StaticResource FallbackConverter}}" TextWrapping="Wrap" />
-                </StackPanel>
-                <StackPanel Spacing="2">
-                  <TextBlock Classes="meta-label" Text="Publisher" />
-                  <TextBlock Classes="meta-value" Text="{Binding SelectedGame.Publisher, Converter={StaticResource FallbackConverter}}" TextWrapping="Wrap" />
-                </StackPanel>
-                <StackPanel Spacing="2">
-                  <TextBlock Classes="meta-label" Text="Age rating" />
-                  <TextBlock Classes="meta-value" Text="{Binding SelectedGame.DisplayAgeRating}" Opacity="{Binding SelectedGame.AgeRatingOpacity}" />
-                </StackPanel>
-                <StackPanel Spacing="2">
-                  <TextBlock Classes="meta-label" Text="Price" />
-                  <TextBlock Classes="meta-value" Text="{Binding SelectedGame.Price, Converter={StaticResource FallbackConverter}}" />
-                  <TextBlock Classes="caption" Text="{Binding SelectedGame.PriceDiscount}" />
-                </StackPanel>
-              </StackPanel>
-
-              <Border Grid.Column="1" Background="{DynamicResource CodecBorderBrush}" />
-
-              <StackPanel Grid.Column="2" Spacing="14">
-                <StackPanel Spacing="4">
-                  <TextBlock Classes="meta-label" Text="Description" />
-                  <TextBlock Classes="body"
-                             Text="{Binding SelectedGame.Description, Converter={StaticResource FallbackConverter}}"
-                             TextWrapping="Wrap" />
-                </StackPanel>
-
-                <StackPanel Spacing="6" IsVisible="{Binding SelectedGame.HasIgdbGenres}">
-                  <TextBlock Classes="meta-label" Text="Genres" />
-                  <ItemsControl ItemsSource="{Binding SelectedGame.Genres}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate><DataTemplate><Border Classes="taxonomy-chip" Margin="0,0,7,6"><TextBlock Classes="caption" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-                <StackPanel Spacing="6" IsVisible="{Binding SelectedGame.HasThemes}">
-                  <TextBlock Classes="meta-label" Text="Themes" />
-                  <ItemsControl ItemsSource="{Binding SelectedGame.Themes}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate><DataTemplate><Border Classes="taxonomy-chip" Margin="0,0,7,6"><TextBlock Classes="caption" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-                <StackPanel Spacing="6" IsVisible="{Binding SelectedGame.HasGameModes}">
-                  <TextBlock Classes="meta-label" Text="Game modes" />
-                  <ItemsControl ItemsSource="{Binding SelectedGame.GameModes}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate><DataTemplate><Border Classes="taxonomy-chip" Margin="0,0,7,6"><TextBlock Classes="caption" Text="{Binding}" /></Border></DataTemplate></ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-
-                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding SelectedGame.HasSteamAchievementProgress}">
-                  <TextBlock Classes="meta-label" Text="Steam achievements" />
-                  <TextBlock Grid.Column="1" Classes="meta-value" Text="{Binding SelectedGame.SteamAchievementProgressDisplay}" />
-                </Grid>
-              </StackPanel>
-            </Grid>
-          </Border>
-
-          <Border Grid.Row="1"
-                  Grid.Column="1"
-                  Classes="detail-surface"
-                  Padding="14">
-            <StackPanel Spacing="16">
+          <Grid ColumnDefinitions="*,300" ColumnSpacing="60">
+            <StackPanel Spacing="10" VerticalAlignment="Top">
+              <TextBlock Classes="meta-label" Text="Platforms" />
               <ItemsControl ItemsSource="{Binding SelectedGame.PlatformLogoUris}">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="9" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate><DataTemplate><media:CodecImage Width="22" Height="22" Source="{Binding}" Stretch="Uniform" /></DataTemplate></ItemsControl.ItemTemplate>
               </ItemsControl>
-
-              <Button HorizontalContentAlignment="Stretch"
+              <Button Classes="link-row"
+                      Margin="0,8,0,0"
                       Command="{Binding OpenFranchiseOverlayCommand}"
                       IsVisible="{Binding SelectedGame.FranchiseGames, Converter={StaticResource NullToBoolConverter}}">
                 <Grid ColumnDefinitions="*,Auto">
-                  <StackPanel>
-                    <TextBlock Classes="meta-value" Text="Franchise" />
-                    <TextBlock Classes="caption" Text="Related games" />
-                  </StackPanel>
-                  <LucideIcon Grid.Column="1" VerticalAlignment="Center" Kind="ChevronRight" Size="17" StrokeWidth="1.75" />
+                  <TextBlock Text="Franchise" />
+                  <LucideIcon Grid.Column="1" Kind="ChevronRight" Size="15" StrokeWidth="1.75" />
                 </Grid>
               </Button>
-
-              <StackPanel Spacing="7" IsVisible="{Binding SelectedGame.HasMedia}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Classes="meta-label" Text="Media" />
-                  <TextBlock Grid.Column="1" Classes="caption" Text="{Binding SelectedGame.MediaCount}" />
-                </Grid>
-                <ItemsControl ItemsSource="{Binding SelectedGame.MediaPreviewItems}">
-                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Button Classes="media-thumb"
-                              Command="{Binding DataContext.OpenMediaOverlayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                              CommandParameter="{Binding}">
-                        <Grid>
-                          <media:CodecImage Source="{Binding}" Stretch="UniformToFill" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=image}" />
-                          <LucideIcon HorizontalAlignment="Center" VerticalAlignment="Center" Kind="Play" Size="17" StrokeWidth="1.75" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=video}" />
-                        </Grid>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-
-              <StackPanel Spacing="2">
-                <TextBlock Classes="meta-label" Text="External links" Margin="0,0,0,3" />
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.OfficialWebsiteUrl}" IsVisible="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Website" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.SteamPageUrl}" IsVisible="{Binding SelectedGame.SteamPageUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Steam" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.RawgUrl}" IsVisible="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="RAWG" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.IgdbUrl}" IsVisible="{Binding SelectedGame.IgdbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="IGDB" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
-                <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.HltbUrl}" IsVisible="{Binding SelectedGame.HltbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="HowLongToBeat" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="15" StrokeWidth="1.75" /></Grid></Button>
-              </StackPanel>
             </StackPanel>
-          </Border>
-        </Grid>
+
+            <StackPanel Grid.Column="1" Spacing="0" VerticalAlignment="Top">
+              <TextBlock Classes="meta-label" Margin="0,0,0,4" Text="Links" />
+              <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.OfficialWebsiteUrl}" IsVisible="{Binding SelectedGame.OfficialWebsiteUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Website" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="13" StrokeWidth="1.75" /></Grid></Button>
+              <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.SteamPageUrl}" IsVisible="{Binding SelectedGame.SteamPageUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Steam" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="13" StrokeWidth="1.75" /></Grid></Button>
+              <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.RawgUrl}" IsVisible="{Binding SelectedGame.RawgUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="RAWG" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="13" StrokeWidth="1.75" /></Grid></Button>
+              <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.IgdbUrl}" IsVisible="{Binding SelectedGame.IgdbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="IGDB" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="13" StrokeWidth="1.75" /></Grid></Button>
+              <Button Classes="link-row" Command="{Binding OpenExternalLinkCommand}" CommandParameter="{Binding SelectedGame.HltbUrl}" IsVisible="{Binding SelectedGame.HltbUrl, Converter={StaticResource NullToBoolConverter}}"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="HowLongToBeat" /><LucideIcon Grid.Column="1" Kind="ExternalLink" Size="13" StrokeWidth="1.75" /></Grid></Button>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
       </StackPanel>
     </ScrollViewer>
 
@@ -253,40 +368,48 @@
             HorizontalAlignment="Right"
             ZIndex="20"
             IsVisible="{Binding IsGameSettingsOpen}">
-      <Grid Margin="22" RowDefinitions="Auto,*,Auto">
-        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+      <Grid Margin="26" RowDefinitions="Auto,*,Auto">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
           <TextBlock Classes="heading" Text="Game Settings" />
           <Button Grid.Column="1" Classes="icon-quiet" Command="{Binding CloseGameSettingsCommand}" ToolTip.Tip="Close game settings"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
         </Grid>
         <ScrollViewer Grid.Row="1">
-          <StackPanel Spacing="18">
-            <StackPanel Spacing="5">
-              <TextBlock Classes="meta-label" Text="Folder size" />
-              <TextBlock Classes="meta-value" Text="{Binding SelectedGame.FolderSizeDisplay}" />
-              <TextBlock Classes="caption" Text="{Binding SelectedGame.ImportedFromDisplay, StringFormat='via {0}'}" />
+          <StackPanel Spacing="22">
+            <StackPanel Spacing="0">
+              <Border Classes="meta-row">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                  <TextBlock Classes="meta-label" Text="Folder size" />
+                  <TextBlock Grid.Column="1" Classes="meta-value" TextAlignment="Right" Text="{Binding SelectedGame.FolderSizeDisplay}" />
+                </Grid>
+              </Border>
+              <Border Classes="meta-row">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                  <TextBlock Classes="meta-label" Text="Imported from" />
+                  <TextBlock Grid.Column="1" Classes="meta-value" TextAlignment="Right" Text="{Binding SelectedGame.ImportedFromDisplay}" />
+                </Grid>
+              </Border>
             </StackPanel>
-            <StackPanel Spacing="8">
+
+            <StackPanel Spacing="10">
               <TextBlock Classes="meta-label" Text="Launch options" />
               <TextBlock Classes="caption" Text="{Binding SelectedGame.LaunchOptionsDisplay}" TextWrapping="Wrap" />
-              <Button Command="{Binding ChangeLaunchScriptCommand}" Content="Choose launch script" />
-              <Button Command="{Binding ChangeExecutableCommand}" Content="Choose executable" />
-              <Button Command="{Binding ResetLaunchOptionsCommand}" Content="Use detected launch target" IsEnabled="{Binding SelectedGame.HasCustomLaunchOptions}" />
+              <Button HorizontalAlignment="Stretch" Command="{Binding ChangeLaunchScriptCommand}" Content="Choose launch script" />
+              <Button HorizontalAlignment="Stretch" Command="{Binding ChangeExecutableCommand}" Content="Choose executable" />
+              <Button HorizontalAlignment="Stretch" Command="{Binding ResetLaunchOptionsCommand}" Content="Use detected launch target" IsEnabled="{Binding SelectedGame.HasCustomLaunchOptions}" />
             </StackPanel>
-            <Button Command="{Binding OpenGameFolderCommand}" Content="Open game folder" />
+            <Button HorizontalAlignment="Stretch" Command="{Binding OpenGameFolderCommand}" Content="Open game folder" />
           </StackPanel>
         </ScrollViewer>
-        <StackPanel Grid.Row="2" Spacing="10" Margin="0,20,0,0">
-          <Button Click="ShowRemoveConfirmation_Click" Content="Remove from library" />
-          <Border x:Name="RemoveConfirmation" Classes="detail-surface" Padding="14" IsVisible="False">
-            <StackPanel Spacing="10">
-              <TextBlock Classes="meta-value" Text="Are you sure?" />
-              <TextBlock Classes="caption" Text="This removes the game from your library. Files stay on disk." TextWrapping="Wrap" />
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <Button Grid.Column="0" Click="HideRemoveConfirmation_Click" Content="Cancel" />
-                <Button Grid.Column="1" Classes="primary" Click="ConfirmRemove_Click" Content="Remove" />
-              </Grid>
+        <StackPanel Grid.Row="2" Spacing="12" Margin="0,22,0,0">
+          <Button HorizontalAlignment="Stretch" Click="ShowRemoveConfirmation_Click" Content="Remove from library" />
+          <StackPanel x:Name="RemoveConfirmation" Spacing="12" IsVisible="False">
+            <TextBlock Classes="meta-value" Text="Are you sure?" />
+            <TextBlock Classes="caption" Text="This removes the game from your library. Files stay on disk." TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <Button Classes="play" Click="ConfirmRemove_Click" Content="Remove" />
+              <Button Classes="text-btn" Click="HideRemoveConfirmation_Click" Content="Cancel" />
             </StackPanel>
-          </Border>
+          </StackPanel>
         </StackPanel>
       </Grid>
     </Border>
@@ -294,11 +417,11 @@
     <Grid ZIndex="40"
           Background="{DynamicResource CodecScrimBrush}"
           IsVisible="{Binding IsMediaOverlayOpen}">
-      <Border Classes="overlay" Margin="44" Padding="16">
+      <Border Classes="overlay" Margin="44" Padding="18">
         <Grid RowDefinitions="Auto,*">
-          <Grid ColumnDefinitions="*,Auto" Margin="4,0,0,12">
+          <Grid ColumnDefinitions="*,Auto" Margin="4,0,0,14">
             <TextBlock Classes="heading" Text="Media" />
-            <Button Grid.Column="1" Classes="icon-quiet" Width="36" Height="36" Click="CloseMediaOverlay_Click" ToolTip.Tip="Close media"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
+            <Button Grid.Column="1" Classes="icon-quiet" Click="CloseMediaOverlay_Click" ToolTip.Tip="Close media"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
           </Grid>
           <Carousel Grid.Row="1"
                     ItemsSource="{Binding SelectedGame.Media}"
@@ -319,9 +442,9 @@
     <Grid ZIndex="50"
           Background="{DynamicResource CodecScrimBrush}"
           IsVisible="{Binding IsFranchiseOverlayOpen}">
-      <Border Classes="overlay" Margin="44" Padding="22">
+      <Border Classes="overlay" Margin="44" Padding="24">
         <Grid RowDefinitions="Auto,*">
-          <Button Classes="icon-quiet" HorizontalAlignment="Right" Width="36" Height="36" Command="{Binding CloseFranchiseOverlayCommand}" ToolTip.Tip="Close franchise"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
+          <Button Classes="icon-quiet" HorizontalAlignment="Right" Command="{Binding CloseFranchiseOverlayCommand}" ToolTip.Tip="Close franchise"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
           <views:FranchiseTimelineControl Grid.Row="1" />
         </Grid>
       </Border>

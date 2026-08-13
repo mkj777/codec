@@ -1,95 +1,135 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Codec.Controls"
              xmlns:media="using:Codec.Media"
              x:Class="Codec.Views.LibraryView"
              x:CompileBindings="False">
-  <Grid Margin="22,18,20,18"
+  <Grid Margin="44,48,44,64"
         RowDefinitions="Auto,*">
-    <Grid ColumnDefinitions="Auto,Auto,*,Auto"
-          ColumnSpacing="10"
-          Margin="0,0,0,16"
-          IsVisible="{Binding HasGames}">
-      <ComboBox Grid.Column="0"
-                Width="148"
-                SelectedIndex="{Binding SelectedSortIndex, Mode=TwoWay}">
-        <ComboBoxItem Content="Alphabetic ↓" />
-        <ComboBoxItem Content="Alphabetic ↑" />
-        <ComboBoxItem Content="Folder size ↓" />
-        <ComboBoxItem Content="Folder size ↑" />
-        <ComboBoxItem Content="Date added ↓" />
-        <ComboBoxItem Content="Date added ↑" />
-      </ComboBox>
+    <!--
+      Two stable header rows: views and the count, then sources and sort.
+      Controls keep their place as sources appear and disappear.
+    -->
+    <StackPanel Spacing="14"
+                Margin="0,0,0,22"
+                IsVisible="{Binding HasGames}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="22" VerticalAlignment="Bottom">
+          <Button Classes="lib-tab"
+                  Classes.on="{Binding IsAllTabActive}"
+                  Command="{Binding SelectLibraryTabCommand}"
+                  CommandParameter="0"
+                  Content="All" />
+          <Button Classes="lib-tab"
+                  Classes.on="{Binding IsInstalledTabActive}"
+                  Command="{Binding SelectLibraryTabCommand}"
+                  CommandParameter="1"
+                  Content="Installed" />
+          <Button Classes="lib-tab"
+                  Classes.on="{Binding IsRecentTabActive}"
+                  Command="{Binding SelectLibraryTabCommand}"
+                  CommandParameter="2"
+                  Content="Recent" />
+        </StackPanel>
 
-      <ComboBox Grid.Column="1"
-                Width="136"
-                SelectedIndex="{Binding SelectedInstallFilter, Mode=TwoWay}">
-        <ComboBoxItem Content="All games" />
-        <ComboBoxItem Content="Installed" />
-        <ComboBoxItem Content="Not installed" />
-      </ComboBox>
+        <StackPanel Grid.Column="1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom">
+          <TextBlock Classes="lib-count" HorizontalAlignment="Right">
+            <Run Text="{Binding LibraryGameCount}" />
+            <Run Text=" " />
+            <Run Text="{Binding LibraryGameLabel}" />
+          </TextBlock>
+          <TextBlock Classes="lib-count"
+                     HorizontalAlignment="Right"
+                     Text="{Binding LibraryTotalSizeText}" />
+        </StackPanel>
+      </Grid>
 
-      <StackPanel Grid.Column="2"
-                  Orientation="Horizontal"
-                  Spacing="8"
-                  VerticalAlignment="Center">
-        <Button Padding="11,5"
-                MinHeight="32"
-                Content="All sources"
-                Click="ClearSourceFilter_Click" />
-        <ItemsControl ItemsSource="{Binding AvailableImportSources}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="8" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <ToggleButton Classes="filter-chip"
-                            Content="{Binding Name}"
-                            IsChecked="{Binding IsSelected, Mode=TwoWay}" />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Classes="ghost"
+                  Content="All sources"
+                  Click="ClearSourceFilter_Click" />
+          <ItemsControl ItemsSource="{Binding AvailableImportSources}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <ToggleButton Classes="chip"
+                              Content="{Binding Name}"
+                              IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
 
-      <StackPanel Grid.Column="3"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Center">
-        <TextBlock HorizontalAlignment="Right">
-          <Run Text="{Binding LibraryGameCount}" />
-          <Run Text=" " />
-          <Run Text="{Binding LibraryGameLabel}" />
-        </TextBlock>
-        <TextBlock Classes="caption"
-                   HorizontalAlignment="Right"
-                   Text="{Binding LibraryTotalSizeText}" />
-      </StackPanel>
-    </Grid>
+        <ToggleButton x:Name="SortToggle"
+                      Grid.Column="1"
+                      Classes="dropdown"
+                      VerticalAlignment="Center">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding SortLabel}" VerticalAlignment="Center" />
+            <LucideIcon Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource CodecTextMutedBrush}"
+                        Kind="ChevronDown"
+                        Size="14"
+                        StrokeWidth="1.75" />
+          </Grid>
+        </ToggleButton>
+
+        <Popup PlacementTarget="{Binding #SortToggle}"
+               Placement="BottomEdgeAlignedRight"
+               VerticalOffset="6"
+               IsLightDismissEnabled="True"
+               IsOpen="{Binding #SortToggle.IsChecked, Mode=TwoWay}">
+          <Border Classes="dropdown-popup" MinWidth="180">
+            <ListBox x:Name="SortList"
+                     Classes="dropdown-list"
+                     SelectedIndex="{Binding SelectedSortIndex, Mode=TwoWay}"
+                     SelectionChanged="SortList_SelectionChanged">
+              <ListBoxItem Content="Alphabetic ↓" />
+              <ListBoxItem Content="Alphabetic ↑" />
+              <ListBoxItem Content="Folder size ↓" />
+              <ListBoxItem Content="Folder size ↑" />
+              <ListBoxItem Content="Date added ↓" />
+              <ListBoxItem Content="Date added ↑" />
+            </ListBox>
+          </Border>
+        </Popup>
+      </Grid>
+    </StackPanel>
 
     <Grid Grid.Row="1">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto"
                     IsVisible="{Binding HasGames}">
-        <ItemsRepeater ItemsSource="{Binding DisplayedGames}">
+        <ItemsRepeater ItemsSource="{Binding DisplayedGames}" Margin="0,0,10,0">
           <ItemsRepeater.Layout>
-            <UniformGridLayout MinItemWidth="178"
-                               MinItemHeight="270"
-                               MinColumnSpacing="16"
-                               MinRowSpacing="16"
+            <UniformGridLayout MinItemWidth="210"
+                               MinItemHeight="315"
+                               MinColumnSpacing="22"
+                               MinRowSpacing="22"
                                ItemsStretch="Fill"
-                               ItemsJustification="SpaceAround" />
+                               ItemsJustification="Start" />
           </ItemsRepeater.Layout>
           <ItemsRepeater.ItemTemplate>
             <DataTemplate>
-              <Grid Height="270"
-                    Margin="0,0,0,2"
+              <Grid Classes="cover-card"
+                    Height="315"
                     Opacity="{Binding LibraryCardOpacity}">
-                <Border Background="{DynamicResource CodecSurfaceBrush}"
-                        CornerRadius="11"
-                        ClipToBounds="True">
+                <Border Classes="cover">
                   <media:CodecImage Source="{Binding LibraryCapsule}"
                                     Stretch="UniformToFill" />
                 </Border>
+
+                <!-- hover ring and glow, lit by the cover's own colour -->
+                <Border Classes="cover-ring"
+                        media:ArtTint.RingSource="{Binding LibraryCapsule}" />
 
                 <Button Classes="cover-hitbox"
                         Command="{Binding DataContext.SelectGameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -131,29 +171,42 @@
 
       <StackPanel HorizontalAlignment="Center"
                   VerticalAlignment="Center"
-                  Spacing="8"
+                  Spacing="24"
                   IsVisible="{Binding IsEmptyLibrary}">
-        <Image Width="240"
-               Height="170"
+        <Image Width="250"
+               Height="180"
                Stretch="Uniform"
                Source="/Assets/shrimpSleep.png" />
-        <TextBlock Classes="heading"
+        <TextBlock Classes="empty-title"
                    HorizontalAlignment="Center"
-                   FontSize="22"
-                   Text="No games here yet" />
-        <TextBlock Classes="caption"
-                   HorizontalAlignment="Center"
-                   Text="Scan your PC or add a game by executable from the sidebar." />
+                   Text="Nothing here yet." />
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="14">
+          <Button Classes="play play-lg"
+                  Command="{Binding AddGameFromPickerCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <LucideIcon Kind="Plus" Size="14" StrokeWidth="2" />
+              <TextBlock Text="Add games" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+            </StackPanel>
+          </Button>
+          <Button Classes="text-btn"
+                  Content="Scan a folder"
+                  Command="{Binding ScanGamesCommand}" />
+        </StackPanel>
       </StackPanel>
 
       <StackPanel HorizontalAlignment="Center"
                   VerticalAlignment="Center"
-                  Spacing="12"
+                  Spacing="22"
                   IsVisible="{Binding IsInitialLoading}">
-        <ProgressBar Width="180" IsIndeterminate="True" />
-        <TextBlock Classes="heading"
+        <TextBlock Classes="screen-title"
                    HorizontalAlignment="Center"
                    Text="{Binding LoadingTitle}" />
+        <controls:Hairline Width="260"
+                           IsIndeterminate="{Binding IsLoadingIndeterminate}"
+                           Value="{Binding LoadingProgress}"
+                           Maximum="100" />
         <TextBlock Classes="caption"
                    HorizontalAlignment="Center"
                    Text="{Binding LoadingSubtitle}" />

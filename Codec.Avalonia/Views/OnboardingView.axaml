@@ -1,70 +1,120 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Codec.Controls"
              xmlns:converters="using:Codec.Converters"
              x:Class="Codec.Views.OnboardingView"
-             x:CompileBindings="False"
-             Background="{DynamicResource CodecBackgroundBrush}">
+             x:CompileBindings="False">
   <UserControl.Resources>
     <converters:PngBytesToBitmapConverter x:Key="PngConverter" />
   </UserControl.Resources>
 
-  <Grid>
-    <TextBlock Margin="46,28" Classes="heading" Text="Codec" />
+  <Grid Background="{DynamicResource CodecBackgroundBrush}">
+    <!-- one warm bloom behind the first thing anyone sees of Codec -->
+    <Border>
+      <Border.Background>
+        <RadialGradientBrush Center="24%,34%" GradientOrigin="24%,34%" RadiusX="0.47" RadiusY="0.57">
+          <GradientStop Offset="0" Color="#1CE76C2B" />
+          <GradientStop Offset="1" Color="#00E76C2B" />
+        </RadialGradientBrush>
+      </Border.Background>
+    </Border>
 
-    <Grid x:Name="IntroStep" Margin="78" ColumnDefinitions="*,*" ColumnSpacing="70">
-      <StackPanel VerticalAlignment="Center" Spacing="24">
-        <TextBlock Classes="title"
-                   FontSize="50"
-                   LineHeight="58"
-                   Text="A quiet home&#x0a;for your games." />
-        <TextBlock Classes="body"
-                   Width="470"
+    <TextBlock Margin="56,42"
+               Classes="wordmark"
+               FontSize="19"
+               LetterSpacing="-0.29"
+               Opacity="0.85"
+               VerticalAlignment="Top"
+               HorizontalAlignment="Left"
+               Text="Codec" />
+
+    <Grid x:Name="IntroStep" Margin="110,0" ColumnDefinitions="*,400" ColumnSpacing="70">
+      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="26">
+        <TextBlock Classes="ob-title" Text="A quiet home&#x0a;for your games." />
+        <TextBlock MaxWidth="460"
                    HorizontalAlignment="Left"
+                   FontSize="17"
+                   LineHeight="28"
                    Foreground="{DynamicResource CodecTextMutedBrush}"
                    Text="Codec gathers everything you own into one shelf, then gets out of the way."
                    TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="12">
-          <Button Classes="primary" Width="126" Content="Begin" Click="Begin_Click" />
-          <Button Background="Transparent" BorderThickness="0" Content="Skip" Click="Skip_Click" />
+        <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
+          <Button Classes="play play-lg" Click="Begin_Click">
+            <TextBlock Text="Begin" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+          </Button>
+          <Button Classes="text-btn" Content="Skip" Click="Skip_Click" />
         </StackPanel>
       </StackPanel>
-      <Image Grid.Column="1" Width="360" Stretch="Uniform" Source="/Assets/shrimpSleep.png" />
+      <Image Grid.Column="1"
+             Width="400"
+             Height="300"
+             Stretch="Uniform"
+             Opacity="0.95"
+             Source="/Assets/shrimpSleep.png" />
     </Grid>
 
-    <Grid x:Name="SetupStep" Margin="110" IsVisible="False" ColumnDefinitions="*,360" ColumnSpacing="70">
-      <StackPanel VerticalAlignment="Center" Spacing="22">
-        <TextBlock Classes="title" FontSize="40" Text="Bring your shelf together." />
-        <TextBlock Classes="body" Foreground="{DynamicResource CodecTextMutedBrush}" Text="Find games on this PC, or connect Steam. You can change this later." />
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Classes="primary" Content="Find games" Click="FindGames_Click" />
-          <Button Content="Connect Steam" Command="{Binding ConnectSteamCommand}" />
-          <Button Background="Transparent" BorderThickness="0" Content="Continue" Click="Continue_Click" />
+    <Grid x:Name="SetupStep" Margin="110,0" IsVisible="False" ColumnDefinitions="*,360" ColumnSpacing="70">
+      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="26">
+        <TextBlock Classes="ob-subtitle" Text="Where should we look?" />
+        <TextBlock MaxWidth="460"
+                   HorizontalAlignment="Left"
+                   FontSize="17"
+                   LineHeight="28"
+                   Foreground="{DynamicResource CodecTextMutedBrush}"
+                   Text="Find games on this PC, or connect Steam. You can change this later."
+                   TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
+          <Button Classes="play play-lg" Click="FindGames_Click">
+            <TextBlock Text="Find games" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+          </Button>
+          <Button Classes="ghost" Content="Connect Steam" Command="{Binding ConnectSteamCommand}" />
+          <Button Classes="text-btn" Content="Continue" Click="Continue_Click" />
         </StackPanel>
-        <Border Classes="detail-surface" Width="260" Padding="14" HorizontalAlignment="Left" IsVisible="{Binding IsSteamQrVisible}">
-          <StackPanel Spacing="10">
-            <Image Width="220" Height="220" Source="{Binding SteamQrCodePng, Converter={StaticResource PngConverter}}" />
-            <TextBlock Classes="caption" Text="Scan with the Steam mobile app." HorizontalAlignment="Center" />
-            <Button Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
-          </StackPanel>
-        </Border>
+
+        <StackPanel Width="260"
+                    HorizontalAlignment="Left"
+                    Spacing="12"
+                    IsVisible="{Binding IsSteamQrVisible}">
+          <Image Width="220" Height="220" Source="{Binding SteamQrCodePng, Converter={StaticResource PngConverter}}" />
+          <TextBlock Classes="caption" Text="Scan with the Steam mobile app." HorizontalAlignment="Center" />
+          <Button Classes="text-btn" HorizontalAlignment="Center" Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
+        </StackPanel>
       </StackPanel>
       <Image Grid.Column="1" Width="320" Stretch="Uniform" Source="/Assets/shrimpStand.png" />
     </Grid>
 
+    <!-- the first-run scan: a sweeping hairline that goes solid when the shelf is ready -->
     <StackPanel x:Name="ReadyStep"
+                Classes="rise"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Spacing="18"
+                Spacing="24"
                 IsVisible="False">
-      <TextBlock Classes="title" FontSize="34" Text="Your shelf is ready." />
-      <Border Width="296" Height="1" Background="{DynamicResource CodecPrimaryBrush}" />
-      <Button Classes="primary" Width="184" Content="Open library" Click="OpenLibrary_Click" />
+      <TextBlock Classes="screen-title" HorizontalAlignment="Center" Text="{Binding ScanScreenTitle}" />
+      <controls:Hairline Width="260"
+                         HorizontalAlignment="Center"
+                         IsIndeterminate="{Binding IsScanScreenBusy}"
+                         IsComplete="{Binding IsScanScreenComplete}" />
+      <TextBlock Classes="caption"
+                 HorizontalAlignment="Center"
+                 IsVisible="{Binding IsScanScreenBusy}"
+                 Text="This takes a moment." />
+      <Button Classes="play play-lg"
+              HorizontalAlignment="Center"
+              IsVisible="{Binding IsScanScreenComplete}"
+              Click="OpenLibrary_Click">
+        <TextBlock Text="Open library" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+      </Button>
     </StackPanel>
 
-    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="78,0,0,54" Orientation="Horizontal" Spacing="7">
-      <Border x:Name="Progress0" Width="20" Height="5" CornerRadius="3" Background="{DynamicResource CodecPrimaryBrush}" />
-      <Border x:Name="Progress1" Width="5" Height="5" CornerRadius="3" Background="{DynamicResource CodecBorderBrush}" />
-      <Border x:Name="Progress2" Width="5" Height="5" CornerRadius="3" Background="{DynamicResource CodecBorderBrush}" />
+    <StackPanel HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="110,0,0,56"
+                Orientation="Horizontal"
+                Spacing="7">
+      <Border x:Name="Progress0" Width="18" Height="5" CornerRadius="3" Background="{DynamicResource CodecPrimaryBrush}" />
+      <Border x:Name="Progress1" Width="5" Height="5" CornerRadius="3" Opacity="0.35" Background="{DynamicResource CodecTextMutedBrush}" />
+      <Border x:Name="Progress2" Width="5" Height="5" CornerRadius="3" Opacity="0.35" Background="{DynamicResource CodecTextMutedBrush}" />
     </StackPanel>
   </Grid>
 </UserControl>

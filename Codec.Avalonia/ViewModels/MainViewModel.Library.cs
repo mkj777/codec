@@ -151,7 +151,7 @@ namespace Codec.ViewModels
         [CommunityToolkit.Mvvm.Input.RelayCommand]
         public async Task RefreshCoversAsync()
         {
-            ShowScanProgress("Fetching Covers...", Games.Count == 0);
+            ShowScanProgress("Loading covers", Games.Count == 0);
             PrepareCoverProgress(Games.Count, "Update Cover", "No Games to update.");
 
             int processed = 0;
@@ -385,7 +385,9 @@ namespace Codec.ViewModels
             ScanProgressValue = 0;
             ScanProgressMaximum = 1;
             IsScanProgressVisible = false;
-            SetLoadingState(true, message, isIndeterminate ? "This will take a few minutes..." : string.Empty);
+            IsLoadingIndeterminate = isIndeterminate;
+            LoadingProgress = 0;
+            SetLoadingState(true, message, string.Empty);
         }
 
         private void PrepareCoverProgress(int totalGames, string? labelPrefix = null, string? emptyMessage = null)
@@ -398,22 +400,30 @@ namespace Codec.ViewModels
                 LoadingSubtitle = emptyMessage ?? "No new games found.";
                 return;
             }
+            // One activity and one percentage. Never a raw count.
             ScanProgressIsIndeterminate = false;
             ScanProgressMinimum = 0;
             ScanProgressMaximum = totalGames;
             ScanProgressValue = 0;
-            ScanProgressMessage = $"{labelPrefix ?? "Loading covers"} (0/{totalGames})";
-            LoadingSubtitle = $"Preparing artwork... (0/{totalGames})";
+            ScanProgressMessage = WithPercent(labelPrefix ?? "Loading covers", 0);
+            LoadingSubtitle = string.Empty;
+            IsLoadingIndeterminate = false;
+            LoadingProgress = 0;
         }
 
         private void UpdateCoverProgress(int processed, int total, string? labelPrefix = null)
         {
             if (total <= 0) return;
+            int done = Math.Min(processed, total);
+            double percent = (double)done / total * 100d;
+
             ScanProgressIsIndeterminate = false;
-            ScanProgressValue = Math.Min(processed, total);
-            ScanProgressMessage = $"{labelPrefix ?? "Loading covers"} ({Math.Min(processed, total)}/{total})";
+            ScanProgressValue = done;
+            ScanProgressMessage = WithPercent(labelPrefix ?? "Loading covers", percent);
             LoadingTitle = labelPrefix ?? "Loading covers";
-            LoadingSubtitle = $"Preparing artwork... ({Math.Min(processed, total)}/{total})";
+            LoadingSubtitle = string.Empty;
+            IsLoadingIndeterminate = false;
+            LoadingProgress = percent;
         }
 
         private void HideScanProgress()

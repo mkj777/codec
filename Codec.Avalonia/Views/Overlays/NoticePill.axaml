@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Codec.Controls"
+             x:Class="Codec.Views.Overlays.NoticePill"
+             x:CompileBindings="False">
+  <!--
+    One activity, one line, one progress value. Background work reports itself
+    here and never blocks the shelf.
+  -->
+  <StackPanel Spacing="8" IsVisible="{Binding IsNoticeVisible}">
+    <Border Classes="notice rise" HorizontalAlignment="Center">
+      <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
+        <Ellipse Width="7"
+                 Height="7"
+                 VerticalAlignment="Center"
+                 Fill="{DynamicResource CodecPrimaryBrush}"
+                 IsVisible="{Binding !IsNoticeBusy}" />
+        <Ellipse Classes="breathe"
+                 Width="7"
+                 Height="7"
+                 VerticalAlignment="Center"
+                 Fill="{DynamicResource CodecAccentBrush}"
+                 IsVisible="{Binding IsNoticeBusy}" />
+
+        <TextBlock VerticalAlignment="Center"
+                   FontSize="13.5"
+                   Foreground="{DynamicResource CodecTextBrush}"
+                   Text="{Binding NoticeText}" />
+
+        <Button Classes="text-btn"
+                VerticalAlignment="Center"
+                Margin="4,0,0,0"
+                Foreground="{DynamicResource CodecPrimaryBrush}"
+                FontSize="13.5"
+                FontWeight="600"
+                IsVisible="{Binding HasNoticeAction}"
+                Content="{Binding NoticeActionText}"
+                Command="{Binding RestartToUpdateCommand}" />
+
+        <Button Classes="icon-quiet"
+                Width="22"
+                Height="22"
+                VerticalAlignment="Center"
+                Margin="2,0,-6,0"
+                Foreground="{DynamicResource CodecTextMutedBrush}"
+                IsVisible="{Binding IsNoticeDismissible}"
+                Command="{Binding DismissNoticeCommand}"
+                AutomationProperties.Name="Dismiss"
+                ToolTip.Tip="Dismiss">
+          <LucideIcon Kind="X" Size="13" StrokeWidth="1.75" />
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <controls:Hairline Width="220"
+                       HorizontalAlignment="Center"
+                       IsVisible="{Binding IsNoticeProgressVisible}"
+                       IsIndeterminate="{Binding IsNoticeIndeterminate}"
+                       Value="{Binding NoticeProgress}"
+                       Maximum="100" />
+  </StackPanel>
+</UserControl>

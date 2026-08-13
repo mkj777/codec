@@ -58,9 +58,6 @@ namespace Codec.ViewModels
         [ObservableProperty]
         private string? _selectedImportFilter;
 
-        [ObservableProperty]
-        private int _selectedInstallFilter = 1;
-
         public MainViewModel(
             ServiceHost services,
             IUiDispatcher uiDispatcher,
@@ -83,6 +80,7 @@ namespace Codec.ViewModels
             _services.Updates.StatusChanged += OnUpdateStatusChanged;
             OnUpdateStatusChanged(); // sync current state immediately (race-safe)
             Games.CollectionChanged += Games_CollectionChanged;
+            InitializeNoticeTracking();
             RefreshSidebarFilteredGames();
             RefreshAvailableImportSources();
             RefreshDisplayedGames();
@@ -739,9 +737,8 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(NotInstalledLibraryGameCount));
             OnPropertyChanged(nameof(HasNotInstalledLibraryGames));
             OnPropertyChanged(nameof(LibraryTotalSizeText));
-
-            if (!HasNotInstalledLibraryGames && SelectedInstallFilter != 1)
-                SelectedInstallFilter = 1;
+            _recentGames = null;
+            NotifySidebarEmptyChanged();
         }
 
         private static string FormatLibrarySize(long bytes)
@@ -798,12 +795,6 @@ namespace Codec.ViewModels
         partial void OnSelectedImportFilterChanged(string? value)
         {
             SynchronizeImportFilterSelection();
-            RefreshSidebarFilteredGames();
-            RefreshDisplayedGames();
-        }
-
-        partial void OnSelectedInstallFilterChanged(int value)
-        {
             RefreshSidebarFilteredGames();
             RefreshDisplayedGames();
         }
@@ -905,6 +896,7 @@ namespace Codec.ViewModels
                 SidebarSelectedItem = null;
 
             SidebarFilteredGames.ReplaceAll(filteredGames);
+            NotifySidebarEmptyChanged();
 
             if (SidebarSelectedItem != null && !filteredGames.Contains(SidebarSelectedItem))
                 SidebarSelectedItem = null;
@@ -946,11 +938,12 @@ namespace Codec.ViewModels
             => string.IsNullOrEmpty(SelectedImportFilter) ||
                string.Equals(game.ImportedFromDisplay, SelectedImportFilter, StringComparison.OrdinalIgnoreCase);
 
+        // The library tabs carry install filtering now; there is no separate dropdown.
         private bool MatchesInstallFilter(Game game)
-            => SelectedInstallFilter switch
+            => LibraryTab switch
             {
                 1 => game.IsInstalled,
-                2 => !game.IsInstalled,
+                2 => IsRecentGame(game),
                 _ => true
             };
 

@@ -1,53 +1,92 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Style Selector="Border.detail-surface">
-    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="14" />
+  <!--
+    Cinema keeps the artwork sharp, so legibility is carried by shadows rather
+    than by blurring the art away. Avalonia has no text-shadow, so these are
+    drop shadow effects on the text itself.
+  -->
+  <Style Selector="TextBlock.shadow-title">
+    <Setter Property="Effect">
+      <DropShadowEffect BlurRadius="44" OffsetX="0" OffsetY="10" Color="#000000" Opacity="0.62" />
+    </Setter>
   </Style>
-  <Style Selector="TextBlock.meta-label">
-    <Setter Property="FontSize" Value="11" />
-    <Setter Property="FontWeight" Value="600" />
-    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+  <Style Selector="TextBlock.shadow-body">
+    <Setter Property="Effect">
+      <DropShadowEffect BlurRadius="16" OffsetX="0" OffsetY="2" Color="#000000" Opacity="0.6" />
+    </Setter>
   </Style>
-  <Style Selector="TextBlock.meta-value">
-    <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="600" />
-    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  <Style Selector="TextBlock.shadow-meta">
+    <Setter Property="Effect">
+      <DropShadowEffect BlurRadius="12" OffsetX="0" OffsetY="1" Color="#000000" Opacity="0.75" />
+    </Setter>
   </Style>
-  <Style Selector="Border.taxonomy-chip">
-    <Setter Property="Background" Value="{DynamicResource CodecBackgroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Padding" Value="9,4" />
+
+  <!-- the factline separator -->
+  <Style Selector="Ellipse.fact-dot">
+    <Setter Property="Width" Value="3" />
+    <Setter Property="Height" Value="3" />
+    <Setter Property="Fill" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="Opacity" Value="0.5" />
+    <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
-  <Style Selector="Button.link-row">
-    <Setter Property="MinHeight" Value="32" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+  <!-- disclosure -->
+  <Style Selector="Button.disclosure">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0,9" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="400" />
   </Style>
+  <Style Selector="Button.disclosure:pointerover">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+
+  <!-- external links, as rows rather than buttons -->
+  <Style Selector="Button.link-row">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0,10" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="FontWeight" Value="400" />
+  </Style>
+  <Style Selector="Button.link-row:pointerover">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.link-row.on-art">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecOnArtLineBrush}" />
+  </Style>
+  <Style Selector="Button.link-row.on-art:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecOnArtLineBrush}" />
+  </Style>
+
   <Style Selector="Button.media-thumb">
-    <Setter Property="Width" Value="66" />
-    <Setter Property="Height" Value="46" />
+    <Setter Property="Width" Value="96" />
+    <Setter Property="Height" Value="58" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="CornerRadius" Value="8" />
-    <Setter Property="Background" Value="{DynamicResource CodecBackgroundBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
-  <Style Selector="Button.hero-action">
-    <Setter Property="MinHeight" Value="46" />
-    <Setter Property="Padding" Value="22,10" />
-    <Setter Property="CornerRadius" Value="23" />
-  </Style>
+
   <Style Selector="Border.settings-drawer">
     <Setter Property="Width" Value="390" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1,0,0,0" />
+    <Setter Property="BoxShadow" Value="-30 0 80 0 #66000000" />
   </Style>
 </Styles>

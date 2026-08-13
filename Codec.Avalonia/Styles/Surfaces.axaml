@@ -1,24 +1,50 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Style Selector="Border.surface">
-    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
-    <Setter Property="CornerRadius" Value="12" />
-  </Style>
-  <Style Selector="Border.card">
-    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="12" />
-  </Style>
+  <!--
+    Codec v2 works in rows and lines, not cards. Only genuine overlays get a
+    surface of their own.
+  -->
   <Style Selector="Border.overlay">
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
-    <Setter Property="CornerRadius" Value="14" />
-  </Style>
-  <Style Selector="Border.notification">
-    <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecBorderBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="12" />
-    <Setter Property="Padding" Value="16,13" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="BoxShadow" Value="0 44 110 0 #8C000000" />
+  </Style>
+
+  <!-- the notice pill: one line of feedback, never a panel -->
+  <Style Selector="Border.notice">
+    <Setter Property="Background" Value="{DynamicResource CodecNoticeBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="16,11,20,11" />
+    <Setter Property="BoxShadow" Value="0 18 44 0 #80000000" />
+  </Style>
+
+  <!-- a full-width hairline between groups -->
+  <Style Selector="Border.rule">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource CodecLine2Brush}" />
+  </Style>
+
+  <!-- one row of a definition list: label left, value right, line above -->
+  <Style Selector="Grid.meta-row">
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <Style Selector="Border.meta-row">
+    <Setter Property="Padding" Value="0,11" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.meta-row.on-art">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecOnArtLineBrush}" />
+  </Style>
+
+  <Style Selector="Border.taxonomy-chip">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="10,5" />
   </Style>
 </Styles>

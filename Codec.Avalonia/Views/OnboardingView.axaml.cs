@@ -26,12 +26,24 @@ public sealed partial class OnboardingView : UserControl
             return;
 
         _scanOnStartup = true;
-        await viewModel.ScanGamesCommand.ExecuteAsync(null);
-        viewModel.IsOnboardingVisible = true;
+
+        // The scan step shows itself first, then reports itself done.
+        viewModel.IsScanScreenComplete = false;
         ShowStage(2);
+
+        await viewModel.ScanGamesCommand.ExecuteAsync(null);
+
+        viewModel.IsOnboardingVisible = true;
+        viewModel.IsScanScreenComplete = true;
     }
 
-    private void Continue_Click(object? sender, RoutedEventArgs e) => ShowStage(2);
+    private void Continue_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel viewModel)
+            viewModel.IsScanScreenComplete = true;
+
+        ShowStage(2);
+    }
 
     private async void OpenLibrary_Click(object? sender, RoutedEventArgs e)
     {
@@ -49,13 +61,17 @@ public sealed partial class OnboardingView : UserControl
         SetupStep.IsVisible = _stage == 1;
         ReadyStep.IsVisible = _stage == 2;
 
+        // The active dot stretches into a short bar; the rest stay quiet.
         IBrush active = this.FindResource("CodecPrimaryBrush") as IBrush ?? Brushes.Orange;
-        IBrush inactive = this.FindResource("CodecBorderBrush") as IBrush ?? Brushes.Gray;
-        Progress0.Width = _stage == 0 ? 20 : 5;
-        Progress1.Width = _stage == 1 ? 20 : 5;
-        Progress2.Width = _stage == 2 ? 20 : 5;
-        Progress0.Background = _stage == 0 ? active : inactive;
-        Progress1.Background = _stage == 1 ? active : inactive;
-        Progress2.Background = _stage == 2 ? active : inactive;
+        IBrush inactive = this.FindResource("CodecTextMutedBrush") as IBrush ?? Brushes.Gray;
+        Border[] dots = [Progress0, Progress1, Progress2];
+
+        for (int index = 0; index < dots.Length; index++)
+        {
+            bool isActive = index == _stage;
+            dots[index].Width = isActive ? 18 : 5;
+            dots[index].Background = isActive ? active : inactive;
+            dots[index].Opacity = isActive ? 1 : 0.35;
+        }
     }
 }

@@ -13,4 +13,10 @@ public sealed partial class LibraryView : UserControl
         if (DataContext is MainViewModel viewModel)
             viewModel.SelectedImportFilter = null;
     }
+
+    private void SortList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        // Choosing a sort closes the dropdown; the toggle owns the popup's open state.
+        SortToggle.IsChecked = false;
+    }
 }

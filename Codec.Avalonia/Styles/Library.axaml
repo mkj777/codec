@@ -1,45 +1,128 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Style Selector="ListBox.sidebar-list">
+  <!-- rail -->
+  <Style Selector="ListBox.rail-list">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,12,12,10" />
   </Style>
-  <Style Selector="ListBox.sidebar-list ListBoxItem">
+  <Style Selector="ListBox.rail-list ListBoxItem">
     <Setter Property="Padding" Value="0" />
     <Setter Property="Margin" Value="0,1" />
-    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="MinHeight" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
   </Style>
-  <Style Selector="ListBox.sidebar-list ListBoxItem:selected">
-    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+  <Style Selector="ListBox.rail-list ListBoxItem:selected">
+    <Setter Property="Background" Value="Transparent" />
   </Style>
-  <Style Selector="Button.sidebar-game">
-    <Setter Property="MinHeight" Value="34" />
-    <Setter Property="Padding" Value="4,5" />
+
+  <Style Selector="Button.rail-item">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.rail-item:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected Button.rail-item">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+
+  <Style Selector="Button.rail-settings">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="22,13" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
     <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="500" />
+    <Setter Property="FontWeight" Value="400" />
   </Style>
-  <Style Selector="Button.sidebar-game:pointerover">
-    <Setter Property="Background" Value="{DynamicResource CodecSurfaceHoverBrush}" />
+  <Style Selector="Button.rail-settings:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
+
+  <!-- covers -->
+  <Style Selector="Border.cover">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BoxShadow" Value="0 10 26 0 #5C000000" />
+  </Style>
+
   <Style Selector="Button.cover-hitbox">
     <Setter Property="Padding" Value="0" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="CornerRadius" Value="10" />
   </Style>
   <Style Selector="Button.cover-hitbox:pointerover">
-    <Setter Property="Opacity" Value="0.88" />
+    <Setter Property="Background" Value="Transparent" />
   </Style>
-  <Style Selector="Button.cover-hitbox:pressed">
-    <Setter Property="Opacity" Value="0.74" />
+
+  <!-- The lift is the one place Codec allows real movement. -->
+  <Style Selector="Grid.cover-card">
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3">
+          <TransformOperationsTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+      </Transitions>
+    </Setter>
   </Style>
+  <Style Selector="Grid.cover-card:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-7px)" />
+  </Style>
+  <Style Selector="Grid.cover-card:pointerover Border.cover">
+    <Setter Property="BoxShadow" Value="0 20 44 0 #80000000" />
+  </Style>
+
+  <!--
+    The art-coloured ring and glow live on their own layer so they can fade in
+    on hover while carrying a per-game brush set by ArtTint.
+  -->
+  <Style Selector="Border.cover-ring">
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.3">
+          <DoubleTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </DoubleTransition.Easing>
+        </DoubleTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Grid.cover-card:pointerover Border.cover-ring">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
   <Style Selector="Button.favorite">
     <Setter Property="Width" Value="36" />
     <Setter Property="Height" Value="36" />
@@ -50,14 +133,15 @@
     <Setter Property="BorderBrush" Value="#52D4A832" />
     <Setter Property="Foreground" Value="{DynamicResource CodecAccentBrush}" />
   </Style>
+  <Style Selector="Button.favorite:pointerover">
+    <Setter Property="Background" Value="#D91C1A17" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecAccentBrush}" />
+  </Style>
+
   <Style Selector="Border.cover-tag">
     <Setter Property="Background" Value="#D91C1A17" />
     <Setter Property="CornerRadius" Value="7" />
     <Setter Property="Padding" Value="8,4" />
-  </Style>
-  <Style Selector="ToggleButton.filter-chip">
-    <Setter Property="MinHeight" Value="32" />
-    <Setter Property="Padding" Value="12,5" />
-    <Setter Property="CornerRadius" Value="8" />
   </Style>
 </Styles>

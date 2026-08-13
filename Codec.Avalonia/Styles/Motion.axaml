@@ -1,0 +1,59 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- Codec v2 easing. Nothing bounces and nothing spins. -->
+    <SplineEasing x:Key="CodecEase" X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+    <SplineEasing x:Key="CodecSweepEase" X1="0.5" Y1="0" X2="0.5" Y2="1" />
+  </Styles.Resources>
+
+  <!-- rise: entrance for the notice pill and onboarding steps -->
+  <Style Selector=":is(Control).rise">
+    <Style.Animations>
+      <Animation Duration="0:0:0.35"
+                 Easing="{StaticResource CodecEase}"
+                 FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- fade: disclosure bodies -->
+  <Style Selector=":is(Control).fade">
+    <Style.Animations>
+      <Animation Duration="0:0:0.3" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- breathe: the notice dot while work is in flight -->
+  <Style Selector=":is(Control).breathe">
+    <Style.Animations>
+      <Animation Duration="0:0:1.5"
+                 IterationCount="Infinite"
+                 Easing="SineEaseInOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0.35" />
+        </KeyFrame>
+        <KeyFrame Cue="50%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="0.35" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+</Styles>
