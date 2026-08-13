@@ -215,10 +215,14 @@
       <views:GameDetailView IsVisible="{Binding IsDetailsVisible}" />
     </Grid>
 
-    <!-- One notice at a time, centred, never blocking the shelf. -->
+    <!--
+      One notice at a time, centred, never blocking the shelf. It sits above
+      every overlay: work started from Settings must still report back, and the
+      pill never accepts input that an overlay should have taken.
+    -->
     <overlays:NoticePill Grid.RowSpan="2"
                          Grid.ColumnSpan="2"
-                         ZIndex="20"
+                         ZIndex="70"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Bottom"
                          Margin="0,0,0,26" />
