@@ -18,7 +18,7 @@ re-expressed as a reflowing minimum.
 
 `Codec v2.html` carries the stylesheet. Component structure lives in `v2/core.jsx`, `v2/screens.jsx`,
 `v2/details.jsx`, `v2/app.jsx`, `v2/covers.jsx`. Where this spec and the reference disagree, this
-spec wins — it reconciles the reference against features Codec has and the reference does not.
+spec wins. It reconciles the reference against features Codec has and the reference does not.
 
 ## Decisions taken against the reference
 
@@ -121,17 +121,17 @@ corrected by property setters, which is why the current `Controls.axaml` styling
 dropdown popup, the scrollbar rail, or the progress bar shape. This file supplies real
 `ControlTheme` templates for the three affected controls.
 
-**`ScrollBar`** — no line or repeat buttons, transparent track, thumb `#14F3EDC9` with
+**`ScrollBar`**: no line or repeat buttons, transparent track, thumb `#14F3EDC9` with
 `CornerRadius` 4 and a 32px minimum length. Width 8, or 5 under the `rail` class. Auto-hide with an
 opacity transition; visible on pointer over.
 
-**`ComboBox`** — closed box `CornerRadius` 10, `CodecSurfaceBrush`, 1px `CodecLineBrush`, minimum
+**`ComboBox`**: closed box `CornerRadius` 10, `CodecSurfaceBrush`, 1px `CodecLineBrush`, minimum
 height 36, padding 12,7, `ChevronDown` at 14 DIPs in muted. Popup `CornerRadius` 10,
 `CodecSurfaceBrush`, 1px `CodecLineBrush`, padding 6, `BoxShadow` `0 20 50 0 #80000000`.
 `ComboBoxItem` `CornerRadius` 7, padding 9,7, 13px, muted; hover `CodecHoverWashBrush` and text
 foreground; selected `CodecPrimaryWashBrush` and text foreground.
 
-**`ProgressBar`** — retained only so any missed usage inherits the hairline look: 1px height, no
+**`ProgressBar`**: retained only so any missed usage inherits the hairline look: 1px height, no
 corner radius, primary on `CodecLineBrush`.
 
 ### `CodecImage.VerticalBias`
@@ -147,20 +147,20 @@ Top padding 22.
 
 Order and metrics, top to bottom:
 
-1. **Brand row** — padding 0,22,18. Wordmark `Codec`, display face, 21px. `PanelLeftClose` at 15
+1. **Brand row**: padding 0,22,18. Wordmark `Codec`, display face, 21px. `PanelLeftClose` at 15
    DIPs, muted, opacity 0.6, right-aligned.
-2. **Search** — visible only when `HasGames`. Margin 0,22,8, padding bottom 10, bottom border 1px
+2. **Search**: visible only when `HasGames`. Margin 0,22,8, padding bottom 10, bottom border 1px
    `CodecLine2Brush`. `Search` icon 14 DIPs muted, 10px gap, 14px input, placeholder muted at 0.75.
-3. **Game list** — fills remaining height, padding 12,12,12,10, 1px between rows. Row padding 7,12,
+3. **Game list**: fills remaining height, padding 12,12,12,10, 1px between rows. Row padding 7,12,
    `CornerRadius` 8, 14px, muted, single line with ellipsis. Hover: `CodecHoverWashBrush` plus text
    foreground. Selected: text foreground, `CodecPrimaryWashBrush`, and a 2px `CodecPrimaryBrush` bar
    at left inset 3, `CornerRadius` 2, inset 9 from top and bottom. Transition 0.14s.
-4. **Empty list line** — when the list renders nothing, a 13px muted row at opacity 0.7 reading
+4. **Empty list line**: when the list renders nothing, a 13px muted row at opacity 0.7 reading
    `No games yet` when the library is empty and `Nothing found` when a search excludes everything.
    Padding 10,12.
-5. **Mascot** — `IsVisible` bound to `HasGames`. This is the defect being fixed: the mascot must not
+5. **Mascot**: `IsVisible` bound to `HasGames`. This is the defect being fixed: the mascot must not
    appear beside the empty-library illustration. Height 116, margin 2,18,6, uniform stretch.
-6. **Actions** — `Add` and `Scan` side by side, equal width, 8px gap, padding 10,18,12. Both are
+6. **Actions**: `Add` and `Scan` side by side, equal width, 8px gap, padding 10,18,12. Both are
    ghost buttons: transparent background, 1px border, `CornerRadius` 9, padding 9,10, 13px weight
    600, icon 13 DIPs, 7px gap. `Add` uses `CodecPrimaryBrush` foreground and `CodecPrimaryLineBrush`
    border; hover raises the border to `#99E76C2B` over a `#12E76C2B` wash. `Scan` is muted with
@@ -168,7 +168,7 @@ Order and metrics, top to bottom:
 
    `Add` stops being a filled orange button. Orange remains reserved for the primary next action per
    `DESIGN.md` line 27, and in v2 the rail expresses that with color rather than fill.
-7. **Settings** — full-width row, padding 13,22, top border 1px `CodecLine2Brush`, 13px muted with a
+7. **Settings**: full-width row, padding 13,22, top border 1px `CodecLine2Brush`, 13px muted with a
    15 DIP `Settings` icon at 9px gap. Hover moves foreground to text.
 
 Window caption keeps its 34px height and current behavior. Buttons become 30x26, `CornerRadius` 7,
@@ -192,7 +192,7 @@ All  Installed  Recent                                  142 games
 Outer padding 48,44,64,44. Header rows 14 apart, 22 below the header before the grid. The reference
 uses 62 top padding for a single header row; two rows require the reduction.
 
-**Tabs** — `All`, `Installed`, `Recent`. 14px, muted, padding bottom 4, 22px apart, transparent 1px
+**Tabs**: `All`, `Installed`, `Recent`. 14px, muted, padding bottom 4, 22px apart, transparent 1px
 bottom border. Hover moves foreground to text. Selected takes text foreground and a
 `CodecPrimaryBrush` bottom border. Transition 0.15s.
 
@@ -201,9 +201,9 @@ bottom border. Hover moves foreground to text. Selected takes text foreground an
 null. `LastPlayedUtc` is only populated for Steam-owned games, so on a library without a Steam
 connection `Recent` degrades to the 12 most recently added games.
 
-**Count** — right aligned, 12.5px muted at opacity 0.8, with total library size beneath as caption.
+**Count**: right aligned, 12.5px muted at opacity 0.8, with total library size beneath as caption.
 
-**Source chips** — the reference has no chip primitive, so chips inherit `.ghost` geometry, giving
+**Source chips**: the reference has no chip primitive, so chips inherit `.ghost` geometry, giving
 the application one button language across rail and library.
 
 | State | Border | Fill | Foreground |
@@ -215,7 +215,7 @@ the application one button language across rail and library.
 `CornerRadius` 9, padding 9,10, 13px weight 600, 8px apart. `All sources` uses the same shape and
 clears the selection.
 
-**Sort** — the themed `ComboBox` from section 2, retaining all six current options and the existing
+**Sort**: the themed `ComboBox` from section 2, retaining all six current options and the existing
 `SelectedSortIndex` binding.
 
 The install-filter `ComboBox` is removed. The `Installed` tab performs the same filter, and keeping
@@ -247,7 +247,7 @@ Empty: mascot 250x180, then `Nothing here yet.` at 30px display face, then a Pla
 
 Initial loading: a 260px `Hairline` above a single line of text. No counts in the subtitle.
 
-## 5. Game Details — ambient, cinema mood
+## 5. Game Details: ambient, cinema mood
 
 ### First viewport
 
@@ -271,11 +271,11 @@ The mood keeps the artwork sharp; legibility comes from directional scrims and t
 than blur. The reference's `saturate(1.06) contrast(1.03)` has no Avalonia equivalent and is dropped
 as visually negligible.
 
-**Artwork** — `CodecImage`, `UniformToFill`, `VerticalBias` 0.22, `RenderTransform` scale 1.02,
+**Artwork**: `CodecImage`, `UniformToFill`, `VerticalBias` 0.22, `RenderTransform` scale 1.02,
 `ClipToBounds`. The reference samples the portrait capsule; Codec prefers `LibraryHero` where
 present and falls back to `LibraryCapsule`.
 
-**Veils** — three stacked `Border` layers over the artwork. Base color is `#181613`, not
+**Veils**: three stacked `Border` layers over the artwork. Base color is `#181613`, not
 `CodecBackgroundColor`.
 
 1. Bottom scrim, `LinearGradientBrush` from `0%,100%` to `0%,0%`: `#FB181613` at 0,
@@ -285,11 +285,11 @@ present and falls back to `LibraryCapsule`.
 3. Art radial, `RadialGradientBrush` centered `50%,106%`, `RadiusX` 1.0, `RadiusY` 0.7: art tint at
    alpha `#42` to transparent at 0.66.
 
-**Back button** — 38px circle at margin 26,22, `#4D000000` background, 1px `CodecOnArtLineBrush`,
+**Back button**: 38px circle at margin 26,22, `#4D000000` background, 1px `CodecOnArtLineBrush`,
 text foreground, above the veils. The reference's `backdrop-filter: blur(10px)` has no Avalonia
 equivalent; the flat translucent fill replaces it.
 
-**Content** — bottom aligned, padding 0,68,56,68, two columns 80px apart.
+**Content**: bottom aligned, padding 0,68,56,68, two columns 80px apart.
 
 Left column, maximum width 720, 22px between items:
 
@@ -323,10 +323,10 @@ requires the existing information order be preserved. Cinema therefore occupies 
 and the page scrolls into a quiet second section on `CodecBackgroundBrush` at matching 68px side
 insets, carrying the remainder in the reference's flat row language:
 
-1. Summary metrics — Steam reviews, main story, completionist, release date, controller — as meta
+1. Summary metrics (Steam reviews, main story, completionist, release date, controller) as meta
    rows rather than the current five-column card.
 2. Metadata and description.
-3. Taxonomy — genres, themes, game modes — as chips using the source-chip rest style.
+3. Taxonomy (genres, themes, game modes) as chips using the source-chip rest style.
 4. Steam achievements, platform logos, franchise entry.
 5. Media strip and external links.
 
