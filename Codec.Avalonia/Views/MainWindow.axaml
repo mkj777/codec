@@ -20,7 +20,7 @@
   <Window.Resources>
     <converters:BooleanNegationConverter x:Key="NotConverter" />
     <converters:BooleanToDoubleConverter x:Key="SidebarWidthConverter"
-                                         Expanded="264"
+                                         Expanded="240"
                                          Collapsed="0" />
   </Window.Resources>
 
@@ -37,17 +37,17 @@
             BorderThickness="0,0,1,0"
             ClipToBounds="True"
             PointerPressed="Sidebar_PointerPressed">
-      <Grid Margin="0,22,0,0"
+      <Grid Margin="0,16,0,0"
             RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
         <Grid ColumnDefinitions="*,Auto"
-              Margin="22,0,22,18">
+              Margin="16,0,16,14">
           <TextBlock Classes="wordmark"
                      VerticalAlignment="Center"
                      Text="Codec" />
           <Button Grid.Column="1"
                   Classes="icon-quiet"
-                  Width="28"
-                  Height="28"
+                  Width="26"
+                  Height="26"
                   Opacity="0.6"
                   Foreground="{DynamicResource CodecTextMutedBrush}"
                   Command="{Binding ToggleSidebarCommand}"
@@ -58,16 +58,16 @@
         </Grid>
 
         <Border Grid.Row="1"
-                Margin="22,0,22,8"
-                Padding="0,0,0,10"
+                Margin="16,0,16,6"
+                Padding="0,0,0,8"
                 IsVisible="{Binding HasGames}"
                 BorderBrush="{DynamicResource CodecLine2Brush}"
                 BorderThickness="0,0,0,1">
-          <Grid ColumnDefinitions="14,10,*">
+          <Grid ColumnDefinitions="13,9,*">
             <LucideIcon VerticalAlignment="Center"
                         Foreground="{DynamicResource CodecTextMutedBrush}"
                         Kind="Search"
-                        Size="14"
+                        Size="13"
                         StrokeWidth="1.75" />
             <TextBox x:Name="SearchBox"
                      Grid.Column="2"
@@ -93,21 +93,15 @@
                                TextTrimming="CharacterEllipsis"
                                MaxLines="1" />
                   </Button>
-                  <Border Width="2"
-                          Margin="3,9"
-                          HorizontalAlignment="Left"
-                          CornerRadius="2"
-                          IsHitTestVisible="False"
-                          Background="{DynamicResource CodecPrimaryBrush}"
-                          IsVisible="{Binding $parent[ListBoxItem].IsSelected}" />
+                  <Border Classes="rail-marker" Margin="2,7" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
 
-          <TextBlock Margin="24,10"
+          <TextBlock Margin="18,8"
                      VerticalAlignment="Top"
-                     FontSize="13"
+                     FontSize="12.5"
                      Opacity="0.7"
                      Foreground="{DynamicResource CodecTextMutedBrush}"
                      Text="{Binding SidebarEmptyMessage}"
@@ -116,22 +110,22 @@
 
         <!-- The mascot rests here only while there is a collection to rest beside. -->
         <Image Grid.Row="3"
-               Margin="18,2,18,6"
-               Height="116"
+               Margin="13,2,13,5"
+               Height="84"
                Stretch="Uniform"
                IsVisible="{Binding HasGames}"
                Source="/Assets/shrimpSleep.png" />
 
         <Grid Grid.Row="4"
               ColumnDefinitions="*,*"
-              ColumnSpacing="8"
-              Margin="18,10,18,12">
+              ColumnSpacing="7"
+              Margin="13,8,13,10">
           <Button Grid.Column="0"
                   Classes="ghost ghost-primary"
                   Command="{Binding AddGameFromPickerCommand}">
             <StackPanel Orientation="Horizontal" Spacing="7">
-              <LucideIcon Kind="Plus" Size="13" StrokeWidth="1.75" />
-              <TextBlock Text="Add" FontSize="13" FontWeight="600" />
+              <LucideIcon Kind="Plus" Size="12" StrokeWidth="1.75" />
+              <TextBlock Text="Add" FontSize="12.5" FontWeight="600" />
             </StackPanel>
           </Button>
           <Button Grid.Column="1"
@@ -139,8 +133,8 @@
                   Command="{Binding ScanGamesCommand}"
                   IsEnabled="{Binding CanStartScan}">
             <StackPanel Orientation="Horizontal" Spacing="7">
-              <LucideIcon Kind="Search" Size="13" StrokeWidth="1.75" />
-              <TextBlock Text="Scan" FontSize="13" FontWeight="600" />
+              <LucideIcon Kind="Search" Size="12" StrokeWidth="1.75" />
+              <TextBlock Text="Scan" FontSize="12.5" FontWeight="600" />
             </StackPanel>
           </Button>
         </Grid>
@@ -152,8 +146,8 @@
                   HorizontalAlignment="Stretch"
                   Click="SettingsButton_Click">
             <StackPanel Orientation="Horizontal" Spacing="9">
-              <LucideIcon Kind="Settings" Size="15" StrokeWidth="1.75" />
-              <TextBlock Text="Settings" FontSize="13" />
+              <LucideIcon Kind="Settings" Size="14" StrokeWidth="1.75" />
+              <TextBlock Text="Settings" FontSize="12.5" />
             </StackPanel>
           </Button>
         </Border>
@@ -246,7 +240,7 @@
           ZIndex="60"
           IsVisible="{Binding IsCloseChoiceVisible}">
       <Border Background="{DynamicResource CodecScrimBrush}" PointerPressed="CloseChoiceScrim_PointerPressed" />
-      <Border Classes="overlay" Width="440" Padding="28" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Border Classes="overlay" Width="360" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="16">
           <TextBlock Classes="heading" Text="Keep Codec open?" />
           <TextBlock Classes="body" Foreground="{DynamicResource CodecTextMutedBrush}" Text="Codec can stay in the tray when you close the window." TextWrapping="Wrap" />

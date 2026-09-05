@@ -69,7 +69,7 @@
           <Button Classes="back"
                   HorizontalAlignment="Left"
                   VerticalAlignment="Top"
-                  Margin="26,22"
+                  Margin="20,16"
                   ZIndex="4"
                   Command="{Binding BackCommand}"
                   AutomationProperties.Name="Back to library"
@@ -78,15 +78,15 @@
           </Button>
 
           <Grid VerticalAlignment="Bottom"
-                Margin="68,0,68,56"
+                Margin="48,0,48,40"
                 ZIndex="3"
                 ColumnDefinitions="*,Auto"
-                ColumnSpacing="80">
-            <StackPanel MaxWidth="720"
+                ColumnSpacing="56">
+            <StackPanel MaxWidth="520"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Bottom"
-                        Spacing="22">
-              <StackPanel Orientation="Horizontal" Spacing="11">
+                        Spacing="16">
+              <StackPanel Orientation="Horizontal" Spacing="9">
                 <TextBlock Classes="factline shadow-meta"
                            Text="{Binding SelectedGame.ImportedFromDisplay}" />
                 <Ellipse Classes="fact-dot" IsVisible="{Binding SelectedGame.HasIgdbGenres}" />
@@ -105,7 +105,7 @@
                          TextWrapping="Wrap" />
 
               <TextBlock Classes="blurb shadow-body"
-                         MaxWidth="620"
+                         MaxWidth="440"
                          HorizontalAlignment="Left"
                          TextWrapping="Wrap"
                          MaxLines="3"
@@ -122,7 +122,7 @@
                     <TextBlock Text="{Binding PlayButtonText}"
                                FontFamily="{StaticResource CodecDisplayFontFamily}"
                                FontWeight="700"
-                               FontSize="15.5" />
+                               FontSize="14.5" />
                   </StackPanel>
                 </Button>
                 <Button Classes="icon-ghost"
@@ -143,7 +143,7 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1"
-                        Width="320"
+                        Width="240"
                         Margin="0,0,0,4"
                         VerticalAlignment="Bottom">
               <Border Classes="meta-row on-art">
@@ -177,6 +177,7 @@
               </Border>
 
               <Button Classes="disclosure"
+                      Classes.open="{Binding IsDetailMoreOpen}"
                       Foreground="{DynamicResource CodecTextMutedBrush}"
                       Command="{Binding ToggleDetailMoreCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="7">
@@ -236,7 +237,7 @@
           The quiet section. Cinema carries four facts; everything else Codec
           knows continues here in the same row language, on the canvas.
         -->
-        <StackPanel Margin="68,48,68,72" Spacing="40">
+        <StackPanel Margin="48,34,48,52" Spacing="28">
           <StackPanel Spacing="0">
             <TextBlock Classes="meta-label" Margin="0,0,0,4" Text="Summary" />
             <Border Classes="meta-row">
@@ -333,7 +334,7 @@
             </ItemsControl>
           </StackPanel>
 
-          <Grid ColumnDefinitions="*,300" ColumnSpacing="60">
+          <Grid ColumnDefinitions="*,240" ColumnSpacing="44">
             <StackPanel Spacing="10" VerticalAlignment="Top">
               <TextBlock Classes="meta-label" Text="Platforms" />
               <ItemsControl ItemsSource="{Binding SelectedGame.PlatformLogoUris}">
@@ -368,7 +369,7 @@
             HorizontalAlignment="Right"
             ZIndex="20"
             IsVisible="{Binding IsGameSettingsOpen}">
-      <Grid Margin="26" RowDefinitions="Auto,*,Auto">
+      <Grid Margin="20" RowDefinitions="Auto,*,Auto">
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
           <TextBlock Classes="heading" Text="Game Settings" />
           <Button Grid.Column="1" Classes="icon-quiet" Command="{Binding CloseGameSettingsCommand}" ToolTip.Tip="Close game settings"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>

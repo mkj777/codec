@@ -1,20 +1,24 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
-    One button language across the whole application: a ghost outline for
-    everything quiet, an orange pill for the primary next action, and a circle
-    for icon-only actions. Fill is reserved for the pill.
+    One button language across the application: a ghost outline for everything
+    quiet, an orange pill for the primary next action, a circle for icon-only
+    actions. Fill is reserved for the pill.
+
+    Every interactive control defines rest, hover, press, focus and disabled.
+    Keyboard focus uses :focus-visible so a pointer press never draws a ring.
+    Metrics are scaled from the 1800px reference to Codec's 1280px window.
   -->
   <Style Selector="Button">
-    <Setter Property="MinHeight" Value="34" />
-    <Setter Property="Padding" Value="10,9" />
-    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="9,7" />
+    <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
-    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontSize" Value="12.5" />
     <Setter Property="FontWeight" Value="600" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -32,18 +36,22 @@
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
   <Style Selector="Button:pressed">
-    <Setter Property="Opacity" Value="0.82" />
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
+  </Style>
+  <Style Selector="Button:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
   </Style>
   <Style Selector="Button:disabled">
     <Setter Property="Foreground" Value="{DynamicResource CodecTextDisabledBrush}" />
-    <Setter Property="Opacity" Value="0.58" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
+    <Setter Property="Opacity" Value="0.6" />
   </Style>
 
-  <!-- ghost: the default quiet action, used by the rail and the library chips -->
+  <!-- ghost: the default quiet action, shared by the rail and the library chips -->
   <Style Selector="Button.ghost">
-    <Setter Property="Height" Value="34" />
+    <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="10,9" />
+    <Setter Property="Padding" Value="9,7" />
   </Style>
 
   <!-- Add. Orange speaks through colour here, not through fill. -->
@@ -56,56 +64,90 @@
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashHoverBrush}" />
   </Style>
+  <Style Selector="Button.ghost-primary:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashBrush}" />
+  </Style>
 
   <!-- play: the one filled action -->
   <Style Selector="Button.play">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="24,11" />
+    <Setter Property="Padding" Value="20,9" />
     <Setter Property="CornerRadius" Value="999" />
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
     <Setter Property="Foreground" Value="#221E19" />
     <Setter Property="FontFamily" Value="{StaticResource CodecDisplayFontFamily}" />
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontSize" Value="13.5" />
     <Setter Property="FontWeight" Value="700" />
-    <Setter Property="LetterSpacing" Value="0.56" />
-    <!-- Button has no BoxShadow property, so the orange bloom comes from an effect. -->
+    <Setter Property="LetterSpacing" Value="0.54" />
+    <Setter Property="RenderTransform" Value="none" />
+    <!-- Button has no BoxShadow property, so the orange bloom is an effect. -->
     <Setter Property="Effect">
-      <DropShadowEffect BlurRadius="28" OffsetX="0" OffsetY="10" Color="#E76C2B" Opacity="0.75" />
+      <DropShadowEffect BlurRadius="24" OffsetX="0" OffsetY="8" Color="#E76C2B" Opacity="0.7" />
+    </Setter>
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18">
+          <TransformOperationsTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+      </Transitions>
     </Setter>
   </Style>
   <Style Selector="Button.play.play-lg">
-    <Setter Property="Padding" Value="34,15" />
-    <Setter Property="FontSize" Value="15.5" />
-    <Setter Property="LetterSpacing" Value="0.62" />
+    <Setter Property="Padding" Value="26,12" />
+    <Setter Property="FontSize" Value="14.5" />
+    <Setter Property="LetterSpacing" Value="0.58" />
   </Style>
   <Style Selector="Button.play:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryHoverBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryHoverBrush}" />
     <Setter Property="Foreground" Value="#221E19" />
     <Setter Property="RenderTransform" Value="translateY(-1px)" />
+    <Setter Property="Effect">
+      <DropShadowEffect BlurRadius="18" OffsetX="0" OffsetY="6" Color="#E76C2B" Opacity="0.85" />
+    </Setter>
+  </Style>
+  <Style Selector="Button.play:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryPressedBrush}" />
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Effect" Value="{x:Null}" />
+  </Style>
+  <Style Selector="Button.play:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecTextBrush}" />
   </Style>
   <Style Selector="Button.play:disabled">
     <Setter Property="Opacity" Value="0.4" />
     <Setter Property="Effect" Value="{x:Null}" />
+    <Setter Property="RenderTransform" Value="none" />
   </Style>
 
-  <!-- icon-ghost: 44px circle beside the play pill -->
+  <!-- icon-ghost: circle beside the play pill -->
   <Style Selector="Button.icon-ghost">
-    <Setter Property="Width" Value="44" />
-    <Setter Property="Height" Value="44" />
+    <Setter Property="Width" Value="36" />
+    <Setter Property="Height" Value="36" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="CornerRadius" Value="18" />
+  </Style>
+  <Style Selector="Button.icon-ghost:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Button.icon-ghost:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
   </Style>
 
-  <!-- back: 38px circle sitting on artwork -->
+  <!-- back: circle sitting on artwork -->
   <Style Selector="Button.back">
-    <Setter Property="Width" Value="38" />
-    <Setter Property="Height" Value="38" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="19" />
+    <Setter Property="CornerRadius" Value="16" />
     <Setter Property="Background" Value="#4D000000" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecOnArtLineBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
@@ -114,11 +156,14 @@
     <Setter Property="Background" Value="#66000000" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
   </Style>
+  <Style Selector="Button.back:pressed">
+    <Setter Property="Background" Value="#8C000000" />
+  </Style>
 
-  <!-- icon-quiet: borderless square, used for close and collapse actions -->
+  <!-- icon-quiet: borderless square for close and collapse -->
   <Style Selector="Button.icon-quiet">
-    <Setter Property="Width" Value="34" />
-    <Setter Property="Height" Value="34" />
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="CornerRadius" Value="8" />
@@ -127,20 +172,37 @@
   </Style>
   <Style Selector="Button.icon-quiet:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Button.icon-quiet:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
+  </Style>
+  <Style Selector="Button.icon-quiet:focus-visible">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
   </Style>
 
   <!-- text-btn: a label that happens to be clickable -->
   <Style Selector="Button.text-btn">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="2,2" />
+    <Setter Property="CornerRadius" Value="4" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontSize" Value="13.5" />
     <Setter Property="FontWeight" Value="400" />
   </Style>
   <Style Selector="Button.text-btn:pointerover">
     <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Button.text-btn:pressed">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="Button.text-btn:focus-visible">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
   </Style>
 
   <!-- window caption -->
@@ -158,46 +220,80 @@
     <Setter Property="Background" Value="{DynamicResource CodecCaptionHoverBrush}" />
     <Setter Property="Opacity" Value="1" />
   </Style>
+  <Style Selector="Button.chrome:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
+  </Style>
   <Style Selector="Button.chrome.close:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecBackgroundBrush}" />
   </Style>
+  <Style Selector="Button.chrome.close:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryPressedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecBackgroundBrush}" />
+  </Style>
 
-  <!-- library view tabs -->
+  <!--
+    Library view tabs. The underline grows from the centre rather than
+    appearing, so switching views reads as movement instead of a blink.
+  -->
   <Style Selector="Button.lib-tab">
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0,0,0,4" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0,0,0,1" />
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontSize" Value="13.5" />
     <Setter Property="FontWeight" Value="400" />
   </Style>
   <Style Selector="Button.lib-tab:pointerover">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Button.lib-tab:pressed">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.75" />
   </Style>
   <Style Selector="Button.lib-tab.on">
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
   </Style>
-  <Style Selector="Button.lib-tab.on:pointerover">
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+  <Style Selector="Button.lib-tab /template/ ContentPresenter">
+    <Setter Property="RenderTransformOrigin" Value="50%,100%" />
+  </Style>
+  <Style Selector="Border.tab-underline">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scaleX(0)" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15">
+          <TransformOperationsTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.tab-underline.on">
+    <Setter Property="RenderTransform" Value="scaleX(1)" />
+    <Setter Property="Opacity" Value="1" />
   </Style>
 
   <!-- source chips share the ghost shape -->
   <Style Selector="ToggleButton.chip">
-    <Setter Property="Height" Value="34" />
+    <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="10,9" />
-    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="9,7" />
+    <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
-    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontSize" Value="12.5" />
     <Setter Property="FontWeight" Value="600" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -211,31 +307,46 @@
   </Style>
   <Style Selector="ToggleButton.chip:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
   </Style>
   <Style Selector="ToggleButton.chip:checked">
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
+  <Style Selector="ToggleButton.chip:checked:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.chip:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
+  </Style>
 
   <!-- sort dropdown: a chip that opens a themed popup -->
   <Style Selector="ToggleButton.dropdown">
-    <Setter Property="Height" Value="34" />
+    <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="MinWidth" Value="150" />
-    <Setter Property="Padding" Value="12,9" />
-    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="MinWidth" Value="132" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
-    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontSize" Value="12.5" />
     <Setter Property="FontWeight" Value="500" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="ToggleButton.dropdown:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
@@ -243,13 +354,28 @@
   <Style Selector="ToggleButton.dropdown:checked">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineBrush}" />
   </Style>
+  <Style Selector="ToggleButton.dropdown:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.dropdown LucideIcon">
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.dropdown:pointerover LucideIcon">
+    <Setter Property="RenderTransform" Value="translateY(1px)" />
+  </Style>
+
   <Style Selector="Border.dropdown-popup">
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="10" />
-    <Setter Property="Padding" Value="6" />
-    <Setter Property="BoxShadow" Value="0 20 50 0 #80000000" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="5" />
+    <Setter Property="BoxShadow" Value="0 14 36 0 #80000000" />
   </Style>
   <Style Selector="ListBox.dropdown-list">
     <Setter Property="Background" Value="Transparent" />
@@ -257,13 +383,19 @@
     <Setter Property="Padding" Value="0" />
   </Style>
   <Style Selector="ListBox.dropdown-list ListBoxItem">
-    <Setter Property="Padding" Value="9,7" />
+    <Setter Property="Padding" Value="8,6" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
-    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontSize" Value="12.5" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.14" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="ListBox.dropdown-list ListBoxItem:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
@@ -276,14 +408,19 @@
 
   <!-- text entry -->
   <Style Selector="TextBox">
-    <Setter Property="MinHeight" Value="36" />
-    <Setter Property="Padding" Value="12,7" />
-    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
-    <Setter Property="SelectionBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource CodecPrimaryWashBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+  <Style Selector="TextBox:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
   </Style>
   <Style Selector="TextBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
@@ -294,11 +431,14 @@
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontSize" Value="13.5" />
     <Setter Property="FontWeight" Value="400" />
     <Setter Property="WatermarkForeground" Value="{DynamicResource CodecTextMutedBrush}" />
   </Style>
   <Style Selector="TextBox.rail-search:focus">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.rail-search:pointerover">
     <Setter Property="BorderThickness" Value="0" />
   </Style>
 
@@ -307,13 +447,13 @@
   </Style>
 
   <Style Selector="ToolTip">
-    <Setter Property="Padding" Value="9,6" />
-    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,5" />
+    <Setter Property="CornerRadius" Value="7" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
-    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontSize" Value="12" />
   </Style>
 </Styles>

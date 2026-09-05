@@ -35,17 +35,77 @@
         </ControlTemplate>
       </Setter>
     </ControlTheme>
+
+    <!--
+      Overlay scrollbar. WinUI handed this shape over for free; SimpleTheme
+      ships a rail with arrow buttons that reserves layout width.
+
+      Only the ScrollBar is re-templated. SimpleTheme's own ScrollViewer keeps
+      the sizing logic that honours HorizontalScrollBarVisibility, and
+      AllowAutoHide is what lifts the bar off the layout.
+    -->
+    <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Root" Background="Transparent">
+            <Track Name="PART_Track"
+                   Minimum="{TemplateBinding Minimum}"
+                   Maximum="{TemplateBinding Maximum}"
+                   Value="{TemplateBinding Value, Mode=TwoWay}"
+                   ViewportSize="{TemplateBinding ViewportSize}"
+                   Orientation="{TemplateBinding Orientation}">
+              <Track.DecreaseButton>
+                <RepeatButton Name="PART_PageUpButton" Classes="scroll-page" Focusable="False" />
+              </Track.DecreaseButton>
+              <Track.IncreaseButton>
+                <RepeatButton Name="PART_PageDownButton" Classes="scroll-page" Focusable="False" />
+              </Track.IncreaseButton>
+              <Thumb Name="thumb" />
+            </Track>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type Thumb}" TargetType="Thumb">
+      <Setter Property="Background" Value="{DynamicResource CodecScrollThumbBrush}" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
   </Styles.Resources>
 
-  <!--
-    Scrollbars. The reference uses an 8px rail with a quiet rounded thumb and no
-    arrow buttons. SimpleTheme supplies arrows and a heavy track, so the line
-    buttons are collapsed and the thumb is restyled in place.
-  -->
-  <Style Selector="ScrollBar">
+  <!-- the track's paging areas are invisible but still clickable -->
+  <Style Selector="RepeatButton.scroll-page">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="AllowAutoHide" Value="False" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent" />
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="ScrollViewer">
+    <Setter Property="AllowAutoHide" Value="True" />
+  </Style>
+
+  <!-- the bar reserves no width and fades in only while it matters -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="ScrollBar[Orientation=Vertical]">
     <Setter Property="Width" Value="8" />
@@ -53,33 +113,36 @@
   <Style Selector="ScrollBar[Orientation=Horizontal]">
     <Setter Property="Height" Value="8" />
   </Style>
-  <Style Selector="ScrollBar /template/ RepeatButton#PART_LineUpButton">
-    <Setter Property="IsVisible" Value="False" />
+  <Style Selector="ScrollBar:expanded">
+    <Setter Property="Opacity" Value="1" />
   </Style>
-  <Style Selector="ScrollBar /template/ RepeatButton#PART_LineDownButton">
-    <Setter Property="IsVisible" Value="False" />
+  <Style Selector="ScrollBar:pointerover">
+    <Setter Property="Opacity" Value="1" />
   </Style>
-  <Style Selector="ScrollBar /template/ RepeatButton#PART_PageUpButton">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
+  <Style Selector="ScrollBar[Orientation=Vertical]:pointerover">
+    <Setter Property="Width" Value="10" />
   </Style>
-  <Style Selector="ScrollBar /template/ RepeatButton#PART_PageDownButton">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
+  <Style Selector="ScrollBar[Orientation=Horizontal]:pointerover">
+    <Setter Property="Height" Value="10" />
   </Style>
-  <Style Selector="ScrollBar /template/ Border#TrackBackground">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
-  </Style>
+
   <Style Selector="ScrollBar /template/ Thumb">
     <Setter Property="Background" Value="{DynamicResource CodecScrollThumbBrush}" />
-    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="MinHeight" Value="32" />
-    <Setter Property="MinWidth" Value="32" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="MinWidth" Value="28" />
+    <Setter Property="Margin" Value="1" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="ScrollBar:pointerover /template/ Thumb">
     <Setter Property="Background" Value="{DynamicResource CodecScrollThumbHoverBrush}" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecScrollThumbDragBrush}" />
   </Style>
 
   <!--

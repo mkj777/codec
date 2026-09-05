@@ -4,7 +4,7 @@
   <Style Selector="ListBox.rail-list">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Padding" Value="12,12,12,10" />
+    <Setter Property="Padding" Value="9,8,9,7" />
   </Style>
   <Style Selector="ListBox.rail-list ListBoxItem">
     <Setter Property="Padding" Value="0" />
@@ -19,13 +19,13 @@
 
   <Style Selector="Button.rail-item">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="12,7" />
-    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="9,5" />
+    <Setter Property="CornerRadius" Value="6" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontSize" Value="13.5" />
     <Setter Property="FontWeight" Value="400" />
     <Setter Property="Transitions">
       <Transitions>
@@ -38,25 +38,57 @@
     <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
+  <Style Selector="Button.rail-item:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
+  </Style>
   <Style Selector="ListBoxItem:selected Button.rail-item">
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
 
+  <!-- The selection bar slides in from the left rather than blinking on. -->
+  <Style Selector="Border.rail-marker">
+    <Setter Property="Width" Value="2" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryBrush}" />
+    <Setter Property="RenderTransformOrigin" Value="0%,50%" />
+    <Setter Property="RenderTransform" Value="scaleY(0)" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.14" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14">
+          <TransformOperationsTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="ListBoxItem:selected Border.rail-marker">
+    <Setter Property="RenderTransform" Value="scaleY(1)" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
   <Style Selector="Button.rail-settings">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="22,13" />
+    <Setter Property="Padding" Value="16,10" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
-    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontSize" Value="12.5" />
     <Setter Property="FontWeight" Value="400" />
   </Style>
   <Style Selector="Button.rail-settings:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Button.rail-settings:pressed">
+    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
   </Style>
 
   <!-- covers -->
@@ -66,7 +98,12 @@
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="BorderBrush" Value="Transparent" />
-    <Setter Property="BoxShadow" Value="0 10 26 0 #5C000000" />
+    <Setter Property="BoxShadow" Value="0 8 22 0 #5C000000" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.3" />
+      </Transitions>
+    </Setter>
   </Style>
 
   <Style Selector="Button.cover-hitbox">
@@ -78,6 +115,13 @@
   </Style>
   <Style Selector="Button.cover-hitbox:pointerover">
     <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.cover-hitbox:pressed">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.cover-hitbox:focus-visible">
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
   </Style>
 
   <!-- The lift is the one place Codec allows real movement. -->
@@ -97,7 +141,11 @@
     <Setter Property="RenderTransform" Value="translateY(-7px)" />
   </Style>
   <Style Selector="Grid.cover-card:pointerover Border.cover">
-    <Setter Property="BoxShadow" Value="0 20 44 0 #80000000" />
+    <Setter Property="BoxShadow" Value="0 18 40 0 #80000000" />
+  </Style>
+  <!-- pressing settles the card most of the way back down -->
+  <Style Selector="Grid.cover-card Button.cover-hitbox:pressed">
+    <Setter Property="RenderTransform" Value="translateY(4px)" />
   </Style>
 
   <!--
@@ -124,24 +172,35 @@
   </Style>
 
   <Style Selector="Button.favorite">
-    <Setter Property="Width" Value="36" />
-    <Setter Property="Height" Value="36" />
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="CornerRadius" Value="16" />
     <Setter Property="Background" Value="#B81C1A17" />
     <Setter Property="BorderBrush" Value="#52D4A832" />
     <Setter Property="Foreground" Value="{DynamicResource CodecAccentBrush}" />
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="Button.favorite:pointerover">
     <Setter Property="Background" Value="#D91C1A17" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecAccentBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecAccentBrush}" />
   </Style>
+  <Style Selector="Button.favorite:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.94)" />
+  </Style>
 
   <Style Selector="Border.cover-tag">
     <Setter Property="Background" Value="#D91C1A17" />
-    <Setter Property="CornerRadius" Value="7" />
-    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="7,3" />
   </Style>
 </Styles>

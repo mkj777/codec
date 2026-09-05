@@ -22,6 +22,7 @@
     <Color x:Key="CodecOnArtLineColor">#29F3EDC9</Color>
     <Color x:Key="CodecSinkColor">#38000000</Color>
     <Color x:Key="CodecHoverWashColor">#09F3EDC9</Color>
+    <Color x:Key="CodecPressWashColor">#14F3EDC9</Color>
     <Color x:Key="CodecCaptionHoverColor">#0FF3EDC9</Color>
     <Color x:Key="CodecPrimaryWashColor">#1AE76C2B</Color>
     <Color x:Key="CodecPrimaryLineColor">#52E76C2B</Color>
@@ -51,14 +52,16 @@
     <SolidColorBrush x:Key="CodecOnArtLineBrush" Color="{StaticResource CodecOnArtLineColor}" />
     <SolidColorBrush x:Key="CodecSinkBrush" Color="{StaticResource CodecSinkColor}" />
     <SolidColorBrush x:Key="CodecHoverWashBrush" Color="{StaticResource CodecHoverWashColor}" />
+    <SolidColorBrush x:Key="CodecPressWashBrush" Color="{StaticResource CodecPressWashColor}" />
     <SolidColorBrush x:Key="CodecCaptionHoverBrush" Color="{StaticResource CodecCaptionHoverColor}" />
     <SolidColorBrush x:Key="CodecPrimaryWashBrush" Color="{StaticResource CodecPrimaryWashColor}" />
     <SolidColorBrush x:Key="CodecPrimaryLineBrush" Color="{StaticResource CodecPrimaryLineColor}" />
     <SolidColorBrush x:Key="CodecPrimaryLineHoverBrush" Color="{StaticResource CodecPrimaryLineHoverColor}" />
     <SolidColorBrush x:Key="CodecPrimaryWashHoverBrush" Color="{StaticResource CodecPrimaryWashHoverColor}" />
     <SolidColorBrush x:Key="CodecNoticeBrush" Color="{StaticResource CodecNoticeColor}" />
-    <SolidColorBrush x:Key="CodecScrollThumbBrush" Color="#14F3EDC9" />
-    <SolidColorBrush x:Key="CodecScrollThumbHoverBrush" Color="#26F3EDC9" />
+    <SolidColorBrush x:Key="CodecScrollThumbBrush" Color="#26F3EDC9" />
+    <SolidColorBrush x:Key="CodecScrollThumbHoverBrush" Color="#3DF3EDC9" />
+    <SolidColorBrush x:Key="CodecScrollThumbDragBrush" Color="#52F3EDC9" />
 
     <!-- Retained so existing references keep resolving; CodecLine is the real token. -->
     <SolidColorBrush x:Key="CodecBorderBrush" Color="{StaticResource CodecLineColor}" />

@@ -10,9 +10,9 @@
   </UserControl.Resources>
 
   <!-- One surface, rows inside it. No cards within cards. -->
-  <Border Classes="overlay" Width="560" MaxHeight="680" Padding="28">
+  <Border Classes="overlay" Width="440" MaxHeight="560" Padding="22">
     <Grid RowDefinitions="Auto,*,Auto">
-      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
+      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
         <StackPanel Spacing="2">
           <TextBlock Classes="title" Text="Settings" />
           <TextBlock Classes="caption" Text="{Binding AppVersion}" />
@@ -21,7 +21,7 @@
       </Grid>
 
       <ScrollViewer Grid.Row="1">
-        <StackPanel Spacing="30">
+        <StackPanel Spacing="22">
           <StackPanel Spacing="0">
             <Border Classes="meta-row">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">

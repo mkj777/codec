@@ -29,6 +29,16 @@ public sealed class CodecImage : Control
     public static readonly StyledProperty<double> VerticalBiasProperty =
         AvaloniaProperty.Register<CodecImage, double>(nameof(VerticalBias), 0.5);
 
+    /// <summary>
+    /// Landscape artwork shown whole rather than cropped. Steam falls back to
+    /// capsule_616x353 and then header.jpg at 460x215 when a title has no
+    /// 600x900 capsule, and cropping those to a 2:3 card cuts the logo out.
+    /// The detection lives here because this control already holds the decoded
+    /// bitmap and therefore its real dimensions.
+    /// </summary>
+    public static readonly StyledProperty<bool> LetterboxWideArtProperty =
+        AvaloniaProperty.Register<CodecImage, bool>(nameof(LetterboxWideArt));
+
     public string? Source
     {
         get => GetValue(SourceProperty);
@@ -53,9 +63,15 @@ public sealed class CodecImage : Control
         set => SetValue(VerticalBiasProperty, value);
     }
 
+    public bool LetterboxWideArt
+    {
+        get => GetValue(LetterboxWideArtProperty);
+        set => SetValue(LetterboxWideArtProperty, value);
+    }
+
     static CodecImage()
     {
-        AffectsRender<CodecImage>(StretchProperty, PlaceholderProperty, VerticalBiasProperty);
+        AffectsRender<CodecImage>(StretchProperty, PlaceholderProperty, VerticalBiasProperty, LetterboxWideArtProperty);
         SourceProperty.Changed.AddClassHandler<CodecImage>((control, _) => control.BeginLoad());
     }
 
@@ -67,7 +83,10 @@ public sealed class CodecImage : Control
             return;
 
         Rect source = new(image.Size);
-        Rect destination = CalculateDestination(image.Size, Bounds.Size, Stretch, VerticalBias);
+        Stretch stretch = LetterboxWideArt && image.Size.Width > image.Size.Height
+            ? Stretch.Uniform
+            : Stretch;
+        Rect destination = CalculateDestination(image.Size, Bounds.Size, stretch, VerticalBias);
         context.DrawImage(image, source, destination);
     }
 

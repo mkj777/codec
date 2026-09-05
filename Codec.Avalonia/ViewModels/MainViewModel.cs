@@ -738,6 +738,7 @@ namespace Codec.ViewModels
             OnPropertyChanged(nameof(NotInstalledLibraryGameCount));
             OnPropertyChanged(nameof(HasNotInstalledLibraryGames));
             OnPropertyChanged(nameof(LibraryTotalSizeText));
+            OnPropertyChanged(nameof(LibrarySummaryText));
             _recentGames = null;
             NotifySidebarEmptyChanged();
         }

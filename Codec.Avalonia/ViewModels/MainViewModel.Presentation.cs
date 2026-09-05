@@ -88,6 +88,12 @@ public partial class MainViewModel
     /// </summary>
     public bool IsOnboardingScanActive { get; set; }
 
+    /// <summary>
+    /// The reference's count is a single line. Two lines let a taller block push
+    /// the view tabs down, so the size joins the count rather than stacking.
+    /// </summary>
+    public string LibrarySummaryText => $"{LibraryGameCount} {LibraryGameLabel}, {LibraryTotalSizeText}";
+
     public bool IsSidebarEmpty => SidebarFilteredGames.Count == 0;
 
     public string SidebarEmptyMessage => HasGames ? "Nothing found" : "No games yet";

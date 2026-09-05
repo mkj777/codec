@@ -19,53 +19,53 @@
       </Border.Background>
     </Border>
 
-    <TextBlock Margin="56,42"
+    <TextBlock Margin="40,30"
                Classes="wordmark"
-               FontSize="19"
-               LetterSpacing="-0.29"
+               FontSize="16"
+               LetterSpacing="-0.24"
                Opacity="0.85"
                VerticalAlignment="Top"
                HorizontalAlignment="Left"
                Text="Codec" />
 
-    <Grid x:Name="IntroStep" Margin="110,0" ColumnDefinitions="*,400" ColumnSpacing="70">
-      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="26">
+    <Grid x:Name="IntroStep" Margin="78,0" ColumnDefinitions="*,288" ColumnSpacing="50">
+      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="19">
         <TextBlock Classes="ob-title" Text="A quiet home&#x0a;for your games." />
-        <TextBlock MaxWidth="460"
+        <TextBlock MaxWidth="330"
                    HorizontalAlignment="Left"
-                   FontSize="17"
-                   LineHeight="28"
+                   FontSize="15"
+                   LineHeight="25"
                    Foreground="{DynamicResource CodecTextMutedBrush}"
                    Text="Codec gathers everything you own into one shelf, then gets out of the way."
                    TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
           <Button Classes="play play-lg" Click="Begin_Click">
-            <TextBlock Text="Begin" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+            <TextBlock Text="Begin" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="14.5" />
           </Button>
           <Button Classes="text-btn" Content="Skip" Click="Skip_Click" />
         </StackPanel>
       </StackPanel>
       <Image Grid.Column="1"
-             Width="400"
-             Height="300"
+             Width="288"
+             Height="216"
              Stretch="Uniform"
              Opacity="0.95"
              Source="/Assets/shrimpSleep.png" />
     </Grid>
 
-    <Grid x:Name="SetupStep" Margin="110,0" IsVisible="False" ColumnDefinitions="*,360" ColumnSpacing="70">
-      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="26">
+    <Grid x:Name="SetupStep" Margin="78,0" IsVisible="False" ColumnDefinitions="*,260" ColumnSpacing="50">
+      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="19">
         <TextBlock Classes="ob-subtitle" Text="Where should we look?" />
-        <TextBlock MaxWidth="460"
+        <TextBlock MaxWidth="330"
                    HorizontalAlignment="Left"
-                   FontSize="17"
-                   LineHeight="28"
+                   FontSize="15"
+                   LineHeight="25"
                    Foreground="{DynamicResource CodecTextMutedBrush}"
                    Text="Find games on this PC, or connect Steam. You can change this later."
                    TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
           <Button Classes="play play-lg" Click="FindGames_Click">
-            <TextBlock Text="Find games" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+            <TextBlock Text="Find games" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="14.5" />
           </Button>
           <Button Classes="ghost" Content="Connect Steam" Command="{Binding ConnectSteamCommand}" />
           <Button Classes="text-btn" Content="Continue" Click="Continue_Click" />
@@ -80,7 +80,7 @@
           <Button Classes="text-btn" HorizontalAlignment="Center" Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
         </StackPanel>
       </StackPanel>
-      <Image Grid.Column="1" Width="320" Stretch="Uniform" Source="/Assets/shrimpStand.png" />
+      <Image Grid.Column="1" Width="230" Stretch="Uniform" Source="/Assets/shrimpStand.png" />
     </Grid>
 
     <!-- the first-run scan: a sweeping hairline that goes solid when the shelf is ready -->
@@ -88,10 +88,10 @@
                 Classes="rise"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Spacing="24"
+                Spacing="18"
                 IsVisible="False">
       <TextBlock Classes="screen-title" HorizontalAlignment="Center" Text="{Binding ScanScreenTitle}" />
-      <controls:Hairline Width="260"
+      <controls:Hairline Width="190"
                          HorizontalAlignment="Center"
                          IsIndeterminate="{Binding IsScanScreenBusy}"
                          IsComplete="{Binding IsScanScreenComplete}" />
@@ -103,13 +103,13 @@
               HorizontalAlignment="Center"
               IsVisible="{Binding IsScanScreenComplete}"
               Click="OpenLibrary_Click">
-        <TextBlock Text="Open library" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="15.5" />
+        <TextBlock Text="Open library" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="14.5" />
       </Button>
     </StackPanel>
 
     <StackPanel HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
-                Margin="110,0,0,56"
+                Margin="78,0,0,40"
                 Orientation="Horizontal"
                 Spacing="7">
       <Border x:Name="Progress0" Width="18" Height="5" CornerRadius="3" Background="{DynamicResource CodecPrimaryBrush}" />

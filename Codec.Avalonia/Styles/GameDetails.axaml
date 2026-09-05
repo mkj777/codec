@@ -2,22 +2,22 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
     Cinema keeps the artwork sharp, so legibility is carried by shadows rather
-    than by blurring the art away. Avalonia has no text-shadow, so these are
+    than by blurring the art away. Avalonia has no text shadow, so these are
     drop shadow effects on the text itself.
   -->
   <Style Selector="TextBlock.shadow-title">
     <Setter Property="Effect">
-      <DropShadowEffect BlurRadius="44" OffsetX="0" OffsetY="10" Color="#000000" Opacity="0.62" />
+      <DropShadowEffect BlurRadius="34" OffsetX="0" OffsetY="8" Color="#000000" Opacity="0.62" />
     </Setter>
   </Style>
   <Style Selector="TextBlock.shadow-body">
     <Setter Property="Effect">
-      <DropShadowEffect BlurRadius="16" OffsetX="0" OffsetY="2" Color="#000000" Opacity="0.6" />
+      <DropShadowEffect BlurRadius="13" OffsetX="0" OffsetY="2" Color="#000000" Opacity="0.6" />
     </Setter>
   </Style>
   <Style Selector="TextBlock.shadow-meta">
     <Setter Property="Effect">
-      <DropShadowEffect BlurRadius="12" OffsetX="0" OffsetY="1" Color="#000000" Opacity="0.75" />
+      <DropShadowEffect BlurRadius="10" OffsetX="0" OffsetY="1" Color="#000000" Opacity="0.75" />
     </Setter>
   </Style>
 
@@ -33,30 +33,45 @@
   <!-- disclosure -->
   <Style Selector="Button.disclosure">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="0,9" />
+    <Setter Property="Padding" Value="0,7" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
-    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="FontWeight" Value="400" />
   </Style>
   <Style Selector="Button.disclosure:pointerover">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
   </Style>
+  <Style Selector="Button.disclosure:pressed">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.75" />
+  </Style>
+  <Style Selector="Button.disclosure LucideIcon">
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.disclosure.open LucideIcon">
+    <Setter Property="RenderTransform" Value="rotate(180deg)" />
+  </Style>
 
   <!-- external links, as rows rather than buttons -->
   <Style Selector="Button.link-row">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="0,10" />
+    <Setter Property="Padding" Value="0,8" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
-    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="400" />
   </Style>
   <Style Selector="Button.link-row:pointerover">
@@ -64,29 +79,67 @@
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
   </Style>
+  <Style Selector="Button.link-row:pressed">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryPressedBrush}" />
+  </Style>
   <Style Selector="Button.link-row.on-art">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecOnArtLineBrush}" />
   </Style>
   <Style Selector="Button.link-row.on-art:pointerover">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecOnArtLineBrush}" />
   </Style>
+  <!-- the arrow leans toward where the link goes -->
+  <Style Selector="Button.link-row LucideIcon">
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15">
+          <TransformOperationsTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.link-row:pointerover LucideIcon">
+    <Setter Property="RenderTransform" Value="translateX(2px)" />
+  </Style>
 
   <Style Selector="Button.media-thumb">
-    <Setter Property="Width" Value="96" />
-    <Setter Property="Height" Value="58" />
+    <Setter Property="Width" Value="80" />
+    <Setter Property="Height" Value="48" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="CornerRadius" Value="7" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15">
+          <TransformOperationsTransition.Easing>
+            <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
+          </TransformOperationsTransition.Easing>
+        </TransformOperationsTransition>
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.media-thumb:pointerover">
+    <Setter Property="RenderTransform" Value="scale(1.04)" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
+  </Style>
+  <Style Selector="Button.media-thumb:pressed">
+    <Setter Property="RenderTransform" Value="scale(1.0)" />
   </Style>
 
   <Style Selector="Border.settings-drawer">
-    <Setter Property="Width" Value="390" />
+    <Setter Property="Width" Value="330" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1,0,0,0" />
-    <Setter Property="BoxShadow" Value="-30 0 80 0 #66000000" />
+    <Setter Property="BoxShadow" Value="-24 0 60 0 #66000000" />
   </Style>
 </Styles>
