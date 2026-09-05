@@ -172,7 +172,7 @@
       <StackPanel HorizontalAlignment="Center"
                   VerticalAlignment="Center"
                   Spacing="24"
-                  IsVisible="{Binding IsEmptyLibrary}">
+                  IsVisible="{Binding IsEmptyLibraryVisible}">
         <Image Width="250"
                Height="180"
                Stretch="Uniform"

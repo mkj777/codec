@@ -387,7 +387,7 @@ namespace Codec.ViewModels
             IsScanProgressVisible = false;
             IsLoadingIndeterminate = isIndeterminate;
             LoadingProgress = 0;
-            SetLoadingState(true, message, string.Empty);
+            SetLoadingCopy(message, string.Empty);
         }
 
         private void PrepareCoverProgress(int totalGames, string? labelPrefix = null, string? emptyMessage = null)
@@ -429,7 +429,6 @@ namespace Codec.ViewModels
         private void HideScanProgress()
         {
             IsScanProgressVisible = false;
-            SetLoadingState(false);
         }
 
     }

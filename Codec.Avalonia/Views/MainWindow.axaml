@@ -223,6 +223,7 @@
     <overlays:NoticePill Grid.RowSpan="2"
                          Grid.ColumnSpan="2"
                          ZIndex="70"
+                         IsHitTestVisible="{Binding !IsAnyModalOpen}"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Bottom"
                          Margin="0,0,0,26" />

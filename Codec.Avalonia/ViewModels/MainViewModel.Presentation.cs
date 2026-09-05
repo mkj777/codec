@@ -63,6 +63,31 @@ public partial class MainViewModel
     // Sidebar rest state
     // -----------------------------------------------------------------------------
 
+    /// <summary>
+    /// True while any modal owns the screen. The notice pill stays visible over
+    /// them so background work still reports itself, but stops taking clicks:
+    /// its Restart action must not answer a question the user has not.
+    /// </summary>
+    public bool IsAnyModalOpen =>
+        IsSettingsVisible ||
+        IsOnboardingVisible ||
+        IsCloseChoiceVisible ||
+        IsMediaOverlayOpen ||
+        IsFranchiseOverlayOpen ||
+        IsGameSettingsOpen;
+
+    /// <summary>
+    /// The empty state and the cold-start loading panel are both centred in the
+    /// same cell, and both conditions hold at launch. Loading wins.
+    /// </summary>
+    public bool IsEmptyLibraryVisible => IsEmptyLibrary && !IsInitialLoading;
+
+    /// <summary>
+    /// Set while onboarding drives the first scan, so <c>ScanGamesAsync</c> leaves
+    /// the onboarding surface up instead of hiding the scan step it is showing.
+    /// </summary>
+    public bool IsOnboardingScanActive { get; set; }
+
     public bool IsSidebarEmpty => SidebarFilteredGames.Count == 0;
 
     public string SidebarEmptyMessage => HasGames ? "Nothing found" : "No games yet";
@@ -179,7 +204,7 @@ public partial class MainViewModel
             if (IsUpdateDownloadingVisible)
                 return UpdateDownloadProgress;
             if (IsSteamSyncProgressVisible && SteamSyncProgressMaximum > 0)
-                return SteamSyncProgressValue / SteamSyncProgressMaximum * 100d;
+                return (double)SteamSyncProgressValue / SteamSyncProgressMaximum * 100d;
             if (IsScanProgressVisible && ScanProgressMaximum > ScanProgressMinimum)
                 return (ScanProgressValue - ScanProgressMinimum)
                     / (ScanProgressMaximum - ScanProgressMinimum) * 100d;
@@ -243,12 +268,28 @@ public partial class MainViewModel
         nameof(IsAdminWarningVisible),
     ];
 
+    private static readonly HashSet<string> ModalTriggers =
+    [
+        nameof(IsSettingsVisible),
+        nameof(IsOnboardingVisible),
+        nameof(IsCloseChoiceVisible),
+        nameof(IsMediaOverlayOpen),
+        nameof(IsFranchiseOverlayOpen),
+        nameof(IsGameSettingsOpen),
+    ];
+
     private void InitializeNoticeTracking()
     {
         PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName != null && NoticeTriggers.Contains(e.PropertyName))
+            if (e.PropertyName == null)
+                return;
+
+            if (NoticeTriggers.Contains(e.PropertyName))
                 NotifyNoticeChanged();
+
+            if (ModalTriggers.Contains(e.PropertyName))
+                OnPropertyChanged(nameof(IsAnyModalOpen));
         };
     }
 

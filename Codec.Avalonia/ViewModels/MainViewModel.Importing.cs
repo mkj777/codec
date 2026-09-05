@@ -49,7 +49,7 @@ namespace Codec.ViewModels
             Games.CollectionChanged += Games_CollectionChanged;
             OnPropertyChanged(nameof(HasGames));
             OnPropertyChanged(nameof(IsEmptyLibrary));
-            OnPropertyChanged(nameof(IsLibraryVisible));
+            OnPropertyChanged(nameof(IsEmptyLibraryVisible));
             RefreshSidebarFilteredGames();
             RefreshAvailableImportSources();
             RefreshDisplayedGames();

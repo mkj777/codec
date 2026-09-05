@@ -19,6 +19,7 @@ public sealed class Hairline : TemplatedControl
 
     private Control? _sweep;
     private CancellationTokenSource? _sweepCancellation;
+    private double _runningSweepWidth = double.NaN;
 
     public static readonly StyledProperty<double> ValueProperty =
         AvaloniaProperty.Register<Hairline, double>(nameof(Value));
@@ -110,6 +111,7 @@ public sealed class Hairline : TemplatedControl
     {
         base.OnApplyTemplate(e);
         _sweep = e.NameScope.Find<Control>("PART_Sweep");
+        StopSweep();
         Refresh();
     }
 
@@ -145,9 +147,21 @@ public sealed class Hairline : TemplatedControl
         FillWidth = IsComplete ? width : width * Fraction();
 
         if (sweeping)
-            StartSweep(width);
+            EnsureSweep(width);
         else
             StopSweep();
+    }
+
+    /// <summary>
+    /// Refresh runs on every Value and Bounds change. Restarting the animation there
+    /// would reset it to frame zero each tick, so the sweep would never travel.
+    /// </summary>
+    private void EnsureSweep(double width)
+    {
+        if (_sweepCancellation != null && Math.Abs(_runningSweepWidth - width) < 0.5)
+            return;
+
+        StartSweep(width);
     }
 
     private double Fraction()
@@ -188,6 +202,7 @@ public sealed class Hairline : TemplatedControl
         };
 
         _sweepCancellation = new CancellationTokenSource();
+        _runningSweepWidth = width;
         _ = animation.RunAsync(_sweep, _sweepCancellation.Token);
     }
 
@@ -196,5 +211,6 @@ public sealed class Hairline : TemplatedControl
         _sweepCancellation?.Cancel();
         _sweepCancellation?.Dispose();
         _sweepCancellation = null;
+        _runningSweepWidth = double.NaN;
     }
 }

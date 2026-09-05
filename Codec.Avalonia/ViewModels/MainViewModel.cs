@@ -107,16 +107,11 @@ namespace Codec.ViewModels
         public bool IsLibraryGridVisible => !IsDetailsVisible;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsLibraryVisible))]
+        [NotifyPropertyChangedFor(nameof(IsEmptyLibraryVisible))]
         private bool _isInitialLoading = true;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsLibraryVisible))]
         private bool _isOnboardingVisible;
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsLibraryVisible))]
-        private bool _isLoadingVisible;
 
         [ObservableProperty]
         private string _loadingTitle = "Finding your games...";
@@ -126,8 +121,6 @@ namespace Codec.ViewModels
 
         [ObservableProperty]
         private Game? _selectedGame;
-
-        public bool IsLibraryVisible => !IsInitialLoading && !IsOnboardingVisible && !IsLoadingVisible;
 
         [ObservableProperty]
         private bool _isScanning;
@@ -253,13 +246,17 @@ namespace Codec.ViewModels
         public bool ShowFolderSizeTag => SelectedSortIndex == 2 || SelectedSortIndex == 3;
         public bool ShowDateAddedTag => SelectedSortIndex == 4 || SelectedSortIndex == 5;
 
-        public void SetLoadingState(bool isVisible, string? title = null, string? subtitle = null)
+        /// <summary>
+        /// Copy for the cold-start loading panel. Visibility belongs to
+        /// <see cref="IsInitialLoading"/>; later work reports through the notice pill
+        /// rather than covering the shelf.
+        /// </summary>
+        public void SetLoadingCopy(string? title = null, string? subtitle = null)
         {
             if (!string.IsNullOrWhiteSpace(title))
                 LoadingTitle = title;
             if (subtitle != null)
                 LoadingSubtitle = subtitle;
-            IsLoadingVisible = isVisible;
         }
 
         // ---------------------------------------------------------------------------------
@@ -354,7 +351,6 @@ namespace Codec.ViewModels
 
             Games.ReplaceAll(sortedSavedGames);
 
-            SetLoadingState(false);
             IsInitialLoading = false;
             IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
 
@@ -533,11 +529,16 @@ namespace Codec.ViewModels
             PauseSilentImageUpdate();
             try
             {
-                IsOnboardingVisible = false;
+                // Onboarding owns the surface while it drives the first scan.
+                if (!IsOnboardingScanActive)
+                    IsOnboardingVisible = false;
+
                 await _importCoordinator.StartScanAsync();
                 await _importCoordinator.WaitForIdleAsync();
                 await RefreshHeuristicInstallStatesAsync();
-                IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
+
+                if (!IsOnboardingScanActive)
+                    IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
             }
             finally
             {
@@ -663,7 +664,7 @@ namespace Codec.ViewModels
 
             OnPropertyChanged(nameof(HasGames));
             OnPropertyChanged(nameof(IsEmptyLibrary));
-            OnPropertyChanged(nameof(IsLibraryVisible));
+            OnPropertyChanged(nameof(IsEmptyLibraryVisible));
             NotifyLibrarySummaryChanged();
             RefreshSidebarFilteredGames();
             RefreshAvailableImportSources();
@@ -714,7 +715,7 @@ namespace Codec.ViewModels
             {
                 OnPropertyChanged(nameof(HasGames));
                 OnPropertyChanged(nameof(IsEmptyLibrary));
-                OnPropertyChanged(nameof(IsLibraryVisible));
+                OnPropertyChanged(nameof(IsEmptyLibraryVisible));
                 NotifyLibrarySummaryChanged();
                 RefreshSidebarFilteredGames();
                 RefreshAvailableImportSources();

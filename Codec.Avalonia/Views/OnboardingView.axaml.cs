@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Codec.ViewModels;
+using System.Diagnostics;
 
 namespace Codec.Views;
 
@@ -27,14 +28,27 @@ public sealed partial class OnboardingView : UserControl
 
         _scanOnStartup = true;
 
-        // The scan step shows itself first, then reports itself done.
+        // The scan step shows itself first, then reports itself done. The flag keeps
+        // ScanGamesAsync from hiding onboarding out from under the step being shown.
         viewModel.IsScanScreenComplete = false;
+        viewModel.IsOnboardingScanActive = true;
         ShowStage(2);
 
-        await viewModel.ScanGamesCommand.ExecuteAsync(null);
-
-        viewModel.IsOnboardingVisible = true;
-        viewModel.IsScanScreenComplete = true;
+        try
+        {
+            await viewModel.ScanGamesCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            // A failed scan must still let the player reach their shelf.
+            Debug.WriteLine($"[Onboarding] scan failed: {ex}");
+        }
+        finally
+        {
+            viewModel.IsOnboardingScanActive = false;
+            viewModel.IsOnboardingVisible = true;
+            viewModel.IsScanScreenComplete = true;
+        }
     }
 
     private void Continue_Click(object? sender, RoutedEventArgs e)
