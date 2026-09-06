@@ -67,6 +67,7 @@
           <Border media:ArtTint.GlowSource="{Binding SelectedGame.LibraryCapsule}" />
 
           <Button Classes="back"
+                  controls:Interaction.PulseOnClick="True"
                   HorizontalAlignment="Left"
                   VerticalAlignment="Top"
                   Margin="20,16"
@@ -114,6 +115,7 @@
 
               <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                 <Button Classes="play play-lg"
+                        controls:Interaction.PulseOnClick="True"
                         Command="{Binding PlayGameCommand}"
                         IsEnabled="{Binding CanPlaySelectedGame}"
                         ToolTip.Tip="{Binding PlayButtonToolTip}">
@@ -186,9 +188,10 @@
                 </StackPanel>
               </Button>
 
-              <StackPanel Classes="fade"
+              <StackPanel Classes="reveal"
                           Spacing="0"
-                          IsVisible="{Binding IsDetailMoreOpen}">
+                          IsVisible="False"
+                          controls:Reveal.IsOpen="{Binding IsDetailMoreOpen}">
                 <Border Classes="meta-row on-art">
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
                     <TextBlock Classes="meta-label shadow-meta" Text="Publisher" />

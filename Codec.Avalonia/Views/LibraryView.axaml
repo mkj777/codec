@@ -130,7 +130,9 @@
           </ItemsRepeater.Layout>
           <ItemsRepeater.ItemTemplate>
             <DataTemplate>
-              <Grid Classes="cover-card" Opacity="{Binding LibraryCardOpacity}">
+              <Grid Classes="cover-card"
+                    controls:Interaction.PressClass="True"
+                    Opacity="{Binding LibraryCardOpacity}">
                 <Border Classes="cover">
                   <media:CodecImage Source="{Binding LibraryCapsule}"
                                     Stretch="UniformToFill"
@@ -146,6 +148,7 @@
                         CommandParameter="{Binding}" />
 
                 <Button Classes="favorite"
+                        Classes.on="{Binding IsFavorite}"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Top"
                         Margin="8"
@@ -155,6 +158,14 @@
                         CommandParameter="{Binding}">
                   <LucideIcon Kind="Star" Size="14" StrokeWidth="1.75" />
                 </Button>
+
+                <Border Classes="cover-flag"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Margin="8"
+                        IsVisible="{Binding IsNotInstalled}">
+                  <TextBlock Text="NOT INSTALLED" />
+                </Border>
 
                 <StackPanel HorizontalAlignment="Left"
                             VerticalAlignment="Bottom"
@@ -179,10 +190,12 @@
         </ItemsRepeater>
       </ScrollViewer>
 
-      <StackPanel HorizontalAlignment="Center"
+      <StackPanel Classes="reveal"
+                  HorizontalAlignment="Center"
                   VerticalAlignment="Center"
                   Spacing="18"
-                  IsVisible="{Binding IsEmptyLibraryVisible}">
+                  IsVisible="False"
+                  controls:Reveal.IsOpen="{Binding IsEmptyLibraryVisible}">
         <Image Width="200"
                Height="144"
                Stretch="Uniform"
@@ -194,6 +207,7 @@
                     HorizontalAlignment="Center"
                     Spacing="12">
           <Button Classes="play play-lg"
+                  controls:Interaction.PulseOnClick="True"
                   Command="{Binding AddGameFromPickerCommand}">
             <StackPanel Orientation="Horizontal" Spacing="9">
               <LucideIcon Kind="Plus" Size="13" StrokeWidth="2" />
@@ -206,10 +220,12 @@
         </StackPanel>
       </StackPanel>
 
-      <StackPanel HorizontalAlignment="Center"
+      <StackPanel Classes="reveal"
+                  HorizontalAlignment="Center"
                   VerticalAlignment="Center"
                   Spacing="16"
-                  IsVisible="{Binding IsInitialLoading}">
+                  IsVisible="False"
+                  controls:Reveal.IsOpen="{Binding IsInitialLoading}">
         <TextBlock Classes="screen-title"
                    HorizontalAlignment="Center"
                    Text="{Binding LoadingTitle}" />

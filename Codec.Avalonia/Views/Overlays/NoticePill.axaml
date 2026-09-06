@@ -7,8 +7,11 @@
     One activity, one line, one progress value. Background work reports itself
     here and never blocks the shelf.
   -->
-  <StackPanel Spacing="8" IsVisible="{Binding IsNoticeVisible}">
-    <Border Classes="notice rise" HorizontalAlignment="Center">
+  <StackPanel Classes="reveal"
+              Spacing="8"
+              IsVisible="False"
+              controls:Reveal.IsOpen="{Binding IsNoticeVisible}">
+    <Border Classes="notice" HorizontalAlignment="Center">
       <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
         <Ellipse Width="7"
                  Height="7"

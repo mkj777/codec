@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Codec.Controls"
         xmlns:converters="using:Codec.Converters"
         xmlns:overlays="using:Codec.Views.Overlays"
         xmlns:views="using:Codec.Views"
@@ -28,6 +29,8 @@
         RowDefinitions="34,*">
     <!-- The rail runs the full height, so the sink reaches the top edge. -->
     <Border x:Name="Sidebar"
+            Classes="rail-shell"
+            Classes.collapsed="{Binding IsSidebarCollapsed}"
             Grid.Row="0"
             Grid.RowSpan="2"
             Grid.Column="0"
@@ -204,9 +207,13 @@
     <Grid Grid.Row="1"
           Grid.Column="1"
           Background="{DynamicResource CodecBackgroundBrush}">
-      <views:LibraryView IsVisible="{Binding IsLibraryGridVisible}" />
+      <views:LibraryView Classes="reveal-soft"
+                         IsVisible="False"
+                         controls:Reveal.IsOpen="{Binding IsLibraryGridVisible}" />
 
-      <views:GameDetailView IsVisible="{Binding IsDetailsVisible}" />
+      <views:GameDetailView Classes="reveal-soft"
+                            IsVisible="False"
+                            controls:Reveal.IsOpen="{Binding IsDetailsVisible}" />
     </Grid>
 
     <!--
@@ -222,25 +229,41 @@
                          VerticalAlignment="Bottom"
                          Margin="0,0,0,26" />
 
-    <Grid Grid.RowSpan="2"
+    <Grid Classes="reveal-soft"
+          Grid.RowSpan="2"
           Grid.ColumnSpan="2"
           ZIndex="40"
-          IsVisible="{Binding IsSettingsVisible}">
+          IsVisible="False"
+          controls:Reveal.IsOpen="{Binding IsSettingsVisible}">
       <Border Background="{DynamicResource CodecScrimBrush}" PointerPressed="SettingsScrim_PointerPressed" />
-      <views:SettingsView HorizontalAlignment="Center" VerticalAlignment="Center" />
+      <views:SettingsView Classes="reveal"
+                          IsVisible="False"
+                          controls:Reveal.IsOpen="{Binding IsSettingsVisible}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
     </Grid>
 
-    <views:OnboardingView Grid.RowSpan="2"
+    <views:OnboardingView Classes="reveal-soft"
+                          Grid.RowSpan="2"
                           Grid.ColumnSpan="2"
                           ZIndex="50"
-                          IsVisible="{Binding IsOnboardingVisible}" />
+                          IsVisible="False"
+                          controls:Reveal.IsOpen="{Binding IsOnboardingVisible}" />
 
-    <Grid Grid.RowSpan="2"
+    <Grid Classes="reveal-soft"
+          Grid.RowSpan="2"
           Grid.ColumnSpan="2"
           ZIndex="60"
-          IsVisible="{Binding IsCloseChoiceVisible}">
+          IsVisible="False"
+          controls:Reveal.IsOpen="{Binding IsCloseChoiceVisible}">
       <Border Background="{DynamicResource CodecScrimBrush}" PointerPressed="CloseChoiceScrim_PointerPressed" />
-      <Border Classes="overlay" Width="360" Padding="22" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Border Classes="overlay reveal"
+              IsVisible="False"
+              controls:Reveal.IsOpen="{Binding IsCloseChoiceVisible}"
+              Width="360"
+              Padding="22"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
         <StackPanel Spacing="16">
           <TextBlock Classes="heading" Text="Keep Codec open?" />
           <TextBlock Classes="body" Foreground="{DynamicResource CodecTextMutedBrush}" Text="Codec can stay in the tray when you close the window." TextWrapping="Wrap" />
@@ -251,5 +274,13 @@
         </StackPanel>
       </Border>
     </Grid>
+    <!--
+      The launch sequence. It owns the window until the library is ready, so it sits above
+      every other layer and takes itself down from code.
+    -->
+    <overlays:StartupOverlay x:Name="Startup"
+                             Grid.RowSpan="2"
+                             Grid.ColumnSpan="2"
+                             ZIndex="100" />
   </Grid>
 </Window>

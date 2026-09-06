@@ -1,0 +1,250 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:media="using:Codec.Media"
+             x:Class="Codec.Views.Overlays.StartupOverlay"
+             x:CompileBindings="False">
+  <!--
+    The launch sequence, restored from the WinUI build. Nine cached covers rise in sequence, a
+    scan line sweeps them, the mosaic contracts and settles back, and the wordmark comes up
+    through it. It covers the library load, so Codec opens on its own collection rather than on
+    a progress bar.
+
+    The stagger lives in each tile's Delay rather than in nine animations, so the whole sequence
+    starts by adding one class to the mosaic.
+  -->
+  <UserControl.Styles>
+    <Style Selector="Panel.startup-root">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Panel.startup-root.out">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="scale(1.035)" />
+    </Style>
+
+    <!-- 1350ms: the mosaic contracts. 1450ms: it settles back so the wordmark can read. -->
+    <Style Selector="Panel.startup-mosaic">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform"
+                                         Duration="0:0:0.52"
+                                         Delay="0:0:1.35"
+                                         Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.43" Delay="0:0:1.45" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Panel.startup-mosaic.go">
+      <Setter Property="RenderTransform" Value="scale(0.84)" />
+      <Setter Property="Opacity" Value="0.28" />
+    </Style>
+
+    <Style Selector="Border.startup-tile">
+      <Setter Property="Margin" Value="5" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translateY(18px)" />
+    </Style>
+    <Style Selector="Panel.startup-mosaic.go Border.startup-tile">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+
+    <!-- 120ms, then 70ms between tiles, 360ms each. CubicEaseOut is what WinUI used. -->
+    <Style Selector="Border.startup-tile.t0">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.12" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.12" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t1">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.19" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.19" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t2">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.26" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.26" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t3">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.33" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.33" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t4">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.4" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.4" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t5">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.47" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.47" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t6">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.54" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.54" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t7">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.61" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.61" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.startup-tile.t8">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.36" Delay="0:0:0.68" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.36" Delay="0:0:0.68" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <!--
+      The sweep. It waits out the stagger, crosses the mosaic in 870ms, and is gone by 1320ms,
+      which is when the contraction begins.
+    -->
+    <Style Selector="Panel.startup-mosaic.go Rectangle.startup-scan">
+      <Style.Animations>
+        <Animation Duration="0:0:1.32" Easing="CubicEaseInOut" FillMode="Forward">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.Y" Value="-170" />
+          </KeyFrame>
+          <KeyFrame Cue="34%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.Y" Value="-170" />
+          </KeyFrame>
+          <KeyFrame Cue="47%">
+            <Setter Property="Opacity" Value="0.9" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.Y" Value="170" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+    <Style Selector="StackPanel.startup-brand">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.42" Delay="0:0:1.48" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="StackPanel.startup-brand.go">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel x:Name="Root"
+         Classes="startup-root"
+         Background="{DynamicResource CodecBackgroundBrush}"
+         RenderTransformOrigin="50%,50%">
+    <Panel x:Name="Mosaic"
+           Classes="startup-mosaic"
+           Width="390"
+           Height="390"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center"
+           RenderTransformOrigin="50%,50%">
+      <!-- Each tile keeps a brand colour behind its art, so a first run still animates. -->
+      <Grid x:Name="Tiles"
+            RowDefinitions="*,*,*"
+            ColumnDefinitions="*,*,*">
+        <Border Classes="startup-tile t0" Grid.Row="0" Grid.Column="0" Background="#E76C2B">
+          <media:CodecImage Source="{Binding StartupCoverGames[0].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t1" Grid.Row="0" Grid.Column="1" Background="#D4A832">
+          <media:CodecImage Source="{Binding StartupCoverGames[1].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t2" Grid.Row="0" Grid.Column="2" Background="#C4956A">
+          <media:CodecImage Source="{Binding StartupCoverGames[2].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t3" Grid.Row="1" Grid.Column="0" Background="#D4A832">
+          <media:CodecImage Source="{Binding StartupCoverGames[3].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t4"
+                Grid.Row="1"
+                Grid.Column="1"
+                Background="{DynamicResource CodecSurfaceBrush}"
+                BorderBrush="#5AE76C2B"
+                BorderThickness="1">
+          <media:CodecImage Source="{Binding StartupCoverGames[4].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t5" Grid.Row="1" Grid.Column="2" Background="#E76C2B">
+          <media:CodecImage Source="{Binding StartupCoverGames[5].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t6" Grid.Row="2" Grid.Column="0" Background="#C4956A">
+          <media:CodecImage Source="{Binding StartupCoverGames[6].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t7" Grid.Row="2" Grid.Column="1" Background="#E76C2B">
+          <media:CodecImage Source="{Binding StartupCoverGames[7].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+        <Border Classes="startup-tile t8" Grid.Row="2" Grid.Column="2" Background="#D4A832">
+          <media:CodecImage Source="{Binding StartupCoverGames[8].LibraryCapsule}" Stretch="UniformToFill" />
+        </Border>
+      </Grid>
+
+      <Rectangle Classes="startup-scan"
+                 Height="2"
+                 Margin="12,0"
+                 VerticalAlignment="Center"
+                 Opacity="0"
+                 Fill="{DynamicResource CodecPrimaryBrush}" />
+    </Panel>
+
+    <StackPanel x:Name="Brand"
+                Classes="startup-brand"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="8">
+      <Image Width="68"
+             Height="68"
+             Stretch="Uniform"
+             Source="/Assets/iconHigh.png" />
+      <TextBlock HorizontalAlignment="Center"
+                 Text="CODEC"
+                 FontFamily="{StaticResource CodecDisplayFontFamily}"
+                 FontSize="18"
+                 FontWeight="700"
+                 LetterSpacing="5.4"
+                 Foreground="{DynamicResource CodecTextBrush}" />
+    </StackPanel>
+  </Panel>
+</UserControl>

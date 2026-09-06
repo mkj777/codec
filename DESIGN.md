@@ -2,7 +2,7 @@
 
 Codec is a quiet shelf for a real game collection. The interface should feel like a focused desktop product, not a Windows settings page or a storefront.
 
-The approved Codec v2 reference defines the current direction. `docs/superpowers/specs/2026-08-13-codec-v2-design.md` holds the exact values.
+The approved Codec v2 reference defines the current direction. `docs/superpowers/specs/2026-08-13-codec-v2-design.md` holds the exact values, and `docs/superpowers/specs/2026-09-06-codec-motion-restoration.md` holds the motion contract.
 
 ## Visual language
 
@@ -15,6 +15,8 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 - Typeface: Sansation carries display type - page titles, the wordmark, the Play pill. Nunito carries everything else. Weight carries hierarchy before size.
 - Corners: 8-10 px for controls, list rows, and covers; 14-20 px for surfaces; fully round only for genuinely circular actions and the Play and notice pills.
 - Separation: warm alpha lines over whatever sits beneath them, `#17F3EDC9` for structure and `#0EF3EDC9` for rows, used only where tone and space do not already separate.
+- Interaction washes: `#14F3EDC9` on hover and `#1FF3EDC9` on press. Quiet is the goal, invisible is not: below roughly 5 percent alpha a hover measures the same as rest on a near-black surface and the app reads as broken rather than as restrained.
+- The base theme's own palette is retuned to these colors rather than left at its defaults. Anything not templated explicitly still draws from it, so a stray grey hover or blue accent means a theme key was missed, not that a control needs its own style.
 
 ## Layout rules
 
@@ -30,6 +32,10 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 - Orange is reserved for the primary next action. In the sidebar it speaks through color rather than fill.
 - Hover and press feedback changes tone or opacity without large motion. Covers are the one exception: they lift 7 px and take on a ring in their own artwork color.
 - Motion is short and eased on `0.2, 0.7, 0.2, 1`. Nothing bounces and nothing spins.
+- Nothing appears or disappears instantly. Anything that comes and goes fades and rises through `Reveal`, which drives a class rather than visibility so the entrance runs every time and the exit is seen. An animation attached to a fixed class on a permanently mounted control runs once, at startup, and never again; that is a bug, not a style.
+- Primary actions answer a click as well as a hover. Play and Back overshoot to 1.04 and settle, which is what separates responsive from merely styled.
+- Scroll bars overlay, reserve no width, and rest thin. The lane carries the weight, 4 px at rest and 10 px under the pointer; the thumb only fills it.
+- Codec opens on its own collection. The launch sequence covers the library load rather than following it, and background work starts only once the shelf is on screen.
 - Background work reports one activity and one progress value, never a raw count or an internal stage, and never blocks the library.
 - Progress is a hairline, not a bar.
 - Copy is short, warm, and in English.

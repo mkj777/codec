@@ -81,6 +81,7 @@
     <Setter Property="FontWeight" Value="700" />
     <Setter Property="LetterSpacing" Value="0.54" />
     <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     <!-- Button has no BoxShadow property, so the orange bloom is an effect. -->
     <Setter Property="Effect">
       <DropShadowEffect BlurRadius="24" OffsetX="0" OffsetY="8" Color="#E76C2B" Opacity="0.7" />
@@ -88,6 +89,8 @@
     <Setter Property="Transitions">
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.18" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.18" />
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18">
           <TransformOperationsTransition.Easing>
             <SplineEasing X1="0.2" Y1="0.7" X2="0.2" Y2="1" />
@@ -143,6 +146,16 @@
 
   <!-- back: circle sitting on artwork -->
   <Style Selector="Button.back">
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.15" />
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
     <Setter Property="Width" Value="32" />
     <Setter Property="Height" Value="32" />
     <Setter Property="MinHeight" Value="0" />
@@ -444,6 +457,25 @@
 
   <Style Selector="ToggleSwitch">
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+
+  <!--
+    The click overshoot from the WinUI hero buttons. A press is a state that :pressed covers;
+    a click is an event, so Interaction.PulseOnClick adds this class and takes it away again.
+    It is a transition rather than a keyframe animation because Avalonia has no keyframe
+    animator for RenderTransform, only for the individual transform properties.
+
+    Rising takes 90ms. Letting go falls back to the button's own transition, which is slower,
+    so the shape matches the original 85ms up and 105ms settle.
+  -->
+  <Style Selector="Button.pulse">
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scale(1.04)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.09" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
   </Style>
 
   <Style Selector="ToolTip">

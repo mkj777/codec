@@ -1,5 +1,22 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    The rail closes over time. A width binding on its own moves 240 to 0 in a single frame,
+    which is what the WinUI build spent 150ms of slide and fade avoiding.
+  -->
+  <Style Selector="Border.rail-shell">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Width" Duration="0:0:0.18" Easing="CubicEaseOut" />
+        <DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.rail-shell.collapsed">
+    <Setter Property="Opacity" Value="0" />
+  </Style>
+
   <!-- rail -->
   <Style Selector="ListBox.rail-list">
     <Setter Property="Background" Value="Transparent" />
@@ -13,7 +30,21 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
   </Style>
+  <!--
+    SimpleTheme paints its own bright hover and selection on ListBoxItem. The rail draws both
+    itself, on the button and the marker inside the row, so the container has to stay clear in
+    every state or two highlights stack.
+  -->
   <Style Selector="ListBox.rail-list ListBoxItem:selected">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.rail-list ListBoxItem:pointerover">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.rail-list ListBoxItem:selected:pointerover">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.rail-list ListBoxItem:pressed">
     <Setter Property="Background" Value="Transparent" />
   </Style>
 
@@ -143,9 +174,13 @@
   <Style Selector="Grid.cover-card:pointerover Border.cover">
     <Setter Property="BoxShadow" Value="0 18 40 0 #80000000" />
   </Style>
-  <!-- pressing settles the card most of the way back down -->
-  <Style Selector="Grid.cover-card Button.cover-hitbox:pressed">
-    <Setter Property="RenderTransform" Value="translateY(4px)" />
+  <!--
+    Pressing settles the card most of the way back down. The state has to come from
+    Interaction.PressClass: the pointer events belong to the hitbox, the movement belongs to
+    the card above it, and no selector reaches upwards.
+  -->
+  <Style Selector="Grid.cover-card.pressed-in">
+    <Setter Property="RenderTransform" Value="translateY(-2px)" />
   </Style>
 
   <!--
@@ -185,6 +220,7 @@
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.15" />
         <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.15" />
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
       </Transitions>
     </Setter>
@@ -196,6 +232,32 @@
   </Style>
   <Style Selector="Button.favorite:pressed">
     <Setter Property="RenderTransform" Value="scale(0.94)" />
+  </Style>
+  <!-- A favorited game reads as marked, not merely as slightly less faded. -->
+  <Style Selector="Button.favorite.on">
+    <Setter Property="Background" Value="{DynamicResource CodecAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecAccentBrush}" />
+    <Setter Property="Foreground" Value="#221E19" />
+  </Style>
+  <Style Selector="Button.favorite.on:pointerover">
+    <Setter Property="Background" Value="#E8BC46" />
+    <Setter Property="BorderBrush" Value="#E8BC46" />
+    <Setter Property="Foreground" Value="#221E19" />
+  </Style>
+
+  <!-- restored from the WinUI covers: an uninstalled game says so on its own card -->
+  <Style Selector="Border.cover-flag">
+    <Setter Property="Background" Value="#E61C1A17" />
+    <Setter Property="BorderBrush" Value="#90D4A832" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Padding" Value="7,3" />
+  </Style>
+  <Style Selector="Border.cover-flag TextBlock">
+    <Setter Property="FontSize" Value="9" />
+    <Setter Property="FontWeight" Value="700" />
+    <Setter Property="LetterSpacing" Value="0.41" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecAccentBrush}" />
   </Style>
 
   <Style Selector="Border.cover-tag">

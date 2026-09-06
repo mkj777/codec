@@ -15,15 +15,21 @@
     <Color x:Key="CodecTextDisabledColor">#62584B</Color>
     <Color x:Key="CodecScrimColor">#B8141311</Color>
 
-    <!-- Codec v2 separation model: warm alpha lines over whatever sits beneath them. -->
+    <!--
+      Codec v2 separation model: warm alpha lines over whatever sits beneath them.
+
+      The interaction washes are deliberately quiet but not invisible. At the original 3.5%
+      alpha a hover measured identically to rest on a near-black rail, which is what made the
+      app read as unresponsive rather than as restrained.
+    -->
     <Color x:Key="CodecLineColor">#17F3EDC9</Color>
     <Color x:Key="CodecLine2Color">#0EF3EDC9</Color>
     <Color x:Key="CodecLineStrongColor">#2EF3EDC9</Color>
     <Color x:Key="CodecOnArtLineColor">#29F3EDC9</Color>
     <Color x:Key="CodecSinkColor">#38000000</Color>
-    <Color x:Key="CodecHoverWashColor">#09F3EDC9</Color>
-    <Color x:Key="CodecPressWashColor">#14F3EDC9</Color>
-    <Color x:Key="CodecCaptionHoverColor">#0FF3EDC9</Color>
+    <Color x:Key="CodecHoverWashColor">#14F3EDC9</Color>
+    <Color x:Key="CodecPressWashColor">#1FF3EDC9</Color>
+    <Color x:Key="CodecCaptionHoverColor">#17F3EDC9</Color>
     <Color x:Key="CodecPrimaryWashColor">#1AE76C2B</Color>
     <Color x:Key="CodecPrimaryLineColor">#52E76C2B</Color>
     <Color x:Key="CodecPrimaryLineHoverColor">#99E76C2B</Color>
@@ -62,6 +68,44 @@
     <SolidColorBrush x:Key="CodecScrollThumbBrush" Color="#26F3EDC9" />
     <SolidColorBrush x:Key="CodecScrollThumbHoverBrush" Color="#3DF3EDC9" />
     <SolidColorBrush x:Key="CodecScrollThumbDragBrush" Color="#52F3EDC9" />
+
+    <!--
+      SimpleTheme's own palette, retuned to Codec's.
+
+      Anything the app does not template explicitly still draws from these: the toggle switch
+      knob, list selection, text selection, focus adorners. Left alone they are grey and blue,
+      which is where the stray bright hovers and blue accents were coming from. Retuning the
+      palette fixes every one of them at the source rather than control by control.
+    -->
+    <Color x:Key="ThemeBackgroundColor">#1C1A17</Color>
+    <Color x:Key="ThemeBorderLowColor">#2A2621</Color>
+    <Color x:Key="ThemeBorderMidColor">#3A342C</Color>
+    <Color x:Key="ThemeBorderHighColor">#4A4238</Color>
+    <Color x:Key="ThemeControlLowColor">#201D1A</Color>
+    <Color x:Key="ThemeControlMidColor">#24211E</Color>
+    <Color x:Key="ThemeControlMidHighColor">#2B2722</Color>
+    <Color x:Key="ThemeControlHighColor">#322D27</Color>
+    <Color x:Key="ThemeControlHighlightHighColor">#322D27</Color>
+    <Color x:Key="ThemeForegroundLowColor">#9E8E78</Color>
+    <Color x:Key="ThemeAccentColor">#E76C2B</Color>
+    <Color x:Key="ThemeAccentColor2">#F07A37</Color>
+    <Color x:Key="ThemeAccentColor3">#CF5920</Color>
+    <Color x:Key="ThemeAccentColor4">#B44D1B</Color>
+
+    <SolidColorBrush x:Key="ThemeBackgroundBrush" Color="#1C1A17" />
+    <SolidColorBrush x:Key="ThemeBorderLowBrush" Color="#2A2621" />
+    <SolidColorBrush x:Key="ThemeBorderMidBrush" Color="#3A342C" />
+    <SolidColorBrush x:Key="ThemeBorderHighBrush" Color="#4A4238" />
+    <SolidColorBrush x:Key="ThemeControlLowBrush" Color="#201D1A" />
+    <SolidColorBrush x:Key="ThemeControlMidBrush" Color="#24211E" />
+    <SolidColorBrush x:Key="ThemeControlMidHighBrush" Color="#2B2722" />
+    <SolidColorBrush x:Key="ThemeControlHighBrush" Color="#322D27" />
+    <SolidColorBrush x:Key="ThemeControlHighlightHighBrush" Color="#322D27" />
+    <SolidColorBrush x:Key="ThemeForegroundLowBrush" Color="#9E8E78" />
+    <SolidColorBrush x:Key="ThemeAccentBrush2" Color="#F07A37" />
+    <SolidColorBrush x:Key="ThemeAccentBrush3" Color="#CF5920" />
+    <SolidColorBrush x:Key="ThemeAccentBrush4" Color="#B44D1B" />
+    <SolidColorBrush x:Key="HighlightForegroundBrush" Color="#F3EDC9" />
 
     <!-- Retained so existing references keep resolving; CodecLine is the real token. -->
     <SolidColorBrush x:Key="CodecBorderBrush" Color="{StaticResource CodecLineColor}" />

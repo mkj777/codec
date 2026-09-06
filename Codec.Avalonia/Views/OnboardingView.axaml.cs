@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Codec.Controls;
 using Codec.ViewModels;
 using System.Diagnostics;
 
@@ -11,7 +12,14 @@ public sealed partial class OnboardingView : UserControl
     private int _stage;
     private bool _scanOnStartup;
 
-    public OnboardingView() => InitializeComponent();
+    public OnboardingView()
+    {
+        InitializeComponent();
+
+        // Every step starts closed in markup, so the first one has to be opened
+        // rather than merely left alone: opening is what plays its entrance.
+        ShowStage(0);
+    }
 
     private void Begin_Click(object? sender, RoutedEventArgs e) => ShowStage(1);
 
@@ -71,9 +79,9 @@ public sealed partial class OnboardingView : UserControl
     private void ShowStage(int stage)
     {
         _stage = Math.Clamp(stage, 0, 2);
-        IntroStep.IsVisible = _stage == 0;
-        SetupStep.IsVisible = _stage == 1;
-        ReadyStep.IsVisible = _stage == 2;
+        Reveal.SetIsOpen(IntroStep, _stage == 0);
+        Reveal.SetIsOpen(SetupStep, _stage == 1);
+        Reveal.SetIsOpen(ReadyStep, _stage == 2);
 
         // The active dot stretches into a short bar; the rest stay quiet.
         IBrush active = this.FindResource("CodecPrimaryBrush") as IBrush ?? Brushes.Orange;

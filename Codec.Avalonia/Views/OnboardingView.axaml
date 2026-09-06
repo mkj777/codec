@@ -4,6 +4,22 @@
              xmlns:converters="using:Codec.Converters"
              x:Class="Codec.Views.OnboardingView"
              x:CompileBindings="False">
+  <UserControl.Styles>
+    <!-- the active dot stretches into a bar rather than swapping places -->
+    <Style Selector="Border.step-dot">
+      <Setter Property="Width" Value="5" />
+      <Setter Property="Height" Value="5" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.24" Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.24" />
+          <BrushTransition Property="Background" Duration="0:0:0.24" />
+        </Transitions>
+      </Setter>
+    </Style>
+  </UserControl.Styles>
+
   <UserControl.Resources>
     <converters:PngBytesToBitmapConverter x:Key="PngConverter" />
   </UserControl.Resources>
@@ -28,8 +44,13 @@
                HorizontalAlignment="Left"
                Text="Codec" />
 
-    <Grid x:Name="IntroStep" Margin="78,0" ColumnDefinitions="*,288" ColumnSpacing="50">
-      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="19">
+    <Grid x:Name="IntroStep"
+          Classes="reveal"
+          Margin="78,0"
+          IsVisible="False"
+          ColumnDefinitions="*,288"
+          ColumnSpacing="50">
+      <StackPanel VerticalAlignment="Center" Spacing="19">
         <TextBlock Classes="ob-title" Text="A quiet home&#x0a;for your games." />
         <TextBlock MaxWidth="330"
                    HorizontalAlignment="Left"
@@ -53,8 +74,13 @@
              Source="/Assets/shrimpSleep.png" />
     </Grid>
 
-    <Grid x:Name="SetupStep" Margin="78,0" IsVisible="False" ColumnDefinitions="*,260" ColumnSpacing="50">
-      <StackPanel Classes="rise" VerticalAlignment="Center" Spacing="19">
+    <Grid x:Name="SetupStep"
+          Classes="reveal"
+          Margin="78,0"
+          IsVisible="False"
+          ColumnDefinitions="*,260"
+          ColumnSpacing="50">
+      <StackPanel VerticalAlignment="Center" Spacing="19">
         <TextBlock Classes="ob-subtitle" Text="Where should we look?" />
         <TextBlock MaxWidth="330"
                    HorizontalAlignment="Left"
@@ -85,7 +111,7 @@
 
     <!-- the first-run scan: a sweeping hairline that goes solid when the shelf is ready -->
     <StackPanel x:Name="ReadyStep"
-                Classes="rise"
+                Classes="reveal"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="18"
@@ -112,9 +138,9 @@
                 Margin="78,0,0,40"
                 Orientation="Horizontal"
                 Spacing="7">
-      <Border x:Name="Progress0" Width="18" Height="5" CornerRadius="3" Background="{DynamicResource CodecPrimaryBrush}" />
-      <Border x:Name="Progress1" Width="5" Height="5" CornerRadius="3" Opacity="0.35" Background="{DynamicResource CodecTextMutedBrush}" />
-      <Border x:Name="Progress2" Width="5" Height="5" CornerRadius="3" Opacity="0.35" Background="{DynamicResource CodecTextMutedBrush}" />
+      <Border x:Name="Progress0" Classes="step-dot" Width="18" Background="{DynamicResource CodecPrimaryBrush}" />
+      <Border x:Name="Progress1" Classes="step-dot" Opacity="0.35" Background="{DynamicResource CodecTextMutedBrush}" />
+      <Border x:Name="Progress2" Classes="step-dot" Opacity="0.35" Background="{DynamicResource CodecTextMutedBrush}" />
     </StackPanel>
   </Grid>
 </UserControl>

@@ -37,6 +37,34 @@
     </ControlTheme>
 
     <!--
+      The thumb fills its lane, so the lane's own width is what makes the bar slim. Shape and
+      state live here rather than in an outer /template/ style: nested theme styles are the
+      part that reliably reaches a control inside another control's template.
+    -->
+    <ControlTheme x:Key="CodecScrollThumbTheme" TargetType="Thumb">
+      <Setter Property="Background" Value="{DynamicResource CodecScrollThumbBrush}" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="MinWidth" Value="26" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  CornerRadius="{TemplateBinding CornerRadius}" />
+        </ControlTemplate>
+      </Setter>
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+      <Style Selector="^:pointerover">
+        <Setter Property="Background" Value="{DynamicResource CodecScrollThumbHoverBrush}" />
+      </Style>
+      <Style Selector="^:pressed">
+        <Setter Property="Background" Value="{DynamicResource CodecScrollThumbDragBrush}" />
+      </Style>
+    </ControlTheme>
+    <!--
       Overlay scrollbar. WinUI handed this shape over for free; SimpleTheme
       ships a rail with arrow buttons that reserves layout width.
 
@@ -63,22 +91,13 @@
               <Track.IncreaseButton>
                 <RepeatButton Name="PART_PageDownButton" Classes="scroll-page" Focusable="False" />
               </Track.IncreaseButton>
-              <Thumb Name="thumb" />
+              <Thumb Name="thumb" Theme="{StaticResource CodecScrollThumbTheme}" />
             </Track>
           </Border>
         </ControlTemplate>
       </Setter>
     </ControlTheme>
 
-    <ControlTheme x:Key="{x:Type Thumb}" TargetType="Thumb">
-      <Setter Property="Background" Value="{DynamicResource CodecScrollThumbBrush}" />
-      <Setter Property="Template">
-        <ControlTemplate>
-          <Border Background="{TemplateBinding Background}"
-                  CornerRadius="{TemplateBinding CornerRadius}" />
-        </ControlTemplate>
-      </Setter>
-    </ControlTheme>
   </Styles.Resources>
 
   <!-- the track's paging areas are invisible but still clickable -->
@@ -107,17 +126,27 @@
       </Transitions>
     </Setter>
   </Style>
+  <!--
+    The lane itself carries the weight: 4px at rest, 10px once the pointer is on it, with the
+    change animated. The thumb simply fills whatever lane it is given.
+  -->
   <Style Selector="ScrollBar[Orientation=Vertical]">
-    <Setter Property="Width" Value="8" />
+    <Setter Property="Width" Value="4" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+        <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="ScrollBar[Orientation=Horizontal]">
-    <Setter Property="Height" Value="8" />
-  </Style>
-  <Style Selector="ScrollBar:expanded">
-    <Setter Property="Opacity" Value="1" />
-  </Style>
-  <Style Selector="ScrollBar:pointerover">
-    <Setter Property="Opacity" Value="1" />
+    <Setter Property="Height" Value="4" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+        <DoubleTransition Property="Height" Duration="0:0:0.15" Easing="CubicEaseOut" />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="ScrollBar[Orientation=Vertical]:pointerover">
     <Setter Property="Width" Value="10" />
@@ -125,24 +154,11 @@
   <Style Selector="ScrollBar[Orientation=Horizontal]:pointerover">
     <Setter Property="Height" Value="10" />
   </Style>
-
-  <Style Selector="ScrollBar /template/ Thumb">
-    <Setter Property="Background" Value="{DynamicResource CodecScrollThumbBrush}" />
-    <Setter Property="CornerRadius" Value="4" />
-    <Setter Property="MinHeight" Value="28" />
-    <Setter Property="MinWidth" Value="28" />
-    <Setter Property="Margin" Value="1" />
-    <Setter Property="Transitions">
-      <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.15" />
-      </Transitions>
-    </Setter>
+  <Style Selector="ScrollBar:expanded">
+    <Setter Property="Opacity" Value="1" />
   </Style>
-  <Style Selector="ScrollBar:pointerover /template/ Thumb">
-    <Setter Property="Background" Value="{DynamicResource CodecScrollThumbHoverBrush}" />
-  </Style>
-  <Style Selector="ScrollBar /template/ Thumb:pressed">
-    <Setter Property="Background" Value="{DynamicResource CodecScrollThumbDragBrush}" />
+  <Style Selector="ScrollBar:pointerover">
+    <Setter Property="Opacity" Value="1" />
   </Style>
 
   <!--

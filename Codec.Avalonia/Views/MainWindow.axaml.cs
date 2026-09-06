@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Codec.ViewModels;
 using Codec.Infrastructure;
+using System.Diagnostics;
 
 namespace Codec.Views;
 
@@ -33,7 +34,15 @@ public sealed partial class MainWindow : Window
             return;
 
         _libraryLoaded = true;
-        await viewModel.LoadLibraryAsync();
+
+        // The launch sequence covers the load rather than following it, so the two run
+        // together and background work only begins once the shelf is really on screen.
+        Task load = viewModel.LoadLibraryAsync();
+        await Startup.PlayAsync(load);
+
+        if (load.IsFaulted)
+            Debug.WriteLine($"[Startup] library load failed: {load.Exception}");
+
         _ = viewModel.StartBackgroundMaintenanceAsync();
         _ = viewModel.CheckForUpdatesCommand.ExecuteAsync(null);
     }

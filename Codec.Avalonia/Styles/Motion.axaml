@@ -6,36 +6,43 @@
     <SplineEasing x:Key="CodecSweepEase" X1="0.5" Y1="0" X2="0.5" Y2="1" />
   </Styles.Resources>
 
-  <!-- rise: entrance for the notice pill and onboarding steps -->
-  <Style Selector=":is(Control).rise">
-    <Style.Animations>
-      <Animation Duration="0:0:0.35"
-                 Easing="{StaticResource CodecEase}"
-                 FillMode="Forward">
-        <KeyFrame Cue="0%">
-          <Setter Property="Opacity" Value="0" />
-          <Setter Property="TranslateTransform.Y" Value="14" />
-        </KeyFrame>
-        <KeyFrame Cue="100%">
-          <Setter Property="Opacity" Value="1" />
-          <Setter Property="TranslateTransform.Y" Value="0" />
-        </KeyFrame>
-      </Animation>
-    </Style.Animations>
+  <!--
+    reveal: the entrance and exit for anything that comes and goes.
+
+    These are transitions on a class, not animations on a static one. An animation attached
+    through a fixed Classes value runs when the style first matches, which is once, at attach.
+    Toggling IsVisible never matches it again, so every such entrance in Codec played invisibly
+    during window load and never afterwards. Reveal drives the `revealed` class instead, and
+    holds the control in the tree long enough for the exit half to be seen.
+  -->
+  <Style Selector=":is(Control).reveal">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="RenderTransform" Value="translateY(10px)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.22" Easing="{StaticResource CodecEase}" />
+        <TransformOperationsTransition Property="RenderTransform"
+                                       Duration="0:0:0.22"
+                                       Easing="{StaticResource CodecEase}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector=":is(Control).reveal.revealed">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="RenderTransform" Value="none" />
   </Style>
 
-  <!-- fade: disclosure bodies -->
-  <Style Selector=":is(Control).fade">
-    <Style.Animations>
-      <Animation Duration="0:0:0.3" FillMode="Forward">
-        <KeyFrame Cue="0%">
-          <Setter Property="Opacity" Value="0" />
-        </KeyFrame>
-        <KeyFrame Cue="100%">
-          <Setter Property="Opacity" Value="1" />
-        </KeyFrame>
-      </Animation>
-    </Style.Animations>
+  <!-- reveal-soft: the same contract without movement, for whole-page swaps. -->
+  <Style Selector=":is(Control).reveal-soft">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.22" Easing="{StaticResource CodecEase}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector=":is(Control).reveal-soft.revealed">
+    <Setter Property="Opacity" Value="1" />
   </Style>
 
   <!-- breathe: the notice dot while work is in flight -->
