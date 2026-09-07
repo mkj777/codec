@@ -2,26 +2,33 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
     <!--
-      The view tabs draw nothing but their label. The base theme fills its own content
-      presenter on press, which is the box that kept appearing behind the text, and no setter
-      on the button reaches inside a template.
+      Codec's own Button template.
+
+      The base theme paints hover, press and focus inside its template, where no setter on the
+      button can reach, so every quiet button kept showing a filled box on click. Patching that
+      control by control had already been done four times over. This draws exactly the contract
+      Codec's styles use, Background, BorderBrush, BorderThickness, CornerRadius and Padding,
+      and nothing else, so a button looks like whatever its style says and never more.
     -->
-    <ControlTheme x:Key="LibTabTheme" TargetType="Button">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
+    <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
       <Setter Property="Template">
         <ControlTemplate>
-          <ContentPresenter Name="PART_ContentPresenter"
-                            Background="Transparent"
-                            Content="{TemplateBinding Content}"
-                            ContentTemplate="{TemplateBinding ContentTemplate}"
-                            Foreground="{TemplateBinding Foreground}"
-                            FontFamily="{TemplateBinding FontFamily}"
-                            FontSize="{TemplateBinding FontSize}"
-                            FontWeight="{TemplateBinding FontWeight}"
-                            Padding="{TemplateBinding Padding}"
-                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          <Border Name="PART_Root"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              FontWeight="{TemplateBinding FontWeight}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Border>
         </ControlTemplate>
       </Setter>
     </ControlTheme>
@@ -247,7 +254,7 @@
   -->
   <Style Selector="Button.chrome">
     <Setter Property="Width" Value="46" />
-    <Setter Property="Height" Value="40" />
+    <Setter Property="Height" Value="44" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="CornerRadius" Value="0" />

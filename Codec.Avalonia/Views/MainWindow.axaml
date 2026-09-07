@@ -18,7 +18,7 @@
         WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
         WindowDecorations="BorderOnly"
-        ExtendClientAreaTitleBarHeightHint="40">
+        ExtendClientAreaTitleBarHeightHint="44">
   <Window.Resources>
     <converters:BooleanNegationConverter x:Key="NotConverter" />
     <converters:BooleanToDoubleConverter x:Key="SidebarWidthConverter"
@@ -27,7 +27,7 @@
   </Window.Resources>
 
   <Grid ColumnDefinitions="Auto,*"
-        RowDefinitions="40,*">
+        RowDefinitions="44,*">
     <!-- The rail runs the full height, so the sink reaches the top edge. -->
     <Border x:Name="Sidebar"
             Classes="rail-shell"
@@ -51,14 +51,14 @@
           The rail's own caption line: the wordmark reads at its own size, the toggle sits at
           the far edge, and both centre on the same line as the window buttons opposite.
         -->
-        <Grid Height="40"
+        <Grid Height="44"
               Margin="0,0,0,10"
               Background="Transparent"
               ColumnDefinitions="*,Auto"
               chrome:WindowDecorationProperties.ElementRole="TitleBar">
           <Button Grid.Column="0"
                   Classes="wordmark-home"
-                  Margin="16,4,0,0"
+                  Margin="16,7,0,0"
                   HorizontalAlignment="Left"
                   VerticalAlignment="Center"
                   Command="{Binding BackCommand}"
@@ -245,13 +245,12 @@
         <!-- Which slice of the shelf is showing is chrome, so it lives on the chrome line. -->
         <StackPanel Orientation="Horizontal"
                     Spacing="16"
-                    Margin="10,6,0,0"
+                    Margin="10,9,0,0"
                     VerticalAlignment="Center"
                     IsVisible="{Binding IsLibraryGridVisible}"
                     chrome:WindowDecorationProperties.ElementRole="User">
           <Grid>
             <Button Classes="lib-tab"
-                    Theme="{StaticResource LibTabTheme}"
                     Classes.on="{Binding IsAllTabActive}"
                     Command="{Binding SelectLibraryTabCommand}"
                     CommandParameter="0"
@@ -260,7 +259,6 @@
           </Grid>
           <Grid>
             <Button Classes="lib-tab"
-                    Theme="{StaticResource LibTabTheme}"
                     Classes.on="{Binding IsInstalledTabActive}"
                     Command="{Binding SelectLibraryTabCommand}"
                     CommandParameter="1"
@@ -269,7 +267,6 @@
           </Grid>
           <Grid>
             <Button Classes="lib-tab"
-                    Theme="{StaticResource LibTabTheme}"
                     Classes.on="{Binding IsRecentTabActive}"
                     Command="{Binding SelectLibraryTabCommand}"
                     CommandParameter="2"
