@@ -18,6 +18,21 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 - Interaction washes: `#14F3EDC9` on hover and `#1FF3EDC9` on press. Quiet is the goal, invisible is not: below roughly 5 percent alpha a hover measures the same as rest on a near-black surface and the app reads as broken rather than as restrained.
 - The base theme's own palette is retuned to these colors rather than left at its defaults. Anything not templated explicitly still draws from it, so a stray grey hover or blue accent means a theme key was missed, not that a control needs its own style.
 
+## Window rules
+
+- The window is a Windows window first. Caption buttons use platform metrics, 46 wide and the
+  full height of the strip, square, flush into the corner, with the standard red close. Codec's
+  own button language does not apply here.
+- Caption elements carry a `WindowDecorationProperties.ElementRole` so the OS knows what they
+  are. The maximize role is what produces the Snap Layouts flyout; without it the buttons are
+  ordinary client-area controls and Windows offers nothing.
+- Anything in the top strip that is not a control drags the window, including the rail header.
+  An element needs a background to be hit-testable at all.
+- The window remembers where it was left: position, size and maximized state, validated against
+  the screens that still exist.
+- Codec stays opaque. Mica was measured and rejected: at a tint that preserves the palette it is
+  invisible, and at one where it reads it turns the rail and caption neutral grey.
+
 ## Layout rules
 
 - The sidebar owns navigation, search, Add, Scan, the mascot, and Settings in that order.

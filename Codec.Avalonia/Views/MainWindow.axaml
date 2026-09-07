@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
         xmlns:controls="using:Codec.Controls"
         xmlns:converters="using:Codec.Converters"
         xmlns:overlays="using:Codec.Views.Overlays"
@@ -43,7 +44,9 @@
       <Grid Margin="0,16,0,0"
             RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
         <Grid ColumnDefinitions="*,Auto"
-              Margin="16,0,16,14">
+              Margin="16,0,16,14"
+              Background="Transparent"
+              chrome:WindowDecorationProperties.ElementRole="TitleBar">
           <TextBlock Classes="wordmark"
                      VerticalAlignment="Center"
                      Text="Codec" />
@@ -54,6 +57,7 @@
                   Opacity="0.6"
                   Foreground="{DynamicResource CodecTextMutedBrush}"
                   Command="{Binding ToggleSidebarCommand}"
+                  chrome:WindowDecorationProperties.ElementRole="User"
                   AutomationProperties.Name="Close sidebar"
                   ToolTip.Tip="Close sidebar">
             <LucideIcon Kind="PanelLeftClose" Size="15" StrokeWidth="1.75" />
@@ -161,7 +165,7 @@
     <Grid Grid.Row="0" Grid.Column="1">
       <Border x:Name="DragRegion"
               Background="Transparent"
-              PointerPressed="TitleBar_PointerPressed" />
+              chrome:WindowDecorationProperties.ElementRole="TitleBar" />
 
       <Button Classes="icon-quiet"
               Width="30"
@@ -173,33 +177,36 @@
               Foreground="{DynamicResource CodecTextMutedBrush}"
               Command="{Binding ToggleSidebarCommand}"
               IsVisible="{Binding IsSidebarCollapsed}"
+              chrome:WindowDecorationProperties.ElementRole="User"
               AutomationProperties.Name="Open sidebar"
               ToolTip.Tip="Open sidebar">
         <LucideIcon Kind="PanelLeftOpen" Size="15" StrokeWidth="1.75" />
       </Button>
 
       <StackPanel HorizontalAlignment="Right"
-                  VerticalAlignment="Center"
-                  Margin="0,0,14,0"
+                  VerticalAlignment="Stretch"
                   Orientation="Horizontal"
-                  Spacing="2">
+                  Spacing="0">
         <Button Classes="chrome"
                 Click="MinimizeWindow_Click"
+                chrome:WindowDecorationProperties.ElementRole="MinimizeButton"
                 AutomationProperties.Name="Minimize"
                 ToolTip.Tip="Minimize">
-          <LucideIcon Kind="Minus" Size="12" StrokeWidth="1.4" />
+          <LucideIcon Kind="Minus" Size="13" StrokeWidth="1.5" />
         </Button>
         <Button Classes="chrome"
                 Click="MaximizeWindow_Click"
+                chrome:WindowDecorationProperties.ElementRole="MaximizeButton"
                 AutomationProperties.Name="Maximize or restore"
                 ToolTip.Tip="Maximize or restore">
-          <LucideIcon Kind="Square" Size="10" StrokeWidth="1.4" />
+          <LucideIcon x:Name="MaximizeGlyph" Kind="Square" Size="11" StrokeWidth="1.5" />
         </Button>
         <Button Classes="chrome close"
                 Click="CloseWindow_Click"
+                chrome:WindowDecorationProperties.ElementRole="CloseButton"
                 AutomationProperties.Name="Close"
                 ToolTip.Tip="Close">
-          <LucideIcon Kind="X" Size="12" StrokeWidth="1.4" />
+          <LucideIcon Kind="X" Size="13" StrokeWidth="1.5" />
         </Button>
       </StackPanel>
     </Grid>

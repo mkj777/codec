@@ -219,30 +219,37 @@
   </Style>
 
   <!-- window caption -->
+  <!--
+    Caption buttons follow Windows metrics rather than Codec's own button language: 46 wide,
+    the full height of the strip, square, and flush into the corner. The flushness matters more
+    than it looks. Maximized, the close button has to be hittable by throwing the pointer at the
+    top-right of the screen, and any inset breaks that.
+  -->
   <Style Selector="Button.chrome">
-    <Setter Property="Width" Value="30" />
-    <Setter Property="Height" Value="26" />
+    <Setter Property="Width" Value="46" />
+    <Setter Property="Height" Value="34" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
-    <Setter Property="CornerRadius" Value="7" />
+    <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Opacity" Value="0.7" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
   </Style>
   <Style Selector="Button.chrome:pointerover">
     <Setter Property="Background" Value="{DynamicResource CodecCaptionHoverBrush}" />
-    <Setter Property="Opacity" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
   <Style Selector="Button.chrome:pressed">
     <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
   </Style>
+  <!-- The red close is a Windows convention, not a Codec colour. Orange would read as an action. -->
   <Style Selector="Button.chrome.close:pointerover">
-    <Setter Property="Background" Value="{DynamicResource CodecPrimaryBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource CodecBackgroundBrush}" />
+    <Setter Property="Background" Value="#C42B1C" />
+    <Setter Property="Foreground" Value="#FFFFFF" />
   </Style>
   <Style Selector="Button.chrome.close:pressed">
-    <Setter Property="Background" Value="{DynamicResource CodecPrimaryPressedBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource CodecBackgroundBrush}" />
+    <Setter Property="Background" Value="#B4261A" />
+    <Setter Property="Foreground" Value="#FFFFFF" />
   </Style>
 
   <!--

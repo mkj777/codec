@@ -20,6 +20,15 @@ namespace Codec.Services.Storage
         public DateTime? LastSteamSyncUtc { get; set; }
         public ulong? SteamId64 { get; set; }
         public DateTime? SteamAchievementsRetryAfterUtc { get; set; }
+
+        // Window placement. Position is in physical pixels because that is what the platform
+        // reports; size stays in device-independent units so moving between monitors of
+        // different scaling keeps the window the same apparent size.
+        public int? WindowX { get; set; }
+        public int? WindowY { get; set; }
+        public double? WindowWidth { get; set; }
+        public double? WindowHeight { get; set; }
+        public bool WindowMaximized { get; set; }
     }
 
     public class AppSettingsService
@@ -33,6 +42,27 @@ namespace Codec.Services.Storage
                 LibraryStorageService.AppDataFolderName);
             Directory.CreateDirectory(dir);
             return Path.Combine(dir, "settings.json");
+        }
+
+        /// <summary>
+        /// Synchronous load, for the one caller that needs settings before the first frame:
+        /// window placement has to be applied before the window is shown or it visibly jumps.
+        /// </summary>
+        public AppSettings Load()
+        {
+            try
+            {
+                string path = GetPath();
+                if (!File.Exists(path))
+                    return new AppSettings();
+                using var fs = File.OpenRead(path);
+                return JsonSerializer.Deserialize<AppSettings>(fs, _jsonOptions) ?? new AppSettings();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to load app settings: {ex.Message}");
+                return new AppSettings();
+            }
         }
 
         public async Task<AppSettings> LoadAsync()

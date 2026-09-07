@@ -21,6 +21,11 @@ public sealed partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
             var window = new MainWindow();
+
+            // Placement has to be applied before the window is shown, or it opens at the
+            // default size and visibly jumps. That is why AppSettingsService has a sync load.
+            WindowChrome.RestorePlacement(window, Services.AppSettings.Load());
+
             var dispatcher = new AvaloniaUiDispatcher();
             var filePicker = new AvaloniaFilePickerService(() => window);
             var windowService = new AvaloniaWindowService(desktop, () => window);

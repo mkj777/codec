@@ -1,8 +1,11 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Codec.ViewModels;
+using Avalonia.Threading;
 using Codec.Infrastructure;
+using Lucide.Avalonia;
 using System.Diagnostics;
 
 namespace Codec.Views;
@@ -13,9 +16,17 @@ public sealed partial class MainWindow : Window
     private AvaloniaWindowService? _windowService;
     private TrayService? _trayService;
 
+    // Only the normal state is worth remembering: a maximized window reports the screen, and a
+    // minimized one reports nothing useful.
+    private PixelPoint _normalPosition;
+    private Size _normalSize;
+    private bool _placementCaptureQueued;
+
     public MainWindow()
     {
         InitializeComponent();
+        _normalSize = ClientSize;
+        PositionChanged += OnPositionChanged;
         Opened += OnOpened;
         Closing += OnClosing;
         Closed += OnClosed;
@@ -28,8 +39,57 @@ public sealed partial class MainWindow : Window
         _trayService = trayService;
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == ClientSizeProperty)
+            CapturePlacementSoon();
+
+        // Windows shows a restore glyph once maximized, never a second maximize square.
+        if (change.Property == WindowStateProperty && MaximizeGlyph is not null)
+        {
+            MaximizeGlyph.Kind = WindowState == WindowState.Maximized
+                ? LucideIconKind.Copy
+                : LucideIconKind.Square;
+        }
+    }
+
+    private void OnPositionChanged(object? sender, PixelPointEventArgs e) => CapturePlacementSoon();
+
+    /// <summary>
+    /// Records the placement once the window state has settled.
+    ///
+    /// Maximizing changes the client size before it changes WindowState, so reading the size
+    /// inline records the maximized rectangle as if it were the user's chosen one. Deferring to
+    /// the next dispatcher pass means the state is already correct, and the capture is skipped
+    /// entirely unless the window is genuinely in its normal state.
+    ///
+    /// ClientSize, not FrameSize: Window.Width sets the client area, so saving the outer frame
+    /// and restoring it as Width grows the window by the frame inset on every launch.
+    /// </summary>
+    private void CapturePlacementSoon()
+    {
+        if (_placementCaptureQueued)
+            return;
+
+        _placementCaptureQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _placementCaptureQueued = false;
+            if (WindowState != WindowState.Normal)
+                return;
+
+            _normalSize = ClientSize;
+            _normalPosition = Position;
+        }, DispatcherPriority.Background);
+    }
+
     private async void OnOpened(object? sender, EventArgs e)
     {
+        // DWM owns the frame, and it only rounds the corners and darkens the border when told.
+        WindowChrome.ApplyNativeFrame(this);
+
         if (_libraryLoaded || DataContext is not MainViewModel viewModel)
             return;
 
@@ -84,6 +144,17 @@ public sealed partial class MainWindow : Window
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
+        // Saved first, so it is recorded whether this close ends the process or hides to tray.
+        if (DataContext is MainViewModel current)
+        {
+            current.SaveWindowPlacement(
+                _normalPosition.X,
+                _normalPosition.Y,
+                _normalSize.Width,
+                _normalSize.Height,
+                WindowState == WindowState.Maximized);
+        }
+
         if (_windowService?.IsShutdownRequested == true || DataContext is not MainViewModel viewModel)
             return;
 
@@ -133,18 +204,6 @@ public sealed partial class MainWindow : Window
         if (DataContext is MainViewModel viewModel)
             viewModel.IsCloseChoiceVisible = false;
         e.Handled = true;
-    }
-
-    private void TitleBar_PointerPressed(object? sender, PointerPressedEventArgs e)
-    {
-        PointerPoint point = e.GetCurrentPoint(this);
-        if (!point.Properties.IsLeftButtonPressed)
-            return;
-
-        if (e.ClickCount == 2)
-            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-        else
-            BeginMoveDrag(e);
     }
 
     private void MinimizeWindow_Click(object? sender, RoutedEventArgs e)

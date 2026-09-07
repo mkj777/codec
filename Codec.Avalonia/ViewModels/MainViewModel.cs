@@ -505,6 +505,20 @@ namespace Codec.ViewModels
             await _services.AppSettings.SaveAsync(_appSettings);
         }
 
+        /// <summary>
+        /// Records where the window was left. Routed through the ViewModel's settings copy so
+        /// there is still exactly one writer to settings.json.
+        /// </summary>
+        public void SaveWindowPlacement(int? x, int? y, double width, double height, bool maximized)
+        {
+            _appSettings.WindowX = x;
+            _appSettings.WindowY = y;
+            _appSettings.WindowWidth = width;
+            _appSettings.WindowHeight = height;
+            _appSettings.WindowMaximized = maximized;
+            _ = _services.AppSettings.SaveAsync(_appSettings);
+        }
+
         public string? TryLaunchSteamSilent()
         {
             string? path = _appSettings.SteamClientPath;
