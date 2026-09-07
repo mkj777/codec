@@ -154,6 +154,10 @@
   <Style Selector="ScrollBar[Orientation=Horizontal]:pointerover">
     <Setter Property="Height" Value="10" />
   </Style>
+  <!-- A page the reader is working through keeps its bar instead of fading it away. -->
+  <Style Selector="ScrollViewer.persistent-scroll /template/ ScrollBar">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
   <Style Selector="ScrollBar:expanded">
     <Setter Property="Opacity" Value="1" />
   </Style>

@@ -39,6 +39,15 @@ public sealed class CodecImage : Control
     public static readonly StyledProperty<bool> LetterboxWideArtProperty =
         AvaloniaProperty.Register<CodecImage, bool>(nameof(LetterboxWideArt));
 
+    /// <summary>
+    /// Ask for the size the artwork actually needs instead of filling whatever it is given.
+    /// A cover fills a card and wants the default; a logo has to end where the picture ends,
+    /// or aligning it left leaves it floating in the middle of an invisible full-width box.
+    /// Off by default so no existing use changes size.
+    /// </summary>
+    public static readonly StyledProperty<bool> IntrinsicSizeProperty =
+        AvaloniaProperty.Register<CodecImage, bool>(nameof(IntrinsicSize));
+
     public string? Source
     {
         get => GetValue(SourceProperty);
@@ -69,10 +78,36 @@ public sealed class CodecImage : Control
         set => SetValue(LetterboxWideArtProperty, value);
     }
 
+    public bool IntrinsicSize
+    {
+        get => GetValue(IntrinsicSizeProperty);
+        set => SetValue(IntrinsicSizeProperty, value);
+    }
+
     static CodecImage()
     {
         AffectsRender<CodecImage>(StretchProperty, PlaceholderProperty, VerticalBiasProperty, LetterboxWideArtProperty);
         SourceProperty.Changed.AddClassHandler<CodecImage>((control, _) => control.BeginLoad());
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (!IntrinsicSize)
+            return base.MeasureOverride(availableSize);
+
+        Bitmap? image = _loadedBitmap ?? Placeholder;
+        if (image is null || image.Size.Width <= 0 || image.Size.Height <= 0)
+            return default;
+
+        double widthRatio = availableSize.Width / image.Size.Width;
+        double heightRatio = availableSize.Height / image.Size.Height;
+        double scale = Math.Min(widthRatio, heightRatio);
+
+        // Unconstrained in both directions means the natural size is the answer.
+        if (double.IsInfinity(scale) || double.IsNaN(scale) || scale <= 0)
+            scale = 1;
+
+        return new Size(image.Size.Width * scale, image.Size.Height * scale);
     }
 
     public override void Render(DrawingContext context)
@@ -176,6 +211,10 @@ public sealed class CodecImage : Control
         Bitmap? previous = _loadedBitmap;
         _loadedBitmap = bitmap;
         previous?.Dispose();
+
+        if (IntrinsicSize)
+            InvalidateMeasure();
+
         InvalidateVisual();
     }
 

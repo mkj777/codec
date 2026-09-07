@@ -82,10 +82,6 @@
     <Setter Property="LetterSpacing" Value="0.54" />
     <Setter Property="RenderTransform" Value="none" />
     <Setter Property="RenderTransformOrigin" Value="50%,50%" />
-    <!-- Button has no BoxShadow property, so the orange bloom is an effect. -->
-    <Setter Property="Effect">
-      <DropShadowEffect BlurRadius="24" OffsetX="0" OffsetY="8" Color="#E76C2B" Opacity="0.7" />
-    </Setter>
     <Setter Property="Transitions">
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.18" />
@@ -109,14 +105,10 @@
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryHoverBrush}" />
     <Setter Property="Foreground" Value="#221E19" />
     <Setter Property="RenderTransform" Value="translateY(-1px)" />
-    <Setter Property="Effect">
-      <DropShadowEffect BlurRadius="18" OffsetX="0" OffsetY="6" Color="#E76C2B" Opacity="0.85" />
-    </Setter>
   </Style>
   <Style Selector="Button.play:pressed">
     <Setter Property="Background" Value="{DynamicResource CodecPrimaryPressedBrush}" />
     <Setter Property="RenderTransform" Value="none" />
-    <Setter Property="Effect" Value="{x:Null}" />
   </Style>
   <Style Selector="Button.play:focus-visible">
     <Setter Property="BorderBrush" Value="{DynamicResource CodecTextBrush}" />

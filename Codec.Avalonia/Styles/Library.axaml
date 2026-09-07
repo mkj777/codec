@@ -1,5 +1,29 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!--
+      The rail row draws nothing itself. Every state lives on the button inside it, so the base
+      theme has no template of its own here to paint a highlight into.
+    -->
+    <ControlTheme x:Key="RailItemTheme" TargetType="ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Background="{TemplateBinding Background}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            Padding="{TemplateBinding Padding}" />
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+
   <!--
     The rail closes over time. A width binding on its own moves 240 to 0 in a single frame,
     which is what the WinUI build spent 150ms of slide and fade avoiding.
@@ -65,16 +89,20 @@
       </Transitions>
     </Setter>
   </Style>
+  <!-- The rail answers in orange, quietly. A neutral wash here read as a stray Windows list. -->
   <Style Selector="Button.rail-item:pointerover">
-    <Setter Property="Background" Value="{DynamicResource CodecHoverWashBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashHoverBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
   <Style Selector="Button.rail-item:pressed">
-    <Setter Property="Background" Value="{DynamicResource CodecPressWashBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashBrush}" />
   </Style>
   <Style Selector="ListBoxItem:selected Button.rail-item">
-    <Setter Property="Background" Value="{DynamicResource CodecPrimaryWashBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CodecPrimarySelectedBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected Button.rail-item:pointerover">
+    <Setter Property="Background" Value="{DynamicResource CodecPrimarySelectedBrush}" />
   </Style>
 
   <!-- The selection bar slides in from the left rather than blinking on. -->

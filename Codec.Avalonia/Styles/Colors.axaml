@@ -34,6 +34,7 @@
     <Color x:Key="CodecPrimaryLineColor">#52E76C2B</Color>
     <Color x:Key="CodecPrimaryLineHoverColor">#99E76C2B</Color>
     <Color x:Key="CodecPrimaryWashHoverColor">#12E76C2B</Color>
+    <Color x:Key="CodecPrimarySelectedColor">#2BE76C2B</Color>
     <!-- The cinema veils sit on #181613, one step below the canvas. -->
     <Color x:Key="CodecVeilColor">#181613</Color>
     <Color x:Key="CodecNoticeColor">#F0141210</Color>
@@ -64,6 +65,7 @@
     <SolidColorBrush x:Key="CodecPrimaryLineBrush" Color="{StaticResource CodecPrimaryLineColor}" />
     <SolidColorBrush x:Key="CodecPrimaryLineHoverBrush" Color="{StaticResource CodecPrimaryLineHoverColor}" />
     <SolidColorBrush x:Key="CodecPrimaryWashHoverBrush" Color="{StaticResource CodecPrimaryWashHoverColor}" />
+    <SolidColorBrush x:Key="CodecPrimarySelectedBrush" Color="{StaticResource CodecPrimarySelectedColor}" />
     <SolidColorBrush x:Key="CodecNoticeBrush" Color="{StaticResource CodecNoticeColor}" />
     <SolidColorBrush x:Key="CodecScrollThumbBrush" Color="#26F3EDC9" />
     <SolidColorBrush x:Key="CodecScrollThumbHoverBrush" Color="#3DF3EDC9" />

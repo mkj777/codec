@@ -20,6 +20,8 @@
 
   <Grid Background="{DynamicResource CodecBackgroundBrush}">
     <ScrollViewer x:Name="DetailScroller"
+                  Classes="persistent-scroll"
+                  AllowAutoHide="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel>
@@ -70,7 +72,7 @@
                   controls:Interaction.PulseOnClick="True"
                   HorizontalAlignment="Left"
                   VerticalAlignment="Top"
-                  Margin="20,16"
+                  Margin="20,44,0,0"
                   ZIndex="4"
                   Command="{Binding BackCommand}"
                   AutomationProperties.Name="Back to library"
@@ -99,7 +101,17 @@
                            Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource YearConverter}}" />
               </StackPanel>
 
+              <media:CodecImage IsVisible="{Binding SelectedGame.HasLogo}"
+                                Source="{Binding SelectedGame.LibraryLogo}"
+                                IntrinsicSize="True"
+                                Stretch="Uniform"
+                                Height="92"
+                                MaxWidth="430"
+                                HorizontalAlignment="Left"
+                                IsHitTestVisible="False" />
+
               <TextBlock Classes="page-title shadow-title"
+                         IsVisible="{Binding !SelectedGame.HasLogo}"
                          Text="{Binding SelectedGame.Name}"
                          TextTrimming="CharacterEllipsis"
                          MaxLines="2"

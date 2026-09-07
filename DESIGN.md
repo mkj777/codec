@@ -17,6 +17,7 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 - Separation: warm alpha lines over whatever sits beneath them, `#17F3EDC9` for structure and `#0EF3EDC9` for rows, used only where tone and space do not already separate.
 - Interaction washes: `#14F3EDC9` on hover and `#1FF3EDC9` on press. Quiet is the goal, invisible is not: below roughly 5 percent alpha a hover measures the same as rest on a near-black surface and the app reads as broken rather than as restrained.
 - The base theme's own palette is retuned to these colors rather than left at its defaults. Anything not templated explicitly still draws from it, so a stray grey hover or blue accent means a theme key was missed, not that a control needs its own style.
+- When a control shows a color Codec never chose, the fix is a `ControlTheme`, not another setter. The base theme paints hover and selection inside its own templates, where a `Background` setter on the outer control cannot reach: this has now bitten the scroll thumb, the toggle switch and the rail list.
 
 ## Window rules
 
@@ -35,7 +36,9 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 
 ## Layout rules
 
-- The sidebar owns navigation, search, Add, Scan, the mascot, and Settings in that order.
+- The sidebar owns navigation, search, Add, Scan, the mascot, and Settings in that order. Its rows answer in orange, never in a neutral wash, and long names truncate rather than widening the list.
+- Game Details artwork reaches the top edge of the window and the caption strip sits on the picture. Where a game has a logo, the logo is the title; the name is not repeated as text beneath it.
+- Controls that persist across a state change stay in one place. The sidebar toggle is a single button spanning both columns rather than one per state.
 - Library covers are the content. Never render titles beneath them and never add a Continue hero.
 - The library header filters in two stable rows: view tabs and the library count, then source chips and sort. Controls never move as sources appear.
 - Game Details is the ambient cinema mood: sharp full-bleed artwork with the page reading as a lower third. It keeps the existing information order - hero actions, summary metrics, metadata and description, taxonomy, then media and links - continuing into a quiet second section below the first viewport.

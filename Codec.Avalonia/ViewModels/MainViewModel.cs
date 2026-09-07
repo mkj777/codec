@@ -899,7 +899,28 @@ namespace Codec.ViewModels
                 DisplayedGames.RemoveAt(DisplayedGames.Count - 1);
         }
 
+        private bool _isRefreshingSidebar;
+
         private void RefreshSidebarFilteredGames()
+        {
+            // Selection is mutated on either side of a Reset on the bound collection, and the
+            // details switch below can loop back into here. One pass at a time keeps that from
+            // re-entering while the list control is still settling.
+            if (_isRefreshingSidebar)
+                return;
+
+            _isRefreshingSidebar = true;
+            try
+            {
+                RefreshSidebarFilteredGamesCore();
+            }
+            finally
+            {
+                _isRefreshingSidebar = false;
+            }
+        }
+
+        private void RefreshSidebarFilteredGamesCore()
         {
             var filteredGames = Games
                 .Where(MatchesActiveFilters)

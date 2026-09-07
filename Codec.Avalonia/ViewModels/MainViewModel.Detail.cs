@@ -489,6 +489,12 @@ namespace Codec.ViewModels
         {
             SelectedGame = game;
             IsDetailsVisible = true;
+
+            // The rail row is a button, so clicking it never reached the ListBox's own
+            // selection and only a right click highlighted anything. Marking the selection
+            // here also highlights games opened from the shelf, which is what the rail is for.
+            if (SidebarFilteredGames.Contains(game))
+                SidebarSelectedItem = game;
         }
 
         private static void ApplyDisplayedAssetHydration(Game game, Services.Fetching.DisplayedAssetService.DisplayedAssetHydrationResult hydration)
