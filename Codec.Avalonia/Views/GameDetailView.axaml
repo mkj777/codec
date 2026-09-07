@@ -29,10 +29,16 @@
           Cinema. The art stays sharp and fills the first viewport; the page
           reads as a lower third over it.
         -->
-        <Grid Height="{Binding #DetailScroller.Bounds.Height}" ClipToBounds="True">
-          <media:CodecImage Stretch="UniformToFill"
-                            VerticalBias="0.22"
-                            RenderTransform="scale(1.02)">
+        <Grid MinHeight="470" ClipToBounds="True">
+          <!--
+            The band is as tall as the artwork wants to be at this width, never the whole
+            viewport. A 3:1 hero forced into a viewport-tall frame has to lose most of its sides
+            to cover it, which is what read as zoomed in.
+          -->
+          <media:CodecImage IntrinsicSize="True"
+                            Stretch="Uniform"
+                            VerticalAlignment="Top"
+                            MaxHeight="{Binding #DetailScroller.Bounds.Height}">
             <media:CodecImage.Source>
               <MultiBinding Converter="{StaticResource FirstNonEmptyConverter}">
                 <Binding Path="SelectedGame.LibraryHero" />
@@ -105,9 +111,10 @@
                                 Source="{Binding SelectedGame.LibraryLogo}"
                                 IntrinsicSize="True"
                                 Stretch="Uniform"
-                                Height="92"
-                                MaxWidth="430"
+                                Height="132"
+                                MaxWidth="560"
                                 HorizontalAlignment="Left"
+                                ZIndex="6"
                                 IsHitTestVisible="False" />
 
               <TextBlock Classes="page-title shadow-title"

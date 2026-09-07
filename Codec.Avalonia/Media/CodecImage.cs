@@ -86,7 +86,8 @@ public sealed class CodecImage : Control
 
     static CodecImage()
     {
-        AffectsRender<CodecImage>(StretchProperty, PlaceholderProperty, VerticalBiasProperty, LetterboxWideArtProperty);
+        AffectsRender<CodecImage>(
+            StretchProperty, PlaceholderProperty, VerticalBiasProperty, LetterboxWideArtProperty);
         SourceProperty.Changed.AddClassHandler<CodecImage>((control, _) => control.BeginLoad());
     }
 

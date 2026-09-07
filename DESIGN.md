@@ -38,7 +38,9 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 
 - The sidebar owns navigation, search, Add, Scan, the mascot, and Settings in that order. Its rows answer in orange, never in a neutral wash, and long names truncate rather than widening the list.
 - Game Details artwork reaches the top edge of the window and the caption strip sits on the picture. Where a game has a logo, the logo is the title; the name is not repeated as text beneath it.
-- Controls that persist across a state change stay in one place. The sidebar toggle is a single button spanning both columns rather than one per state.
+- The hero band is as tall as the artwork wants to be at the page width, not as tall as the viewport. Forcing a 3:1 hero into a viewport-tall frame crops most of its width away, and a picture the player chose the game by should be shown, not zoomed into.
+- Controls that persist across a state change keep their height. The sidebar toggle sits at the rail's right edge while the rail is open and at the caption strip's left edge once it is closed, but both share the caption strip's centre line so it never appears to jump vertically.
+- The wordmark is the way back to the shelf.
 - Library covers are the content. Never render titles beneath them and never add a Continue hero.
 - The library header filters in two stable rows: view tabs and the library count, then source chips and sort. Controls never move as sources appear.
 - Game Details is the ambient cinema mood: sharp full-bleed artwork with the page reading as a lower third. It keeps the existing information order - hero actions, summary metrics, metadata and description, taxonomy, then media and links - continuing into a quiet second section below the first viewport.

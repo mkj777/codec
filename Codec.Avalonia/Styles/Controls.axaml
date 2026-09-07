@@ -477,6 +477,28 @@
     </Setter>
   </Style>
 
+  <!-- The wordmark is a control, but it should read as the brand, not as a button. -->
+  <Style Selector="Button.wordmark-home">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.wordmark-home:pointerover">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.75" />
+  </Style>
+  <Style Selector="Button.wordmark-home:pressed">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+
   <Style Selector="ToolTip">
     <Setter Property="Padding" Value="8,5" />
     <Setter Property="CornerRadius" Value="7" />

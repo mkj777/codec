@@ -41,22 +41,51 @@
             BorderThickness="0,0,1,0"
             ClipToBounds="True"
             PointerPressed="Sidebar_PointerPressed">
-      <Grid RowDefinitions="34,Auto,*,Auto,Auto,Auto">
+      <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
         <!--
           Exactly the height of the caption strip. The collapse toggle here and the expand
           toggle over there then share a centre line, so the control does not appear to jump
           when the rail closes.
         -->
-        <Grid Margin="52,0,10,0"
+        <Grid Margin="0,0,0,12"
               Background="Transparent"
+              RowDefinitions="34,Auto"
               chrome:WindowDecorationProperties.ElementRole="TitleBar">
-          <TextBlock Classes="wordmark"
-                     VerticalAlignment="Center"
-                     Text="Codec" />
+          <!--
+            The top 34 matches the caption strip exactly, so the toggle here and the toggle
+            that replaces it when the rail closes share a centre line.
+          -->
+          <Button Grid.Row="0"
+                  Classes="icon-quiet"
+                  Width="28"
+                  Height="26"
+                  Margin="0,0,10,0"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Opacity="0.7"
+                  Foreground="{DynamicResource CodecTextMutedBrush}"
+                  Command="{Binding ToggleSidebarCommand}"
+                  chrome:WindowDecorationProperties.ElementRole="User"
+                  AutomationProperties.Name="Hide the sidebar"
+                  ToolTip.Tip="Hide the sidebar">
+            <LucideIcon Kind="PanelLeftClose" Size="15" StrokeWidth="1.75" />
+          </Button>
+
+          <!-- The wordmark is the way back to the shelf, as it was before the migration. -->
+          <Button Grid.Row="1"
+                  Classes="wordmark-home"
+                  Margin="16,10,16,0"
+                  HorizontalAlignment="Left"
+                  Command="{Binding BackCommand}"
+                  chrome:WindowDecorationProperties.ElementRole="User"
+                  AutomationProperties.Name="Back to the library"
+                  ToolTip.Tip="Back to the library">
+            <TextBlock Classes="wordmark" Text="Codec" />
+          </Button>
         </Grid>
 
         <Border Grid.Row="1"
-                Margin="16,14,16,6"
+                Margin="16,0,16,6"
                 Padding="0,0,0,8"
                 IsVisible="{Binding HasGames}"
                 BorderBrush="{DynamicResource CodecLine2Brush}"
@@ -174,39 +203,27 @@
                           IsVisible="False"
                           controls:Reveal.IsOpen="{Binding IsDetailsVisible}" />
 
-    <!--
-      One sidebar toggle, in one place. Two buttons that swapped in and out meant the control
-      appeared to jump across the window whenever the rail closed. Spanning both columns keeps
-      it at the same point whether the rail is 240 wide or gone.
-    -->
-    <Button Grid.Row="0"
-            Grid.ColumnSpan="2"
-            Classes="icon-quiet"
-            Width="28"
-            Height="26"
-            Margin="10,0,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Center"
-            ZIndex="20"
-            Opacity="0.7"
-            Foreground="{DynamicResource CodecTextMutedBrush}"
-            Command="{Binding ToggleSidebarCommand}"
-            chrome:WindowDecorationProperties.ElementRole="User"
-            AutomationProperties.Name="Show or hide the sidebar"
-            ToolTip.Tip="Show or hide the sidebar">
-      <Panel>
-        <LucideIcon Kind="PanelLeftClose" Size="15" StrokeWidth="1.75"
-                    IsVisible="{Binding !IsSidebarCollapsed}" />
-        <LucideIcon Kind="PanelLeftOpen" Size="15" StrokeWidth="1.75"
-                    IsVisible="{Binding IsSidebarCollapsed}" />
-      </Panel>
-    </Button>
-
     <!-- caption strip, drawn over whatever the content column is showing -->
     <Grid Grid.Row="0" Grid.Column="1" ZIndex="10">
       <Border x:Name="DragRegion"
               Background="Transparent"
               chrome:WindowDecorationProperties.ElementRole="TitleBar" />
+
+      <Button Classes="icon-quiet"
+              Width="28"
+              Height="26"
+              Margin="10,0,0,0"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Center"
+              Opacity="0.7"
+              Foreground="{DynamicResource CodecTextMutedBrush}"
+              Command="{Binding ToggleSidebarCommand}"
+              IsVisible="{Binding IsSidebarCollapsed}"
+              chrome:WindowDecorationProperties.ElementRole="User"
+              AutomationProperties.Name="Show the sidebar"
+              ToolTip.Tip="Show the sidebar">
+        <LucideIcon Kind="PanelLeftOpen" Size="15" StrokeWidth="1.75" />
+      </Button>
 
       <StackPanel HorizontalAlignment="Right"
                   VerticalAlignment="Stretch"
