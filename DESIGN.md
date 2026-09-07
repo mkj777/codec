@@ -17,7 +17,7 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 - Separation: warm alpha lines over whatever sits beneath them, `#17F3EDC9` for structure and `#0EF3EDC9` for rows, used only where tone and space do not already separate.
 - Interaction washes: `#14F3EDC9` on hover and `#1FF3EDC9` on press. Quiet is the goal, invisible is not: below roughly 5 percent alpha a hover measures the same as rest on a near-black surface and the app reads as broken rather than as restrained.
 - The base theme's own palette is retuned to these colors rather than left at its defaults. Anything not templated explicitly still draws from it, so a stray grey hover or blue accent means a theme key was missed, not that a control needs its own style.
-- When a control shows a color Codec never chose, the fix is a `ControlTheme`, not another setter. The base theme paints hover and selection inside its own templates, where a `Background` setter on the outer control cannot reach: this has now bitten the scroll thumb, the toggle switch and the rail list.
+- When a control shows a color Codec never chose, the fix is a `ControlTheme`, not another setter. The base theme paints hover and selection inside its own templates, where a `Background` setter on the outer control cannot reach: this has now bitten the scroll thumb, the toggle switch, the rail list and the view tabs. Switching off the focus adorner is not enough on its own: the press fill lives in the template too.
 
 ## Window rules
 

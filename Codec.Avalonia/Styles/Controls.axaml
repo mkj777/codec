@@ -1,5 +1,32 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!--
+      The view tabs draw nothing but their label. The base theme fills its own content
+      presenter on press, which is the box that kept appearing behind the text, and no setter
+      on the button reaches inside a template.
+    -->
+    <ControlTheme x:Key="LibTabTheme" TargetType="Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter"
+                            Background="Transparent"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            FontFamily="{TemplateBinding FontFamily}"
+                            FontSize="{TemplateBinding FontSize}"
+                            FontWeight="{TemplateBinding FontWeight}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+
   <!--
     One button language across the application: a ghost outline for everything
     quiet, an orange pill for the primary next action, a circle for icon-only
@@ -220,7 +247,7 @@
   -->
   <Style Selector="Button.chrome">
     <Setter Property="Width" Value="46" />
-    <Setter Property="Height" Value="34" />
+    <Setter Property="Height" Value="40" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="CornerRadius" Value="0" />
@@ -251,9 +278,8 @@
   -->
   <Style Selector="Button.lib-tab">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="VerticalAlignment" Value="Stretch" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
-    <Setter Property="Padding" Value="0" />
+    <Setter Property="Padding" Value="0,0,0,7" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
