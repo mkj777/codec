@@ -47,20 +47,32 @@
           toggle over there then share a centre line, so the control does not appear to jump
           when the rail closes.
         -->
-        <Grid Margin="0,0,0,8"
+        <!--
+          The rail's own caption line: the wordmark reads at its own size, the toggle sits at
+          the far edge, and both centre on the same line as the window buttons opposite.
+        -->
+        <Grid Height="34"
+              Margin="0,0,0,10"
               Background="Transparent"
-              RowDefinitions="34,Auto"
+              ColumnDefinitions="*,Auto"
               chrome:WindowDecorationProperties.ElementRole="TitleBar">
-          <!--
-            The top 34 matches the caption strip exactly, so the toggle here and the toggle
-            that replaces it when the rail closes share a centre line.
-          -->
-          <Button Grid.Row="0"
+          <Button Grid.Column="0"
+                  Classes="wordmark-home"
+                  Margin="16,0,0,0"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Center"
+                  Command="{Binding BackCommand}"
+                  chrome:WindowDecorationProperties.ElementRole="User"
+                  AutomationProperties.Name="Back to the library"
+                  ToolTip.Tip="Back to the library">
+            <TextBlock Classes="wordmark" Text="Codec" />
+          </Button>
+
+          <Button Grid.Column="1"
                   Classes="icon-quiet"
                   Width="28"
                   Height="26"
                   Margin="0,0,10,0"
-                  HorizontalAlignment="Right"
                   VerticalAlignment="Center"
                   Opacity="0.7"
                   Foreground="{DynamicResource CodecTextMutedBrush}"
@@ -69,18 +81,6 @@
                   AutomationProperties.Name="Hide the sidebar"
                   ToolTip.Tip="Hide the sidebar">
             <LucideIcon Kind="PanelLeftClose" Size="15" StrokeWidth="1.75" />
-          </Button>
-
-          <!-- The wordmark is the way back to the shelf, as it was before the migration. -->
-          <Button Grid.Row="1"
-                  Classes="wordmark-home"
-                  Margin="16,0,16,0"
-                  HorizontalAlignment="Left"
-                  Command="{Binding BackCommand}"
-                  chrome:WindowDecorationProperties.ElementRole="User"
-                  AutomationProperties.Name="Back to the library"
-                  ToolTip.Tip="Back to the library">
-            <TextBlock Classes="wordmark" Text="Codec" />
           </Button>
         </Grid>
 
@@ -241,6 +241,39 @@
                 ToolTip.Tip="Back to the library">
           <LucideIcon Kind="ChevronLeft" Size="16" StrokeWidth="1.75" />
         </Button>
+
+        <!-- Which slice of the shelf is showing is chrome, so it lives on the chrome line. -->
+        <StackPanel Orientation="Horizontal"
+                    Spacing="16"
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Stretch"
+                    IsVisible="{Binding IsLibraryGridVisible}"
+                    chrome:WindowDecorationProperties.ElementRole="User">
+          <Grid>
+            <Button Classes="lib-tab"
+                    Classes.on="{Binding IsAllTabActive}"
+                    Command="{Binding SelectLibraryTabCommand}"
+                    CommandParameter="0"
+                    Content="All" />
+            <Border Classes="tab-underline" Classes.on="{Binding IsAllTabActive}" />
+          </Grid>
+          <Grid>
+            <Button Classes="lib-tab"
+                    Classes.on="{Binding IsInstalledTabActive}"
+                    Command="{Binding SelectLibraryTabCommand}"
+                    CommandParameter="1"
+                    Content="Installed" />
+            <Border Classes="tab-underline" Classes.on="{Binding IsInstalledTabActive}" />
+          </Grid>
+          <Grid>
+            <Button Classes="lib-tab"
+                    Classes.on="{Binding IsRecentTabActive}"
+                    Command="{Binding SelectLibraryTabCommand}"
+                    CommandParameter="2"
+                    Content="Recent" />
+            <Border Classes="tab-underline" Classes.on="{Binding IsRecentTabActive}" />
+          </Grid>
+        </StackPanel>
       </StackPanel>
 
       <StackPanel HorizontalAlignment="Right"

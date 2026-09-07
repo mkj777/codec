@@ -183,9 +183,14 @@
     <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
   </Style>
 
-  <!-- The lift is the one place Codec allows real movement. -->
+  <!--
+    Hover brings the card forward rather than throwing it upward: it grows a little and its
+    shadow deepens, which reads as approaching instead of hopping. The shelf carries matching
+    padding so the growth is never clipped at the edges.
+  -->
   <Style Selector="Grid.cover-card">
     <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     <Setter Property="Transitions">
       <Transitions>
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3">
@@ -197,10 +202,11 @@
     </Setter>
   </Style>
   <Style Selector="Grid.cover-card:pointerover">
-    <Setter Property="RenderTransform" Value="translateY(-7px)" />
+    <Setter Property="RenderTransform" Value="scale(1.055)" />
+    <Setter Property="ZIndex" Value="2" />
   </Style>
   <Style Selector="Grid.cover-card:pointerover Border.cover">
-    <Setter Property="BoxShadow" Value="0 18 40 0 #80000000" />
+    <Setter Property="BoxShadow" Value="0 16 38 -6 #8C000000" />
   </Style>
   <!--
     Pressing settles the card most of the way back down. The state has to come from
@@ -208,7 +214,7 @@
     the card above it, and no selector reaches upwards.
   -->
   <Style Selector="Grid.cover-card.pressed-in">
-    <Setter Property="RenderTransform" Value="translateY(-2px)" />
+    <Setter Property="RenderTransform" Value="scale(1.015)" />
   </Style>
 
   <!--

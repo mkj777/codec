@@ -10,6 +10,7 @@
     Metrics are scaled from the 1800px reference to Codec's 1280px window.
   -->
   <Style Selector="Button">
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="Padding" Value="9,7" />
     <Setter Property="CornerRadius" Value="8" />
@@ -51,7 +52,7 @@
   <Style Selector="Button.ghost">
     <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="9,7" />
+    <Setter Property="Padding" Value="10,5,10,6" />
   </Style>
 
   <!-- Add. Orange speaks through colour here, not through fill. -->
@@ -250,7 +251,9 @@
   -->
   <Style Selector="Button.lib-tab">
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="0,0,0,4" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Padding" Value="0" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
@@ -263,7 +266,11 @@
   </Style>
   <Style Selector="Button.lib-tab:pressed">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Opacity" Value="0.75" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.lib-tab:focus-visible">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
   </Style>
   <Style Selector="Button.lib-tab.on">
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
@@ -296,9 +303,10 @@
 
   <!-- source chips share the ghost shape -->
   <Style Selector="ToggleButton.chip">
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
     <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Padding" Value="9,7" />
+    <Setter Property="Padding" Value="10,5,10,6" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
@@ -339,6 +347,10 @@
   </Style>
 
   <!-- sort dropdown: a chip that opens a themed popup -->
+  <Style Selector="ToggleButton">
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+  </Style>
+
   <Style Selector="ToggleButton.dropdown">
     <Setter Property="Height" Value="30" />
     <Setter Property="MinHeight" Value="0" />

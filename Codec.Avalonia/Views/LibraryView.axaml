@@ -8,84 +8,34 @@
     The caption strip above supplies 34px of empty space, so the library's own
     top inset is small. Together they land on the reference's opening measure.
   -->
-  <Grid Margin="32,12,32,46"
+  <Grid Margin="32,10,32,46"
         RowDefinitions="Auto,*">
-    <StackPanel Spacing="10"
-                Margin="0,0,0,16"
-                IsVisible="{Binding HasGames}">
-      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
-        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
-          <Grid>
-            <Button Classes="lib-tab"
-                    Classes.on="{Binding IsAllTabActive}"
-                    Command="{Binding SelectLibraryTabCommand}"
-                    CommandParameter="0"
-                    Content="All" />
-            <Border Classes="tab-underline" Classes.on="{Binding IsAllTabActive}" />
-          </Grid>
-          <Grid>
-            <Button Classes="lib-tab"
-                    Classes.on="{Binding IsInstalledTabActive}"
-                    Command="{Binding SelectLibraryTabCommand}"
-                    CommandParameter="1"
-                    Content="Installed" />
-            <Border Classes="tab-underline" Classes.on="{Binding IsInstalledTabActive}" />
-          </Grid>
-          <Grid>
-            <Button Classes="lib-tab"
-                    Classes.on="{Binding IsRecentTabActive}"
-                    Command="{Binding SelectLibraryTabCommand}"
-                    CommandParameter="2"
-                    Content="Recent" />
-            <Border Classes="tab-underline" Classes.on="{Binding IsRecentTabActive}" />
-          </Grid>
-        </StackPanel>
-
-        <ToggleButton x:Name="SortToggle"
-                      Grid.Column="2"
-                      Classes="dropdown"
-                      VerticalAlignment="Bottom">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBlock Text="{Binding SortLabel}" VerticalAlignment="Center" />
-            <LucideIcon Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Foreground="{DynamicResource CodecTextMutedBrush}"
-                        Kind="ChevronDown"
-                        Size="13"
-                        StrokeWidth="1.75" />
-          </Grid>
-        </ToggleButton>
-
-        <!-- one line, so a second line can never push the tabs down -->
-        <TextBlock Grid.Column="3"
-                   Classes="lib-count"
-                   VerticalAlignment="Bottom"
-                   Margin="0,0,0,8"
-                   Text="{Binding LibrarySummaryText}" />
-
-        <Popup PlacementTarget="{Binding #SortToggle}"
-               Placement="BottomEdgeAlignedRight"
-               VerticalOffset="6"
-               IsLightDismissEnabled="True"
-               IsOpen="{Binding #SortToggle.IsChecked, Mode=TwoWay}">
-          <Border Classes="dropdown-popup" MinWidth="160">
-            <ListBox x:Name="SortList"
-                     Classes="dropdown-list"
-                     SelectedIndex="{Binding SelectedSortIndex, Mode=TwoWay}"
-                     SelectionChanged="SortList_SelectionChanged">
-              <ListBoxItem Content="Alphabetic ↓" />
-              <ListBoxItem Content="Alphabetic ↑" />
-              <ListBoxItem Content="Folder size ↓" />
-              <ListBoxItem Content="Folder size ↑" />
-              <ListBoxItem Content="Date added ↓" />
-              <ListBoxItem Content="Date added ↑" />
-            </ListBox>
-          </Border>
-        </Popup>
-      </Grid>
+    <!--
+      One control row: sort first, then the sources it sorts within, and the count on the
+      right. The view tabs moved up to the window's chrome line, which lifts everything here.
+    -->
+    <Grid Margin="0,0,0,14"
+          ColumnDefinitions="Auto,*,Auto"
+          ColumnSpacing="12"
+          IsVisible="{Binding HasGames}">
+      <ToggleButton x:Name="SortToggle"
+                    Grid.Column="0"
+                    Classes="dropdown"
+                    VerticalAlignment="Center">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding SortLabel}" VerticalAlignment="Center" />
+          <LucideIcon Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Foreground="{DynamicResource CodecTextMutedBrush}"
+                      Kind="ChevronDown"
+                      Size="13"
+                      StrokeWidth="1.75" />
+        </Grid>
+      </ToggleButton>
 
       <!-- a single source needs no chips, so the row is absent entirely -->
-      <StackPanel Orientation="Horizontal"
+      <StackPanel Grid.Column="1"
+                  Orientation="Horizontal"
                   Spacing="7"
                   VerticalAlignment="Center"
                   IsVisible="{Binding HasMultipleImportSources}">
@@ -107,11 +57,38 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
-    </StackPanel>
+
+      <TextBlock Grid.Column="2"
+                 Classes="lib-count"
+                 VerticalAlignment="Center"
+                 Text="{Binding LibrarySummaryText}" />
+
+      <Popup PlacementTarget="{Binding #SortToggle}"
+             Placement="BottomEdgeAlignedLeft"
+             VerticalOffset="6"
+             IsLightDismissEnabled="True"
+             IsOpen="{Binding #SortToggle.IsChecked, Mode=TwoWay}">
+        <Border Classes="dropdown-popup" MinWidth="160">
+          <ListBox x:Name="SortList"
+                   Classes="dropdown-list"
+                   SelectedIndex="{Binding SelectedSortIndex, Mode=TwoWay}"
+                   SelectionChanged="SortList_SelectionChanged">
+            <ListBoxItem Content="Alphabetic ↓" />
+            <ListBoxItem Content="Alphabetic ↑" />
+            <ListBoxItem Content="Folder size ↓" />
+            <ListBoxItem Content="Folder size ↑" />
+            <ListBoxItem Content="Date added ↓" />
+            <ListBoxItem Content="Date added ↑" />
+          </ListBox>
+        </Border>
+      </Popup>
+    </Grid>
 
     <Grid Grid.Row="1">
       <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto"
+                    Padding="8"
+                    Margin="-8"
                     IsVisible="{Binding HasGames}">
         <!--
           Fill decides the width, CoverGrid derives the matching height, so columns
