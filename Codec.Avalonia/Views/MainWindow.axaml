@@ -298,6 +298,28 @@
                           VerticalAlignment="Center" />
     </Grid>
 
+    <!--
+      A full reset replaces the process. This is the only moment it can be explained, so it
+      is held on screen rather than flashed, with the hairline carrying the wait.
+    -->
+    <Grid Classes="reveal-soft"
+          Grid.RowSpan="2"
+          Grid.ColumnSpan="2"
+          ZIndex="80"
+          IsVisible="False"
+          controls:Reveal.IsOpen="{Binding IsResetting}">
+      <Border Background="#F5141210" />
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="18">
+        <TextBlock Classes="screen-title"
+                   HorizontalAlignment="Center"
+                   Text="Your data is being deleted" />
+        <controls:Hairline Width="190" HorizontalAlignment="Center" IsIndeterminate="True" />
+        <TextBlock Classes="caption"
+                   HorizontalAlignment="Center"
+                   Text="Codec will restart with a clean slate." />
+      </StackPanel>
+    </Grid>
+
     <views:OnboardingView Classes="reveal-soft"
                           Grid.RowSpan="2"
                           Grid.ColumnSpan="2"

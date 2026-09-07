@@ -120,7 +120,7 @@ public partial class MainViewModel
             NotifySteamLibraryVisibilityChanged();
             OnPropertyChanged(nameof(IsSteamConnected));
             OnPropertyChanged(nameof(SteamAccountDisplay));
-            if (Games.Count > 0)
+            if (Games.Count > 0 && !IsOnboardingOwningScreen)
                 IsOnboardingVisible = false;
             if (!isBackground)
                 _ = DismissSteamSyncProgressAsync(syncGeneration);
@@ -303,7 +303,8 @@ public partial class MainViewModel
                     InsertGameSorted(item.Game);
             }
 
-            IsOnboardingVisible = false;
+            if (!IsOnboardingOwningScreen)
+                IsOnboardingVisible = false;
         }, UiDispatchPriority.Background);
     }
 

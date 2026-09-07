@@ -384,7 +384,7 @@ namespace Codec.ViewModels
             ScanProgressIsIndeterminate = isIndeterminate;
             ScanProgressValue = 0;
             ScanProgressMaximum = 1;
-            IsScanProgressVisible = false;
+            IsScanProgressVisible = true;
             IsLoadingIndeterminate = isIndeterminate;
             LoadingProgress = 0;
             SetLoadingCopy(message, string.Empty);

@@ -30,6 +30,9 @@ namespace Codec.ViewModels
     {
         private const int SidebarSearchDebounceDelayMs = 60;
         private const int UpdateNotificationDismissDelayMs = 15000;
+
+        /// <summary>Long enough to read two lines before the process is replaced.</summary>
+        private const int ResetNoticeDurationMs = 2400;
         private static readonly StringComparer GameNameComparer = StringComparer.CurrentCultureIgnoreCase;
 
         private readonly IUiDispatcher _uiDispatcher;
@@ -171,6 +174,8 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _launchSteamSilent;
         [ObservableProperty] private bool _closeToTray;
         public bool HasCloseBehaviorChoice => _appSettings.CloseToTray.HasValue;
+
+        public bool HasCompletedOnboarding => _appSettings.OnboardingCompleted;
         [ObservableProperty] private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
         private bool _isBackgroundStartupScan;
@@ -190,6 +195,9 @@ namespace Codec.ViewModels
         public bool IsScanCompleteEffectiveVisible => IsScanCompleteVisible && !IsGameNotAddedToastVisible && !IsGameAlreadyAddedToastVisible;
         [ObservableProperty] private int _scanCompleteAddedCount;
         [ObservableProperty] private string _importStatusMessage = string.Empty;
+        [ObservableProperty] private bool _isResetting;
+        [ObservableProperty] private bool _isResetErrorVisible;
+        [ObservableProperty] private string _resetErrorMessage = string.Empty;
         [ObservableProperty] private int _queuedCount;
         [ObservableProperty] private int _processingCount;
         [ObservableProperty] private int _addedCount;
@@ -359,8 +367,38 @@ namespace Codec.ViewModels
         [RelayCommand]
         private Task CheckForUpdatesAsync() => _services.Updates.CheckAndDownloadAsync();
 
+        /// <summary>
+        /// A full reset replaces the process, so the only chance to say what is happening is
+        /// before it starts. The overlay is held long enough to be read, which is what the
+        /// WinUI build did and the port dropped.
+        /// </summary>
         [RelayCommand]
-        private void ResetApplication() => _services.AppReset.StartFullResetAndRestart();
+        private async Task ResetApplicationAsync()
+        {
+            if (IsResetting)
+                return;
+
+            IsResetting = true;
+            IsSettingsVisible = false;
+            IsResetErrorVisible = false;
+
+            await Task.Delay(ResetNoticeDurationMs);
+
+            try
+            {
+                _services.AppReset.StartFullResetAndRestart();
+            }
+            catch (Exception exception)
+            {
+                // Reset needs PowerShell to outlive the process it deletes. Without it the
+                // service throws a message written to be read, so it must reach the surface
+                // rather than take the application down with it.
+                Debug.WriteLine($"[Reset] failed: {exception}");
+                IsResetting = false;
+                ResetErrorMessage = exception.Message;
+                IsResetErrorVisible = true;
+            }
+        }
 
         private static bool IsAdministrator()
         {
@@ -544,7 +582,7 @@ namespace Codec.ViewModels
             try
             {
                 // Onboarding owns the surface while it drives the first scan.
-                if (!IsOnboardingScanActive)
+                if (!IsOnboardingOwningScreen)
                     IsOnboardingVisible = false;
 
                 await _importCoordinator.StartScanAsync();

@@ -25,7 +25,12 @@ namespace Codec.ViewModels
                 }
 
                 InsertGameSorted(game);
-                IsOnboardingVisible = false;
+
+                // Onboarding is running its own scan step. Hiding it the moment the first
+                // game lands drops the player into the library mid-scan, and the step that
+                // reports the scan finished then pulls them back out of it.
+                if (!IsOnboardingOwningScreen)
+                    IsOnboardingVisible = false;
                 return DeduplicateRiotGamesInMemory();
             });
 
@@ -57,6 +62,26 @@ namespace Codec.ViewModels
             return Games.ToList();
         }
 
+        /// <summary>
+        /// One activity and one percentage, never a raw count or an internal stage.
+        /// Without this the notice pill had nothing to say for the whole of a scan.
+        /// </summary>
+        private static string DescribeImport(GameImportStatusSnapshot snapshot)
+        {
+            if (!snapshot.IsActive)
+                return string.Empty;
+
+            if (snapshot.IsScanning)
+                return "Looking for games";
+
+            int remaining = snapshot.QueuedCount + snapshot.ProcessingCount;
+            int total = snapshot.AddedCount + remaining;
+            if (total <= 0 || remaining <= 0)
+                return "Adding games";
+
+            return WithPercent("Adding games", (double)snapshot.AddedCount / total * 100d);
+        }
+
         private void ImportCoordinator_StatusChanged(object? sender, GameImportStatusSnapshot snapshot)
         {
             _ = RunOnUiThreadAsync(() =>
@@ -69,7 +94,14 @@ namespace Codec.ViewModels
                 IsImportStatusVisible = snapshot.IsActive && !_isBackgroundStartupScan;
                 AddedCount = snapshot.AddedCount;
                 ImportRemainingCount = snapshot.QueuedCount + snapshot.ProcessingCount;
-                IsOnboardingVisible = Games.Count == 0 && !snapshot.IsActive;
+                if (!IsOnboardingOwningScreen)
+                {
+                    IsOnboardingVisible = Games.Count == 0
+                        && !snapshot.IsActive
+                        && !_appSettings.OnboardingCompleted;
+                }
+
+                ImportStatusMessage = DescribeImport(snapshot);
                 if (!snapshot.IsActive)
                 {
                     bool wasBackgroundStartupScan = _isBackgroundStartupScan;

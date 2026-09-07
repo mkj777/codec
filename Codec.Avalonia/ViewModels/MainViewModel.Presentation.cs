@@ -74,7 +74,8 @@ public partial class MainViewModel
         IsCloseChoiceVisible ||
         IsMediaOverlayOpen ||
         IsFranchiseOverlayOpen ||
-        IsGameSettingsOpen;
+        IsGameSettingsOpen ||
+        IsResetting;
 
     /// <summary>
     /// The empty state and the cold-start loading panel are both centred in the
@@ -87,6 +88,16 @@ public partial class MainViewModel
     /// the onboarding surface up instead of hiding the scan step it is showing.
     /// </summary>
     public bool IsOnboardingScanActive { get; set; }
+
+    /// <summary>
+    /// True while the onboarding surface owns the screen.
+    ///
+    /// Onboarding ends when the player says so, not when data lands. A scan or a Steam sync
+    /// started from inside the flow will produce games, and every path that reacts to a game
+    /// arriving used to dismiss onboarding on the spot, dropping the player into the library
+    /// mid-scan and then snapping back to the closing step once the scan reported itself done.
+    /// </summary>
+    public bool IsOnboardingOwningScreen => IsOnboardingVisible && !HasCompletedOnboarding;
 
     /// <summary>
     /// The reference's count is a single line. Two lines let a taller block push
@@ -164,6 +175,8 @@ public partial class MainViewModel
                 return ImportStatusMessage;
             if (IsScanProgressVisible)
                 return ScanProgressMessage;
+            if (IsResetErrorVisible)
+                return ResetErrorMessage;
             if (IsGameNotAddedToastVisible)
                 return "That file is not a game";
             if (IsGameAlreadyAddedToastVisible)
@@ -268,6 +281,8 @@ public partial class MainViewModel
         nameof(ScanProgressValue),
         nameof(ScanProgressMaximum),
         nameof(ScanProgressMinimum),
+        nameof(IsResetErrorVisible),
+        nameof(ResetErrorMessage),
         nameof(IsGameNotAddedToastVisible),
         nameof(IsGameAlreadyAddedToastVisible),
         nameof(IsScanCompleteVisible),
@@ -282,6 +297,7 @@ public partial class MainViewModel
         nameof(IsMediaOverlayOpen),
         nameof(IsFranchiseOverlayOpen),
         nameof(IsGameSettingsOpen),
+        nameof(IsResetting),
     ];
 
     private void InitializeNoticeTracking()
