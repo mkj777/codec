@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Codec.ViewModels;
+using System.Linq;
 using Avalonia.Threading;
 using Codec.Infrastructure;
 using Lucide.Avalonia;
@@ -21,6 +22,7 @@ public sealed partial class MainWindow : Window
     private PixelPoint _normalPosition;
     private Size _normalSize;
     private bool _placementCaptureQueued;
+    private CancellationTokenSource? _stateShift;
 
     public MainWindow()
     {
@@ -46,16 +48,65 @@ public sealed partial class MainWindow : Window
         if (change.Property == ClientSizeProperty)
             CapturePlacementSoon();
 
-        // Windows shows a restore glyph once maximized, never a second maximize square.
-        if (change.Property == WindowStateProperty && MaximizeGlyph is not null)
+        if (change.Property == WindowStateProperty)
         {
-            MaximizeGlyph.Kind = WindowState == WindowState.Maximized
-                ? LucideIconKind.Copy
-                : LucideIconKind.Square;
+            // Windows shows a restore glyph once maximized, never a second maximize square.
+            if (MaximizeGlyph is not null)
+            {
+                MaximizeGlyph.Kind = WindowState == WindowState.Maximized
+                    ? LucideIconKind.Copy
+                    : LucideIconKind.Square;
+            }
+
+            if (WindowState != WindowState.Minimized)
+                _ = DissolveThroughResizeAsync();
         }
     }
 
     private void OnPositionChanged(object? sender, PixelPointEventArgs e) => CapturePlacementSoon();
+
+    /// <summary>
+    /// Carries the content through a window size change.
+    ///
+    /// The frame itself is animated by the compositor, but the shelf re-columns in a single
+    /// frame underneath it, and that snap is what reads as abrupt. Dipping the content across
+    /// the change turns it into a dissolve. The class has to leave again or the animation
+    /// cannot run a second time.
+    /// </summary>
+    private async Task DissolveThroughResizeAsync()
+    {
+        // Details spans the caption row and so is a sibling of the shelf, not a child of it.
+        Control[] surfaces = [ContentHost, DetailsHost];
+        if (surfaces.Any(surface => surface is null))
+            return;
+
+        _stateShift?.Cancel();
+        var shift = new CancellationTokenSource();
+        _stateShift = shift;
+
+        foreach (Control surface in surfaces)
+        {
+            surface.Classes.Remove("state-shift");
+            surface.Classes.Add("state-shift");
+        }
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(300), shift.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        foreach (Control surface in surfaces)
+            surface.Classes.Remove("state-shift");
+
+        if (ReferenceEquals(_stateShift, shift))
+            _stateShift = null;
+
+        shift.Dispose();
+    }
 
     /// <summary>
     /// Records the placement once the window state has settled.

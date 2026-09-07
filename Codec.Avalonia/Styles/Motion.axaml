@@ -45,6 +45,30 @@
     <Setter Property="Opacity" Value="1" />
   </Style>
 
+  <!--
+    state-shift: the moment the window changes size.
+
+    Maximizing re-columns the shelf in a single frame, which is the part that reads as abrupt;
+    the frame itself is animated by the compositor. Dipping the content through the change
+    turns the snap into a dissolve. FillMode stays None so the content returns to whatever
+    owns it afterwards.
+  -->
+  <Style Selector=":is(Control).state-shift">
+    <Style.Animations>
+      <Animation Duration="0:0:0.28" Easing="{StaticResource CodecEase}" FillMode="None">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="30%">
+          <Setter Property="Opacity" Value="0.4" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
   <!-- breathe: the notice dot while work is in flight -->
   <Style Selector=":is(Control).breathe">
     <Style.Animations>

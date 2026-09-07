@@ -59,6 +59,7 @@ The approved Codec v2 reference defines the current direction. `docs/superpowers
 - Nothing appears or disappears instantly. Anything that comes and goes fades and rises through `Reveal`, which drives a class rather than visibility so the entrance runs every time and the exit is seen. An animation attached to a fixed class on a permanently mounted control runs once, at startup, and never again; that is a bug, not a style.
 - Primary actions answer a click as well as a hover. Play and Back overshoot to 1.04 and settle, which is what separates responsive from merely styled.
 - Scroll bars overlay, reserve no width, and rest thin. The lane carries the weight, 4 px at rest and 10 px under the pointer; the thumb only fills it.
+- A window size change carries its content across rather than snapping it. The frame is the compositor's to animate; the shelf re-columning underneath in a single frame is Codec's, and it dissolves through the change instead.
 - Codec opens on its own collection. The launch sequence covers the library load rather than following it, and background work starts only once the shelf is on screen.
 - Background work reports one activity and one progress value, never a raw count or an internal stage, and never blocks the library.
 - Progress is a hairline, not a bar.

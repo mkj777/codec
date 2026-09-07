@@ -184,7 +184,8 @@
     </Border>
 
 
-    <Grid Grid.Row="1"
+    <Grid x:Name="ContentHost"
+          Grid.Row="1"
           Grid.Column="1"
           Background="{DynamicResource CodecBackgroundBrush}">
       <views:LibraryView Classes="reveal-soft"
@@ -196,7 +197,8 @@
       Details spans the caption row as well, so its artwork reaches the top edge of the window
       and the caption strip sits on the picture rather than beside it.
     -->
-    <views:GameDetailView Grid.Row="0"
+    <views:GameDetailView x:Name="DetailsHost"
+                          Grid.Row="0"
                           Grid.RowSpan="2"
                           Grid.Column="1"
                           Classes="reveal-soft"

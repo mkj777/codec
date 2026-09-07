@@ -17,6 +17,7 @@ namespace Codec.Infrastructure;
 public static class WindowChrome
 {
     private const int DwmUseImmersiveDarkMode = 20;
+    private const int DwmTransitionsForceDisabled = 3;
     private const int DwmWindowCornerPreference = 33;
     private const int DwmBorderColor = 34;
 
@@ -65,6 +66,9 @@ public static class WindowChrome
         if (window.TryGetPlatformHandle() is not { } handle || handle.Handle == IntPtr.Zero)
             return;
 
+        // A window that extends its client area can end up with the frame animation switched
+        // off, which makes minimize and restore snap. Ask for it back explicitly.
+        Set(handle.Handle, DwmTransitionsForceDisabled, 0);
         Set(handle.Handle, DwmUseImmersiveDarkMode, 1);
         Set(handle.Handle, DwmWindowCornerPreference, CornerPreferenceRound);
         Set(handle.Handle, DwmBorderColor, unchecked((int)FrameColor));
