@@ -47,7 +47,7 @@
           toggle over there then share a centre line, so the control does not appear to jump
           when the rail closes.
         -->
-        <Grid Margin="0,0,0,12"
+        <Grid Margin="0,0,0,8"
               Background="Transparent"
               RowDefinitions="34,Auto"
               chrome:WindowDecorationProperties.ElementRole="TitleBar">
@@ -74,7 +74,7 @@
           <!-- The wordmark is the way back to the shelf, as it was before the migration. -->
           <Button Grid.Row="1"
                   Classes="wordmark-home"
-                  Margin="16,10,16,0"
+                  Margin="16,0,16,0"
                   HorizontalAlignment="Left"
                   Command="{Binding BackCommand}"
                   chrome:WindowDecorationProperties.ElementRole="User"
@@ -209,21 +209,39 @@
               Background="Transparent"
               chrome:WindowDecorationProperties.ElementRole="TitleBar" />
 
-      <Button Classes="icon-quiet"
-              Width="28"
-              Height="26"
-              Margin="10,0,0,0"
-              HorizontalAlignment="Left"
-              VerticalAlignment="Center"
-              Opacity="0.7"
-              Foreground="{DynamicResource CodecTextMutedBrush}"
-              Command="{Binding ToggleSidebarCommand}"
-              IsVisible="{Binding IsSidebarCollapsed}"
-              chrome:WindowDecorationProperties.ElementRole="User"
-              AutomationProperties.Name="Show the sidebar"
-              ToolTip.Tip="Show the sidebar">
-        <LucideIcon Kind="PanelLeftOpen" Size="15" StrokeWidth="1.75" />
-      </Button>
+      <!--
+        The left of the strip is one line of chrome, the same line the window buttons sit on.
+        The toggle only appears here while the rail is closed, so with the rail open Back takes
+        the leading position on its own.
+      -->
+      <StackPanel HorizontalAlignment="Left"
+                  VerticalAlignment="Center"
+                  Orientation="Horizontal"
+                  Spacing="6"
+                  Margin="10,0,0,0">
+        <Button Classes="icon-quiet"
+                Width="28"
+                Height="26"
+                Opacity="0.7"
+                Foreground="{DynamicResource CodecTextMutedBrush}"
+                Command="{Binding ToggleSidebarCommand}"
+                IsVisible="{Binding IsSidebarCollapsed}"
+                chrome:WindowDecorationProperties.ElementRole="User"
+                AutomationProperties.Name="Show the sidebar"
+                ToolTip.Tip="Show the sidebar">
+          <LucideIcon Kind="PanelLeftOpen" Size="15" StrokeWidth="1.75" />
+        </Button>
+
+        <Button Classes="back"
+                controls:Interaction.PulseOnClick="True"
+                IsVisible="{Binding IsDetailsVisible}"
+                Command="{Binding BackCommand}"
+                chrome:WindowDecorationProperties.ElementRole="User"
+                AutomationProperties.Name="Back to the library"
+                ToolTip.Tip="Back to the library">
+          <LucideIcon Kind="ChevronLeft" Size="16" StrokeWidth="1.75" />
+        </Button>
+      </StackPanel>
 
       <StackPanel HorizontalAlignment="Right"
                   VerticalAlignment="Stretch"

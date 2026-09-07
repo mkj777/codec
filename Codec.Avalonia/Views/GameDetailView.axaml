@@ -74,18 +74,6 @@
           <!-- veil 3: the game's own colour, rising from the bottom centre -->
           <Border media:ArtTint.GlowSource="{Binding SelectedGame.LibraryCapsule}" />
 
-          <Button Classes="back"
-                  controls:Interaction.PulseOnClick="True"
-                  HorizontalAlignment="Left"
-                  VerticalAlignment="Top"
-                  Margin="20,44,0,0"
-                  ZIndex="4"
-                  Command="{Binding BackCommand}"
-                  AutomationProperties.Name="Back to library"
-                  ToolTip.Tip="Back to library">
-            <LucideIcon Kind="ChevronLeft" Size="16" StrokeWidth="1.75" />
-          </Button>
-
           <Grid VerticalAlignment="Bottom"
                 Margin="48,0,48,40"
                 ZIndex="3"
