@@ -111,12 +111,15 @@ namespace Codec.Services.Fetching
             if (string.IsNullOrWhiteSpace(name))
                 return (null, null);
 
+            // The search benefits from a split camel case ("Sim City" finds SimCity), but the
+            // exact-title retry has to carry the name as IGDB spells it or it matches nothing.
+            string exactName = NormalizeIgdbSearchName(name, splitCamelCase: false);
             name = NormalizeIgdbSearchName(name);
             Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: searching for '{name}'");
 
             try
             {
-                var candidates = await SearchAndParseCandidatesAsync(name, name, allowedReleaseYears).ConfigureAwait(false);
+                var candidates = await SearchAndParseCandidatesAsync(name, exactName, name, allowedReleaseYears).ConfigureAwait(false);
 
                 int bestPrimaryScore = candidates.Count > 0 ? candidates.Max(c => c.NameScore) : 0;
                 if (bestPrimaryScore < 60)
@@ -126,7 +129,7 @@ namespace Codec.Services.Fetching
                         !stripped.Equals(name, StringComparison.OrdinalIgnoreCase))
                     {
                         Debug.WriteLine($"[IGDB] FindIgdbMatchByNameAsync: weak primary (score={bestPrimaryScore}); retry with stripped='{stripped}'");
-                        var fallback = await SearchAndParseCandidatesAsync(stripped, name, allowedReleaseYears).ConfigureAwait(false);
+                        var fallback = await SearchAndParseCandidatesAsync(stripped, StripRemasterSuffix(exactName), name, allowedReleaseYears).ConfigureAwait(false);
                         int bestFallbackScore = fallback.Count > 0 ? fallback.Max(c => c.NameScore) : 0;
                         if (bestFallbackScore > bestPrimaryScore)
                         {
@@ -170,6 +173,7 @@ namespace Codec.Services.Fetching
 
         private async Task<List<IgdbNameCandidate>> SearchAndParseCandidatesAsync(
             string queryName,
+            string exactName,
             string scoringName,
             IReadOnlySet<int>? allowedReleaseYears)
         {
@@ -183,8 +187,9 @@ namespace Codec.Services.Fetching
                 return candidates;
             }
 
-            Debug.WriteLine($"[IGDB] SearchAndParseCandidatesAsync: retry exact title for '{queryName}' allowed={FormatYears(allowedReleaseYears)}");
-            body = $"fields id, name, first_release_date, release_dates.date, game_type.type; where name = \"{escaped}\"; limit 50;";
+            Debug.WriteLine($"[IGDB] SearchAndParseCandidatesAsync: retry exact title for '{exactName}' allowed={FormatYears(allowedReleaseYears)}");
+            string escapedExact = exactName.Replace("\"", "\\\"");
+            body = $"fields id, name, first_release_date, release_dates.date, game_type.type; where name = \"{escapedExact}\"; limit 50;";
             json = await PostAsync(GamesEndpoint, body).ConfigureAwait(false);
             return ParseNameCandidates(json, queryName, scoringName, allowedReleaseYears);
         }
@@ -532,11 +537,12 @@ namespace Codec.Services.Fetching
             return Regex.Replace(normalized, @"\s+", " ").Trim().ToLowerInvariant();
         }
 
-        private static string NormalizeIgdbSearchName(string name)
+        private static string NormalizeIgdbSearchName(string name, bool splitCamelCase = true)
         {
             string normalized = GameNameCleaner.RemoveTrailingDomainTag(name);
             normalized = TrademarkRegex.Replace(normalized, " ");
-            normalized = Regex.Replace(normalized, @"(?<=[a-z])(?=[A-Z])", " ");
+            if (splitCamelCase)
+                normalized = Regex.Replace(normalized, @"(?<=[a-z])(?=[A-Z])", " ");
             normalized = Regex.Replace(normalized, @"\b(tm|r)\b", " ", RegexOptions.IgnoreCase);
             return Regex.Replace(normalized, @"\s+", " ").Trim();
         }
@@ -550,7 +556,7 @@ namespace Codec.Services.Fetching
         {
             if (game == null || !game.IgdbId.HasValue)
             {
-                Debug.WriteLine("[IGDB] PopulateFromIgdbAsync: skipped — game null or no IgdbId");
+                Debug.WriteLine("[IGDB] PopulateFromIgdbAsync: skipped, game null or no IgdbId");
                 return;
             }
 
@@ -580,7 +586,7 @@ namespace Codec.Services.Fetching
             }
             else
             {
-                Debug.WriteLine($"[IGDB] No franchiseId on game — skipping franchise games fetch");
+                Debug.WriteLine($"[IGDB] No franchiseId on game, skipping franchise games fetch");
             }
 
             // Artworks: only if Steam didn't provide a hero (non-Steam path)
@@ -830,7 +836,7 @@ limit 1;";
                 game.Platforms = platforms;
             }
 
-            // Collection (first entry wins) — stored on the same FranchiseName/IgdbFranchiseId fields
+            // Collection (first entry wins), stored on the same FranchiseName/IgdbFranchiseId fields
             if (root.TryGetProperty("collections", out var collectionsNode) && collectionsNode.ValueKind == JsonValueKind.Array)
             {
                 var firstCollection = collectionsNode.EnumerateArray().FirstOrDefault();
@@ -920,7 +926,7 @@ limit 1;";
                 }
             }
 
-            // Media: videos (YouTube) + screenshots — only if Steam didn't supply any
+            // Media: videos (YouTube) + screenshots, only if Steam didn't supply any
             if (game.Media == null || game.Media.Count == 0)
             {
                 var media = new List<string>();
@@ -1030,12 +1036,12 @@ limit 1;";
             else if (root.TryGetProperty("parent_game", out var pgNode) && pgNode.ValueKind == JsonValueKind.Number && pgNode.TryGetInt32(out int parentGameId))
             {
                 game.IgdbVersionParentId = parentGameId;
-                Debug.WriteLine($"[IGDB] ApplyVersionMetadataAsync: parent_game={parentGameId} — fetching");
+                Debug.WriteLine($"[IGDB] ApplyVersionMetadataAsync: parent_game={parentGameId}, fetching");
                 await FetchAndApplyVersionParentAsync(game, parentGameId).ConfigureAwait(false);
             }
             else
             {
-                Debug.WriteLine($"[IGDB] ApplyVersionMetadataAsync: no version_parent, no parent_game — trying name fallback");
+                Debug.WriteLine($"[IGDB] ApplyVersionMetadataAsync: no version_parent, no parent_game, trying name fallback");
                 string? igdbName = GetString(root, "name");
                 if (!string.IsNullOrWhiteSpace(igdbName))
                 {
@@ -1043,7 +1049,7 @@ limit 1;";
                 }
                 else
                 {
-                    Debug.WriteLine("[IGDB] ApplyVersionMetadataAsync: no IGDB name to strip — giving up");
+                    Debug.WriteLine("[IGDB] ApplyVersionMetadataAsync: no IGDB name to strip, giving up");
                 }
             }
         }
@@ -1055,7 +1061,7 @@ limit 1;";
 
             if (string.IsNullOrWhiteSpace(stripped) || stripped.Equals(igdbName, StringComparison.OrdinalIgnoreCase))
             {
-                Debug.WriteLine("[IGDB] FetchParentByNameFallbackAsync: suffix strip produced no change — skipping");
+                Debug.WriteLine("[IGDB] FetchParentByNameFallbackAsync: suffix strip produced no change, skipping");
                 return;
             }
 
@@ -1108,7 +1114,9 @@ limit 1;";
             {
                 if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
                 {
-                    return name[..^suffix.Length].Trim(' ', '-', ':', '–', '—');
+                    // The last two are the en dash and the em dash, kept as escapes so the
+                    // source stays free of them.
+                    return name[..^suffix.Length].Trim(' ', '-', ':', '\u2013', '\u2014');
                 }
             }
             return name;

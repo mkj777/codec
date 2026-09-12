@@ -3,6 +3,7 @@ using Codec.Services.Fetching;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Codec.Tests
@@ -578,7 +579,7 @@ namespace Codec.Tests
         [Fact]
         public async Task PopulateFromIgdbAsync_WhenVersionParentAbsent_FallsBackToNameSearch()
         {
-            // game_type=remaster but no version_parent — triggers name-strip fallback
+            // game_type=remaster but no version_parent, which triggers the name-strip fallback
             var service = CreateService((uri, body) =>
             {
                 if (uri.Contains("/game_time_to_beats", StringComparison.OrdinalIgnoreCase))
@@ -929,8 +930,18 @@ namespace Codec.Tests
         private static long UnixDate(int year, int month, int day) =>
             new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds();
 
+        /// <summary>
+        /// Answers as the endpoints would. The service batches its lookups through IGDB's
+        /// multiquery endpoint, so a batch is taken apart here and each query inside it is put
+        /// to the responder as the direct call it stands for, then the answers are wrapped the
+        /// way IGDB wraps them. The tests keep asserting on the endpoint and query they mean.
+        /// </summary>
         private sealed class DelegateHandler : HttpMessageHandler
         {
+            private static readonly Regex MultiQueryPart = new(
+                @"query (?<endpoint>\w+) ""(?<name>[^""]+)"" \{\n(?<body>.*?)\n\};",
+                RegexOptions.Singleline | RegexOptions.Compiled);
+
             private readonly Func<string, string, HttpResponseMessage> _responder;
 
             public DelegateHandler(Func<string, string, HttpResponseMessage> responder)
@@ -938,10 +949,24 @@ namespace Codec.Tests
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                string url = request.RequestUri?.ToString() ?? string.Empty;
                 string body = request.Content == null
                     ? string.Empty
                     : await request.Content.ReadAsStringAsync(cancellationToken);
-                return _responder(request.RequestUri?.ToString() ?? string.Empty, body);
+
+                if (!url.EndsWith("/multiquery", StringComparison.Ordinal))
+                    return _responder(url, body);
+
+                string baseUrl = url[..^"/multiquery".Length];
+                var results = new List<string>();
+                foreach (Match part in MultiQueryPart.Matches(body))
+                {
+                    using HttpResponseMessage response = _responder($"{baseUrl}/{part.Groups["endpoint"].Value}", part.Groups["body"].Value);
+                    string result = await response.Content.ReadAsStringAsync(cancellationToken);
+                    results.Add($"{{\"name\":\"{part.Groups["name"].Value}\",\"result\":{result}}}");
+                }
+
+                return JsonResponse($"[{string.Join(",", results)}]");
             }
         }
     }

@@ -6,12 +6,14 @@ namespace Codec.Tests
 {
     public sealed class AppSettingsTests
     {
+        // Startup scanning is a choice onboarding asks for, so until it has been made the
+        // setting stays off. The default was on before the choice moved into onboarding.
         [Fact]
-        public void NewSettings_EnableScanOnStartupByDefault()
+        public void NewSettings_LeaveScanOnStartupOffUntilOnboardingChooses()
         {
             var settings = new AppSettings();
 
-            Assert.True(settings.ScanOnStartup);
+            Assert.False(settings.ScanOnStartup);
         }
 
         [Fact]
@@ -20,7 +22,7 @@ namespace Codec.Tests
             var settings = JsonSerializer.Deserialize<AppSettings>("{}");
 
             Assert.NotNull(settings);
-            Assert.True(settings.ScanOnStartup);
+            Assert.False(settings.ScanOnStartup);
         }
 
         [Fact]
