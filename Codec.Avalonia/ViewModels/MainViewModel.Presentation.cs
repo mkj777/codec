@@ -297,7 +297,7 @@ public partial class MainViewModel
 
     /// <summary>Appends a percentage without ever exposing a raw count.</summary>
     internal static string WithPercent(string activity, double percent)
-        => $"{activity} · {Math.Clamp(Math.Round(percent), 0, 100):0}%";
+        => $"{activity}, {Math.Clamp(Math.Round(percent), 0, 100):0}%";
 
     /// <summary>
     /// The pill is derived from a dozen independent flags, so it re-reads itself

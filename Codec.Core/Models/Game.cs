@@ -251,7 +251,7 @@ namespace Codec.Models
 
                 string total = SteamReviewTotal!.Value.ToString("N0", CultureInfo.InvariantCulture);
                 return SteamRating.HasValue
-                    ? FormattableString.Invariant($"{SteamRating.Value:0}% · {total} reviews")
+                    ? FormattableString.Invariant($"{SteamRating.Value:0}% of {total} reviews")
                     : $"{total} reviews";
             }
         }

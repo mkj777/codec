@@ -63,9 +63,9 @@ namespace Codec.ViewModels
             {
                 (int? steamId, string? steamName) = await _services.GameName.FindGameIdsAsync(executablePath);
                 string name = steamName ?? _services.GameName.GetBestName(executablePath) ?? "Unknown";
-                string id = steamId.HasValue ? steamId.Value.ToString() : "no Steam id";
+                string id = steamId.HasValue ? $"Steam id {steamId.Value}" : "no Steam id";
 
-                ShowActionResult("Check IDs", $"{name} · {id}");
+                ShowActionResult("Check IDs", $"{name}: {id}");
             }
             catch (Exception exception)
             {
