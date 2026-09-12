@@ -22,6 +22,7 @@ public sealed partial class CodecVideoView : UserControl
     private LibVLC? _libVlc;
     private MediaPlayer? _mediaPlayer;
     private LibVLCSharp.Shared.Media? _media;
+    private CancellationTokenSource? _parseCancellation;
     private bool _disposed;
 
     /// <summary>True while the slider is being dragged, so the player stops writing to it.</summary>
@@ -55,9 +56,21 @@ public sealed partial class CodecVideoView : UserControl
     {
         InitializeComponent();
         Core.Initialize();
-        _libVlc = new LibVLC("--no-video-title-show");
+        // Steam serves newer trailers as DASH, and the adaptive demuxer starts low and steps up
+        // a couple of seconds in. Each step is a new decoder asking for a new video output
+        // while the old one still holds the embedded window, and libvlc answers that by
+        // opening a window of its own. Taking the best representation from the start keeps
+        // it to one output for the whole clip.
+        _libVlc = new LibVLC("--no-video-title-show", "--adaptive-logic=highest");
         _mediaPlayer = new MediaPlayer(_libVlc);
-        VideoSurface.MediaPlayer = _mediaPlayer;
+
+        // The surface hands the player its window handle when the player is assigned, but only
+        // once it is initialised and has a native window, and it has neither in this
+        // constructor. Assigned here, the player never gets a handle and VLC opens a window of
+        // its own the moment it plays. Both events fire later, in no fixed order; the last one
+        // finds both conditions met.
+        VideoSurface.AttachedToVisualTree += (_, _) => BindSurface();
+        VideoSurface.Initialized += (_, _) => BindSurface();
 
         _mediaPlayer.TimeChanged += OnTimeChanged;
         _mediaPlayer.LengthChanged += OnLengthChanged;
@@ -65,6 +78,22 @@ public sealed partial class CodecVideoView : UserControl
         _mediaPlayer.Paused += OnPlayStateChanged;
         _mediaPlayer.Stopped += OnPlayStateChanged;
         _mediaPlayer.EndReached += OnPlayStateChanged;
+
+        // The thumb marks its own press and release as handled, so a drag would never reach
+        // a plain handler on the slider; a click on the track would. These listen past that.
+        PositionSlider.AddHandler(PointerPressedEvent, PositionSlider_PointerPressed, RoutingStrategies.Bubble, handledEventsToo: true);
+        PositionSlider.AddHandler(PointerReleasedEvent, PositionSlider_PointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
+    }
+
+    private void BindSurface()
+    {
+        if (_disposed)
+            return;
+
+        // Through null first: the setter ignores the same player twice, and the surface may
+        // have been given a fresh native window since the last time.
+        VideoSurface.MediaPlayer = null;
+        VideoSurface.MediaPlayer = _mediaPlayer;
     }
 
     public void Play() => _mediaPlayer?.Play();
@@ -149,8 +178,7 @@ public sealed partial class CodecVideoView : UserControl
 
         _mediaPlayer.Stop();
         _mediaPlayer.Media = null;
-        _media?.Dispose();
-        _media = null;
+        ReleaseMedia();
         ResetTransport();
 
         if (Source == null)
@@ -158,8 +186,39 @@ public sealed partial class CodecVideoView : UserControl
 
         _media = new LibVLCSharp.Shared.Media(_libVlc, Source);
         _mediaPlayer.Media = _media;
+        _parseCancellation = new CancellationTokenSource();
+        _ = ShowDurationAsync(_media, _parseCancellation.Token);
         if (AutoPlay)
             _mediaPlayer.Play();
+    }
+
+    /// <summary>
+    /// The length is only known once the container has been read, which playback does on its
+    /// own. Reading it ahead means the clock shows how long the trailer is before Play.
+    /// </summary>
+    private async Task ShowDurationAsync(LibVLCSharp.Shared.Media media, CancellationToken cancellation)
+    {
+        try
+        {
+            await media.Parse(MediaParseOptions.ParseNetwork, timeout: 8000, cancellationToken: cancellation);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Video] parse failed: {exception.Message}");
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_disposed || !ReferenceEquals(media, _media) || media.Duration <= 0)
+                return;
+
+            DurationText.Text = FormatTime(media.Duration);
+        });
     }
 
     private void ApplyAutoPlay()
@@ -195,6 +254,11 @@ public sealed partial class CodecVideoView : UserControl
 
         _disposed = true;
 
+        // The surface destroys its native child on a later dispatcher pass and clears the
+        // player's window handle as it goes. Handing it null now, while the player is still
+        // alive, is what keeps that late call off a released libvlc object.
+        VideoSurface.MediaPlayer = null;
+
         if (_mediaPlayer != null)
         {
             _mediaPlayer.TimeChanged -= OnTimeChanged;
@@ -207,10 +271,19 @@ public sealed partial class CodecVideoView : UserControl
 
         _mediaPlayer?.Stop();
         _mediaPlayer?.Dispose();
-        _media?.Dispose();
+        ReleaseMedia();
         _libVlc?.Dispose();
         _mediaPlayer = null;
-        _media = null;
         _libVlc = null;
+    }
+
+    /// <summary>Drops the current media and the parse that may still be reading it.</summary>
+    private void ReleaseMedia()
+    {
+        _parseCancellation?.Cancel();
+        _parseCancellation?.Dispose();
+        _parseCancellation = null;
+        _media?.Dispose();
+        _media = null;
     }
 }

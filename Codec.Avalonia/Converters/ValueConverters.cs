@@ -123,7 +123,7 @@ public sealed class MediaTypeConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 
-    private static bool IsVideo(string? uri)
+    public static bool IsVideo(string? uri)
         => !string.IsNullOrWhiteSpace(uri) &&
            (uri.Contains(".mpd", StringComparison.OrdinalIgnoreCase) ||
             uri.Contains(".mp4", StringComparison.OrdinalIgnoreCase) ||

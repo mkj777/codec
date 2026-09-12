@@ -548,27 +548,14 @@
             <TextBlock Classes="heading" Text="Media" />
             <Button Grid.Column="1" Classes="icon-quiet" Click="CloseMediaOverlay_Click" ToolTip.Tip="Close media"><LucideIcon Kind="X" Size="16" StrokeWidth="1.75" /></Button>
           </Grid>
-          <Grid Grid.Row="1">
-            <Carousel x:Name="MediaCarousel"
-                      ItemsSource="{Binding SelectedGame.Media}"
-                      SelectedIndex="{Binding SelectedMediaIndex, Mode=TwoWay}">
-              <Carousel.ItemTemplate>
-                <DataTemplate>
-                  <Grid>
-                    <media:CodecImage Source="{Binding}" Stretch="Uniform" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=image}" />
-                    <!-- A trailer waits to be started, the way it did before. -->
-                    <media:CodecVideoView Source="{Binding Converter={StaticResource StringToUriConverter}}" IsVisible="{Binding Converter={StaticResource MediaTypeConverter}, ConverterParameter=video}" />
-                  </Grid>
-                </DataTemplate>
-              </Carousel.ItemTemplate>
-            </Carousel>
-
-            <!--
-              The carousel has no navigation of its own, so without these only the thumbnail
-              that was clicked could ever be seen.
-            -->
+          <!--
+            The carousel has no navigation of its own, so without the two steps only the
+            thumbnail that was clicked could ever be seen. They stand beside the picture rather
+            than on it: a trailer is a native child window, and a native window paints over
+            anything Avalonia lays on top of it.
+          -->
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
             <Button Classes="media-step"
-                    HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     Click="PreviousMedia_Click"
                     IsVisible="{Binding SelectedGame.HasMultipleMedia}"
@@ -576,8 +563,26 @@
                     ToolTip.Tip="Previous">
               <LucideIcon Kind="ChevronLeft" Size="20" StrokeWidth="1.75" />
             </Button>
+
+            <Carousel x:Name="MediaCarousel"
+                      Grid.Column="1"
+                      ItemsSource="{Binding SelectedGame.Media}"
+                      SelectedIndex="{Binding SelectedMediaIndex, Mode=TwoWay}">
+              <Carousel.DataTemplates>
+                <media:MediaTemplateSelector>
+                  <DataTemplate x:Key="image">
+                    <media:CodecImage Source="{Binding}" Stretch="Uniform" />
+                  </DataTemplate>
+                  <!-- A trailer waits to be started, the way it did before. -->
+                  <DataTemplate x:Key="video">
+                    <media:CodecVideoView Source="{Binding Converter={StaticResource StringToUriConverter}}" />
+                  </DataTemplate>
+                </media:MediaTemplateSelector>
+              </Carousel.DataTemplates>
+            </Carousel>
+
             <Button Classes="media-step"
-                    HorizontalAlignment="Right"
+                    Grid.Column="2"
                     VerticalAlignment="Center"
                     Click="NextMedia_Click"
                     IsVisible="{Binding SelectedGame.HasMultipleMedia}"

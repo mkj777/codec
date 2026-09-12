@@ -5,11 +5,24 @@
   <!--
     A trailer is something the player drives. The bare surface underneath had no way to
     pause, scrub or start again once it ended, so the controls belong with it.
+
+    They sit under the surface rather than on it. The surface is a native child window, and a
+    native window paints over everything Avalonia composites around it, so anything laid on
+    top of the picture is simply never seen.
   -->
-  <Grid Background="Black">
+  <!--
+    The theme paints the slider thumb straight from its accent brush, which the palette never
+    re-declares, so the transport is the one place a blue thumb showed. Overridden here, for
+    this subtree only, with Codec's orange.
+  -->
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="ThemeAccentBrush" Color="{StaticResource CodecPrimaryColor}" />
+  </UserControl.Resources>
+
+  <Grid Background="Black" RowDefinitions="*,Auto">
     <vlc:VideoView x:Name="VideoSurface" />
 
-    <Border VerticalAlignment="Bottom"
+    <Border Grid.Row="1"
             Padding="14,10"
             Background="#CC141210"
             BorderBrush="{DynamicResource CodecLineBrush}"
@@ -37,9 +50,7 @@
                 VerticalAlignment="Center"
                 Minimum="0"
                 Maximum="1000"
-                IsSnapToTickEnabled="False"
-                PointerPressed="PositionSlider_PointerPressed"
-                PointerReleased="PositionSlider_PointerReleased" />
+                IsSnapToTickEnabled="False" />
 
         <TextBlock x:Name="DurationText"
                    Grid.Column="3"
