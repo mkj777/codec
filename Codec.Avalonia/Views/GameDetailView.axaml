@@ -261,6 +261,7 @@
                                Classes="meta-value shadow-meta"
                                FontSize="{Binding DetailsValueFontSize, RelativeSource={RelativeSource AncestorType=views:GameDetailView}}"
                                TextAlignment="Right"
+                               TextWrapping="Wrap"
                                Opacity="{Binding SelectedGame.AgeRatingOpacity}"
                                Text="{Binding SelectedGame.DisplayAgeRating}" />
                   </Grid>

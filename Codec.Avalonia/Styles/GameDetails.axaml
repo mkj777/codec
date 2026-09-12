@@ -254,8 +254,12 @@
     <Setter Property="ColumnSpacing" Value="32" />
   </Style>
 
+  <!--
+    With the meta rows stacked under the copy the lower third outgrows the band and starts at
+    its top, so the top inset is what keeps the factline out from under the caption strip.
+  -->
   <Style Selector="Grid.detail-page.tight Grid.hero-copy">
-    <Setter Property="Margin" Value="22,0,22,26" />
+    <Setter Property="Margin" Value="22,52,22,26" />
     <Setter Property="ColumnSpacing" Value="0" />
   </Style>
   <Style Selector="Grid.detail-page.tight StackPanel.hero-text">
