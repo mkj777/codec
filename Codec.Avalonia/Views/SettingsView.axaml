@@ -90,15 +90,15 @@
           <StackPanel Spacing="12">
             <TextBlock Classes="meta-label" Text="Maintenance" />
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Classes="ghost" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
-              <Button Classes="ghost" Content="Reset Codec" Click="ShowReset_Click" />
+              <Button Classes="ghost" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding IsUiEnabled}" />
+              <Button Classes="ghost" Content="Reset Codec" Click="ShowReset_Click" IsEnabled="{Binding IsUiEnabled}" />
             </StackPanel>
             <StackPanel x:Name="ResetConfirmation" Spacing="12" IsVisible="False">
               <Border Classes="rule" />
               <TextBlock Classes="meta-value" Text="Reset Codec?" />
               <TextBlock Classes="caption" Text="Library, artwork, settings, logs, and Steam sign-in will be removed." TextWrapping="Wrap" />
               <StackPanel Orientation="Horizontal" Spacing="14">
-                <Button Classes="play" Content="Reset" Command="{Binding ResetApplicationCommand}" />
+                <Button Classes="play" Content="Reset" Command="{Binding ResetApplicationCommand}" IsEnabled="{Binding IsUiEnabled}" />
                 <Button Classes="text-btn" Click="HideReset_Click" Content="Cancel" />
               </StackPanel>
             </StackPanel>
@@ -108,10 +108,10 @@
           <StackPanel Spacing="12" IsVisible="{Binding IsDebugMode}">
             <TextBlock Classes="meta-label" Text="Debug" />
             <WrapPanel Orientation="Horizontal">
-              <Button Classes="ghost" Margin="0,0,8,8" Content="Debug data" Command="{Binding DebugDumpDataCommand}" />
-              <Button Classes="ghost" Margin="0,0,8,8" Content="Refresh covers" Command="{Binding RefreshCoversCommand}" />
-              <Button Classes="ghost" Margin="0,0,8,8" Content="Check IDs" Command="{Binding DebugCheckIdsCommand}" />
-              <Button Classes="ghost" Margin="0,0,8,8" Content="Start Steam silent" Command="{Binding DebugLaunchSteamSilentCommand}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Debug data" Command="{Binding DebugDumpDataCommand}" IsEnabled="{Binding IsUiEnabled}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Refresh covers" Command="{Binding RefreshCoversCommand}" IsEnabled="{Binding IsUiEnabled}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Check IDs" Command="{Binding DebugCheckIdsCommand}" IsEnabled="{Binding IsUiEnabled}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Start Steam silent" Command="{Binding DebugLaunchSteamSilentCommand}" IsEnabled="{Binding IsUiEnabled}" />
             </WrapPanel>
           </StackPanel>
         </StackPanel>
