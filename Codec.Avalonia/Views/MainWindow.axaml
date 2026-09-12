@@ -85,10 +85,10 @@
         </Grid>
 
         <Border Grid.Row="1"
+                Classes="rail-search-row"
                 Margin="16,0,16,6"
                 Padding="0,0,0,8"
                 IsVisible="{Binding HasGames}"
-                BorderBrush="{DynamicResource CodecLine2Brush}"
                 BorderThickness="0,0,0,1">
           <Grid ColumnDefinitions="13,9,*">
             <LucideIcon VerticalAlignment="Center"
@@ -99,6 +99,7 @@
             <TextBox x:Name="SearchBox"
                      Grid.Column="2"
                      Classes="rail-search"
+                     IsEnabled="{Binding IsUiEnabled}"
                      PlaceholderText="Search"
                      Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
           </Grid>
@@ -106,6 +107,7 @@
 
         <Grid Grid.Row="2">
           <ListBox Classes="rail-list"
+                   IsEnabled="{Binding IsUiEnabled}"
                    ItemContainerTheme="{StaticResource RailItemTheme}"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                    ItemsSource="{Binding SidebarFilteredGames}"
@@ -118,9 +120,19 @@
                           Command="{Binding DataContext.SelectGameCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                           CommandParameter="{Binding}"
                           Opacity="{Binding SidebarOpacity}">
-                    <TextBlock Text="{Binding Name}"
-                               TextTrimming="CharacterEllipsis"
-                               MaxLines="1" />
+                    <!-- A favourite is marked here too, so the rail and the shelf agree. -->
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Name}"
+                                 TextTrimming="CharacterEllipsis"
+                                 MaxLines="1" />
+                      <LucideIcon Grid.Column="1"
+                                  VerticalAlignment="Center"
+                                  Kind="Star"
+                                  Size="11"
+                                  StrokeWidth="2"
+                                  Foreground="{DynamicResource CodecAccentBrush}"
+                                  IsVisible="{Binding IsFavorite}" />
+                    </Grid>
                   </Button>
                   <Border Classes="rail-marker" Margin="2,7" />
                 </Grid>
@@ -151,6 +163,7 @@
               Margin="13,8,13,10">
           <Button Grid.Column="0"
                   Classes="ghost ghost-primary"
+                  IsEnabled="{Binding IsUiEnabled}"
                   Command="{Binding AddGameFromPickerCommand}">
             <StackPanel Orientation="Horizontal" Spacing="7">
               <LucideIcon Kind="Plus" Size="12" StrokeWidth="1.75" />
@@ -173,6 +186,7 @@
                 BorderThickness="0,1,0,0">
           <Button Classes="rail-settings"
                   HorizontalAlignment="Stretch"
+                  IsEnabled="{Binding IsUiEnabled}"
                   Click="SettingsButton_Click">
             <StackPanel Orientation="Horizontal" Spacing="9">
               <LucideIcon Kind="Settings" Size="14" StrokeWidth="1.75" />
@@ -203,6 +217,7 @@
                           Grid.Column="1"
                           Classes="reveal-soft"
                           IsVisible="False"
+                          PointerPressed="Details_PointerPressed"
                           controls:Reveal.IsOpen="{Binding IsDetailsVisible}" />
 
     <!-- caption strip, drawn over whatever the content column is showing -->

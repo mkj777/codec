@@ -2,7 +2,51 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vlc="using:LibVLCSharp.Avalonia"
              x:Class="Codec.Media.CodecVideoView">
-  <Border Background="Black">
+  <!--
+    A trailer is something the player drives. The bare surface underneath had no way to
+    pause, scrub or start again once it ended, so the controls belong with it.
+  -->
+  <Grid Background="Black">
     <vlc:VideoView x:Name="VideoSurface" />
-  </Border>
+
+    <Border VerticalAlignment="Bottom"
+            Padding="14,10"
+            Background="#CC141210"
+            BorderBrush="{DynamicResource CodecLineBrush}"
+            BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+        <Button x:Name="PlayPauseButton"
+                Classes="icon-quiet"
+                Width="28"
+                Height="28"
+                VerticalAlignment="Center"
+                Click="PlayPause_Click"
+                AutomationProperties.Name="Play or pause"
+                ToolTip.Tip="Play or pause">
+          <LucideIcon x:Name="PlayPauseGlyph" Kind="Play" Size="15" StrokeWidth="1.75" />
+        </Button>
+
+        <TextBlock x:Name="ElapsedText"
+                   Grid.Column="1"
+                   Classes="caption"
+                   VerticalAlignment="Center"
+                   Text="0:00" />
+
+        <Slider x:Name="PositionSlider"
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Minimum="0"
+                Maximum="1000"
+                IsSnapToTickEnabled="False"
+                PointerPressed="PositionSlider_PointerPressed"
+                PointerReleased="PositionSlider_PointerReleased" />
+
+        <TextBlock x:Name="DurationText"
+                   Grid.Column="3"
+                   Classes="caption"
+                   VerticalAlignment="Center"
+                   Text="0:00" />
+      </Grid>
+    </Border>
+  </Grid>
 </UserControl>

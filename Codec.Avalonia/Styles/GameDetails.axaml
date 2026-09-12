@@ -111,6 +111,12 @@
     <Setter Property="Height" Value="48" />
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Padding" Value="0" />
+    <!--
+      The tile is the picture. Centred content leaves CodecImage measuring to nothing, which
+      is why the strip was a row of empty frames.
+    -->
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
     <Setter Property="CornerRadius" Value="7" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
@@ -135,11 +141,140 @@
     <Setter Property="RenderTransform" Value="scale(1.0)" />
   </Style>
 
+  <!-- the "+N" tile that opens everything past the first three -->
+  <Style Selector="Button.media-thumb.media-more">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!--
+    The step through the media overlay. It sits on the picture, so it carries its own ground
+    rather than borrowing the surface behind it.
+  -->
+  <Style Selector="Button.media-step">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="6,0" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Background" Value="#B3141210" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
+  </Style>
+  <Style Selector="Button.media-step:pointerover">
+    <Setter Property="Background" Value="#D9141210" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLineStrongBrush}" />
+  </Style>
+  <Style Selector="Button.media-step:pressed">
+    <Setter Property="Background" Value="#F0141210" />
+  </Style>
+
+  <!-- the second copy a Steam account already holds -->
+  <Style Selector="Border.own-badge">
+    <Setter Property="Background" Value="#18D4A832" />
+    <Setter Property="BorderBrush" Value="#55D4A832" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="10,5" />
+  </Style>
+
   <Style Selector="Border.settings-drawer">
     <Setter Property="Width" Value="330" />
     <Setter Property="Background" Value="{DynamicResource CodecSurfaceRaisedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource CodecLineBrush}" />
     <Setter Property="BorderThickness" Value="1,0,0,0" />
     <Setter Property="BoxShadow" Value="-24 0 60 0 #66000000" />
+  </Style>
+
+  <!--
+    The franchise timeline. An entry hangs off the line, so it settles against it from
+    whichever side it is on rather than being centred in its half.
+  -->
+  <Style Selector="StackPanel.tl-entry">
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="0,14,0,0" />
+  </Style>
+  <Style Selector="StackPanel.tl-entry.above">
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+    <Setter Property="Margin" Value="0,0,0,14" />
+  </Style>
+  <Style Selector="Border.tl-badge">
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="7,2" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineBrush}" />
+  </Style>
+
+  <!--
+    The three page widths.
+
+    The page carries an inset, a column of copy and a column of meta. Below the comfortable
+    width the insets close up; below the compact one the meta rows drop under the copy rather
+    than squeezing it to nothing. Positions are set here rather than in the markup because a
+    local value outranks a style setter and the tight layout would never take.
+  -->
+  <Style Selector="Grid.detail-page Grid.hero-copy">
+    <Setter Property="Margin" Value="48,0,48,40" />
+    <Setter Property="ColumnSpacing" Value="56" />
+  </Style>
+  <Style Selector="Grid.detail-page StackPanel.hero-text">
+    <Setter Property="MaxWidth" Value="520" />
+  </Style>
+  <Style Selector="Grid.detail-page StackPanel.hero-meta">
+    <Setter Property="Grid.Row" Value="0" />
+    <Setter Property="Grid.Column" Value="1" />
+    <Setter Property="Grid.ColumnSpan" Value="1" />
+  </Style>
+  <Style Selector="Grid.detail-page StackPanel.page-lower">
+    <Setter Property="Margin" Value="48,34,48,52" />
+  </Style>
+  <Style Selector="Grid.detail-page Grid.lower-split">
+    <Setter Property="ColumnSpacing" Value="44" />
+  </Style>
+  <Style Selector="Grid.detail-page StackPanel.lower-links">
+    <Setter Property="Grid.Row" Value="0" />
+    <Setter Property="Grid.Column" Value="1" />
+    <Setter Property="Grid.ColumnSpan" Value="1" />
+  </Style>
+
+  <Style Selector="Grid.detail-page.compact Grid.hero-copy">
+    <Setter Property="Margin" Value="34,0,34,32" />
+    <Setter Property="ColumnSpacing" Value="40" />
+  </Style>
+  <Style Selector="Grid.detail-page.compact StackPanel.hero-text">
+    <Setter Property="MaxWidth" Value="480" />
+  </Style>
+  <Style Selector="Grid.detail-page.compact StackPanel.page-lower">
+    <Setter Property="Margin" Value="34,26,34,44" />
+  </Style>
+  <Style Selector="Grid.detail-page.compact Grid.lower-split">
+    <Setter Property="ColumnSpacing" Value="32" />
+  </Style>
+
+  <Style Selector="Grid.detail-page.tight Grid.hero-copy">
+    <Setter Property="Margin" Value="22,0,22,26" />
+    <Setter Property="ColumnSpacing" Value="0" />
+  </Style>
+  <Style Selector="Grid.detail-page.tight StackPanel.hero-text">
+    <Setter Property="MaxWidth" Value="620" />
+  </Style>
+  <Style Selector="Grid.detail-page.tight StackPanel.hero-meta">
+    <Setter Property="Grid.Row" Value="1" />
+    <Setter Property="Grid.Column" Value="0" />
+    <Setter Property="Grid.ColumnSpan" Value="2" />
+  </Style>
+  <Style Selector="Grid.detail-page.tight StackPanel.page-lower">
+    <Setter Property="Margin" Value="22,22,22,36" />
+  </Style>
+  <Style Selector="Grid.detail-page.tight Grid.lower-split">
+    <Setter Property="ColumnSpacing" Value="0" />
+  </Style>
+  <Style Selector="Grid.detail-page.tight StackPanel.lower-links">
+    <Setter Property="Grid.Row" Value="1" />
+    <Setter Property="Grid.Column" Value="0" />
+    <Setter Property="Grid.ColumnSpan" Value="2" />
   </Style>
 </Styles>

@@ -28,6 +28,23 @@ public sealed class BooleanToDoubleConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>
+/// Picks one of two integers. The franchise timeline uses it to place an entry above or
+/// below the line without carrying the whole card twice.
+/// </summary>
+public sealed class BooleanToIntConverter : IValueConverter
+{
+    public int True { get; set; }
+
+    public int False { get; set; }
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true ? True : False;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed class BytesToSizeConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -159,6 +176,20 @@ public sealed class NullToBoolConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value != null;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// True when a string actually says something. Several of the display properties on
+/// <c>Game</c> answer with an empty string rather than null when they have nothing, so
+/// <see cref="NullToBoolConverter"/> would keep their rows on screen holding nothing.
+/// </summary>
+public sealed class HasTextConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => !string.IsNullOrWhiteSpace(value as string);
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

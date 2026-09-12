@@ -149,6 +149,26 @@ public partial class MainViewModel
     [ObservableProperty] private double _loadingProgress;
 
     // -----------------------------------------------------------------------------
+    // One-off results
+    // -----------------------------------------------------------------------------
+
+    [ObservableProperty] private bool _isActionResultVisible;
+    [ObservableProperty] private string _actionResultTitle = string.Empty;
+    [ObservableProperty] private string _actionResultDetail = string.Empty;
+
+    /// <summary>
+    /// Reports the outcome of something the player asked for and that has nowhere else to
+    /// land. v2 has no dialogs, so the pill carries it: the title is the line, the detail is
+    /// the quieter second one beneath it.
+    /// </summary>
+    internal void ShowActionResult(string title, string? detail)
+    {
+        ActionResultTitle = title;
+        ActionResultDetail = detail ?? string.Empty;
+        IsActionResultVisible = true;
+    }
+
+    // -----------------------------------------------------------------------------
     // Notice pill
     // -----------------------------------------------------------------------------
     // One line at a time. The most urgent state wins; the rest wait their turn.
@@ -177,6 +197,8 @@ public partial class MainViewModel
                 return ScanProgressMessage;
             if (IsResetErrorVisible)
                 return ResetErrorMessage;
+            if (IsActionResultVisible)
+                return ActionResultTitle;
             if (IsGameNotAddedToastVisible)
                 return "That file is not a game";
             if (IsGameAlreadyAddedToastVisible)
@@ -186,11 +208,32 @@ public partial class MainViewModel
             if (IsUpdateNoUpdateVisible)
                 return "Codec is up to date";
             if (IsAdminWarningVisible)
-                return "Running as Administrator";
+                return AdminWarningTitle;
 
             return string.Empty;
         }
     }
+
+    /// <summary>
+    /// The quieter second line, for the few notices that genuinely need one. The admin
+    /// warning is the standing case: the title alone says what Codec is, not what it means.
+    /// </summary>
+    public string NoticeDetail
+    {
+        get
+        {
+            if (IsActionResultVisible && !IsResetErrorVisible)
+                return ActionResultDetail;
+            if (IsAdminWarningVisible && NoticeText == AdminWarningTitle)
+                return "Some features may not work correctly.";
+
+            return string.Empty;
+        }
+    }
+
+    public bool HasNoticeDetail => NoticeDetail.Length > 0;
+
+    private const string AdminWarningTitle = "Running as Administrator";
 
     public bool IsNoticeBusy =>
         IsUpdateCheckingVisible ||
@@ -248,6 +291,7 @@ public partial class MainViewModel
         IsScanCompleteVisible = false;
         IsGameNotAddedToastVisible = false;
         IsGameAlreadyAddedToastVisible = false;
+        IsActionResultVisible = false;
         NotifyNoticeChanged();
     }
 
@@ -283,6 +327,9 @@ public partial class MainViewModel
         nameof(ScanProgressMinimum),
         nameof(IsResetErrorVisible),
         nameof(ResetErrorMessage),
+        nameof(IsActionResultVisible),
+        nameof(ActionResultTitle),
+        nameof(ActionResultDetail),
         nameof(IsGameNotAddedToastVisible),
         nameof(IsGameAlreadyAddedToastVisible),
         nameof(IsScanCompleteVisible),
@@ -319,6 +366,8 @@ public partial class MainViewModel
     {
         OnPropertyChanged(nameof(IsNoticeVisible));
         OnPropertyChanged(nameof(NoticeText));
+        OnPropertyChanged(nameof(NoticeDetail));
+        OnPropertyChanged(nameof(HasNoticeDetail));
         OnPropertyChanged(nameof(IsNoticeBusy));
         OnPropertyChanged(nameof(IsNoticeProgressVisible));
         OnPropertyChanged(nameof(IsNoticeIndeterminate));

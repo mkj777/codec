@@ -408,6 +408,7 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(MediaCount))]
         [NotifyPropertyChangedFor(nameof(MediaPreviewItems))]
         [NotifyPropertyChangedFor(nameof(HasAdditionalMedia))]
+        [NotifyPropertyChangedFor(nameof(HasMultipleMedia))]
         [NotifyPropertyChangedFor(nameof(AdditionalMediaDisplay))]
         private List<string> media = new();
 
@@ -425,6 +426,10 @@ namespace Codec.Models
 
         [JsonIgnore]
         public bool HasAdditionalMedia => MediaCount > 3;
+
+        /// <summary>Whether the media overlay has anywhere to step to.</summary>
+        [JsonIgnore]
+        public bool HasMultipleMedia => MediaCount > 1;
 
         [JsonIgnore]
         public string AdditionalMediaDisplay => $"+{Math.Max(0, MediaCount - 3)}";

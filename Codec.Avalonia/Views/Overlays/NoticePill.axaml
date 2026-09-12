@@ -25,10 +25,20 @@
                  Fill="{DynamicResource CodecAccentBrush}"
                  IsVisible="{Binding IsNoticeBusy}" />
 
-        <TextBlock VerticalAlignment="Center"
-                   FontSize="13.5"
-                   Foreground="{DynamicResource CodecTextBrush}"
-                   Text="{Binding NoticeText}" />
+        <!--
+          One line, and a second only where the first would be a fact without a meaning:
+          knowing Codec is running as Administrator is no use without knowing what it costs.
+        -->
+        <StackPanel VerticalAlignment="Center" Spacing="1">
+          <TextBlock FontSize="13.5"
+                     Foreground="{DynamicResource CodecTextBrush}"
+                     Text="{Binding NoticeText}" />
+          <TextBlock Classes="caption"
+                     MaxWidth="360"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding HasNoticeDetail}"
+                     Text="{Binding NoticeDetail}" />
+        </StackPanel>
 
         <Button Classes="text-btn"
                 VerticalAlignment="Center"

@@ -7,6 +7,8 @@
   <UserControl.Resources>
     <converters:IntEqualsConverter x:Key="IntEqualsConverter" />
     <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+    <!-- Above the line is row 0, below it is row 2; the middle row is the line itself. -->
+    <converters:BooleanToIntConverter x:Key="TimelineRowConverter" True="0" False="2" />
   </UserControl.Resources>
 
   <Grid RowDefinitions="Auto,*">
@@ -15,48 +17,117 @@
         <TextBlock Classes="title" FontSize="24" Text="Franchise" />
         <TextBlock Classes="caption" Text="Games across the series" />
       </StackPanel>
+      <!--
+        The same chip the library header filters with. The base theme has no Codec template for
+        a radio button, so its own blue dot was the only untemplated colour left on the page.
+      -->
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-        <RadioButton GroupName="FranchiseFilter"
-                     Content="{Binding FranchiseMainlineLabel}"
-                     IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0, Mode=TwoWay}" />
-        <RadioButton GroupName="FranchiseFilter"
-                     Content="{Binding FranchiseExtendedLabel}"
-                     IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1, Mode=TwoWay}" />
-        <RadioButton GroupName="FranchiseFilter"
-                     Content="{Binding FranchiseAllLabel}"
-                     IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=2, Mode=TwoWay}" />
+        <ToggleButton Classes="chip"
+                      Content="{Binding FranchiseMainlineLabel}"
+                      IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=0, Mode=TwoWay}" />
+        <ToggleButton Classes="chip"
+                      Content="{Binding FranchiseExtendedLabel}"
+                      IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=1, Mode=TwoWay}" />
+        <ToggleButton Classes="chip"
+                      Content="{Binding FranchiseAllLabel}"
+                      IsChecked="{Binding FranchiseFilterMode, Converter={StaticResource IntEqualsConverter}, ConverterParameter=2, Mode=TwoWay}" />
       </StackPanel>
     </Grid>
 
+    <!--
+      A series is a line through time, so it is drawn as one: a continuous rule with a dot
+      for every entry and the entries alternating above and below it. A flat strip of cards
+      says nothing about the order they came in.
+    -->
     <ScrollViewer Grid.Row="1"
                   HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Disabled">
-      <ItemsControl ItemsSource="{Binding FranchiseTimelineItems}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="16" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Border Width="168" Padding="0">
-              <StackPanel Spacing="10">
-                <Border Height="210" CornerRadius="10" ClipToBounds="True" Background="{DynamicResource CodecSurfaceBrush}" BoxShadow="0 10 26 0 #5C000000">
-                  <media:CodecImage Source="{Binding Entry.CoverUrl}" Stretch="UniformToFill" />
-                </Border>
-                <TextBlock Classes="meta-value"
-                           Text="{Binding Entry.Name}"
-                           TextWrapping="Wrap"
-                           MaxLines="2" />
-                <TextBlock Classes="caption" Text="{Binding ReleaseYearDisplay}" />
-                <Border Classes="taxonomy-chip" HorizontalAlignment="Left" IsVisible="{Binding BadgeText, Converter={StaticResource NullToBoolConverter}}">
-                  <TextBlock Classes="caption" Text="{Binding BadgeText}" />
-                </Border>
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <Grid MinHeight="520" RowDefinitions="*,Auto,*">
+        <Border Grid.Row="1"
+                Height="1"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"
+                IsHitTestVisible="False"
+                Background="{DynamicResource CodecPrimaryLineBrush}" />
+
+        <ItemsControl Grid.RowSpan="3"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Stretch"
+                      ItemsSource="{Binding FranchiseTimelineItems}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid Width="176" Margin="16,0" RowDefinitions="*,Auto,*">
+                <StackPanel Classes="tl-entry"
+                            Classes.above="{Binding IsAbove}"
+                            Grid.Row="{Binding IsAbove, Converter={StaticResource TimelineRowConverter}}"
+                            HorizontalAlignment="Center"
+                            Spacing="8">
+                  <Border Classes="taxonomy-chip tl-badge"
+                          HorizontalAlignment="Center"
+                          IsVisible="{Binding BadgeText, Converter={StaticResource NullToBoolConverter}}">
+                    <TextBlock Classes="caption"
+                               FontSize="10"
+                               FontWeight="700"
+                               Foreground="{DynamicResource CodecAccentBrush}"
+                               Text="{Binding BadgeText}" />
+                  </Border>
+
+                  <Border Width="140"
+                          Height="190"
+                          CornerRadius="10"
+                          ClipToBounds="True"
+                          HorizontalAlignment="Center"
+                          Background="{DynamicResource CodecSurfaceBrush}"
+                          BoxShadow="0 10 26 0 #5C000000">
+                    <media:CodecImage Source="{Binding Entry.CoverUrl}" Stretch="UniformToFill" />
+                  </Border>
+
+                  <TextBlock Classes="meta-value"
+                             MaxWidth="168"
+                             HorizontalAlignment="Center"
+                             TextAlignment="Center"
+                             TextWrapping="Wrap"
+                             MaxLines="2"
+                             TextTrimming="CharacterEllipsis"
+                             Text="{Binding Entry.Name}" />
+
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="7"
+                              HorizontalAlignment="Center">
+                    <TextBlock Classes="caption"
+                               VerticalAlignment="Center"
+                               Text="{Binding ReleaseYearDisplay}" />
+                    <ItemsControl VerticalAlignment="Center" ItemsSource="{Binding PlatformLogoUris}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Orientation="Horizontal" Spacing="5" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <media:CodecImage Width="14" Height="14" Stretch="Uniform" Opacity="0.85" Source="{Binding}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </StackPanel>
+
+                <Ellipse Grid.Row="1"
+                         Width="11"
+                         Height="11"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Fill="{DynamicResource CodecPrimaryBrush}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
     </ScrollViewer>
   </Grid>
 </UserControl>

@@ -365,6 +365,7 @@ namespace Codec.Tests
                 scanner,
                 librarySnapshotProvider ?? (() => Task.FromResult<IReadOnlyCollection<Game>>(Array.Empty<Game>())),
                 commitImportedGameAsync ?? (_ => Task.CompletedTask),
+                postScanMaintenanceAsync: null,
                 concurrency);
         }
 

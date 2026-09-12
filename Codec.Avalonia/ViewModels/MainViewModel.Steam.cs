@@ -25,6 +25,8 @@ public partial class MainViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSteamConnected))]
     [NotifyPropertyChangedFor(nameof(SteamAccountDisplay))]
+    [NotifyPropertyChangedFor(nameof(SteamStatusCaption))]
+    [NotifyPropertyChangedFor(nameof(HasSteamStatusCaption))]
     private string? _steamAccountName;
 
     [ObservableProperty]
@@ -33,10 +35,15 @@ public partial class MainViewModel
     private bool _isSteamSyncing;
     [ObservableProperty] private bool _isSteamQrVisible;
     [ObservableProperty] private byte[]? _steamQrCodePng;
-    [ObservableProperty] private bool _isSteamSyncProgressVisible;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SteamStatusCaption))]
+    [NotifyPropertyChangedFor(nameof(HasSteamStatusCaption))]
+    private bool _isSteamSyncProgressVisible;
     [ObservableProperty] private bool _isSteamSyncProgressIndeterminate = true;
     [ObservableProperty] private string _steamSyncProgressTitle = "Syncing Steam library";
-    [ObservableProperty] private string _steamSyncProgressMessage = "Looking for new owned games";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SteamStatusCaption))]
+    private string _steamSyncProgressMessage = "Looking for new owned games";
     [ObservableProperty] private int _steamSyncProgressValue;
     [ObservableProperty] private int _steamSyncProgressMaximum = 1;
 
@@ -45,12 +52,24 @@ public partial class MainViewModel
     public string SteamSyncButtonText => IsSteamSyncing ? "Syncing..." : "Sync now";
     public bool AreSteamActionsEnabled => !IsSteamSyncing;
 
+    /// <summary>
+    /// The line under the account name. It says what the connection is doing while a sync
+    /// runs and, the rest of the time, that there is one at all.
+    /// </summary>
+    public string SteamStatusCaption => IsSteamSyncProgressVisible
+        ? SteamSyncProgressMessage
+        : IsSteamConnected ? "Connected" : string.Empty;
+
+    public bool HasSteamStatusCaption => SteamStatusCaption.Length > 0;
+
     private void InitializeSteamIntegration()
     {
         _services.SteamLibrary.QrCodeChanged += SteamLibrary_QrCodeChanged;
         SteamAccountName = _appSettings.SteamAccountName;
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
+        OnPropertyChanged(nameof(SteamStatusCaption));
+        OnPropertyChanged(nameof(HasSteamStatusCaption));
     }
 
     private void SteamLibrary_QrCodeChanged(byte[] png)
@@ -120,6 +139,8 @@ public partial class MainViewModel
             NotifySteamLibraryVisibilityChanged();
             OnPropertyChanged(nameof(IsSteamConnected));
             OnPropertyChanged(nameof(SteamAccountDisplay));
+        OnPropertyChanged(nameof(SteamStatusCaption));
+        OnPropertyChanged(nameof(HasSteamStatusCaption));
             if (Games.Count > 0 && !IsOnboardingOwningScreen)
                 IsOnboardingVisible = false;
             if (!isBackground)
@@ -163,6 +184,8 @@ public partial class MainViewModel
         IsSteamQrVisible = false;
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
+        OnPropertyChanged(nameof(SteamStatusCaption));
+        OnPropertyChanged(nameof(HasSteamStatusCaption));
         RefreshAvailableImportSources();
         RefreshSidebarFilteredGames();
         RefreshDisplayedGames();
@@ -189,6 +212,8 @@ public partial class MainViewModel
         NotifySteamLibraryVisibilityChanged();
         OnPropertyChanged(nameof(IsSteamConnected));
         OnPropertyChanged(nameof(SteamAccountDisplay));
+        OnPropertyChanged(nameof(SteamStatusCaption));
+        OnPropertyChanged(nameof(HasSteamStatusCaption));
     }
 
     private void NotifySteamLibraryVisibilityChanged()

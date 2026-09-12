@@ -57,11 +57,11 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
               <StackPanel Spacing="2" VerticalAlignment="Center">
                 <TextBlock Classes="meta-value" Text="{Binding SteamAccountDisplay}" />
-                <TextBlock Classes="caption" Text="{Binding SteamSyncProgressMessage}" IsVisible="{Binding IsSteamSyncProgressVisible}" />
+                <TextBlock Classes="caption" Text="{Binding SteamStatusCaption}" IsVisible="{Binding HasSteamStatusCaption}" />
               </StackPanel>
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Classes="ghost ghost-primary" Content="Connect" Command="{Binding ConnectSteamCommand}" IsVisible="{Binding IsSteamConnected, Converter={StaticResource NotConverter}}" />
-                <Button Classes="ghost" Content="Sync now" Command="{Binding SyncSteamLibraryCommand}" IsVisible="{Binding IsSteamConnected}" />
+                <Button Classes="ghost" Content="{Binding SteamSyncButtonText}" Command="{Binding SyncSteamLibraryCommand}" IsEnabled="{Binding AreSteamActionsEnabled}" IsVisible="{Binding IsSteamConnected}" />
                 <Button Classes="ghost" Content="Disconnect" Click="ShowDisconnect_Click" IsVisible="{Binding IsSteamConnected}" />
               </StackPanel>
             </Grid>
@@ -91,7 +91,6 @@
             <TextBlock Classes="meta-label" Text="Maintenance" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Classes="ghost" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" />
-              <Button Classes="ghost" Content="Refresh covers" Command="{Binding RefreshCoversCommand}" />
               <Button Classes="ghost" Content="Reset Codec" Click="ShowReset_Click" />
             </StackPanel>
             <StackPanel x:Name="ResetConfirmation" Spacing="12" IsVisible="False">
@@ -103,6 +102,17 @@
                 <Button Classes="text-btn" Click="HideReset_Click" Content="Cancel" />
               </StackPanel>
             </StackPanel>
+          </StackPanel>
+
+          <!-- The developer corner. Nothing here is for a player, so it only exists in a debug build. -->
+          <StackPanel Spacing="12" IsVisible="{Binding IsDebugMode}">
+            <TextBlock Classes="meta-label" Text="Debug" />
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Debug data" Command="{Binding DebugDumpDataCommand}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Refresh covers" Command="{Binding RefreshCoversCommand}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Check IDs" Command="{Binding DebugCheckIdsCommand}" />
+              <Button Classes="ghost" Margin="0,0,8,8" Content="Start Steam silent" Command="{Binding DebugLaunchSteamSilentCommand}" />
+            </WrapPanel>
           </StackPanel>
         </StackPanel>
       </ScrollViewer>

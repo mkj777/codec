@@ -498,6 +498,22 @@
   <Style Selector="TextBox.rail-search:pointerover">
     <Setter Property="BorderThickness" Value="0" />
   </Style>
+  <!--
+    The search box draws no border of its own, so focus has to show on the rule beneath it.
+    The rail answers in orange everywhere else; it answers here too, rather than leaving the
+    one control in the app that gives no sign it has the keyboard.
+  -->
+  <Style Selector="Border.rail-search-row">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecLine2Brush}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="BorderBrush" Duration="0:0:0.14" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Border.rail-search-row:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryBrush}" />
+  </Style>
 
   <Style Selector="ToggleSwitch">
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />

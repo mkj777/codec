@@ -148,8 +148,14 @@ namespace Codec.ViewModels
         // Cover Management
         // ---------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Re-downloads every cover. It walks the whole library, so it runs alone: without the
+        /// guard Settings could start a second pass on top of the first.
+        /// </summary>
         [CommunityToolkit.Mvvm.Input.RelayCommand]
-        public async Task RefreshCoversAsync()
+        public Task RefreshCoversAsync() => RunExclusiveAsync(RefreshCoversCoreAsync);
+
+        private async Task RefreshCoversCoreAsync()
         {
             ShowScanProgress("Loading covers", Games.Count == 0);
             PrepareCoverProgress(Games.Count, "Update Cover", "No Games to update.");

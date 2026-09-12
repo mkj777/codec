@@ -1,6 +1,6 @@
+using Codec.Helpers;
 using Codec.Models;
 using Codec.Services.Steam;
-using Codec.ViewModels;
 using Xunit;
 
 namespace Codec.Tests;
@@ -41,24 +41,20 @@ public sealed class SteamIntegrationTests
     }
 
     [Fact]
-    public void RemoveOwnedOnlyGames_PreservesInstalledAndNonSteamEntries()
+    public void OwnedOnly_MarksExactlyWhatDisconnectingSteamHides()
     {
         var ownedOnly = new Game { IsSteamOwned = true, IsInstalled = false, SteamID = 10 };
         var installed = new Game { IsSteamOwned = true, IsInstalled = true, SteamID = 20 };
         var local = new Game { IsSteamOwned = false, IsInstalled = false };
-        var library = new List<Game> { ownedOnly, installed, local };
 
-        int removed = SteamLibraryService.RemoveOwnedOnlyGames(library);
-
-        Assert.Equal(1, removed);
-        Assert.DoesNotContain(ownedOnly, library);
-        Assert.Contains(installed, library);
-        Assert.Contains(local, library);
+        Assert.True(ownedOnly.IsOwnedOnly);
+        Assert.False(installed.IsOwnedOnly);
+        Assert.False(local.IsOwnedOnly);
     }
 
     [Fact]
     public void BuildSteamInstallUri_UsesSteamProtocol()
-        => Assert.Equal("steam://install/730", MainViewModel.BuildSteamInstallUri(730));
+        => Assert.Equal("steam://install/730", LauncherUris.SteamInstall(730));
 
     [Theory]
     [InlineData("game", true)]

@@ -132,7 +132,7 @@ namespace Codec.ViewModels
         [NotifyPropertyChangedFor(nameof(CanStartScan))]
         private bool _isImportActive;
 
-        public bool CanStartScan => !IsImportActive;
+        public bool CanStartScan => !IsImportActive && IsUiEnabled;
 
         [ObservableProperty] private bool _isScanProgressVisible;
         [ObservableProperty] private string _scanProgressMessage = string.Empty;
@@ -176,7 +176,16 @@ namespace Codec.ViewModels
         public bool HasCloseBehaviorChoice => _appSettings.CloseToTray.HasValue;
 
         public bool HasCompletedOnboarding => _appSettings.OnboardingCompleted;
-        [ObservableProperty] private bool _isUiEnabled = true;
+        /// <summary>
+        /// False while one whole-library operation owns the app.
+        ///
+        /// A cover refresh, an add and a reset all rewrite the same library, so search, the
+        /// game list, Add, Scan and Settings close for the duration rather than letting a
+        /// second one start on top of the first.
+        /// </summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanStartScan))]
+        private bool _isUiEnabled = true;
         [ObservableProperty] private bool _isImportStatusVisible;
         private bool _isBackgroundStartupScan;
 
@@ -368,6 +377,28 @@ namespace Codec.ViewModels
         private Task CheckForUpdatesAsync() => _services.Updates.CheckAndDownloadAsync();
 
         /// <summary>
+        /// Runs one whole-library operation with the rest of the shelf closed.
+        ///
+        /// Doubles as the reentry guard: a second Refresh covers cannot start while the first
+        /// is still walking the library, which is how it could be started twice from Settings.
+        /// </summary>
+        private async Task RunExclusiveAsync(Func<Task> operation)
+        {
+            if (!IsUiEnabled)
+                return;
+
+            IsUiEnabled = false;
+            try
+            {
+                await operation();
+            }
+            finally
+            {
+                IsUiEnabled = true;
+            }
+        }
+
+        /// <summary>
         /// A full reset replaces the process, so the only chance to say what is happening is
         /// before it starts. The overlay is held long enough to be read, which is what the
         /// WinUI build did and the port dropped.
@@ -379,6 +410,7 @@ namespace Codec.ViewModels
                 return;
 
             IsResetting = true;
+            IsUiEnabled = false;
             IsSettingsVisible = false;
             IsResetErrorVisible = false;
 
@@ -395,6 +427,7 @@ namespace Codec.ViewModels
                 // rather than take the application down with it.
                 Debug.WriteLine($"[Reset] failed: {exception}");
                 IsResetting = false;
+                IsUiEnabled = true;
                 ResetErrorMessage = exception.Message;
                 IsResetErrorVisible = true;
             }
@@ -635,13 +668,27 @@ namespace Codec.ViewModels
             return result;
         }
 
+        /// <summary>
+        /// Add by executable. The import can throw on a file the pipeline cannot read at all,
+        /// and without this the exception went to the crash log and the player saw nothing.
+        /// </summary>
         [RelayCommand]
-        private async Task AddGameFromPickerAsync()
+        private Task AddGameFromPickerAsync() => RunExclusiveAsync(async () =>
         {
             string? executablePath = await _filePicker.PickExecutableAsync();
-            if (executablePath != null)
+            if (executablePath == null)
+                return;
+
+            try
+            {
                 await AddGameCommand(executablePath);
-        }
+            }
+            catch (Exception exception)
+            {
+                Debug.WriteLine($"[Add] import failed: {exception}");
+                ShowActionResult("Could not add that game", exception.Message);
+            }
+        });
 
         [RelayCommand]
         private async Task OpenExternalLinkAsync(string? address)

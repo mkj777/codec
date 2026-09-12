@@ -1,3 +1,4 @@
+using Codec.Helpers;
 using Codec.Models;
 using Codec.Services.Storage;
 using CommunityToolkit.Mvvm.Input;
@@ -337,7 +338,7 @@ namespace Codec.ViewModels
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = BuildSteamInstallUri(SelectedGame.SteamID!.Value),
+                        FileName = LauncherUris.SteamInstall(SelectedGame.SteamID!.Value),
                         UseShellExecute = true
                     });
                     launched = true;
@@ -367,7 +368,7 @@ namespace Codec.ViewModels
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = BuildEpicLaunchUri(SelectedGame.EpicAppId!),
+                        FileName = LauncherUris.EpicLaunch(SelectedGame.EpicAppId!),
                         UseShellExecute = true
                     });
                     launched = true;
@@ -444,11 +445,6 @@ namespace Codec.ViewModels
 
             return true;
         }
-
-        internal static string BuildEpicLaunchUri(string epicAppId) =>
-            $"com.epicgames.launcher://apps/{Uri.EscapeDataString(epicAppId)}?action=launch&silent=true";
-
-        internal static string BuildSteamInstallUri(int appId) => $"steam://install/{appId}";
 
         [RelayCommand]
         private void OpenGameFolder()

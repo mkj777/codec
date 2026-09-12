@@ -160,26 +160,63 @@ public sealed partial class MainWindow : Window
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
+        if (DataContext is not MainViewModel viewModel)
+            return;
+
         if ((e.KeyModifiers & KeyModifiers.Control) != 0 && e.Key is Key.F or Key.S)
         {
-            SearchBox.Focus();
-            SearchBox.SelectAll();
-            e.Handled = true;
+            if (CanFocusSearch(viewModel))
+            {
+                FocusSearch(viewModel);
+                e.Handled = true;
+            }
+
             return;
         }
 
-        if (e.Key is not (Key.Back or Key.Escape) ||
-            e.Source is TextBox ||
-            DataContext is not MainViewModel viewModel)
-        {
+        if (e.Key is not (Key.Back or Key.Escape) || e.Source is TextBox)
             return;
-        }
 
-        if (viewModel.IsResetConfirmVisible)
+        // The first-close prompt is the most modal thing on screen, so it answers first.
+        if (viewModel.IsCloseChoiceVisible)
+            viewModel.IsCloseChoiceVisible = false;
+        else if (viewModel.IsResetConfirmVisible)
             viewModel.IsResetConfirmVisible = false;
         else if (viewModel.IsSettingsVisible)
             viewModel.IsSettingsVisible = false;
-        else if (viewModel.IsMediaOverlayOpen)
+        else if (!TryCloseDetailLayer(viewModel))
+            return;
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// Right-click anywhere on the details page is Back, one layer at a time.
+    /// </summary>
+    private void Details_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.PointerUpdateKind != PointerUpdateKind.RightButtonPressed ||
+            DataContext is not MainViewModel viewModel ||
+            viewModel.IsSettingsVisible ||
+            viewModel.IsResetConfirmVisible)
+        {
+            return;
+        }
+
+        if (TryCloseDetailLayer(viewModel))
+            e.Handled = true;
+    }
+
+    /// <summary>
+    /// Peels one layer off the details page: the transient surfaces the view owns, then the
+    /// overlays, then the page itself. Shared so Back, Escape and right-click all agree.
+    /// </summary>
+    private bool TryCloseDetailLayer(MainViewModel viewModel)
+    {
+        if (DetailsHost.TryCloseTransientLayer())
+            return true;
+
+        if (viewModel.IsMediaOverlayOpen)
             viewModel.CloseMediaOverlayCommand.Execute(null);
         else if (viewModel.IsFranchiseOverlayOpen)
             viewModel.CloseFranchiseOverlayCommand.Execute(null);
@@ -188,9 +225,35 @@ public sealed partial class MainWindow : Window
         else if (viewModel.IsDetailsVisible && viewModel.BackCommand.CanExecute(null))
             viewModel.BackCommand.Execute(null);
         else
-            return;
+            return false;
 
-        e.Handled = true;
+        return true;
+    }
+
+    /// <summary>
+    /// The shortcut belongs to the shelf, not to whatever is covering it. While an overlay
+    /// owns the screen, or the library is still arriving, Ctrl+F does nothing at all.
+    /// </summary>
+    private static bool CanFocusSearch(MainViewModel viewModel) =>
+        viewModel.IsUiEnabled &&
+        viewModel.HasGames &&
+        !viewModel.IsInitialLoading &&
+        !viewModel.IsAnyModalOpen;
+
+    /// <summary>
+    /// Opens the rail first if it is closed. The search box lives inside it, and a collapsed
+    /// rail is zero pixels wide, so focusing straight into it put the caret nowhere.
+    /// </summary>
+    private void FocusSearch(MainViewModel viewModel)
+    {
+        if (viewModel.IsSidebarCollapsed)
+            viewModel.ToggleSidebarCommand.Execute(null);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+        }, DispatcherPriority.Background);
     }
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)

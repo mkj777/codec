@@ -3,9 +3,9 @@ using Codec.Services.Fetching;
 using Codec.Services.Scanning;
 using Codec.Services.Scanning.Scanners;
 using Codec.Services.Importing;
+using Codec.Helpers;
 using Codec.Services.Resolving;
 using Codec.Services.Storage;
-using Codec.ViewModels;
 using Xunit;
 
 namespace Codec.Tests
@@ -112,7 +112,7 @@ namespace Codec.Tests
         {
             Assert.Equal(
                 "com.epicgames.launcher://apps/FortniteGame?action=launch&silent=true",
-                MainViewModel.BuildEpicLaunchUri("FortniteGame"));
+                LauncherUris.EpicLaunch("FortniteGame"));
         }
     }
 }

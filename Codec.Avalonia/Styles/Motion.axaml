@@ -46,6 +46,27 @@
   </Style>
 
   <!--
+    reveal-drawer: the Game Settings panel, which comes from the edge it lives on rather than
+    rising off the page. Same contract as reveal, same class, different direction.
+  -->
+  <Style Selector=":is(Control).reveal-drawer">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="RenderTransform" Value="translateX(26px)" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.22" Easing="{StaticResource CodecEase}" />
+        <TransformOperationsTransition Property="RenderTransform"
+                                       Duration="0:0:0.22"
+                                       Easing="{StaticResource CodecEase}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector=":is(Control).reveal-drawer.revealed">
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="RenderTransform" Value="none" />
+  </Style>
+
+  <!--
     state-shift: the moment the window changes size.
 
     Maximizing re-columns the shelf in a single frame, which is the part that reads as abrupt;
