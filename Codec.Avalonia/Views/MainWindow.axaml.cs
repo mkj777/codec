@@ -174,6 +174,14 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // The media overlay owns the arrow keys while it is up, the same step the buttons make.
+        if (viewModel.IsMediaOverlayOpen && e.Key is (Key.Left or Key.Right) && e.Source is not TextBox)
+        {
+            DetailsHost.StepMedia(e.Key == Key.Right ? 1 : -1);
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key is not (Key.Back or Key.Escape) || e.Source is TextBox)
             return;
 

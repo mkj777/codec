@@ -191,6 +191,18 @@ public sealed partial class GameDetailView : UserControl
 
     private void NextMedia_Click(object? sender, RoutedEventArgs e) => MediaCarousel.Next();
 
+    /// <summary>
+    /// One step through the open media overlay, forward for a positive direction. The window
+    /// routes the arrow keys here so they land on the same carousel the buttons drive.
+    /// </summary>
+    public void StepMedia(int direction)
+    {
+        if (direction > 0)
+            MediaCarousel.Next();
+        else
+            MediaCarousel.Previous();
+    }
+
     private void CloseMediaOverlay()
     {
         StopAllVideos();
