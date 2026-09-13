@@ -96,6 +96,14 @@
           </Border>
         </ControlTemplate>
       </Setter>
+      <!--
+        A track counts upward from its start, and for a vertical bar the start is the
+        bottom, the way a slider reads. Scrolling counts downward, so the vertical track
+        runs the other way; SimpleTheme's own template does the same.
+      -->
+      <Style Selector="^:vertical /template/ Track#PART_Track">
+        <Setter Property="IsDirectionReversed" Value="True" />
+      </Style>
     </ControlTheme>
 
   </Styles.Resources>
