@@ -184,9 +184,22 @@
   </Style>
 
   <!--
+    The shelf's scroller spans the content host and the repeater sits inset within it by its
+    own margin (LibraryView.axaml). The presenter's clip therefore lies on the host edges,
+    where a hovered card's growth has room; the repeater itself does not clip. The bar is
+    lifted off the layout and held at the inset, out of the window's resize border, so its
+    hover growth cannot re-column the shelf.
+  -->
+  <Style Selector="ScrollViewer.shelf /template/ ScrollContentPresenter#PART_ContentPresenter">
+    <Setter Property="Grid.ColumnSpan" Value="2" />
+  </Style>
+  <Style Selector="ScrollViewer.shelf /template/ ScrollBar#PART_VerticalScrollBar">
+    <Setter Property="Margin" Value="0,14,24,46" />
+  </Style>
+
+  <!--
     Hover brings the card forward rather than throwing it upward: it grows a little and its
-    shadow deepens, which reads as approaching instead of hopping. The shelf carries matching
-    padding so the growth is never clipped at the edges.
+    shadow deepens, which reads as approaching instead of hopping.
   -->
   <Style Selector="Grid.cover-card">
     <Setter Property="RenderTransform" Value="none" />

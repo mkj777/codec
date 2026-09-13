@@ -85,16 +85,27 @@
     </Grid>
 
     <Grid Grid.Row="1">
-      <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+      <!--
+        The scroller reaches the edges of the content host, and the shelf's inset is the
+        repeater's margin inside it. A hovered card grows into that inset rather than being
+        cut at it, and rows scroll under the window's bottom edge and into the gap below the
+        control row instead of vanishing at a line inside the page.
+      -->
+      <ScrollViewer Classes="shelf"
+                    HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto"
-                    Padding="8"
-                    Margin="-8"
+                    Margin="-32,-14,-32,-46"
                     IsVisible="{Binding HasGames}">
         <!--
           Fill decides the width, CoverGrid derives the matching height, so columns
           fill the shelf, the gap stays fixed and the card stays 2:3.
+
+          The repeater clips its children to its own bounds unless told otherwise, and a card
+          on the edge of the shelf grows past them on hover.
         -->
         <ItemsRepeater ItemsSource="{Binding DisplayedGames}"
+                       ClipToBounds="False"
+                       Margin="32,14,32,46"
                        controls:CoverGrid.TargetWidth="210"
                        controls:CoverGrid.Gap="16">
           <ItemsRepeater.Layout>

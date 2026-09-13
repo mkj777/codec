@@ -406,7 +406,8 @@
               <TextBlock Grid.Column="1" Classes="caption" Text="{Binding SelectedGame.MediaCount}" />
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="10">
-              <ItemsControl ItemsSource="{Binding SelectedGame.MediaPreviewItems}">
+              <!-- An ItemsControl clips to its bounds unless told otherwise; a hovered thumb grows past them. -->
+              <ItemsControl ItemsSource="{Binding SelectedGame.MediaPreviewItems}" ClipToBounds="False">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>

@@ -88,14 +88,31 @@ public static class CoverGrid
         // Width is left to ItemsStretch="Fill", which fits the row by construction and
         // therefore can never overflow. Only the height is derived, using the same
         // column count the layout itself will pick, so the card lands on 2:3.
-        int columns = Math.Max(GetMinimumColumns(repeater), (int)Math.Floor((available + gap) / (target + gap)));
-        double width = (available - ((columns - 1) * gap)) / columns;
-        if (width <= 0)
+        //
+        // The arithmetic is the layout's own: it fits as many (width + gap) as the row
+        // holds, counting a gap after the last item too, and hands each item the whole
+        // pixels left over. Any other reading of the row disagrees with it across a band
+        // of widths one gap wide, and the card comes out with a height meant for a
+        // column count the layout did not pick.
+        double itemWidth = target;
+        int columns = (int)Math.Floor(available / (itemWidth + gap));
+        int minimum = GetMinimumColumns(repeater);
+        if (columns < minimum)
+        {
+            // Narrower items are the only way to make the layout keep this many columns.
+            columns = minimum;
+            itemWidth = Math.Floor(available / columns) - gap;
+        }
+
+        if (columns <= 0 || itemWidth <= 0)
             return;
+
+        double usedSpace = (columns * (itemWidth + gap)) - gap;
+        double width = itemWidth + Math.Floor((available - usedSpace) / columns);
 
         layout.MinColumnSpacing = gap;
         layout.MinRowSpacing = gap;
-        layout.MinItemWidth = target;
+        layout.MinItemWidth = itemWidth;
         layout.MinItemHeight = Math.Floor(width * CoverRatio);
     }
 }
