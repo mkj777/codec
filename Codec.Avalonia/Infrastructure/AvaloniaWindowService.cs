@@ -8,6 +8,9 @@ public sealed class AvaloniaWindowService(
     IClassicDesktopStyleApplicationLifetime desktop,
     Func<Window?> getMainWindow) : IWindowService
 {
+    // Bounded so a stuck disk cannot keep the process alive after Exit.
+    private static readonly TimeSpan SaveFlushTimeout = TimeSpan.FromSeconds(5);
+
     public bool IsShutdownRequested { get; private set; }
 
     public void HideMainWindow() => getMainWindow()?.Hide();
@@ -23,12 +26,25 @@ public sealed class AvaloniaWindowService(
         window.Activate();
     }
 
-    public void CloseApplication()
+    public async void CloseApplication()
     {
         if (IsShutdownRequested)
             return;
 
         IsShutdownRequested = true;
+
+        // Exit from the tray ends the process with the window hidden, so this is the last
+        // point where saves still queued in the background can finish.
+        try
+        {
+            await Task.WhenAll(App.Services.AppSettings.FlushAsync(), App.Services.LibraryStorage.FlushAsync())
+                .WaitAsync(SaveFlushTimeout);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Shutdown] Pending saves did not finish: {ex.Message}");
+        }
+
         desktop.Shutdown();
     }
 

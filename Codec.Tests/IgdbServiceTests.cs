@@ -918,6 +918,41 @@ namespace Codec.Tests
             Assert.Equal("ESRB E10+", game.AgeRating);
         }
 
+        [Fact]
+        public async Task LookupIgdbIdBySteamIdAsync_ReportsFound()
+        {
+            var service = CreateService((_, _) => JsonResponse("""[{ "id": 1, "game": 123, "name": "Portal 2" }]"""));
+
+            var result = await service.LookupIgdbIdBySteamIdAsync(620);
+
+            Assert.Equal(IgdbService.IgdbLookupOutcome.Found, result.Outcome);
+            Assert.Equal(123, result.IgdbId);
+        }
+
+        [Fact]
+        public async Task LookupIgdbIdBySteamIdAsync_ReportsNotFound()
+        {
+            var service = CreateService((_, _) => JsonResponse("[]"));
+
+            var result = await service.LookupIgdbIdBySteamIdAsync(620);
+
+            Assert.Equal(IgdbService.IgdbLookupOutcome.NotFound, result.Outcome);
+            Assert.Null(result.IgdbId);
+        }
+
+        [Fact]
+        public async Task LookupIgdbIdBySteamIdAsync_ReportsFailedWhenIgdbCannotBeAsked()
+        {
+            var service = CreateService((_, _) => throw new HttpRequestException("offline"));
+
+            var result = await service.LookupIgdbIdBySteamIdAsync(620);
+
+            Assert.Equal(IgdbService.IgdbLookupOutcome.Failed, result.Outcome);
+            Assert.True(result.LookupFailed);
+            Assert.Null(result.IgdbId);
+            Assert.Null(await service.FindIgdbIdBySteamIdAsync(620));
+        }
+
         private static IgdbService CreateService(Func<string, string, HttpResponseMessage> responder)
         {
             var handler = new DelegateHandler(responder);

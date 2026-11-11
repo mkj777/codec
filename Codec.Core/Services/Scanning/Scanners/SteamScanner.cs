@@ -26,6 +26,26 @@ namespace Codec.Services.Scanning.Scanners
 
         private string? _cachedVdfPath;
 
+        /// <summary>The Steam client's install folder from HKCU SteamPath, or null when there is none on disk.</summary>
+        public static string? FindSteamRoot()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+                string? steamPath = key?.GetValue("SteamPath") as string;
+                if (string.IsNullOrWhiteSpace(steamPath))
+                    return null;
+
+                string normalized = NormalizePath(steamPath);
+                return Directory.Exists(normalized) ? normalized : null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SteamScanner] Steam root lookup failed: {ex.Message}");
+                return null;
+            }
+        }
+
         public override async Task<List<GameCandidate>> ScanAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -215,6 +235,14 @@ namespace Codec.Services.Scanning.Scanners
 
                 if (!File.Exists(vdfPath))
                 {
+                    // The HKCU key outlives an uninstall, so only a Steam that is still there and
+                    // has run (steamapps exists) is expected to have a library list.
+                    if (File.Exists(System.IO.Path.Combine(normalized, "steam.exe")) &&
+                        Directory.Exists(System.IO.Path.Combine(normalized, "steamapps")))
+                    {
+                        throw new FileNotFoundException("Steam is installed but its library list is missing.", vdfPath);
+                    }
+
                     Debug.WriteLine($"[SteamScanner] libraryfolders.vdf not found at: {vdfPath}");
                     return null;
                 }
@@ -223,7 +251,7 @@ namespace Codec.Services.Scanning.Scanners
                 Debug.WriteLine($"[SteamScanner] VDF path cached: {_cachedVdfPath}");
                 return _cachedVdfPath;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not FileNotFoundException)
             {
                 Debug.WriteLine($"[SteamScanner] Registry lookup failed: {ex.Message}");
                 return null;
@@ -248,7 +276,16 @@ namespace Codec.Services.Scanning.Scanners
             }
 
             var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            await ParseLibraryDefinitionAsync(vdfPath, folders, processedFiles);
+            try
+            {
+                await ParseLibraryDefinitionAsync(vdfPath, folders, processedFiles);
+            }
+            catch
+            {
+                // Rediscover next time in case Steam moved.
+                _cachedVdfPath = null;
+                throw;
+            }
 
             return folders
                 .GroupBy(f => f.Path, StringComparer.OrdinalIgnoreCase)
@@ -263,43 +300,38 @@ namespace Codec.Services.Scanning.Scanners
             if (!processedFiles.Add(filePath))
                 return;
 
-            try
+            // No catch: an unreadable library list means Steam is there but could not be scanned,
+            // which the scan must report instead of reading as "no Steam games".
+            string content = await File.ReadAllTextAsync(filePath);
+            VProperty vdfData = VdfConvert.Deserialize(content);
+            string rootKey = vdfData.Key ?? string.Empty;
+
+            if (rootKey.Equals("libraryfolders", StringComparison.OrdinalIgnoreCase) && vdfData.Value is VObject foldersObj)
             {
-                string content = await File.ReadAllTextAsync(filePath);
-                VProperty vdfData = VdfConvert.Deserialize(content);
-                string rootKey = vdfData.Key ?? string.Empty;
-
-                if (rootKey.Equals("libraryfolders", StringComparison.OrdinalIgnoreCase) && vdfData.Value is VObject foldersObj)
+                foreach (var folder in foldersObj)
                 {
-                    foreach (var folder in foldersObj)
-                    {
-                        if (folder.Value is not VObject folderData)
-                            continue;
+                    if (folder.Value is not VObject folderData)
+                        continue;
 
-                        string? folderPath = ExtractFolderPath(folderData);
-                        if (string.IsNullOrWhiteSpace(folderPath))
-                            continue;
+                    string? folderPath = ExtractFolderPath(folderData);
+                    if (string.IsNullOrWhiteSpace(folderPath))
+                        continue;
 
-                        folderPath = NormalizePath(folderPath);
-                        var appIds = ExtractAppIds(folderData);
-                        accumulator.Add(new SteamLibraryFolder(folderPath, appIds));
-                    }
-                }
-                else if (rootKey.Equals("libraryfolder", StringComparison.OrdinalIgnoreCase) && vdfData.Value is VObject pointerObj)
-                {
-                    string? launcherPath = ExtractLauncherPath(pointerObj);
-                    string? steamRoot = GetSteamRootFromLauncher(launcherPath);
-                    if (!string.IsNullOrEmpty(steamRoot))
-                    {
-                        string nested = System.IO.Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
-                        if (File.Exists(nested))
-                            await ParseLibraryDefinitionAsync(nested, accumulator, processedFiles);
-                    }
+                    folderPath = NormalizePath(folderPath);
+                    var appIds = ExtractAppIds(folderData);
+                    accumulator.Add(new SteamLibraryFolder(folderPath, appIds));
                 }
             }
-            catch (Exception ex)
+            else if (rootKey.Equals("libraryfolder", StringComparison.OrdinalIgnoreCase) && vdfData.Value is VObject pointerObj)
             {
-                Debug.WriteLine($"? Error parsing {filePath}: {ex.Message}");
+                string? launcherPath = ExtractLauncherPath(pointerObj);
+                string? steamRoot = GetSteamRootFromLauncher(launcherPath);
+                if (!string.IsNullOrEmpty(steamRoot))
+                {
+                    string nested = System.IO.Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
+                    if (File.Exists(nested))
+                        await ParseLibraryDefinitionAsync(nested, accumulator, processedFiles);
+                }
             }
         }
 
@@ -380,49 +412,43 @@ namespace Codec.Services.Scanning.Scanners
             var games = new List<SteamGameInfo>();
             string steamAppsPath = System.IO.Path.Combine(libraryPath, "steamapps");
 
+            // Missing is normal (a library on an unplugged drive); unreadable is a failure and propagates.
             if (!Directory.Exists(steamAppsPath))
                 return games;
 
-            try
+            var manifestFiles = Directory.GetFiles(steamAppsPath, "appmanifest_*.acf");
+
+            foreach (var manifestFile in manifestFiles)
             {
-                var manifestFiles = Directory.GetFiles(steamAppsPath, "appmanifest_*.acf");
-
-                foreach (var manifestFile in manifestFiles)
+                try
                 {
-                    try
-                    {
-                        string content = await File.ReadAllTextAsync(manifestFile);
-                        VProperty manifest = VdfConvert.Deserialize(content);
+                    string content = await File.ReadAllTextAsync(manifestFile);
+                    VProperty manifest = VdfConvert.Deserialize(content);
 
-                        if (manifest.Value is VObject manifestData)
+                    if (manifest.Value is VObject manifestData)
+                    {
+                        int? appId = null;
+                        string? name = null;
+                        string? installDir = null;
+
+                        foreach (var property in manifestData)
                         {
-                            int? appId = null;
-                            string? name = null;
-                            string? installDir = null;
-
-                            foreach (var property in manifestData)
-                            {
-                                if (property.Key == "appid" && int.TryParse(property.Value?.ToString(), out int id))
-                                    appId = id;
-                                else if (property.Key == "name")
-                                    name = property.Value?.ToString();
-                                else if (property.Key == "installdir")
-                                    installDir = property.Value?.ToString();
-                            }
-
-                            if (appId.HasValue && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(installDir) && expectedAppIds.Contains(appId.Value))
-                                games.Add(new SteamGameInfo(appId.Value, name, installDir, libraryPath));
+                            if (property.Key == "appid" && int.TryParse(property.Value?.ToString(), out int id))
+                                appId = id;
+                            else if (property.Key == "name")
+                                name = property.Value?.ToString();
+                            else if (property.Key == "installdir")
+                                installDir = property.Value?.ToString();
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"? Error parsing {System.IO.Path.GetFileName(manifestFile)}: {ex.Message}");
+
+                        if (appId.HasValue && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(installDir) && expectedAppIds.Contains(appId.Value))
+                            games.Add(new SteamGameInfo(appId.Value, name, installDir, libraryPath));
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"? Error reading manifests: {ex.Message}");
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"? Error parsing {System.IO.Path.GetFileName(manifestFile)}: {ex.Message}");
+                }
             }
 
             return games;

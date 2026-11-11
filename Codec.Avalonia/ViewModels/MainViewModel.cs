@@ -201,7 +201,11 @@ namespace Codec.ViewModels
         [NotifyPropertyChangedFor(nameof(IsScanCompleteEffectiveVisible))]
         private bool _isGameAlreadyAddedToastVisible;
 
-        public bool IsScanCompleteEffectiveVisible => IsScanCompleteVisible && !IsGameNotAddedToastVisible && !IsGameAlreadyAddedToastVisible;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsScanCompleteEffectiveVisible))]
+        private bool _isGameMissingToastVisible;
+
+        public bool IsScanCompleteEffectiveVisible => IsScanCompleteVisible && !IsGameNotAddedToastVisible && !IsGameAlreadyAddedToastVisible && !IsGameMissingToastVisible;
         [ObservableProperty] private int _scanCompleteAddedCount;
         [ObservableProperty] private string _importStatusMessage = string.Empty;
         [ObservableProperty] private bool _isResetting;
@@ -222,6 +226,7 @@ namespace Codec.ViewModels
         [ObservableProperty] private bool _isUpdateErrorVisible;
         [ObservableProperty] private string _updateErrorMessage = string.Empty;
         [ObservableProperty] private bool _isUpdateNoUpdateVisible;
+        [ObservableProperty] private bool _isUpdateDevModeVisible;
         [ObservableProperty] private bool _isAdminWarningVisible = IsAdministrator();
 
         public string AppVersion => $"v{Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?"}";
@@ -296,10 +301,11 @@ namespace Codec.ViewModels
                 IsUpdateBannerVisible = s.Status == UpdateStatus.Ready;
                 IsUpdateNoUpdateVisible = s.Status == UpdateStatus.NoUpdateFound;
                 IsUpdateErrorVisible = s.Status == UpdateStatus.Error;
+                IsUpdateDevModeVisible = s.Status == UpdateStatus.DevelopmentMode;
                 UpdateDownloadProgress = s.DownloadProgress;
                 UpdateErrorMessage = s.ErrorMessage ?? string.Empty;
 
-                if (s.Status is UpdateStatus.Error or UpdateStatus.NoUpdateFound)
+                if (s.Status is UpdateStatus.Error or UpdateStatus.NoUpdateFound or UpdateStatus.DevelopmentMode)
                     ScheduleUpdateNotificationDismissal(s.Status);
                 else
                     Interlocked.Increment(ref _updateNotificationDismissVersion);
@@ -325,6 +331,8 @@ namespace Codec.ViewModels
                     IsUpdateErrorVisible = false;
                 else if (status == UpdateStatus.NoUpdateFound)
                     IsUpdateNoUpdateVisible = false;
+                else if (status == UpdateStatus.DevelopmentMode)
+                    IsUpdateDevModeVisible = false;
             });
         }
 
@@ -362,6 +370,19 @@ namespace Codec.ViewModels
             InitializeSteamIntegration();
 
             var saved = await _services.LibraryStorage.LoadAsync();
+            switch (_services.LibraryStorage.LastLoadOutcome)
+            {
+                case StorageLoadOutcome.RecoveredFromBackup:
+                    IsLibraryRestoredVisible = true;
+                    break;
+                case StorageLoadOutcome.Unreadable:
+                    // The empty shelf is a damaged library, not a fresh install. The original was
+                    // set aside on disk, so the session stays hands off: no onboarding, no scan.
+                    _isLibraryUnreadable = true;
+                    IsLibraryUnreadableVisible = true;
+                    break;
+            }
+
             PrepareStartupCoverGames(saved);
             int selectedSortIndex = SelectedSortIndex;
             var sortedSavedGames = await Task.Run(() => GetSortedGames(saved, selectedSortIndex).ToList());
@@ -369,9 +390,16 @@ namespace Codec.ViewModels
             Games.ReplaceAll(sortedSavedGames);
 
             IsInitialLoading = false;
-            IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
-
+            IsOnboardingVisible = Games.Count == 0 && CanOfferOnboarding;
         }
+
+        private bool _isLibraryUnreadable;
+
+        /// <summary>
+        /// Onboarding is for a first run. A library that failed to load also leaves an empty
+        /// shelf, and offering setup over it would read as "start again".
+        /// </summary>
+        private bool CanOfferOnboarding => !_appSettings.OnboardingCompleted && !_isLibraryUnreadable;
 
         [RelayCommand]
         private Task CheckForUpdatesAsync() => _services.Updates.CheckAndDownloadAsync();
@@ -446,15 +474,17 @@ namespace Codec.ViewModels
         {
             await RunMaintenanceStepAsync("install states", RefreshHeuristicInstallStatesAsync);
 
-            if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup)
+            if (_appSettings.OnboardingCompleted && _appSettings.ScanOnStartup && !_isLibraryUnreadable)
                 await RunMaintenanceStepAsync("startup scan", ScanGamesOnStartupAsync);
 
             if (IsSteamConnected)
                 await RunMaintenanceStepAsync("Steam sync", () => SyncSteamLibraryCoreAsync(useQr: false, isBackground: true));
 
-            var librarySnapshot = Games.ToList();
+            // Hidden games get no artwork refresh and no store warmups until they are restored.
+            var librarySnapshot = Games.Where(game => !game.IsHidden).ToList();
             await RunMaintenanceStepAsync("image refresh", () => SilentUpdateImagesAsync(librarySnapshot));
             QueueBackgroundPrefetch(librarySnapshot);
+            await RunMaintenanceStepAsync("icons", () => BackfillGameIconsAsync(CancellationToken.None));
 
             while (true)
             {
@@ -479,7 +509,10 @@ namespace Codec.ViewModels
         private void PrepareStartupCoverGames(IReadOnlyList<Game> games)
         {
             StartupCoverGames.Clear();
-            var cachedGames = games.Where(game => HasLocalStartupCover(game.LibraryCapsuleCache)).Take(9).ToList();
+            var cachedGames = games
+                .Where(game => !game.IsHidden && HasLocalStartupCover(game.LibraryCapsuleCache))
+                .Take(9)
+                .ToList();
 
             if (cachedGames.Count > 0)
             {
@@ -623,7 +656,7 @@ namespace Codec.ViewModels
                 await RefreshHeuristicInstallStatesAsync();
 
                 if (!IsOnboardingScanActive)
-                    IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && !_appSettings.OnboardingCompleted;
+                    IsOnboardingVisible = Games.Count == 0 && !IsImportStatusVisible && CanOfferOnboarding;
             }
             finally
             {
@@ -650,15 +683,30 @@ namespace Codec.ViewModels
         public async Task<ImportEnqueueResult> AddGameCommand(string executablePath)
         {
             IsOnboardingVisible = false;
+
+            // A hidden game never left the library, so the coordinator would call it a
+            // duplicate. Picking it again is the player asking for it back.
+            Game? hiddenMatch = FindOnlyHiddenGameByExecutable(executablePath);
+            if (hiddenMatch != null)
+            {
+                await RestoreHiddenGameAsync(hiddenMatch);
+                return new ImportEnqueueResult(ImportEnqueueResultStatus.Accepted, "Restored a hidden game.");
+            }
+
             var result = await _importCoordinator.EnqueueManualExecutableAsync(executablePath);
             if (!result.IsAccepted && Games.Count == 0)
             {
-                IsOnboardingVisible = !_appSettings.OnboardingCompleted;
+                IsOnboardingVisible = CanOfferOnboarding;
             }
             if (result.Status == ImportEnqueueResultStatus.Invalid)
             {
                 IsGameNotAddedToastVisible = true;
                 _ = DismissGameNotAddedToastAsync();
+            }
+            else if (result.Status == ImportEnqueueResultStatus.Missing)
+            {
+                IsGameMissingToastVisible = true;
+                _ = DismissGameMissingToastAsync();
             }
             else if (result.Status == ImportEnqueueResultStatus.Duplicate)
             {
@@ -666,6 +714,40 @@ namespace Codec.ViewModels
                 _ = DismissGameAlreadyAddedToastAsync();
             }
             return result;
+        }
+
+        /// <summary>
+        /// The hidden game the coordinator's duplicate check would hit, using its rule: full
+        /// path, executable compared ordinal ignore case. Null when a visible game also uses
+        /// that executable, so a real duplicate still answers as one.
+        /// </summary>
+        private Game? FindOnlyHiddenGameByExecutable(string executablePath)
+        {
+            if (string.IsNullOrWhiteSpace(executablePath))
+                return null;
+
+            string normalizedPath;
+            try
+            {
+                normalizedPath = Path.GetFullPath(executablePath);
+            }
+            catch
+            {
+                // The coordinator reports an unusable path itself.
+                return null;
+            }
+
+            Game? hidden = null;
+            foreach (Game game in Games)
+            {
+                if (!string.Equals(game.Executable, normalizedPath, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (!game.IsHidden)
+                    return null;
+                hidden ??= game;
+            }
+
+            return hidden;
         }
 
         /// <summary>
@@ -701,6 +783,12 @@ namespace Codec.ViewModels
         {
             await Task.Delay(4000).ConfigureAwait(false);
             _uiDispatcher.Post(() => IsGameNotAddedToastVisible = false);
+        }
+
+        private async Task DismissGameMissingToastAsync()
+        {
+            await Task.Delay(4000).ConfigureAwait(false);
+            _uiDispatcher.Post(() => IsGameMissingToastVisible = false);
         }
 
         private async Task DismissGameAlreadyAddedToastAsync()
@@ -755,19 +843,37 @@ namespace Codec.ViewModels
                 _uiDispatcher.Post(ApplySearch);
         }
 
+        private bool _isLibraryChangePending;
+
         private void Games_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             SyncLibraryGameSubscriptions(e);
+
+            // Load, sort and dedupe replace everything, and the shelf has to show the result
+            // in the same frame.
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                ApplyLibraryChange();
+                return;
+            }
+
+            // Single adds come in bursts during imports. Each used to re-sort and re-diff the
+            // whole shelf; one pass per dispatcher turn shows the same result.
+            if (_isLibraryChangePending)
+                return;
+
+            _isLibraryChangePending = true;
+            _uiDispatcher.Post(ApplyLibraryChange, UiDispatchPriority.Background);
+        }
+
+        private void ApplyLibraryChange()
+        {
+            _isLibraryChangePending = false;
+            RefreshHiddenGames();
             if (IsSteamSyncing)
                 return;
 
-            OnPropertyChanged(nameof(HasGames));
-            OnPropertyChanged(nameof(IsEmptyLibrary));
-            OnPropertyChanged(nameof(IsEmptyLibraryVisible));
-            NotifyLibrarySummaryChanged();
-            RefreshSidebarFilteredGames();
-            RefreshAvailableImportSources();
-            RefreshDisplayedGames();
+            RefreshLibraryVisibility();
         }
 
         private void SyncLibraryGameSubscriptions(NotifyCollectionChangedEventArgs e)
@@ -807,18 +913,21 @@ namespace Codec.ViewModels
 
         private void LibraryGame_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            // Hiding is the player's own act and has to land at once, even while a sync is
+            // holding the shelf still. It is rare, so it never adds to the sync's churn.
+            if (e.PropertyName == nameof(Game.IsHidden))
+            {
+                RefreshHiddenGames();
+                RefreshLibraryVisibility();
+                return;
+            }
+
             if (IsSteamSyncing)
                 return;
 
             if (e.PropertyName == nameof(Game.IsLibraryCoverReady))
             {
-                OnPropertyChanged(nameof(HasGames));
-                OnPropertyChanged(nameof(IsEmptyLibrary));
-                OnPropertyChanged(nameof(IsEmptyLibraryVisible));
-                NotifyLibrarySummaryChanged();
-                RefreshSidebarFilteredGames();
-                RefreshAvailableImportSources();
-                RefreshDisplayedGames();
+                RefreshLibraryVisibility();
                 return;
             }
 
@@ -827,6 +936,17 @@ namespace Codec.ViewModels
             {
                 NotifyLibrarySummaryChanged();
             }
+        }
+
+        private void RefreshLibraryVisibility()
+        {
+            OnPropertyChanged(nameof(HasGames));
+            OnPropertyChanged(nameof(IsEmptyLibrary));
+            OnPropertyChanged(nameof(IsEmptyLibraryVisible));
+            NotifyLibrarySummaryChanged();
+            RefreshSidebarFilteredGames();
+            RefreshAvailableImportSources();
+            RefreshDisplayedGames();
         }
 
         private void NotifyLibrarySummaryChanged()
@@ -967,13 +1087,24 @@ namespace Codec.ViewModels
         {
             var sortedFiltered = GetSortedGames(Games.Where(MatchesActiveFilters)).ToList();
 
+            // The same Move and Insert calls as before, so the shelf animates the same way.
+            // Membership tells a new game from a moved one without a scan, and a moved game
+            // can only be at or after the current index because everything before it is final,
+            // so a single add or remove costs one pass instead of a scan per position.
+            var shown = new HashSet<Game>(DisplayedGames, ReferenceEqualityComparer.Instance);
             for (int index = 0; index < sortedFiltered.Count; index++)
             {
                 Game game = sortedFiltered[index];
                 if (index < DisplayedGames.Count && ReferenceEquals(DisplayedGames[index], game))
                     continue;
 
-                int currentIndex = DisplayedGames.IndexOf(game);
+                if (shown.Add(game))
+                {
+                    DisplayedGames.Insert(index, game);
+                    continue;
+                }
+
+                int currentIndex = IndexOfDisplayedGame(game, index);
                 if (currentIndex >= 0)
                     DisplayedGames.Move(currentIndex, index);
                 else
@@ -982,6 +1113,17 @@ namespace Codec.ViewModels
 
             while (DisplayedGames.Count > sortedFiltered.Count)
                 DisplayedGames.RemoveAt(DisplayedGames.Count - 1);
+        }
+
+        private int IndexOfDisplayedGame(Game game, int startIndex)
+        {
+            for (int index = startIndex; index < DisplayedGames.Count; index++)
+            {
+                if (ReferenceEquals(DisplayedGames[index], game))
+                    return index;
+            }
+
+            return DisplayedGames.IndexOf(game);
         }
 
         private bool _isRefreshingSidebar;
@@ -1047,12 +1189,15 @@ namespace Codec.ViewModels
         {
             return IsReadyForLibrary(game) &&
                    MatchesImportFilter(game) &&
-                   (!string.IsNullOrWhiteSpace(_appliedSearchText) || MatchesInstallFilter(game)) &&
+                   MatchesInstallFilter(game) &&
                    MatchesSearch(game);
         }
 
+        // Every view and count of the shelf goes through here, so this is where hidden games
+        // leave it. Duplicate checks read Games directly and keep seeing them.
         private bool IsReadyForLibrary(Game game)
-            => game.IsLibraryCoverReady &&
+            => !game.IsHidden &&
+               game.IsLibraryCoverReady &&
                (IsSteamConnected || !game.IsOwnedOnly) &&
                (!game.IsSteamOwned || game.IsFullyImported);
 
@@ -1098,29 +1243,45 @@ namespace Codec.ViewModels
             Games.ReplaceAll(sorted);
         }
 
+        /// <summary>
+        /// Inserts at the sorted place for every sort. Adding and then re-sorting replaced the
+        /// whole collection, and that Reset re-subscribed every game on each import.
+        /// </summary>
         private void InsertGameSorted(Game game)
         {
-            if (SelectedSortIndex != 0)
+            int sortIndex = SelectedSortIndex;
+            int low = 0;
+            int high = Games.Count;
+            while (low < high)
             {
-                Games.Add(game);
-                ApplySortToGames();
-                return;
+                int middle = low + (high - low) / 2;
+                if (CompareForSort(Games[middle], game, sortIndex) <= 0)
+                    low = middle + 1;
+                else
+                    high = middle;
             }
-            int insertIndex = 0;
-            while (insertIndex < Games.Count && CompareGamesByName(Games[insertIndex], game) <= 0)
-                insertIndex++;
-            Games.Insert(insertIndex, game);
+
+            Games.Insert(low, game);
         }
 
-        private static int CompareGamesByName(Game left, Game right)
+        /// <summary>The order <see cref="GetSortedGames(IEnumerable{Game}, int)"/> produces, as one comparison.</summary>
+        private static int CompareForSort(Game left, Game right, int selectedSortIndex)
         {
             int favoriteComparison = right.IsFavorite.CompareTo(left.IsFavorite);
             if (favoriteComparison != 0)
                 return favoriteComparison;
 
-            int nameComparison = GameNameComparer.Compare(left.Name ?? string.Empty, right.Name ?? string.Empty);
-            if (nameComparison != 0)
-                return nameComparison;
+            int keyComparison = selectedSortIndex switch
+            {
+                1 => GameNameComparer.Compare(right.Name ?? string.Empty, left.Name ?? string.Empty),
+                2 => right.FolderSize.CompareTo(left.FolderSize),
+                3 => left.FolderSize.CompareTo(right.FolderSize),
+                4 => right.DateAdded.CompareTo(left.DateAdded),
+                5 => left.DateAdded.CompareTo(right.DateAdded),
+                _ => GameNameComparer.Compare(left.Name ?? string.Empty, right.Name ?? string.Empty),
+            };
+            if (keyComparison != 0)
+                return keyComparison;
 
             return left.Id.CompareTo(right.Id);
         }

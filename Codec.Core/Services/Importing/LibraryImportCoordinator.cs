@@ -20,7 +20,7 @@ namespace Codec.Services.Importing
         private readonly Func<Task<IReadOnlyCollection<Game>>> _librarySnapshotProvider;
         private readonly Func<Game, Task> _commitImportedGameAsync;
         private readonly Func<CancellationToken, Task>? _postScanMaintenanceAsync;
-        private readonly GameScanner _scanner;
+        private readonly IGameScanSource _scanner;
         private sealed record ImportWorkItem(GameImportRequest Request, CancellationToken CancellationToken);
 
         private readonly Channel<ImportWorkItem> _queue;
@@ -46,6 +46,13 @@ namespace Codec.Services.Importing
         private int _lastCompletedSessionTotal;
         private TaskCompletionSource<bool> _idleTcs = CreateCompletedIdleSource();
 
+        // How the session's scan ended, read once the session is idle. A manual-only session
+        // has no scan and reports ScanOutcome.None.
+        private bool _sessionHadScan;
+        private bool _scanStopped;
+        private bool _scanCancelled;
+        private bool _scanSourceFailed;
+
         public string? DetectedSteamClientPath => _scanner.DetectedSteamClientPath;
         public string? DetectedEpicLauncherPath => _scanner.DetectedEpicLauncherPath;
 
@@ -54,7 +61,7 @@ namespace Codec.Services.Importing
 
         public LibraryImportCoordinator(
             IGameImportPipeline pipeline,
-            GameScanner scanner,
+            IGameScanSource scanner,
             Func<Task<IReadOnlyCollection<Game>>> librarySnapshotProvider,
             Func<Game, Task> commitImportedGameAsync,
             Func<CancellationToken, Task>? postScanMaintenanceAsync = null,
@@ -85,7 +92,7 @@ namespace Codec.Services.Importing
 
             lock (_stateGate)
             {
-                if (_isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0)
+                if (IsBusy_NoLock())
                 {
                     RaiseNotification(new ImportNotification(
                         "Library Import",
@@ -99,6 +106,7 @@ namespace Codec.Services.Importing
                 _idleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _isScanRunning = true;
                 _scanNeedsFinalization = true;
+                _sessionHadScan = true;
             }
 
             ScanLogFile.BeginSession();
@@ -117,10 +125,16 @@ namespace Codec.Services.Importing
         {
             _drainQueue = true;
 
-            var old = _scanCts;
-            _scanCts = new CancellationTokenSource();
+            CancellationTokenSource old;
+            lock (_stateGate)
+            {
+                old = _scanCts;
+                _scanCts = new CancellationTokenSource();
+            }
+
+            // Not disposed: a manual add or a starting scan may have just read its token, and a
+            // cancelled source holds nothing that needs releasing.
             old.Cancel();
-            old.Dispose();
 
             PublishStatus();
         }
@@ -135,7 +149,7 @@ namespace Codec.Services.Importing
         {
             lock (_stateGate)
             {
-                if (!_isScanRunning && !_isFinalizingScan && _queuedCount == 0 && _processingCount == 0)
+                if (!IsBusy_NoLock())
                 {
                     return Task.CompletedTask;
                 }
@@ -152,7 +166,10 @@ namespace Codec.Services.Importing
             {
                 await Task.Run(async () =>
                 {
-                    await foreach (var candidate in _scanner.ScanIncrementallyAsync(linkedCts.Token, clickStopwatch: clickSw).ConfigureAwait(false))
+                    await foreach (var candidate in _scanner.ScanIncrementallyAsync(
+                        linkedCts.Token,
+                        clickStopwatch: clickSw,
+                        sourceFailed: MarkScanSourceFailed).ConfigureAwait(false))
                     {
                         await TryEnqueueScanCandidateAsync(candidate, linkedCts.Token).ConfigureAwait(false);
                     }
@@ -160,10 +177,18 @@ namespace Codec.Services.Importing
             }
             catch (OperationCanceledException)
             {
-                // shutdown
+                lock (_stateGate)
+                {
+                    _scanCancelled = true;
+                }
             }
             catch (Exception ex)
             {
+                lock (_stateGate)
+                {
+                    _scanStopped = true;
+                }
+
                 GameScanner.LogSession($"Background scan failed: {ex.Message}");
                 RaiseNotification(new ImportNotification(
                     "Library Import",
@@ -202,7 +227,7 @@ namespace Codec.Services.Importing
 
             if (!File.Exists(normalizedPath))
             {
-                return new ImportEnqueueResult(ImportEnqueueResultStatus.Invalid, "The selected executable no longer exists.");
+                return new ImportEnqueueResult(ImportEnqueueResultStatus.Missing, "The selected executable no longer exists.");
             }
 
             var librarySnapshot = await _librarySnapshotProvider().ConfigureAwait(false);
@@ -215,7 +240,9 @@ namespace Codec.Services.Importing
             {
                 _drainQueue = false;
                 ResetSessionCountsIfIdle_NoLock();
-                if (_queuedCount == 0 && _processingCount == 0)
+                // Only a fresh session gets a fresh idle signal; replacing it mid-scan would strand
+                // anyone already waiting for the scan to end.
+                if (!IsBusy_NoLock())
                 {
                     _idleTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 }
@@ -361,6 +388,8 @@ namespace Codec.Services.Importing
                         }
 
                         PublishStatus();
+                        // The last drained item may be what the cancelled scan waits on to finalize.
+                        TryFinalizeScanIfIdle();
                         continue;
                     }
 
@@ -383,6 +412,17 @@ namespace Codec.Services.Importing
                                         result.Message,
                                         ImportNotificationSeverity.Success));
                                 }
+                                else if (request.IsManual)
+                                {
+                                    // The final identity check found it already on the shelf;
+                                    // without this a manual add ended in silence.
+                                    RaiseNotification(new ImportNotification(
+                                        "Library Import",
+                                        result.Message,
+                                        ImportNotificationSeverity.Warning,
+                                        IsManual: true,
+                                        ResultStatus: GameImportResultStatus.Duplicate));
+                                }
                                 break;
                             case GameImportResultStatus.Added when result.Game != null && result.Game.IsFullyImported && !request.IsManual:
                                 // Platform scanner game: commit even without full artwork
@@ -400,7 +440,8 @@ namespace Codec.Services.Importing
                                         ? "Codec finished the metadata pass but the game is still missing required artwork, so it was not added."
                                         : $"Codec skipped '{request.NameHint}' because required artwork was not ready.",
                                     ImportNotificationSeverity.Error,
-                                    IsManual: request.IsManual));
+                                    IsManual: request.IsManual,
+                                    ResultStatus: GameImportResultStatus.Failed));
                                 break;
                             case GameImportResultStatus.Duplicate:
                             case GameImportResultStatus.Invalid:
@@ -416,7 +457,7 @@ namespace Codec.Services.Importing
                                         result.Message,
                                         ImportNotificationSeverity.Warning,
                                         IsManual: true,
-                                        IsAlreadyAdded: result.Status == GameImportResultStatus.Duplicate));
+                                        ResultStatus: result.Status));
                                 }
                                 break;
                             default:
@@ -429,7 +470,8 @@ namespace Codec.Services.Importing
                                     "Library Import",
                                     request.IsManual ? result.Message : $"Codec could not finish importing '{request.NameHint}'.",
                                     ImportNotificationSeverity.Error,
-                                    IsManual: request.IsManual));
+                                    IsManual: request.IsManual,
+                                    ResultStatus: GameImportResultStatus.Failed));
                                 break;
                         }
                     }
@@ -448,7 +490,9 @@ namespace Codec.Services.Importing
                         RaiseNotification(new ImportNotification(
                             "Library Import",
                             $"Codec could not finish committing '{request.NameHint}'.",
-                            ImportNotificationSeverity.Error));
+                            ImportNotificationSeverity.Error,
+                            IsManual: request.IsManual,
+                            ResultStatus: GameImportResultStatus.Failed));
                     }
                     finally
                     {
@@ -659,9 +703,17 @@ namespace Codec.Services.Importing
                 snapshot.FailedCount > 0 ? ImportNotificationSeverity.Warning : ImportNotificationSeverity.Success));
         }
 
+        /// <summary>
+        /// A scan that has ended but not yet been finalized still counts as busy. Without that,
+        /// the moment between the last item and finalization published an idle snapshot, and the
+        /// view announced the scan's end twice, the first time before its outcome was known.
+        /// </summary>
+        private bool IsBusy_NoLock() =>
+            _isScanRunning || _isFinalizingScan || _scanNeedsFinalization || _queuedCount > 0 || _processingCount > 0;
+
         private void ResetSessionCountsIfIdle_NoLock()
         {
-            if (_isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0)
+            if (IsBusy_NoLock())
             {
                 return;
             }
@@ -670,6 +722,34 @@ namespace Codec.Services.Importing
             _skippedCount = 0;
             _failedCount = 0;
             _lastCompletedSessionTotal = 0;
+            _sessionHadScan = false;
+            _scanStopped = false;
+            _scanCancelled = false;
+            _scanSourceFailed = false;
+        }
+
+        private void MarkScanSourceFailed(string source)
+        {
+            lock (_stateGate)
+            {
+                _scanSourceFailed = true;
+            }
+
+            GameScanner.LogSession($"  Source could not be checked: {source}");
+        }
+
+        private ScanOutcome GetScanOutcome_NoLock()
+        {
+            if (!_sessionHadScan || IsBusy_NoLock())
+                return ScanOutcome.None;
+            if (_scanCancelled || _drainQueue)
+                return ScanOutcome.Cancelled;
+            if (_scanStopped)
+                return ScanOutcome.Stopped;
+            if (_scanSourceFailed || _failedCount > 0)
+                return ScanOutcome.Incomplete;
+
+            return ScanOutcome.Completed;
         }
 
         private GameImportStatusSnapshot GetSnapshot()
@@ -682,14 +762,16 @@ namespace Codec.Services.Importing
                 string message = $"{mode}: {_addedCount} added, {_processingCount} processing, {_queuedCount} queued";
 
                 return new GameImportStatusSnapshot(
-                    IsActive: _isScanRunning || _isFinalizingScan || _queuedCount > 0 || _processingCount > 0,
-                    IsScanning: _isScanRunning || _isFinalizingScan,
+                    IsActive: IsBusy_NoLock(),
+                    IsScanning: _isScanRunning || _isFinalizingScan ||
+                        (_scanNeedsFinalization && _queuedCount == 0 && _processingCount == 0),
                     Message: message,
                     QueuedCount: _queuedCount,
                     ProcessingCount: _processingCount,
                     AddedCount: _addedCount,
                     SkippedCount: _skippedCount,
-                    FailedCount: _failedCount);
+                    FailedCount: _failedCount,
+                    Outcome: GetScanOutcome_NoLock());
             }
         }
 

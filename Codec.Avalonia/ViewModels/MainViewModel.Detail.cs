@@ -288,30 +288,29 @@ namespace Codec.ViewModels
             }
         }
 
+        /// <summary>
+        /// Hides the open game instead of removing it. A removed game came straight back with
+        /// the next scan or Steam sync; a hidden one stays in the library, where every
+        /// duplicate check still finds it, and only the player's views leave it out.
+        /// </summary>
         [RelayCommand]
-        private async Task DeleteSelectedGameAsync()
+        private async Task HideSelectedGameAsync()
         {
             if (SelectedGame == null)
                 return;
 
-            var gameToDelete = SelectedGame;
-            var removed = Games.Remove(gameToDelete);
-
-            if (!removed)
-            {
-                var matchingGame = Games.FirstOrDefault(game => game.Id == gameToDelete.Id);
-                if (matchingGame != null)
-                    removed = Games.Remove(matchingGame);
-            }
-
-            if (!removed)
+            Game selected = SelectedGame;
+            Game? gameToHide = Games.Contains(selected)
+                ? selected
+                : Games.FirstOrDefault(game => game.Id == selected.Id);
+            if (gameToHide == null)
                 return;
 
             IsGameSettingsOpen = false;
             IsDetailsVisible = false;
             SelectedGame = null;
             SidebarSelectedItem = null;
-            IsOnboardingVisible = Games.Count == 0 && !_appSettings.OnboardingCompleted;
+            gameToHide.IsHidden = true;
 
             await _services.LibraryStorage.SaveAsync(Games.ToList());
         }

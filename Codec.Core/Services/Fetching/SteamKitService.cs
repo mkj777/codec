@@ -1,6 +1,7 @@
 using SteamKit2;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -14,10 +15,16 @@ namespace Codec.Services.Fetching
     /// Anonymous SteamKit2 client used to resolve hashed library asset URLs via PICS.
     /// One long-lived connection; PICS results cached in-memory for the session.
     /// </summary>
-    public sealed class SteamKitService : IAsyncDisposable
+    public sealed class SteamKitService : IAsyncDisposable, ISteamAssetSource
     {
         private const string LogPrefix = "[SteamKit]";
         private const string AssetCdnBase = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps";
+
+        // Icons live on the community image host; the store asset host answers 404 for them.
+        private const string IconCdnBase = "https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps";
+
+        // How many apps one PICS request asks for when a whole library is looked up at once.
+        private const int ProductInfoBatchSize = 100;
 
         private readonly SteamClient _client;
         private readonly CallbackManager _manager;
@@ -119,24 +126,35 @@ namespace Codec.Services.Fetching
             }
         }
 
+        /// <summary>What this session already learned about an app, without asking Steam.</summary>
+        public SteamLibraryAssets? TryGetCachedLibraryAssets(uint appId)
+            => _assetCache.TryGetValue(appId, out var cached) ? cached : null;
+
         public async Task<SteamLibraryAssets?> GetLibraryAssetsAsync(uint appId, CancellationToken ct = default)
+            => (await LookupLibraryAssetsAsync(appId, ct).ConfigureAwait(false)).Assets;
+
+        /// <summary>
+        /// Same as <see cref="GetLibraryAssetsAsync"/>, but says whether Steam could be asked at
+        /// all. LookupFailed with no assets is "try again later", not "this app has none".
+        /// </summary>
+        public async Task<(SteamLibraryAssets? Assets, bool LookupFailed)> LookupLibraryAssetsAsync(uint appId, CancellationToken ct = default)
         {
             if (appId == 0)
             {
                 Log("GetLibraryAssets: appId == 0, skipping");
-                return null;
+                return (null, false);
             }
             if (_assetCache.TryGetValue(appId, out var cached))
             {
                 Log($"appId={appId} cache HIT (capsule={!string.IsNullOrEmpty(cached.CapsuleUrl)}, hero={!string.IsNullOrEmpty(cached.HeroUrl)}, logo={!string.IsNullOrEmpty(cached.LogoUrl)})");
-                return cached;
+                return (cached, false);
             }
 
             Log($"appId={appId} cache MISS, ensuring connection");
             if (!await EnsureConnectedAsync(ct).ConfigureAwait(false))
             {
                 Log($"appId={appId}: connection failed, aborting PICS lookup");
-                return null;
+                return (null, true);
             }
 
             var sw = Stopwatch.StartNew();
@@ -179,14 +197,20 @@ namespace Codec.Services.Fetching
                         Log($"appId={appId} URLs: hero={assets.HeroUrl ?? "<null>"}");
                         Log($"appId={appId} URLs: logo={assets.LogoUrl ?? "<null>"}");
                         _assetCache[appId] = assets;
-                        return assets;
+                        return (assets, false);
                     }
 
                     Log($"appId={appId} EXTRACT RETURNED NULL — dumping common KV tree:");
                     DumpKv(app.KeyValues["common"], maxDepth: 4);
+                    return (null, false);
                 }
 
                 Log($"appId={appId} no usable callback contained the app");
+                return (null, result.Failed);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
             }
             catch (TimeoutException)
             {
@@ -197,7 +221,54 @@ namespace Codec.Services.Fetching
                 Log($"appId={appId} PICS exception: {ex.GetType().Name}: {ex.Message}");
             }
 
-            return null;
+            return (null, true);
+        }
+
+        /// <summary>
+        /// Looks up many apps over the one connection, a batch per request, and keeps what it
+        /// finds in the session cache, so the single lookups that follow are cache hits.
+        /// A failed batch is only logged: the single lookup asks again and reports it.
+        /// </summary>
+        public async Task PrefetchLibraryAssetsAsync(IEnumerable<uint> appIds, CancellationToken ct = default)
+        {
+            uint[] missing = appIds.Where(id => id != 0 && !_assetCache.ContainsKey(id)).Distinct().ToArray();
+            if (missing.Length == 0 || !await EnsureConnectedAsync(ct).ConfigureAwait(false))
+            {
+                return;
+            }
+
+            foreach (uint[] batch in missing.Chunk(ProductInfoBatchSize))
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    var result = _resourceLimiter == null
+                        ? await FetchProductInfoAsync(batch, ct).ConfigureAwait(false)
+                        : await _resourceLimiter.RunNetworkAsync(innerCt => FetchProductInfoAsync(batch, innerCt), ct).ConfigureAwait(false);
+
+                    foreach (var callback in result.Results ?? Enumerable.Empty<SteamApps.PICSProductInfoCallback>())
+                    {
+                        foreach (var (appId, app) in callback.Apps)
+                        {
+                            var assets = ExtractAssets(appId, app.KeyValues);
+                            if (assets != null)
+                            {
+                                _assetCache[appId] = assets;
+                            }
+                        }
+                    }
+
+                    Log($"prefetch: {batch.Length} app(s) asked, Failed={result.Failed}");
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log($"prefetch of {batch.Length} app(s) failed: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
         }
 
         private async Task<AsyncJobMultiple<SteamApps.PICSProductInfoCallback>.ResultSet> FetchProductInfoAsync(uint appId, CancellationToken cancellationToken)
@@ -207,7 +278,18 @@ namespace Codec.Services.Fetching
             return await job.ToTask().WaitAsync(TimeSpan.FromSeconds(15), cancellationToken).ConfigureAwait(false);
         }
 
-        private static SteamLibraryAssets? ExtractAssets(uint appId, KeyValue root)
+        private async Task<AsyncJobMultiple<SteamApps.PICSProductInfoCallback>.ResultSet> FetchProductInfoAsync(IReadOnlyCollection<uint> appIds, CancellationToken cancellationToken)
+        {
+            var requests = appIds.Select(id => new SteamApps.PICSRequest(id)).ToList();
+            var job = _steamApps.PICSGetProductInfo(requests, Enumerable.Empty<SteamApps.PICSRequest>());
+            return await job.ToTask().WaitAsync(TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>The community CDN address of an app icon, by the hash PICS lists for it.</summary>
+        public static string BuildIconUrl(uint appId, string hash, string extension)
+            => $"{IconCdnBase}/{appId}/{hash}.{extension}";
+
+        internal static SteamLibraryAssets? ExtractAssets(uint appId, KeyValue root)
         {
             if (root == KeyValue.Invalid)
             {
@@ -256,7 +338,13 @@ namespace Codec.Services.Fetching
                 }
             }
 
-            if (string.IsNullOrEmpty(capsuleHash) && string.IsNullOrEmpty(heroHash) && string.IsNullOrEmpty(logoHash))
+            // Icons are plain hashes beside the artwork: clienticon names an .ico, icon a 32 px jpg.
+            // An app may list only these, and they alone keep the entry.
+            string? clientIconHash = NullIfEmpty(common["clienticon"].Value);
+            string? iconHash = NullIfEmpty(common["icon"].Value);
+
+            if (string.IsNullOrEmpty(capsuleHash) && string.IsNullOrEmpty(heroHash) && string.IsNullOrEmpty(logoHash) &&
+                clientIconHash == null && iconHash == null)
             {
                 return null;
             }
@@ -268,8 +356,12 @@ namespace Codec.Services.Fetching
                 HeroUrl: BuildUrl(appId, heroHash, "jpg"),
                 HeroHash: heroHash,
                 LogoUrl: BuildUrl(appId, logoHash, "png"),
-                LogoHash: logoHash);
+                LogoHash: logoHash,
+                ClientIconHash: clientIconHash,
+                IconHash: iconHash);
         }
+
+        private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
         private static string? ReadHash(KeyValue assetNode)
         {
@@ -455,5 +547,7 @@ namespace Codec.Services.Fetching
         string? HeroUrl,
         string? HeroHash,
         string? LogoUrl,
-        string? LogoHash);
+        string? LogoHash,
+        string? ClientIconHash = null,
+        string? IconHash = null);
 }

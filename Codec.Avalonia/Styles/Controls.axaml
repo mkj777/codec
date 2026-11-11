@@ -230,7 +230,7 @@
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="FontSize" Value="13.5" />
-    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="FontWeight" Value="500" />
   </Style>
   <Style Selector="Button.text-btn:pointerover">
     <Setter Property="Background" Value="Transparent" />
@@ -291,7 +291,7 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="FontSize" Value="13.5" />
-    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="FontWeight" Value="500" />
   </Style>
   <Style Selector="Button.lib-tab:pointerover">
     <Setter Property="Background" Value="Transparent" />
@@ -473,6 +473,7 @@
     <Setter Property="Foreground" Value="{DynamicResource CodecTextBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
     <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="FontWeight" Value="500" />
     <Setter Property="SelectionBrush" Value="{DynamicResource CodecPrimaryWashBrush}" />
     <Setter Property="CaretBrush" Value="{DynamicResource CodecPrimaryBrush}" />
   </Style>
@@ -489,8 +490,12 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="FontSize" Value="13.5" />
-    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="FontWeight" Value="600" />
     <Setter Property="WatermarkForeground" Value="{DynamicResource CodecTextMutedBrush}" />
+  </Style>
+  <!-- The placeholder is a TextBlock inside the template, so it may take the base TextBlock weight instead of the box's. -->
+  <Style Selector="TextBox.rail-search /template/ TextBlock">
+    <Setter Property="FontWeight" Value="600" />
   </Style>
   <Style Selector="TextBox.rail-search:focus">
     <Setter Property="BorderThickness" Value="0" />

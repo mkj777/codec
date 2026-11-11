@@ -135,6 +135,57 @@ namespace Codec.Tests
             }
         }
 
+        [Fact]
+        public async Task ScanAsync_PassesCancellationThrough_WhileReadingManifests()
+        {
+            string tempRoot = CreateTempDirectory();
+
+            try
+            {
+                string manifestsPath = Path.Combine(tempRoot, "Manifests");
+                string installPath = Path.Combine(tempRoot, "Game");
+                Directory.CreateDirectory(manifestsPath);
+                Directory.CreateDirectory(installPath);
+                File.WriteAllText(Path.Combine(installPath, "Game.exe"), "exe");
+                WriteManifest(Path.Combine(manifestsPath, "game.item"), "Game", installPath, "game", isApplication: true);
+
+                using var cts = new CancellationTokenSource();
+                var scanner = new EpicGamesScanner(
+                    () =>
+                    {
+                        cts.Cancel();
+                        return manifestsPath;
+                    },
+                    () => null,
+                    Array.Empty<string>());
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => scanner.ScanAsync(cancellationToken: cts.Token));
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task ScanAsync_StaysSilent_WhenEpicIsNotInstalled()
+        {
+            string tempRoot = CreateTempDirectory();
+
+            try
+            {
+                var scanner = new EpicGamesScanner(Path.Combine(tempRoot, "missing", "Manifests"));
+
+                var candidates = await scanner.ScanAsync();
+
+                Assert.Empty(candidates);
+            }
+            finally
+            {
+                DeleteDirectoryIfExists(tempRoot);
+            }
+        }
+
         private static void WriteManifest(
             string path,
             string displayName,

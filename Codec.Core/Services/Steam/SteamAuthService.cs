@@ -24,7 +24,13 @@ public sealed class SteamAuthService
     private readonly int _backgroundWorkers;
 
     public SteamAuthService(ScanResourceLimiter? resourceLimiter = null, ScanConcurrencyOptions? concurrency = null)
+        : this(DefaultTokenPath, resourceLimiter, concurrency)
     {
+    }
+
+    internal SteamAuthService(string tokenPath, ScanResourceLimiter? resourceLimiter = null, ScanConcurrencyOptions? concurrency = null)
+    {
+        _tokenPath = tokenPath;
         _resourceLimiter = resourceLimiter;
         _backgroundWorkers = concurrency?.BackgroundWorkers ?? 4;
     }
@@ -39,14 +45,42 @@ public sealed class SteamAuthService
         ELicenseFlags.PendingRefund |
         ELicenseFlags.Borrowed;
 
-    private readonly string _tokenPath = Path.Combine(
+    private static string DefaultTokenPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         Storage.LibraryStorageService.AppDataFolderName,
         "steam-token.dat");
 
+    private const int TokenStateUnknown = 0;
+    private const int TokenStatePresent = 1;
+    private const int TokenStateAbsent = 2;
+
+    private readonly string _tokenPath;
+
+    // The library filter reads this on every sort and summary pass, so the disk is asked once
+    // and every write to the token through this service keeps the answer current.
+    private int _tokenState = TokenStateUnknown;
+
     public event Action<byte[]>? QrCodeChanged;
 
-    public bool HasStoredToken => File.Exists(_tokenPath);
+    public bool HasStoredToken
+    {
+        get
+        {
+            int state = Volatile.Read(ref _tokenState);
+            if (state == TokenStateUnknown)
+            {
+                state = File.Exists(_tokenPath) ? TokenStatePresent : TokenStateAbsent;
+                // A save or delete that landed meanwhile knows better than this read.
+                Interlocked.CompareExchange(ref _tokenState, state, TokenStateUnknown);
+                state = Volatile.Read(ref _tokenState);
+            }
+
+            return state == TokenStatePresent;
+        }
+    }
+
+    private void RecordTokenState(bool present)
+        => Volatile.Write(ref _tokenState, present ? TokenStatePresent : TokenStateAbsent);
 
     public async Task<SteamAccountSnapshot> SignInAndFetchAsync(
         string? storedAccountName,
@@ -149,10 +183,13 @@ public sealed class SteamAuthService
         {
             if (File.Exists(_tokenPath))
                 File.Delete(_tokenPath);
+            RecordTokenState(present: false);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[SteamAuth] Failed to delete token: {ex.Message}");
+            // The file may still be there; ask the disk again on the next read.
+            Volatile.Write(ref _tokenState, TokenStateUnknown);
         }
 
         return Task.CompletedTask;
@@ -165,14 +202,29 @@ public sealed class SteamAuthService
             optionalEntropy: null,
             DataProtectionScope.CurrentUser);
         Directory.CreateDirectory(Path.GetDirectoryName(_tokenPath)!);
-        await File.WriteAllBytesAsync(_tokenPath, protectedToken, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await File.WriteAllBytesAsync(_tokenPath, protectedToken, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // A write that failed or was cancelled part way may or may not have left a file.
+            Volatile.Write(ref _tokenState, TokenStateUnknown);
+            throw;
+        }
+
+        RecordTokenState(present: true);
     }
 
     private async Task<string?> LoadTokenAsync(CancellationToken cancellationToken)
     {
         try
         {
-            if (!File.Exists(_tokenPath)) return null;
+            if (!File.Exists(_tokenPath))
+            {
+                RecordTokenState(present: false);
+                return null;
+            }
             byte[] protectedToken = await File.ReadAllBytesAsync(_tokenPath, cancellationToken).ConfigureAwait(false);
             byte[] token = ProtectedData.Unprotect(protectedToken, optionalEntropy: null, DataProtectionScope.CurrentUser);
             return Encoding.UTF8.GetString(token);

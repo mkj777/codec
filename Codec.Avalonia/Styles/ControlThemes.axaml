@@ -162,7 +162,18 @@
   <Style Selector="ScrollBar[Orientation=Horizontal]:pointerover">
     <Setter Property="Height" Value="10" />
   </Style>
+  <!--
+    SimpleTheme gives the bars their own row and column, so a bar that comes and goes, or grows
+    on hover, re-lays the content beside it. Spanning the presenter across both puts the bar
+    over the content instead. Opt-in, because over a row of controls the bar would sit on
+    their last few pixels and take their clicks.
+  -->
+  <Style Selector="ScrollViewer.overlay-bar /template/ ScrollContentPresenter#PART_ContentPresenter">
+    <Setter Property="Grid.ColumnSpan" Value="2" />
+    <Setter Property="Grid.RowSpan" Value="2" />
+  </Style>
   <!-- A page the reader is working through keeps its bar instead of fading it away. -->
+
   <Style Selector="ScrollViewer.persistent-scroll /template/ ScrollBar">
     <Setter Property="Opacity" Value="1" />
   </Style>

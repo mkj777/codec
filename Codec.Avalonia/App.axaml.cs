@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Codec.Infrastructure;
 using Codec.Services;
 using Codec.ViewModels;
@@ -13,7 +15,17 @@ public sealed partial class App : Application
 {
     public static ServiceHost Services { get; } = new();
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+
+        // Grayscale antialiasing, the way the WinUI build drew Nunito. Subpixel rendering left
+        // colour fringes and thinner, harder stems. Tooltips and popups are top levels of their
+        // own and inherit nothing from the window, so every top level gets it as its template
+        // is applied, which is before its first frame.
+        TemplatedControl.TemplateAppliedEvent.AddClassHandler<TopLevel>(
+            (topLevel, _) => TextOptions.SetTextRenderingMode(topLevel, TextRenderingMode.Antialias));
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

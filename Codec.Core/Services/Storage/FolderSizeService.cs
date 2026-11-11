@@ -42,10 +42,12 @@ namespace Codec.Services.Storage
                     cancellationToken.ThrowIfCancellationRequested();
                     string current = pending.Pop();
 
-                    foreach (string file in Directory.EnumerateFiles(current))
+                    // The enumeration already carries each file's size; a FileInfo built from
+                    // the path would ask the disk a second time per file.
+                    foreach (FileInfo file in new DirectoryInfo(current).EnumerateFiles())
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        total += new FileInfo(file).Length;
+                        total += file.Length;
                     }
 
                     foreach (string directory in Directory.EnumerateDirectories(current))
@@ -78,12 +80,12 @@ namespace Codec.Services.Storage
                 var current = pending.Pop();
                 try
                 {
-                    foreach (var file in Directory.EnumerateFiles(current))
+                    foreach (var file in new DirectoryInfo(current).EnumerateFiles())
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         try
                         {
-                            total += new FileInfo(file).Length;
+                            total += file.Length;
                         }
                         catch (IOException)
                         {

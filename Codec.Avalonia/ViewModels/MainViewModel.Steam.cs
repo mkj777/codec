@@ -15,6 +15,8 @@ namespace Codec.ViewModels;
 
 public partial class MainViewModel
 {
+    private const int MaxBackgroundSyncFailures = 3;
+
     private readonly SemaphoreSlim _steamSyncGate = new(1, 1);
     private CancellationTokenSource? _steamLoginCts;
     private SteamSyncProgress? _pendingSteamProgress;
@@ -93,6 +95,7 @@ public partial class MainViewModel
     private async Task SyncSteamLibraryCoreAsync(bool useQr, bool isBackground)
     {
         if (!await _steamSyncGate.WaitAsync(0)) return;
+        bool signOutAfterSync = false;
         _steamLoginCts = new CancellationTokenSource();
         int syncGeneration = Interlocked.Increment(ref _steamSyncGeneration);
         _steamProgressFinalized = false;
@@ -107,18 +110,21 @@ public partial class MainViewModel
         PauseSilentImageUpdate();
         try
         {
-            IReadOnlyCollection<Game> librarySnapshot = Games.ToList();
+            // The sync and its enrichment run on the thread pool, so they get copies, not the bound games.
+            List<Game> librarySnapshot = CreateDetachedLibrarySnapshot();
             SteamSyncResult result = await _services.SteamLibrary.SyncAsync(
-                Games,
+                librarySnapshot,
                 SteamAccountName,
                 useQr,
                 (game, ct) => EnrichSteamGameAsync(game, librarySnapshot, ct),
                 PublishSteamGamesAsync,
+                PublishSteamOwnershipUpdatesAsync,
                 PublishSteamAchievementUpdatesAsync,
                 _appSettings.SteamAchievementsRetryAfterUtc,
                 MarkSteamConnectedAsync,
                 QueueSteamProgress,
                 _steamLoginCts.Token);
+            _steamLoginCts.Token.ThrowIfCancellationRequested();
 
             FinalizeSteamProgress();
             SteamAccountName = result.AccountName;
@@ -126,6 +132,9 @@ public partial class MainViewModel
             _appSettings.SteamId64 = result.SteamId64;
             _appSettings.SteamAchievementsRetryAfterUtc = result.AchievementRetryAfterUtc;
             _appSettings.LastSteamSyncUtc = DateTime.UtcNow;
+            _appSettings.SteamBackgroundSyncFailures = 0;
+            // Signing in again answers the request, so it no longer waits to be dismissed.
+            IsSteamSignInNeededVisible = false;
             IsSteamSyncProgressIndeterminate = false;
             SteamSyncProgressValue = SteamSyncProgressMaximum;
             SteamSyncProgressTitle = "Syncing Steam library";
@@ -133,14 +142,10 @@ public partial class MainViewModel
             IsSteamQrVisible = false;
             await _services.AppSettings.SaveAsync(_appSettings);
             await _services.LibraryStorage.SaveAsync(Games.ToList());
-            RefreshAvailableImportSources();
-            RefreshSidebarFilteredGames();
-            RefreshDisplayedGames();
-            NotifySteamLibraryVisibilityChanged();
             OnPropertyChanged(nameof(IsSteamConnected));
             OnPropertyChanged(nameof(SteamAccountDisplay));
-        OnPropertyChanged(nameof(SteamStatusCaption));
-        OnPropertyChanged(nameof(HasSteamStatusCaption));
+            OnPropertyChanged(nameof(SteamStatusCaption));
+            OnPropertyChanged(nameof(HasSteamStatusCaption));
             if (Games.Count > 0 && !IsOnboardingOwningScreen)
                 IsOnboardingVisible = false;
             if (!isBackground)
@@ -149,15 +154,22 @@ public partial class MainViewModel
         catch (OperationCanceledException)
         {
             FinalizeSteamProgress();
+            // Games and ownership changes published before the stop are only in memory.
+            try { await _services.LibraryStorage.SaveAsync(Games.ToList()); } catch (Exception saveEx) { Debug.WriteLine($"[Steam] Saving after an interrupted sync failed: {saveEx.Message}"); }
             SteamSyncProgressTitle = "Steam sync cancelled";
             SteamSyncProgressMessage = "No unfinished games were added";
             IsSteamSyncProgressIndeterminate = false;
             if (!isBackground)
                 _ = DismissSteamSyncProgressAsync(syncGeneration);
+
+            // Only the player's own cancel is free; a timeout surfacing as a cancel is a failure.
+            if (isBackground && !_steamLoginCts.IsCancellationRequested)
+                signOutAfterSync = await RecordBackgroundSyncFailureAsync();
         }
         catch (Exception ex)
         {
             FinalizeSteamProgress();
+            try { await _services.LibraryStorage.SaveAsync(Games.ToList()); } catch (Exception saveEx) { Debug.WriteLine($"[Steam] Saving after an interrupted sync failed: {saveEx.Message}"); }
             Debug.WriteLine($"[Steam] Sync failed: {ex}");
             IsSteamQrVisible = false;
             SteamSyncProgressTitle = "Steam sync stopped";
@@ -165,6 +177,8 @@ public partial class MainViewModel
             IsSteamSyncProgressIndeterminate = false;
             if (!isBackground)
                 _ = DismissSteamSyncProgressAsync(syncGeneration);
+            else
+                signOutAfterSync = await RecordBackgroundSyncFailureAsync();
         }
         finally
         {
@@ -173,29 +187,65 @@ public partial class MainViewModel
             _steamLoginCts = null;
             ResumeSilentImageUpdate();
             _steamSyncGate.Release();
+
+            // The library handlers stay quiet while a sync runs, so games published before a
+            // cancel or a failure would otherwise stay off the shelf until something else refreshes.
+            // Last, so a throw here cannot keep the gate shut.
+            RefreshAvailableImportSources();
+            RefreshSidebarFilteredGames();
+            RefreshDisplayedGames();
+            NotifySteamLibraryVisibilityChanged();
+        }
+
+        // After the gate is open again, so the sign-out runs on its own and not inside the sync.
+        if (signOutAfterSync)
+        {
+            await DisconnectSteamAsync();
+            IsSteamSignInNeededVisible = true;
         }
     }
 
-    private async Task MarkSteamConnectedAsync(string accountName, ulong steamId64)
+    /// <summary>
+    /// Background syncs fail silently, so a login Steam no longer accepts would leave
+    /// "Connected" standing forever. Counts the failure and says whether it was the last
+    /// one allowed.
+    /// </summary>
+    private async Task<bool> RecordBackgroundSyncFailureAsync()
     {
-        SteamAccountName = accountName;
-        _appSettings.SteamAccountName = accountName;
-        _appSettings.SteamId64 = steamId64;
-        IsSteamQrVisible = false;
-        OnPropertyChanged(nameof(IsSteamConnected));
-        OnPropertyChanged(nameof(SteamAccountDisplay));
-        OnPropertyChanged(nameof(SteamStatusCaption));
-        OnPropertyChanged(nameof(HasSteamStatusCaption));
-        RefreshAvailableImportSources();
-        RefreshSidebarFilteredGames();
-        RefreshDisplayedGames();
-        NotifySteamLibraryVisibilityChanged();
+        _appSettings.SteamBackgroundSyncFailures++;
+        if (_appSettings.SteamBackgroundSyncFailures >= MaxBackgroundSyncFailures)
+            return true;
+
         await _services.AppSettings.SaveAsync(_appSettings);
+        return false;
+    }
+
+    // Called by the sync service, which is free to be on the thread pool by then.
+    private Task MarkSteamConnectedAsync(string accountName, ulong steamId64)
+    {
+        return _uiDispatcher.InvokeAsync(async () =>
+        {
+            SteamAccountName = accountName;
+            _appSettings.SteamAccountName = accountName;
+            _appSettings.SteamId64 = steamId64;
+            IsSteamQrVisible = false;
+            OnPropertyChanged(nameof(IsSteamConnected));
+            OnPropertyChanged(nameof(SteamAccountDisplay));
+            OnPropertyChanged(nameof(SteamStatusCaption));
+            OnPropertyChanged(nameof(HasSteamStatusCaption));
+            RefreshAvailableImportSources();
+            RefreshSidebarFilteredGames();
+            RefreshDisplayedGames();
+            NotifySteamLibraryVisibilityChanged();
+            await _services.AppSettings.SaveAsync(_appSettings);
+        });
     }
 
     [RelayCommand]
     public async Task DisconnectSteamAsync()
     {
+        // A running sync would otherwise keep adding owned games and write the account back.
+        _steamLoginCts?.Cancel();
         await _services.SteamLibrary.DeleteTokenAsync();
 
         SteamAccountName = null;
@@ -203,6 +253,8 @@ public partial class MainViewModel
         _appSettings.LastSteamSyncUtc = null;
         _appSettings.SteamId64 = null;
         _appSettings.SteamAchievementsRetryAfterUtc = null;
+        // The next sign-in starts with a clean slate, not one failure away from signing out.
+        _appSettings.SteamBackgroundSyncFailures = 0;
         IsSteamSyncProgressVisible = false;
         await _services.AppSettings.SaveAsync(_appSettings);
         await _services.LibraryStorage.SaveAsync(Games.ToList());
@@ -264,27 +316,29 @@ public partial class MainViewModel
             foreach (SteamAchievementUpdate update in updates)
             {
                 Game? game = Games.FirstOrDefault(item => item.SteamID == update.AppId);
-                if (game == null)
-                    continue;
-
-                if (update.LastPlayedUtc.HasValue &&
-                    (!game.LastPlayedUtc.HasValue || update.LastPlayedUtc > game.LastPlayedUtc))
-                {
-                    game.LastPlayedUtc = update.LastPlayedUtc;
-                }
-
-                if (update.CheckedUtc.HasValue)
-                    game.SteamAchievementsLastCheckedUtc = update.CheckedUtc;
-                if (update.TotalCount is > 0 && update.UnlockedCount.HasValue)
-                {
-                    game.SteamAchievementsUnlocked = update.UnlockedCount;
-                    game.SteamAchievementsTotal = update.TotalCount;
-                }
+                if (game != null)
+                    update.ApplyTo(game);
             }
 
             await _services.LibraryStorage.SaveAsync(Games.ToList());
         }, UiDispatchPriority.Background);
     }
+
+    private Task PublishSteamOwnershipUpdatesAsync(IReadOnlyList<SteamOwnershipUpdate> updates)
+    {
+        return _uiDispatcher.InvokeAsync(() =>
+        {
+            foreach (SteamOwnershipUpdate update in updates)
+            {
+                Game? game = Games.FirstOrDefault(item => item.Id == update.GameId);
+                if (game != null)
+                    update.ApplyTo(game);
+            }
+        }, UiDispatchPriority.Background);
+    }
+
+    private List<Game> CreateDetachedLibrarySnapshot()
+        => Games.Select(game => game.CreateHydrationSnapshot()).ToList();
 
     private async Task RefreshSteamAchievementsMaintenanceAsync()
     {
@@ -296,12 +350,18 @@ public partial class MainViewModel
 
         try
         {
-            List<Game> librarySnapshot = Games.ToList();
+            ulong steamId64 = _appSettings.SteamId64.Value;
+            List<Game> librarySnapshot = CreateDetachedLibrarySnapshot();
             SteamAchievementRefreshResult result = await _services.SteamLibrary.RefreshAchievementsAsync(
                 librarySnapshot,
-                _appSettings.SteamId64.Value,
+                steamId64,
                 _appSettings.SteamAchievementsRetryAfterUtc,
                 PublishSteamAchievementUpdatesAsync);
+
+            // Disconnecting while this ran cleared the account; do not write its state back.
+            if (_appSettings.SteamId64 != steamId64)
+                return;
+
             _appSettings.SteamAchievementsRetryAfterUtc = result.RetryAfterUtc;
             await _services.AppSettings.SaveAsync(_appSettings);
         }
@@ -321,9 +381,11 @@ public partial class MainViewModel
         {
             foreach (SteamEnrichedGame item in enrichedGames)
             {
+                // The enriched copy was built from a snapshot taken before sign-in and from
+                // providers that may have failed, so it only adds to the game, never blanks it.
                 Game? existing = Games.FirstOrDefault(game => game.Id == item.Game.Id);
                 if (existing != null)
-                    existing.ApplyHydrationSnapshot(item.Game);
+                    existing.MergeFetchedMetadataFrom(item.Game);
                 else if (item.IsNew)
                     InsertGameSorted(item.Game);
             }

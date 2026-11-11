@@ -111,6 +111,7 @@
 
     <!-- Retained so existing references keep resolving; CodecLine is the real token. -->
     <SolidColorBrush x:Key="CodecBorderBrush" Color="{StaticResource CodecLineColor}" />
-    <SolidColorBrush x:Key="CodecSidebarBrush" Color="{StaticResource CodecSinkColor}" />
+    <!-- The rail's own depth: half the sink, which lands near #191715 over the canvas. -->
+    <SolidColorBrush x:Key="CodecSidebarBrush" Color="#1C000000" />
   </Styles.Resources>
 </Styles>

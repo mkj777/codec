@@ -121,16 +121,29 @@
                          HorizontalAlignment="Center"
                          IsIndeterminate="{Binding IsScanScreenBusy}"
                          IsComplete="{Binding IsScanScreenComplete}" />
-      <TextBlock Classes="caption"
-                 HorizontalAlignment="Center"
-                 IsVisible="{Binding IsScanScreenBusy}"
-                 Text="This takes a moment." />
-      <Button Classes="play play-lg"
-              HorizontalAlignment="Center"
-              IsVisible="{Binding IsScanScreenComplete}"
-              Click="OpenLibrary_Click">
-        <TextBlock Text="Open library" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="14.5" />
-      </Button>
+      <!--
+        The note and the button share one slot the height of the button. The step is centred,
+        so swapping one for the other in the stack would move the title as the scan finishes.
+      -->
+      <Grid>
+        <TextBlock Classes="caption hold"
+                   Classes.shown="{Binding IsScanScreenBusy}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Text="This takes a moment." />
+        <!-- Faded on a wrapper, because the button's own disabled style sets its opacity. -->
+        <Panel Classes="hold"
+               Classes.shown="{Binding IsScanScreenComplete}"
+               HorizontalAlignment="Center">
+          <Button Classes="play play-lg"
+                  IsEnabled="{Binding IsScanScreenComplete}"
+                  Click="OpenLibrary_Click">
+            <TextBlock Text="Open library" FontFamily="{StaticResource CodecDisplayFontFamily}" FontWeight="700" FontSize="14.5" />
+          </Button>
+        </Panel>
+
+      </Grid>
+
     </StackPanel>
 
     <StackPanel HorizontalAlignment="Left"

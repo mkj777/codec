@@ -11,10 +11,18 @@ public sealed class AvaloniaUiDispatcher : IUiDispatcher
 
     public Task InvokeAsync(Action action, UiDispatchPriority priority = UiDispatchPriority.Normal)
     {
+        // Inline calls fail the same way posted ones do: through the task, not by throwing.
         if (CheckAccess)
         {
-            action();
-            return Task.CompletedTask;
+            try
+            {
+                action();
+                return Task.CompletedTask;
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException(exception);
+            }
         }
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -36,7 +44,16 @@ public sealed class AvaloniaUiDispatcher : IUiDispatcher
     public Task<T> InvokeAsync<T>(Func<T> action, UiDispatchPriority priority = UiDispatchPriority.Normal)
     {
         if (CheckAccess)
-            return Task.FromResult(action());
+        {
+            try
+            {
+                return Task.FromResult(action());
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<T>(exception);
+            }
+        }
 
         var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
         Post(() =>
@@ -56,7 +73,16 @@ public sealed class AvaloniaUiDispatcher : IUiDispatcher
     public Task InvokeAsync(Func<Task> action, UiDispatchPriority priority = UiDispatchPriority.Normal)
     {
         if (CheckAccess)
-            return action();
+        {
+            try
+            {
+                return action();
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException(exception);
+            }
+        }
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Post(async () =>

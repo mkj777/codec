@@ -50,5 +50,26 @@ namespace Codec.Tests
             Assert.NotNull(settings);
             Assert.Equal(2, settings.SelectedSortIndex);
         }
+
+        // Settings written before the counter existed must load as "no failures yet".
+        [Fact]
+        public void Deserialize_MissingSteamBackgroundSyncFailures_StartsAtZero()
+        {
+            var settings = JsonSerializer.Deserialize<AppSettings>("""{"SteamAccountName":"player"}""");
+
+            Assert.NotNull(settings);
+            Assert.Equal(0, settings.SteamBackgroundSyncFailures);
+        }
+
+        [Fact]
+        public void SteamBackgroundSyncFailures_SurvivesRoundTrip()
+        {
+            string json = JsonSerializer.Serialize(new AppSettings { SteamBackgroundSyncFailures = 2 });
+
+            var settings = JsonSerializer.Deserialize<AppSettings>(json);
+
+            Assert.NotNull(settings);
+            Assert.Equal(2, settings.SteamBackgroundSyncFailures);
+        }
     }
 }

@@ -23,7 +23,7 @@ namespace Codec.Services.Resolving
         private const string SteamDetailsUrl = "https://store.steampowered.com/api/appdetails?appids=";
 
         private readonly GameDetailsService _gameDetails;
-        private readonly HttpClient _httpClient = new();
+        private readonly HttpClient _httpClient;
         private readonly ScannerConfig Config = new();
         private readonly SemaphoreSlim SteamApiSemaphore;
         private readonly ConcurrentDictionary<string, CachedSearchEntry> SearchCache = new(StringComparer.OrdinalIgnoreCase);
@@ -70,9 +70,10 @@ namespace Codec.Services.Resolving
         private readonly object RateLimitGate = new();
         private DateTime _lastSteamRequestUtc = DateTime.MinValue;
 
-        public GameNameService(GameDetailsService gameDetails, int maxConcurrentApiRequests = 3)
+        public GameNameService(GameDetailsService gameDetails, int maxConcurrentApiRequests = 3, HttpMessageHandler? httpHandler = null)
         {
             _gameDetails = gameDetails;
+            _httpClient = httpHandler is null ? new HttpClient() : new HttpClient(httpHandler);
             int concurrency = Math.Max(1, maxConcurrentApiRequests);
             SteamApiSemaphore = new SemaphoreSlim(concurrency, concurrency);
 
@@ -160,6 +161,22 @@ namespace Codec.Services.Resolving
             public required LocalGameCandidate LocalData { get; init; }
             public required MatchMethod Method { get; init; }
             public int? SteamReleaseYear { get; init; }
+
+            // Set when SteamName is only a local fallback because appdetails could not be reached.
+            public bool SteamNameUnverified { get; init; }
+        }
+
+        public enum SteamAppMatchOutcome
+        {
+            Matched,
+            Mismatched,
+            LookupFailed
+        }
+
+        public sealed record SteamAppMatchResult(SteamAppMatchOutcome Outcome, string? SteamName)
+        {
+            public bool Matches => Outcome == SteamAppMatchOutcome.Matched;
+            public bool LookupFailed => Outcome == SteamAppMatchOutcome.LookupFailed;
         }
 
         private sealed record CachedSearchEntry(DateTime Timestamp, List<SteamSearchResult> Results);
@@ -382,33 +399,29 @@ namespace Codec.Services.Resolving
             return string.Join("/", years.Order());
         }
 
-        public async Task<bool> SteamAppMatchesNameAsync(int steamId, string nameHint)
-            => await SteamAppMatchesLocalGameAsync(steamId, nameHint, executablePath: null).ConfigureAwait(false);
-
-        public async Task<bool> SteamAppMatchesLocalGameAsync(int steamId, string nameHint, string? executablePath)
-        {
-            var (matches, _) = await TrySteamAppMatchLocalGameAsync(steamId, nameHint, executablePath).ConfigureAwait(false);
-            return matches;
-        }
-
         /// <summary>
-        /// Same as <see cref="SteamAppMatchesLocalGameAsync"/> but also returns the Steam app name
-        /// that was checked, so callers can log the rejected name without a second API call.
+        /// Checks the Steam app name against the local name and also returns the name that was
+        /// checked, so callers can log the rejected name without a second API call.
         /// </summary>
-        public async Task<(bool Matches, string? SteamName)> TrySteamAppMatchLocalGameAsync(int steamId, string nameHint, string? executablePath)
+        public async Task<SteamAppMatchResult> TrySteamAppMatchLocalGameAsync(int steamId, string nameHint, string? executablePath, CancellationToken cancellationToken = default)
         {
             if (steamId <= 0 || string.IsNullOrWhiteSpace(nameHint))
             {
-                return (false, null);
+                return new SteamAppMatchResult(SteamAppMatchOutcome.Mismatched, null);
             }
 
-            var appSummary = await GetSteamAppSummaryAsync(steamId);
+            var appSummary = await GetSteamAppSummaryAsync(steamId, cancellationToken).ConfigureAwait(false);
+            if (appSummary.LookupFailed)
+            {
+                return new SteamAppMatchResult(SteamAppMatchOutcome.LookupFailed, null);
+            }
+
             if (string.IsNullOrWhiteSpace(appSummary.Name) || !SteamNameMatchesLocalName(nameHint, appSummary.Name))
             {
-                return (false, appSummary.Name);
+                return new SteamAppMatchResult(SteamAppMatchOutcome.Mismatched, appSummary.Name);
             }
 
-            return (true, appSummary.Name);
+            return new SteamAppMatchResult(SteamAppMatchOutcome.Matched, appSummary.Name);
         }
 
         public bool SteamNameMatchesLocalName(string localName, string steamName)
@@ -512,9 +525,9 @@ namespace Codec.Services.Resolving
             }
         }
 
-        public async Task<(int? steamId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null, bool skipFuzzySearch = false)
+        public async Task<(int? steamId, string? steamName)> FindGameIdsAsync(string exePath, string? nameHint = null, bool skipFuzzySearch = false, CancellationToken cancellationToken = default)
         {
-            GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, nameHint: nameHint, skipFuzzySearch: skipFuzzySearch);
+            GameMatch? steamMatch = await ResolveSteamMatchAsync(exePath, cancellationToken, nameHint: nameHint, skipFuzzySearch: skipFuzzySearch);
 
             // SteamAppIdFile is authoritative — no fuzzy threshold applies.
             // FuzzySearch requires high confidence to avoid false positives.
@@ -522,7 +535,8 @@ namespace Codec.Services.Resolving
                 (steamMatch.Method == MatchMethod.SteamAppIdFile ||
                  steamMatch.ConfidenceScore >= Config.HighConfidenceThreshold);
             int? steamId = isHighConfidence ? (int)steamMatch!.SteamAppId : null;
-            string? steamName = isHighConfidence ? steamMatch!.SteamName : null;
+            // An unverified name is the exe stem; returning it would replace a better local name.
+            string? steamName = isHighConfidence && !steamMatch!.SteamNameUnverified ? steamMatch.SteamName : null;
 
             return (steamId, steamName);
         }
@@ -549,7 +563,7 @@ namespace Codec.Services.Resolving
             int? steamAppId = GetSteamAppIdFromFile(exePath);
             if (steamAppId.HasValue)
             {
-                SteamAppSummary appSummary = await GetSteamAppSummaryAsync(steamAppId.Value).ConfigureAwait(false);
+                SteamAppSummary appSummary = await GetSteamAppSummaryAsync(steamAppId.Value, cancellationToken).ConfigureAwait(false);
                 string fallbackName = appSummary.Name ?? Path.GetFileNameWithoutExtension(exePath);
 
                 return new GameMatch
@@ -561,6 +575,7 @@ namespace Codec.Services.Resolving
                     MatchedSearchTerm = "steam_appid.txt",
                     Method = MatchMethod.SteamAppIdFile,
                     SteamReleaseYear = appSummary.ReleaseYear,
+                    SteamNameUnverified = appSummary.LookupFailed,
                     LocalData = new LocalGameCandidate
                     {
                         DetectedName = fallbackName,
@@ -627,7 +642,7 @@ namespace Codec.Services.Resolving
                 .OrderByDescending(match => match.ConfidenceScore)
                 .Take(6))
             {
-                var validatedMatch = await ValidateSteamMatchAgainstAppDetailsAsync(candidateMatch).ConfigureAwait(false);
+                var validatedMatch = await ValidateSteamMatchAgainstAppDetailsAsync(candidateMatch, cancellationToken).ConfigureAwait(false);
                 if (validatedMatch is null)
                 {
                     continue;
@@ -656,12 +671,12 @@ namespace Codec.Services.Resolving
                 .ThenBy(match => match.SteamAppId)
                 .FirstOrDefault();
 
-        private async Task<GameMatch?> ValidateSteamMatchAgainstAppDetailsAsync(GameMatch match)
+        private async Task<GameMatch?> ValidateSteamMatchAgainstAppDetailsAsync(GameMatch match, CancellationToken cancellationToken)
         {
             // The SearchApps API can return a truncated/shortened name (e.g. "SimCity" for
             // "SimCity™ 4 Deluxe Edition", appid 24780). Re-score against the authoritative
             // appdetails name so the numeric-series penalty and token checks fire on the real title.
-            var appSummary = await GetSteamAppSummaryAsync((int)match.SteamAppId).ConfigureAwait(false);
+            var appSummary = await GetSteamAppSummaryAsync((int)match.SteamAppId, cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(appSummary.Name))
             {
                 return match;
@@ -721,18 +736,31 @@ namespace Codec.Services.Resolving
                 .ToList();
         }
 
-        private record SteamAppSummary(string? Name, int? ReleaseYear);
+        // LookupFailed: Steam did not answer (network, timeout, rate limit, unreadable body).
+        // A null Name without LookupFailed means Steam answered and has no such app.
+        private record SteamAppSummary(string? Name, int? ReleaseYear, bool LookupFailed = false)
+        {
+            public static SteamAppSummary NotFound { get; } = new(null, null);
+            public static SteamAppSummary Failed { get; } = new(null, null, LookupFailed: true);
+        }
 
-        private async Task<SteamAppSummary> GetSteamAppSummaryAsync(int steamId)
+        private async Task<SteamAppSummary> GetSteamAppSummaryAsync(int steamId, CancellationToken cancellationToken = default)
         {
             try
             {
                 string url = $"{SteamDetailsUrl}{steamId}";
-                var response = await _httpClient.GetStringAsync(url);
+                var response = await _httpClient.GetStringAsync(url, cancellationToken).ConfigureAwait(false);
                 using var jsonDoc = JsonDocument.Parse(response);
 
-                if (jsonDoc.RootElement.TryGetProperty(steamId.ToString(), out var appData) &&
-                    appData.TryGetProperty("success", out var success) && success.GetBoolean() &&
+                if (jsonDoc.RootElement.ValueKind != JsonValueKind.Object ||
+                    !jsonDoc.RootElement.TryGetProperty(steamId.ToString(), out var appData) ||
+                    appData.ValueKind != JsonValueKind.Object)
+                {
+                    // Steam answers a throttled appdetails call with a "null" body.
+                    return SteamAppSummary.Failed;
+                }
+
+                if (appData.TryGetProperty("success", out var success) && success.ValueKind == JsonValueKind.True &&
                     appData.TryGetProperty("data", out var data))
                 {
                     string? name = data.TryGetProperty("name", out var nameProp) ? nameProp.GetString()?.Trim() : null;
@@ -747,12 +775,18 @@ namespace Codec.Services.Resolving
 
                     return new SteamAppSummary(name, releaseYear);
                 }
+
+                return SteamAppSummary.NotFound;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error fetching Steam details: {ex.Message}");
+                return SteamAppSummary.Failed;
             }
-            return new SteamAppSummary(null, null);
         }
 
         private async Task<string?> GetSteamGameNameAsync(int steamId) =>

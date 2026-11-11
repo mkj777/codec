@@ -17,7 +17,7 @@
   <Style Selector="TextBlock">
     <Setter Property="FontFamily" Value="{StaticResource CodecUiFontFamily}" />
     <Setter Property="FontSize" Value="13.5" />
-    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="FontWeight" Value="500" />
   </Style>
 
   <!-- display -->

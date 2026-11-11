@@ -50,4 +50,16 @@ public sealed class SteamDetailsServiceTests
         Assert.Equal(expectedSupport, result.Support);
         Assert.Equal(expectedRecommendation, result.IsRecommended);
     }
+
+    [Theory]
+    [InlineData("https://cdn/checked.jpg", "https://cdn/stored.jpg", "https://cdn/checked.jpg")]
+    [InlineData(null, "https://cdn/stored.jpg", "https://cdn/stored.jpg")]
+    [InlineData(null, null, "https://cdn/primary.jpg")]
+    [InlineData(null, " ", "https://cdn/primary.jpg")]
+    public void ChooseAssetUrl_KeepsTheStoredUrlWhenTheProbeFails(string? resolved, string? existing, string expected)
+    {
+        string chosen = SteamDetailsService.ChooseAssetUrl(resolved, existing, "https://cdn/primary.jpg");
+
+        Assert.Equal(expected, chosen);
+    }
 }

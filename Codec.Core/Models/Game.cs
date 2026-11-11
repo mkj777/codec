@@ -64,6 +64,9 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(FavoriteToolTip))]
         [NotifyPropertyChangedFor(nameof(FavoriteOpacity))]
         private bool isFavorite;
+        // Hidden games stay in the library on purpose: every duplicate check still sees them,
+        // so no scan or sync adds them back. Only what the player sees leaves them out.
+        [ObservableProperty] private bool isHidden;
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ImportedFromDisplay))]
         [NotifyPropertyChangedFor(nameof(LaunchOptionsDisplay))]
@@ -345,8 +348,61 @@ namespace Codec.Models
         }
 
         // game assets with cache for offline first, effective path resolution
-        private static string? GetEffectiveAssetPath(string? cachePath, string? url, string? placeholderRelativePath = null)
-            => AssetUriResolver.ResolveImageSource(cachePath, url, placeholderRelativePath);
+        //
+        // Bindings, sorts and filters read these properties many times for every change
+        // notification, and each read used to ask the disk. A cached file that was found is
+        // trusted for a moment, so a burst of reads costs one check. A missing file is never
+        // remembered: one that lands after a download has to count at once, announced or not.
+        internal const long AssetProbeLifetimeMs = 2000;
+
+        private AssetProbe? _capsuleSourceProbe;
+        private AssetProbe? _heroSourceProbe;
+        private AssetProbe? _logoSourceProbe;
+        private AssetProbe? _capsuleFileProbe;
+        private AssetProbe? _heroFileProbe;
+        private AssetProbe? _logoFileProbe;
+
+        private sealed record AssetProbe(string Path, string? Url, string? Source, long CheckedAt)
+        {
+            public bool IsFreshFor(string? path, string? url, long now)
+                => string.Equals(Path, path, StringComparison.Ordinal) &&
+                   string.Equals(Url, url, StringComparison.Ordinal) &&
+                   now - CheckedAt < AssetProbeLifetimeMs;
+        }
+
+        private static string? ResolveAssetSource(ref AssetProbe? probe, string? cachePath, string? url, string? placeholderRelativePath = null)
+        {
+            long now = Environment.TickCount64;
+            AssetProbe? known = probe;
+            if (known != null && known.IsFreshFor(cachePath, url, now))
+            {
+                return known.Source;
+            }
+
+            if (AssetUriResolver.TryResolveToUsableUriString(cachePath, out string cached))
+            {
+                probe = new AssetProbe(cachePath!, url, cached, now);
+                return cached;
+            }
+
+            probe = null;
+            return AssetUriResolver.ResolveImageSource(null, url, placeholderRelativePath);
+        }
+
+        private static bool HasLocalAsset(ref AssetProbe? probe, string? path)
+        {
+            long now = Environment.TickCount64;
+            AssetProbe? known = probe;
+            if (known != null && known.IsFreshFor(path, null, now))
+            {
+                return true;
+            }
+
+            bool exists = HasLocalAsset(path);
+            probe = exists ? new AssetProbe(path!, null, null, now) : null;
+            return exists;
+        }
+
         // library_capsule
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(LibraryCapsule))]
@@ -356,18 +412,37 @@ namespace Codec.Models
         [NotifyPropertyChangedFor(nameof(LibraryCapsule))]
         [NotifyPropertyChangedFor(nameof(DisplayedAssetsReady))]
         [NotifyPropertyChangedFor(nameof(IsLibraryCoverReady))]
+        [NotifyPropertyChangedFor(nameof(RailIconCover))]
+        [NotifyPropertyChangedFor(nameof(ShowsRailIconPlaceholder))]
         [property: JsonPropertyName("LibCapsuleCache")]
         private string? libraryCapsuleCache;
         private const string PlaceholderLibraryCapsuleRelativePath = "Assets/noCover.png";
         [JsonIgnore]
-        public string LibraryCapsule => GetEffectiveAssetPath(LibraryCapsuleCache, LibraryCapsuleUrl, PlaceholderLibraryCapsuleRelativePath)!;
+        public string LibraryCapsule => WithCapsuleRevision(
+            ResolveAssetSource(ref _capsuleSourceProbe, LibraryCapsuleCache, LibraryCapsuleUrl, PlaceholderLibraryCapsuleRelativePath)!);
         [JsonIgnore]
-        public bool IsLibraryCoverReady => HasLocalAsset(LibraryCapsuleCache);
+        public bool IsLibraryCoverReady => HasLocalAsset(ref _capsuleFileProbe, LibraryCapsuleCache);
+
+        // A cover re-downloaded to the same path produces the same source string, and an equal
+        // value never reaches the image control or the tint sampler. The revision makes the
+        // string differ; file readers take Uri.LocalPath, which drops the query again.
+        private int _capsuleRevision;
+
+        private string WithCapsuleRevision(string source)
+            => _capsuleRevision > 0 && source.StartsWith("file:", StringComparison.OrdinalIgnoreCase)
+                ? $"{source}?v={_capsuleRevision}"
+                : source;
 
         public void NotifyLibraryCapsuleChanged()
         {
+            // The same path was written again, so nothing about it can be taken as known.
+            _capsuleSourceProbe = null;
+            _capsuleFileProbe = null;
+            _capsuleRevision++;
             OnPropertyChanged(nameof(LibraryCapsule));
             OnPropertyChanged(nameof(IsLibraryCoverReady));
+            OnPropertyChanged(nameof(RailIconCover));
+            OnPropertyChanged(nameof(ShowsRailIconPlaceholder));
         }
 
         // library_hero
@@ -381,7 +456,7 @@ namespace Codec.Models
         [property: JsonPropertyName("LibHeroCache")]
         private string? libraryHeroCache;
         [JsonIgnore]
-        public string? LibraryHero => GetEffectiveAssetPath(LibraryHeroCache, LibraryHeroUrl);
+        public string? LibraryHero => ResolveAssetSource(ref _heroSourceProbe, LibraryHeroCache, LibraryHeroUrl);
 
         // library_logo
         [ObservableProperty]
@@ -396,10 +471,54 @@ namespace Codec.Models
         [property: JsonPropertyName("LibLogoCache")]
         private string? libraryLogoCache;
         [JsonIgnore]
-        public string? LibraryLogo => GetEffectiveAssetPath(LibraryLogoCache, LibraryLogoUrl);
+        public string? LibraryLogo => ResolveAssetSource(ref _logoSourceProbe, LibraryLogoCache, LibraryLogoUrl);
         [JsonIgnore]
         public bool HasLogo => !string.IsNullOrWhiteSpace(LibraryLogoUrl) || !string.IsNullOrWhiteSpace(LibraryLogoCache);
         public bool DisplayedAssetsReady => HasRequiredDisplayedAssetsCached();
+
+        // library_icon
+        //
+        // Only a cached file counts; there is no remote source to show while it downloads.
+        // A path whose file is gone reads as no icon, and the next backfill fetches it again.
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LibraryIcon))]
+        [NotifyPropertyChangedFor(nameof(IsLibraryIconReady))]
+        [NotifyPropertyChangedFor(nameof(RailIconCover))]
+        [NotifyPropertyChangedFor(nameof(ShowsRailIconPlaceholder))]
+        [property: JsonPropertyName("LibIconCache")]
+        private string? libraryIconCache;
+        [JsonIgnore]
+        public string? LibraryIcon => WithIconRevision(ResolveAssetSource(ref _iconSourceProbe, LibraryIconCache, null));
+        [JsonIgnore]
+        public bool IsLibraryIconReady => HasLocalAsset(ref _iconFileProbe, LibraryIconCache);
+
+        /// <summary>The rail shows the cover in the icon's square while a game has no icon.</summary>
+        [JsonIgnore]
+        public string? RailIconCover => !IsLibraryIconReady && IsLibraryCoverReady ? LibraryCapsule : null;
+
+        [JsonIgnore]
+        public bool ShowsRailIconPlaceholder => !IsLibraryIconReady && !IsLibraryCoverReady;
+
+        private AssetProbe? _iconSourceProbe;
+        private AssetProbe? _iconFileProbe;
+        private int _iconRevision;
+
+        private string? WithIconRevision(string? source)
+            => source != null && _iconRevision > 0 && source.StartsWith("file:", StringComparison.OrdinalIgnoreCase)
+                ? $"{source}?v={_iconRevision}"
+                : source;
+
+        public void NotifyLibraryIconChanged()
+        {
+            // Same as the cover: the path was written again, so nothing about it is known.
+            _iconSourceProbe = null;
+            _iconFileProbe = null;
+            _iconRevision++;
+            OnPropertyChanged(nameof(LibraryIcon));
+            OnPropertyChanged(nameof(IsLibraryIconReady));
+            OnPropertyChanged(nameof(RailIconCover));
+            OnPropertyChanged(nameof(ShowsRailIconPlaceholder));
+        }
 
         // media
         [ObservableProperty]
@@ -658,9 +777,9 @@ namespace Codec.Models
 
         private bool HasRequiredDisplayedAssetsCached()
         {
-            bool hasCover = HasLocalAsset(LibraryCapsuleCache);
-            bool hasHero = HasLocalAsset(LibraryHeroCache);
-            bool hasLogo = !HasLogoAssetSource || HasLocalAsset(LibraryLogoCache);
+            bool hasCover = HasLocalAsset(ref _capsuleFileProbe, LibraryCapsuleCache);
+            bool hasHero = HasLocalAsset(ref _heroFileProbe, LibraryHeroCache);
+            bool hasLogo = !HasLogoAssetSource || HasLocalAsset(ref _logoFileProbe, LibraryLogoCache);
             return hasCover && hasHero && hasLogo;
         }
 
@@ -812,6 +931,7 @@ namespace Codec.Models
                 FolderLocation = FolderLocation,
                 FolderSize = FolderSize,
                 IsFavorite = IsFavorite,
+                IsHidden = IsHidden,
                 ImportedFrom = ImportedFrom,
                 IsInstalled = IsInstalled,
                 IsSteamOwned = IsSteamOwned,
@@ -863,6 +983,7 @@ namespace Codec.Models
                 LibraryHeroCache = LibraryHeroCache,
                 LibraryLogoUrl = LibraryLogoUrl,
                 LibraryLogoCache = LibraryLogoCache,
+                LibraryIconCache = LibraryIconCache,
                 Media = new List<string>(Media),
                 OfficialWebsiteUrl = OfficialWebsiteUrl,
                 SteamPageUrl = SteamPageUrl,
@@ -889,6 +1010,7 @@ namespace Codec.Models
             FolderLocation = source.FolderLocation;
             FolderSize = source.FolderSize;
             IsFavorite = source.IsFavorite;
+            IsHidden = source.IsHidden;
             ImportedFrom = source.ImportedFrom;
             IsInstalled = source.IsInstalled;
             IsSteamOwned = source.IsSteamOwned;
@@ -939,6 +1061,7 @@ namespace Codec.Models
             LibraryHeroCache = source.LibraryHeroCache;
             LibraryLogoUrl = source.LibraryLogoUrl;
             LibraryLogoCache = source.LibraryLogoCache;
+            LibraryIconCache = source.LibraryIconCache;
             Media = new List<string>(source.Media);
             OfficialWebsiteUrl = source.OfficialWebsiteUrl;
             SteamPageUrl = source.SteamPageUrl;
@@ -959,13 +1082,13 @@ namespace Codec.Models
                 double sizeInMb = FolderSize / (1024.0 * 1024.0);
                 if (sizeInMb >= 1000)
                 {
-                    return $"{Math.Round(sizeInMb / 1024.0, MidpointRounding.AwayFromZero):F0} GB";
+                    return FormattableString.Invariant($"{Math.Round(sizeInMb / 1024.0, MidpointRounding.AwayFromZero):F0} GB");
                 }
-                return $"{sizeInMb:F0} MB";
+                return FormattableString.Invariant($"{sizeInMb:F0} MB");
             }
         }
 
-        public string DateAddedDisplay => DateAdded.ToString("MMM dd, yyyy");
+        public string DateAddedDisplay => DateAdded.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture);
     }
 
     public sealed record FranchiseGameRef(

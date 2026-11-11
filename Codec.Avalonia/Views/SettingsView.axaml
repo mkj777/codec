@@ -9,8 +9,21 @@
     <converters:BooleanNegationConverter x:Key="NotConverter" />
   </UserControl.Resources>
 
-  <!-- One surface, rows inside it. No cards within cards. -->
-  <Border Classes="overlay" Width="440" MaxHeight="560" Padding="22">
+  <UserControl.Styles>
+    <!-- The disclosure draws no border, so keyboard focus needs its ring drawn here. -->
+    <Style Selector="Button.hidden-games:focus-visible">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CodecPrimaryLineHoverBrush}" />
+      <Setter Property="CornerRadius" Value="6" />
+    </Style>
+  </UserControl.Styles>
+
+  <!--
+    One surface, rows inside it. No cards within cards. The host gives this view a fixed
+    height and the surface hangs from its top, so a row that opens grows the surface downward
+    instead of re-centring it under the pointer.
+  -->
+  <Border Classes="overlay" Width="440" MaxHeight="560" Padding="22" VerticalAlignment="Top">
     <Grid RowDefinitions="Auto,*,Auto">
       <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,18">
         <StackPanel Spacing="2">
@@ -61,22 +74,47 @@
               </StackPanel>
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Classes="ghost ghost-primary" Content="Connect" Command="{Binding ConnectSteamCommand}" IsVisible="{Binding IsSteamConnected, Converter={StaticResource NotConverter}}" />
-                <Button Classes="ghost" Content="{Binding SteamSyncButtonText}" Command="{Binding SyncSteamLibraryCommand}" IsEnabled="{Binding AreSteamActionsEnabled}" IsVisible="{Binding IsSteamConnected}" />
+                <!-- The label changes while a sync runs; unseen copies of both hold the button at the longer one. -->
+                <Button Classes="ghost" Command="{Binding SyncSteamLibraryCommand}" IsEnabled="{Binding AreSteamActionsEnabled}" IsVisible="{Binding IsSteamConnected}">
+                  <Grid>
+                    <TextBlock Text="{Binding SteamSyncButtonText}" />
+                    <TextBlock Text="Sync now" Opacity="0" IsHitTestVisible="False" />
+                    <TextBlock Text="Syncing..." Opacity="0" IsHitTestVisible="False" />
+
+                  </Grid>
+                </Button>
                 <Button Classes="ghost" Content="Disconnect" Click="ShowDisconnect_Click" IsVisible="{Binding IsSteamConnected}" />
               </StackPanel>
-            </Grid>
-            <controls:Hairline IsVisible="{Binding IsSteamSyncProgressVisible}"
-                               IsIndeterminate="{Binding IsSteamSyncProgressIndeterminate}"
-                               Value="{Binding SteamSyncProgressValue}"
-                               Maximum="{Binding SteamSyncProgressMaximum}" />
 
-            <StackPanel Width="260" Spacing="12" HorizontalAlignment="Left" IsVisible="{Binding IsSteamQrVisible}">
+              <!--
+                The sync line hangs in the gap under the row, where the stack's spacing would
+                have put it, without taking room: everything below would otherwise drop by a
+                line when a sync starts and climb back when it ends.
+              -->
+              <controls:Hairline Grid.ColumnSpan="2"
+                                 Classes="reveal-soft"
+                                 Margin="0,0,0,-13"
+                                 VerticalAlignment="Bottom"
+                                 IsVisible="False"
+                                 controls:Reveal.IsOpen="{Binding IsSteamSyncProgressVisible}"
+                                 IsIndeterminate="{Binding IsSteamSyncProgressIndeterminate}"
+                                 Value="{Binding SteamSyncProgressValue}"
+                                 Maximum="{Binding SteamSyncProgressMaximum}" />
+            </Grid>
+
+            <StackPanel Classes="reveal"
+                        Width="260"
+                        Spacing="12"
+                        HorizontalAlignment="Left"
+                        IsVisible="False"
+                        controls:Reveal.IsOpen="{Binding IsSteamQrVisible}">
+
               <Image Width="220" Height="220" Source="{Binding SteamQrCodePng, Converter={StaticResource PngConverter}}" />
               <TextBlock Classes="caption" HorizontalAlignment="Center" Text="Scan with the Steam mobile app." />
               <Button Classes="text-btn" HorizontalAlignment="Center" Content="Cancel" Command="{Binding CancelSteamSignInCommand}" />
             </StackPanel>
 
-            <StackPanel x:Name="DisconnectConfirmation" Spacing="12" IsVisible="False">
+            <StackPanel x:Name="DisconnectConfirmation" Classes="reveal" Spacing="12" IsVisible="False">
               <Border Classes="rule" />
               <TextBlock Classes="meta-value" Text="Disconnect Steam?" />
               <TextBlock Classes="caption" Text="Steam-owned games will be hidden until you connect again." TextWrapping="Wrap" />
@@ -93,7 +131,8 @@
               <Button Classes="ghost" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding IsUiEnabled}" />
               <Button Classes="ghost" Content="Reset Codec" Click="ShowReset_Click" IsEnabled="{Binding IsUiEnabled}" />
             </StackPanel>
-            <StackPanel x:Name="ResetConfirmation" Spacing="12" IsVisible="False">
+            <StackPanel x:Name="ResetConfirmation" Classes="reveal" Spacing="12" IsVisible="False">
+
               <Border Classes="rule" />
               <TextBlock Classes="meta-value" Text="Reset Codec?" />
               <TextBlock Classes="caption" Text="Library, artwork, settings, logs, and Steam sign-in will be removed." TextWrapping="Wrap" />
@@ -102,6 +141,56 @@
                 <Button Classes="text-btn" Click="HideReset_Click" Content="Cancel" />
               </StackPanel>
             </StackPanel>
+          </StackPanel>
+
+          <!--
+            The way back for hidden games. It only exists while something is hidden, and the
+            list opens in place under its row rather than as a page of its own.
+          -->
+          <StackPanel Classes="reveal"
+                      Spacing="0"
+                      IsVisible="False"
+                      controls:Reveal.IsOpen="{Binding HasHiddenGames}">
+            <Border Classes="meta-row" Padding="0">
+              <Button Classes="disclosure hidden-games"
+                      Classes.open="{Binding IsHiddenGamesExpanded}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch"
+                      Padding="0,11"
+                      Command="{Binding ToggleHiddenGamesCommand}">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                  <TextBlock Classes="meta-value" VerticalAlignment="Center" Text="Hidden and ignored" />
+                  <TextBlock Grid.Column="1" Classes="caption" VerticalAlignment="Center" Text="{Binding HiddenGameCount}" />
+                  <LucideIcon Grid.Column="2" Kind="ChevronDown" Size="13" StrokeWidth="1.75" VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+            </Border>
+
+            <ItemsControl x:Name="HiddenGamesList"
+                          Classes="reveal"
+                          Margin="14,0,0,0"
+                          IsVisible="False"
+                          controls:Reveal.IsOpen="{Binding IsHiddenGamesExpanded}"
+                          ItemsSource="{Binding HiddenGames}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="meta-row" Padding="0,8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                      <TextBlock Classes="meta-value"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis"
+                                 Text="{Binding Name}" />
+                      <Button Grid.Column="1"
+                              Classes="text-btn"
+                              VerticalAlignment="Center"
+                              Content="Restore"
+                              Command="{Binding DataContext.RestoreHiddenGameCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
 
           <!-- The developer corner. Nothing here is for a player, so it only exists in a debug build. -->

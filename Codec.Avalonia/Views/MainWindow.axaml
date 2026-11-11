@@ -3,6 +3,7 @@
         xmlns:chrome="using:Avalonia.Controls.Chrome"
         xmlns:controls="using:Codec.Controls"
         xmlns:converters="using:Codec.Converters"
+        xmlns:media="using:Codec.Media"
         xmlns:overlays="using:Codec.Views.Overlays"
         xmlns:views="using:Codec.Views"
         x:Class="Codec.Views.MainWindow"
@@ -36,7 +37,7 @@
             Grid.RowSpan="2"
             Grid.Column="0"
             Width="{Binding IsSidebarCollapsed, Converter={StaticResource SidebarWidthConverter}}"
-            Background="{DynamicResource CodecSinkBrush}"
+            Background="{DynamicResource CodecSidebarBrush}"
             BorderBrush="{DynamicResource CodecLine2Brush}"
             BorderThickness="0,0,1,0"
             ClipToBounds="True"
@@ -106,7 +107,12 @@
         </Border>
 
         <Grid Grid.Row="2">
+          <!--
+            The list dissolves into the rail rather than ending on a hard line above the mascot.
+            The style's bottom padding lets the last row scroll clear of the fade.
+          -->
           <ListBox Classes="rail-list"
+                   controls:EdgeFade.Bottom="40"
                    IsEnabled="{Binding IsUiEnabled}"
                    ItemContainerTheme="{StaticResource RailItemTheme}"
                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -121,11 +127,27 @@
                           CommandParameter="{Binding}"
                           Opacity="{Binding SidebarOpacity}">
                     <!-- A favourite is marked here too, so the rail and the shelf agree. -->
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                      <TextBlock Text="{Binding Name}"
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                      <!--
+                        The square is always held, so the name never moves when an icon lands.
+                        Without an icon the cover stands in, cropped to the square.
+                      -->
+                      <Panel Classes="rail-icon">
+                        <Border Classes="rail-icon-placeholder"
+                                IsVisible="{Binding ShowsRailIconPlaceholder}" />
+                        <media:CodecImage Source="{Binding RailIconCover}"
+                                          Stretch="UniformToFill"
+                                          ClipToBounds="True"
+                                          ClearOnSourceChange="True" />
+                        <media:CodecImage Source="{Binding LibraryIcon}"
+                                          Stretch="Uniform"
+                                          ClearOnSourceChange="True" />
+                      </Panel>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Name}"
                                  TextTrimming="CharacterEllipsis"
                                  MaxLines="1" />
-                      <LucideIcon Grid.Column="1"
+                      <LucideIcon Grid.Column="2"
                                   VerticalAlignment="Center"
                                   Kind="Star"
                                   Size="11"
@@ -152,7 +174,7 @@
         <!-- The mascot rests here only while there is a collection to rest beside. -->
         <Image Grid.Row="3"
                Margin="13,2,13,5"
-               Height="84"
+               Height="140"
                Stretch="Uniform"
                IsVisible="{Binding HasGames}"
                Source="/Assets/shrimpSleep.png" />
@@ -341,11 +363,17 @@
           IsVisible="False"
           controls:Reveal.IsOpen="{Binding IsSettingsVisible}">
       <Border Background="{DynamicResource CodecScrimBrush}" PointerPressed="SettingsScrim_PointerPressed" />
+      <!--
+        A fixed box at the surface's own maximum, centred once. The surface hangs from its top,
+        so a row opening inside it grows downward instead of moving both edges.
+      -->
       <views:SettingsView Classes="reveal"
                           IsVisible="False"
                           controls:Reveal.IsOpen="{Binding IsSettingsVisible}"
+                          Height="560"
                           HorizontalAlignment="Center"
                           VerticalAlignment="Center" />
+
     </Grid>
 
     <!--

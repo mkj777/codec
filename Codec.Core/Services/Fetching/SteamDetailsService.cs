@@ -262,7 +262,8 @@ namespace Codec.Services.Fetching
                 {
                     var heroPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/library_hero.jpg";
                     var heroFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/library_hero_2x.jpg";
-                    game.LibraryHeroUrl = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false) ?? heroPrimary;
+                    string? heroResolved = await ResolveAssetUrlAsync(heroPrimary, heroFallback).ConfigureAwait(false);
+                    game.LibraryHeroUrl = ChooseAssetUrl(heroResolved, game.LibraryHeroUrl, heroPrimary);
                 }
 
                 if (!string.IsNullOrEmpty(picsAssets?.LogoUrl))
@@ -273,7 +274,8 @@ namespace Codec.Services.Fetching
                 {
                     var logoPrimary = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/logo.png";
                     var logoFallback = $"https://cdn.akamai.steamstatic.com/steam/apps/{steamId}/logo_2x.png";
-                    game.LibraryLogoUrl = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false) ?? logoPrimary;
+                    string? logoResolved = await ResolveAssetUrlAsync(logoPrimary, logoFallback).ConfigureAwait(false);
+                    game.LibraryLogoUrl = ChooseAssetUrl(logoResolved, game.LibraryLogoUrl, logoPrimary);
                 }
 
                 // Links
@@ -321,6 +323,20 @@ namespace Codec.Services.Fetching
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// A probe that failed proves nothing about the URL already stored, so that one stays;
+        /// the unchecked primary is only a guess for a game that has nothing yet.
+        /// </summary>
+        internal static string ChooseAssetUrl(string? resolvedUrl, string? existingUrl, string primaryUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(resolvedUrl))
+            {
+                return resolvedUrl;
+            }
+
+            return string.IsNullOrWhiteSpace(existingUrl) ? primaryUrl : existingUrl;
         }
 
         internal static (ControllerSupportLevel Support, bool IsRecommended) ParseControllerMetadata(JsonElement data)
@@ -546,7 +562,8 @@ namespace Codec.Services.Fetching
                 return string.Empty;
             }
 
-            return $"${cents / 100.0:0.00}";
+            // The price is persisted, so it must not pick up the machine's decimal separator.
+            return "$" + (cents / 100.0).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 }

@@ -40,13 +40,66 @@ public sealed record SteamSyncResult(
     DateTime? AchievementRetryAfterUtc);
 
 public sealed record SteamEnrichedGame(Game Game, bool IsNew);
+
+/// <summary>
+/// What a sync learned about a game already in the library. Null paths mean the install
+/// location stays as it is.
+/// </summary>
+public sealed record SteamOwnershipUpdate(
+    Guid GameId,
+    bool IsInstalled,
+    string? SteamAppType,
+    string? FolderLocation,
+    string? Executable)
+{
+    public void ApplyTo(Game game)
+    {
+        game.IsSteamOwned = true;
+        game.IsInstalled = IsInstalled;
+        game.SteamAppType = SteamAppType;
+        if (FolderLocation != null)
+            game.FolderLocation = FolderLocation;
+        // A player-chosen executable outranks whatever Steam reports for the install.
+        if (Executable != null && !game.UseExecutableOverride)
+            game.Executable = Executable;
+    }
+}
+
 public sealed record SteamAchievementUpdate(
     int AppId,
     int? UnlockedCount,
     int? TotalCount,
     DateTime? CheckedUtc,
-    DateTime? LastPlayedUtc);
+    DateTime? LastPlayedUtc)
+{
+    public void ApplyTo(Game game)
+    {
+        if (LastPlayedUtc.HasValue &&
+            (!game.LastPlayedUtc.HasValue || LastPlayedUtc > game.LastPlayedUtc))
+        {
+            game.LastPlayedUtc = LastPlayedUtc;
+        }
+
+        if (CheckedUtc.HasValue)
+            game.SteamAchievementsLastCheckedUtc = CheckedUtc;
+        if (TotalCount is > 0 && UnlockedCount.HasValue)
+        {
+            game.SteamAchievementsUnlocked = UnlockedCount;
+            game.SteamAchievementsTotal = TotalCount;
+        }
+    }
+}
+
 public sealed record SteamAchievementRefreshResult(DateTime? RetryAfterUtc, bool HasPendingWork);
+
+/// <summary>
+/// The owned apps matched against the library. Games are the service's own copies, never
+/// the caller's, so it can read and change them on any thread.
+/// </summary>
+internal sealed record SteamOwnedReconciliation(
+    IReadOnlyList<(Game Game, bool IsNew)> Games,
+    IReadOnlyList<SteamOwnershipUpdate> OwnershipUpdates,
+    int UpdatedCount);
 
 public sealed class SteamLibraryService
 {
@@ -73,12 +126,18 @@ public sealed class SteamLibraryService
 
     public bool HasStoredToken => _auth.HasStoredToken;
 
+    /// <summary>
+    /// Syncs the owned Steam library. <paramref name="library"/> must be detached copies taken
+    /// on the UI thread: this runs on the thread pool and only reads them. Every change reaches
+    /// the caller through the publish callbacks, never through the games it was handed.
+    /// </summary>
     public async Task<SteamSyncResult> SyncAsync(
-        IList<Game> library,
+        IReadOnlyList<Game> library,
         string? accountName,
         bool useQr,
         Func<Game, CancellationToken, Task<Game?>> enrichGameAsync,
         Func<IReadOnlyList<SteamEnrichedGame>, Task> publishGamesAsync,
+        Func<IReadOnlyList<SteamOwnershipUpdate>, Task> publishOwnershipUpdatesAsync,
         Func<IReadOnlyList<SteamAchievementUpdate>, Task> publishAchievementUpdatesAsync,
         DateTime? achievementRetryAfterUtc,
         Func<string, ulong, Task>? accountConnectedAsync = null,
@@ -98,75 +157,55 @@ public sealed class SteamLibraryService
             .ReadLastPlayedAsync(snapshot.SteamId64, cancellationToken)
             .ConfigureAwait(false);
 
-        int updated = 0;
-        var syncedGames = new List<(Game Game, bool IsNew)>();
+        SteamOwnedReconciliation reconciliation = ReconcileOwnedApps(
+            library,
+            snapshot.Apps,
+            installed,
+            SteamScanner.IsInstallFolderPopulated,
+            cancellationToken);
+        IReadOnlyList<(Game Game, bool IsNew)> syncedGames = reconciliation.Games;
+        int updated = reconciliation.UpdatedCount;
 
-        foreach (SteamOwnedApp owned in snapshot.Apps)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            int appId = checked((int)owned.AppId);
-            Game? game = library.FirstOrDefault(item => item.SteamID == appId);
-            bool isInstalledThroughSteam = installed.TryGetValue(appId, out GameCandidate? candidate);
-            bool hasNonSteamInstallation = game != null &&
-                !game.IsSteamLaunchTarget &&
-                SteamScanner.IsInstallFolderPopulated(game.FolderLocation);
-            bool isInstalled = isInstalledThroughSteam || hasNonSteamInstallation;
-            bool isNew = game == null;
+        foreach (SteamOwnershipUpdate[] batch in reconciliation.OwnershipUpdates.Chunk(10))
+            await publishOwnershipUpdatesAsync(batch).ConfigureAwait(false);
 
-            if (game == null)
-            {
-                game = new Game
-                {
-                    Name = owned.Name,
-                    SteamID = appId,
-                    ImportedFrom = PlatformSourceNames.Steam,
-                    Executable = candidate?.ExecutableHintPath ?? string.Empty,
-                    FolderLocation = candidate?.FolderPath ?? string.Empty,
-                    MetadataLookupName = candidate?.MetadataLookupName,
-                    IsSteamOwned = true,
-                    IsInstalled = isInstalled,
-                    SteamAppType = owned.AppType,
-                    LibraryCapsuleUrl = $"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appId}/library_600x900.jpg",
-                    LibraryHeroUrl = $"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appId}/library_hero.jpg",
-                    SteamPageUrl = $"https://store.steampowered.com/app/{appId}/"
-                };
-            }
-            else
-            {
-                game.IsSteamOwned = true;
-                game.IsInstalled = isInstalled;
-                game.SteamAppType = owned.AppType;
-                if (candidate != null && !hasNonSteamInstallation)
-                {
-                    game.FolderLocation = candidate.FolderPath;
-                    game.Executable = candidate.ExecutableHintPath ?? string.Empty;
-                }
-                updated++;
-            }
-
-            syncedGames.Add((game, isNew));
-        }
-
+        // The caller gets its own copy of each new game, so the one kept here stays off the UI.
         foreach (SteamEnrichedGame[] batch in syncedGames
             .Where(item => item.IsNew)
-            .Select(item => new SteamEnrichedGame(item.Game, IsNew: true))
+            .Select(item => new SteamEnrichedGame(item.Game.CreateHydrationSnapshot(), IsNew: true))
             .Chunk(10))
         {
             await publishGamesAsync(batch).ConfigureAwait(false);
         }
 
+        var syncedByAppId = new Dictionary<int, Game>();
+        foreach ((Game game, _) in syncedGames)
+            syncedByAppId.TryAdd(game.SteamID!.Value, game);
+
+        // Enrichment copies achievement progress from these games, so they follow what was published.
+        async Task PublishAndTrackAchievementUpdatesAsync(IReadOnlyList<SteamAchievementUpdate> updates)
+        {
+            foreach (SteamAchievementUpdate update in updates)
+            {
+                if (syncedByAppId.TryGetValue(update.AppId, out Game? game))
+                    update.ApplyTo(game);
+            }
+
+            await publishAchievementUpdatesAsync(updates).ConfigureAwait(false);
+        }
+
         SteamAchievementRefreshResult achievementRefresh = await RefreshAchievementProgressAsync(
             snapshot.SteamId64,
-            syncedGames.Select(item => item.Game).ToList(),
+            syncedGames.Select(item => item.Game).Where(TakesBackgroundWork).ToList(),
             installed.Keys.ToHashSet(),
             lastPlayed,
             achievementRetryAfterUtc,
-            publishAchievementUpdatesAsync,
+            PublishAndTrackAchievementUpdatesAsync,
             progress,
             cancellationToken).ConfigureAwait(false);
 
         var toEnrich = syncedGames
-            .Where(item => !item.Game.IsFullyImported || !item.Game.DisplayedAssetsReady)
+            .Where(item => NeedsEnrichment(item.Game))
             .Select(item => new SteamEnrichmentWorkItem(item.Game.CreateHydrationSnapshot(), item.IsNew))
             .ToList();
 
@@ -234,8 +273,95 @@ public sealed class SteamLibraryService
 
     public Task DeleteTokenAsync() => _auth.DeleteTokenAsync();
 
+    // A hidden game still has its ownership kept current, so it is right when restored, but
+    // nothing goes to the network for it until then.
+    private static bool TakesBackgroundWork(Game game) => !game.IsHidden;
+
+    internal static bool NeedsEnrichment(Game game)
+        => TakesBackgroundWork(game) && (!game.IsFullyImported || !game.DisplayedAssetsReady);
+
+    /// <summary>
+    /// Matches owned apps against the library without touching the games it is given:
+    /// existing games are copied before they change, and the change is returned as an update.
+    /// </summary>
+    internal static SteamOwnedReconciliation ReconcileOwnedApps(
+        IReadOnlyList<Game> library,
+        IReadOnlyList<SteamOwnedApp> ownedApps,
+        IReadOnlyDictionary<int, GameCandidate> installed,
+        Func<string, bool> isInstallFolderPopulated,
+        CancellationToken cancellationToken = default)
+    {
+        var librarySnapshot = library.ToList();
+        var bySteamId = new Dictionary<int, Game>();
+        foreach (Game game in librarySnapshot)
+        {
+            if (game.SteamID.HasValue)
+                bySteamId.TryAdd(game.SteamID.Value, game);
+        }
+
+        int updated = 0;
+        var syncedGames = new List<(Game Game, bool IsNew)>();
+        var ownershipUpdates = new List<SteamOwnershipUpdate>();
+
+        foreach (SteamOwnedApp owned in ownedApps)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int appId = checked((int)owned.AppId);
+            bySteamId.TryGetValue(appId, out Game? existing);
+            bool isInstalledThroughSteam = installed.TryGetValue(appId, out GameCandidate? candidate);
+            bool hasNonSteamInstallation = existing != null &&
+                !existing.IsSteamLaunchTarget &&
+                isInstallFolderPopulated(existing.FolderLocation);
+            bool isInstalled = isInstalledThroughSteam || hasNonSteamInstallation;
+
+            if (existing == null)
+            {
+                syncedGames.Add((new Game
+                {
+                    Name = owned.Name,
+                    SteamID = appId,
+                    ImportedFrom = PlatformSourceNames.Steam,
+                    Executable = candidate?.ExecutableHintPath ?? string.Empty,
+                    FolderLocation = candidate?.FolderPath ?? string.Empty,
+                    MetadataLookupName = candidate?.MetadataLookupName,
+                    IsSteamOwned = true,
+                    IsInstalled = isInstalled,
+                    SteamAppType = owned.AppType,
+                    LibraryCapsuleUrl = $"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appId}/library_600x900.jpg",
+                    LibraryHeroUrl = $"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appId}/library_hero.jpg",
+                    SteamPageUrl = $"https://store.steampowered.com/app/{appId}/"
+                }, true));
+                continue;
+            }
+
+            bool movesInstall = candidate != null && !hasNonSteamInstallation;
+            var update = new SteamOwnershipUpdate(
+                existing.Id,
+                isInstalled,
+                owned.AppType,
+                movesInstall ? candidate!.FolderPath : null,
+                movesInstall ? candidate!.ExecutableHintPath ?? string.Empty : null);
+
+            Game working = existing.CreateHydrationSnapshot();
+            update.ApplyTo(working);
+            if (!existing.IsSteamOwned ||
+                existing.IsInstalled != working.IsInstalled ||
+                existing.SteamAppType != working.SteamAppType ||
+                existing.FolderLocation != working.FolderLocation ||
+                existing.Executable != working.Executable)
+            {
+                ownershipUpdates.Add(update);
+            }
+
+            syncedGames.Add((working, false));
+            updated++;
+        }
+
+        return new SteamOwnedReconciliation(syncedGames, ownershipUpdates, updated);
+    }
+
     public async Task<SteamAchievementRefreshResult> RefreshAchievementsAsync(
-        IList<Game> library,
+        IReadOnlyList<Game> library,
         ulong steamId64,
         DateTime? retryAfterUtc,
         Func<IReadOnlyList<SteamAchievementUpdate>, Task> publishUpdatesAsync,
@@ -256,7 +382,7 @@ public sealed class SteamLibraryService
 
         return await RefreshAchievementProgressAsync(
             steamId64,
-            library.Where(game => game.IsSteamOwned && game.SteamID.HasValue).ToList(),
+            library.Where(game => game.IsSteamOwned && game.SteamID.HasValue && TakesBackgroundWork(game)).ToList(),
             installedAppIds,
             lastPlayed,
             retryAfterUtc,

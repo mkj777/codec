@@ -309,41 +309,61 @@ namespace Codec.Services.Fetching
             };
         }
 
-        public async Task<int?> FindIgdbIdBySteamIdAsync(int steamId)
+        public enum IgdbLookupOutcome
         {
-            Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: looking up steam={steamId}");
+            Found,
+            NotFound,
+            Failed
+        }
+
+        public sealed record IgdbIdLookupResult(IgdbLookupOutcome Outcome, int? IgdbId)
+        {
+            public bool LookupFailed => Outcome == IgdbLookupOutcome.Failed;
+        }
+
+        /// <summary>Null both when IGDB has no such game and when it could not be asked.</summary>
+        public async Task<int?> FindIgdbIdBySteamIdAsync(int steamId)
+            => (await LookupIgdbIdBySteamIdAsync(steamId).ConfigureAwait(false)).IgdbId;
+
+        /// <summary>
+        /// Tells "IGDB has no such game" apart from "IGDB could not be asked", so a caller can
+        /// avoid falling back to a weaker match on the strength of a failed request.
+        /// </summary>
+        public async Task<IgdbIdLookupResult> LookupIgdbIdBySteamIdAsync(int steamId)
+        {
+            Debug.WriteLine($"[IGDB] LookupIgdbIdBySteamIdAsync: looking up steam={steamId}");
             try
             {
                 string body = $"fields name, game; where uid = \"{steamId}\" & external_game_source = 1; limit 1;";
                 string json = await PostAsync(ExternalGamesEndpoint, body).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(json))
                 {
-                    Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: empty response for steam={steamId}");
-                    return null;
+                    Debug.WriteLine($"[IGDB] LookupIgdbIdBySteamIdAsync: empty response for steam={steamId}");
+                    return new IgdbIdLookupResult(IgdbLookupOutcome.Failed, null);
                 }
 
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.ValueKind != JsonValueKind.Array)
                 {
-                    Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: non-array response for steam={steamId}: {json}");
-                    return null;
+                    Debug.WriteLine($"[IGDB] LookupIgdbIdBySteamIdAsync: non-array response for steam={steamId}: {json}");
+                    return new IgdbIdLookupResult(IgdbLookupOutcome.Failed, null);
                 }
 
                 var first = doc.RootElement.EnumerateArray().FirstOrDefault();
-                if (first.ValueKind != JsonValueKind.Object)
+                int? igdbId = first.ValueKind == JsonValueKind.Object ? TryGetInt(first, "game") : null;
+                if (!igdbId.HasValue)
                 {
-                    Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: no match for steam={steamId}");
-                    return null;
+                    Debug.WriteLine($"[IGDB] LookupIgdbIdBySteamIdAsync: no match for steam={steamId}");
+                    return new IgdbIdLookupResult(IgdbLookupOutcome.NotFound, null);
                 }
 
-                int? igdbId = TryGetInt(first, "game");
-                Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: steam={steamId} → igdb={igdbId}");
-                return igdbId;
+                Debug.WriteLine($"[IGDB] LookupIgdbIdBySteamIdAsync: steam={steamId} -> igdb={igdbId}");
+                return new IgdbIdLookupResult(IgdbLookupOutcome.Found, igdbId);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[IGDB] FindIgdbIdBySteamIdAsync: EXCEPTION for steam={steamId}: {ex.Message}");
-                return null;
+                Debug.WriteLine($"[IGDB] LookupIgdbIdBySteamIdAsync: EXCEPTION for steam={steamId}: {ex.Message}");
+                return new IgdbIdLookupResult(IgdbLookupOutcome.Failed, null);
             }
         }
 
@@ -774,6 +794,37 @@ limit 1;";
                 return null;
             }
         }
+
+        /// <summary>
+        /// The game's icon, which IGDB keeps as an artwork of image type 13. Few games have one.
+        /// The URL asks for png so a transparent icon stays transparent; t_thumb_2x is 180 px.
+        /// </summary>
+        public async Task<IgdbIconLookup> FindIconUrlAsync(int igdbId)
+        {
+            try
+            {
+                string body = $"fields image_id; where game = {igdbId} & image_type = 13; limit 1;";
+                string json = await PostAsync(ArtworksEndpoint, body).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    return new IgdbIconLookup(null, LookupFailed: true);
+                }
+
+                var first = doc.RootElement.EnumerateArray().FirstOrDefault();
+                string? imageId = first.ValueKind == JsonValueKind.Object ? GetString(first, "image_id") : null;
+                return string.IsNullOrWhiteSpace(imageId)
+                    ? new IgdbIconLookup(null, LookupFailed: false)
+                    : new IgdbIconLookup($"https://images.igdb.com/igdb/image/upload/t_thumb_2x/{imageId}.png", LookupFailed: false);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"IGDB icon lookup failed for id={igdbId}: {ex.Message}");
+                return new IgdbIconLookup(null, LookupFailed: true);
+            }
+        }
+
+        public sealed record IgdbIconLookup(string? Url, bool LookupFailed);
 
         private void ApplyGameDetails(Game game, JsonElement? element)
         {

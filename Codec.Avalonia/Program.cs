@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using Avalonia;
 using Avalonia.Threading;
@@ -18,6 +19,13 @@ internal static class Program
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log("unhandled", e.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, e) => { Log("unobserved task", e.Exception); e.SetObserved(); };
         Dispatcher.UIThread.UnhandledException += (_, e) => Log("dispatcher", e.Exception);
+
+        // Codec's copy is English, so numbers and dates follow it too. Left to the machine's
+        // regional settings, a German system rendered "$6,99" and "Sept 07" next to English text.
+        // The UI culture stays untouched: it selects which localized resources Windows hands back.
+        var formatting = CultureInfo.GetCultureInfo("en-US");
+        CultureInfo.DefaultThreadCurrentCulture = formatting;
+        CultureInfo.CurrentCulture = formatting;
 
         VelopackApp.Build()
             .OnBeforeUninstallFastCallback(_ => AppResetService.DeleteAppData())

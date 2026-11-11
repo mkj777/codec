@@ -30,7 +30,8 @@
           knowing Codec is running as Administrator is no use without knowing what it costs.
         -->
         <StackPanel VerticalAlignment="Center" Spacing="1">
-          <TextBlock FontSize="13.5"
+          <TextBlock x:Name="NoticeLine"
+                     FontSize="13.5"
                      Foreground="{DynamicResource CodecTextBrush}"
                      Text="{Binding NoticeText}" />
           <TextBlock Classes="caption"
@@ -65,9 +66,16 @@
       </StackPanel>
     </Border>
 
-    <controls:Hairline Width="220"
+    <!--
+      The line keeps its place under every notice and only fades. The pill hangs from the
+      bottom of the window, so a line that came and went would lift and drop it each time work
+      started or finished.
+    -->
+    <controls:Hairline Classes="hold"
+                       Classes.shown="{Binding IsNoticeProgressVisible}"
+                       Width="220"
                        HorizontalAlignment="Center"
-                       IsVisible="{Binding IsNoticeProgressVisible}"
+
                        IsIndeterminate="{Binding IsNoticeIndeterminate}"
                        Value="{Binding NoticeProgress}"
                        Maximum="100" />

@@ -19,18 +19,21 @@ namespace Codec.ViewModels
 
             try
             {
-                List<Game> heuristicGames = await RunOnUiThreadAsync(() =>
-                    Games.Where(game => game.IsHeuristicScan).ToList()).ConfigureAwait(false);
+                // The folder walks run off the UI thread, so they read copies of the bound games.
+                var heuristicGames = await RunOnUiThreadAsync(() => Games
+                    .Where(game => game.IsHeuristicScan)
+                    .Select(game => (Target: game, Snapshot: game.CreateHydrationSnapshot()))
+                    .ToList()).ConfigureAwait(false);
                 var updates = new List<(Game Game, HeuristicInstallState State)>();
 
-                foreach (Game game in heuristicGames)
+                foreach ((Game target, Game snapshot) in heuristicGames)
                 {
-                    HeuristicInstallState? state = await _services.HeuristicInstallState.EvaluateAsync(game).ConfigureAwait(false);
+                    HeuristicInstallState? state = await _services.HeuristicInstallState.EvaluateAsync(snapshot).ConfigureAwait(false);
                     if (state.HasValue &&
-                        (game.IsInstalled != state.Value.IsInstalled ||
-                         state.Value.InstalledSize.HasValue && game.FolderSize != state.Value.InstalledSize.Value))
+                        (snapshot.IsInstalled != state.Value.IsInstalled ||
+                         state.Value.InstalledSize.HasValue && snapshot.FolderSize != state.Value.InstalledSize.Value))
                     {
-                        updates.Add((game, state.Value));
+                        updates.Add((target, state.Value));
                     }
                 }
 

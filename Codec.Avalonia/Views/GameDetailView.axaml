@@ -22,8 +22,9 @@
   <Grid x:Name="PageRoot"
         Classes="detail-page"
         Background="{DynamicResource CodecBackgroundBrush}">
+    <!-- The bar lies over the page, so a page that starts or stops scrolling keeps its width. -->
     <ScrollViewer x:Name="DetailScroller"
-                  Classes="persistent-scroll"
+                  Classes="persistent-scroll overlay-bar"
                   AllowAutoHide="False"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
@@ -32,11 +33,12 @@
           Cinema. The art stays sharp and fills the first viewport; the page
           reads as a lower third over it.
         -->
-        <Grid MinHeight="470" ClipToBounds="True">
+        <Grid x:Name="HeroBand" MinHeight="470" ClipToBounds="True">
           <!--
             The band is as tall as the artwork wants to be at this width, never the whole
             viewport. A 3:1 hero forced into a viewport-tall frame has to lose most of its sides
-            to cover it, which is what read as zoomed in.
+            to cover it, which is what read as zoomed in. The code-behind holds the band at a
+            hero's height before the bitmap decodes, so the lower third does not drop under it.
           -->
           <media:CodecImage IntrinsicSize="True"
                             Stretch="Uniform"
@@ -100,14 +102,12 @@
                         HorizontalAlignment="Left"
                         VerticalAlignment="Bottom"
                         Spacing="16">
-              <StackPanel Orientation="Horizontal" Spacing="9">
+              <StackPanel Orientation="Horizontal" Spacing="14">
                 <TextBlock Classes="factline shadow-meta"
                            Text="{Binding SelectedGame.ImportedFromDisplay}" />
-                <Ellipse Classes="fact-dot" IsVisible="{Binding SelectedGame.HasIgdbGenres}" />
                 <TextBlock Classes="factline shadow-meta"
                            IsVisible="{Binding SelectedGame.HasIgdbGenres}"
                            Text="{Binding SelectedGame.Genres, Converter={StaticResource FirstItemConverter}}" />
-                <Ellipse Classes="fact-dot" />
                 <TextBlock Classes="factline shadow-meta"
                            Text="{Binding SelectedGame.ReleaseDate, Converter={StaticResource YearConverter}}" />
               </StackPanel>
@@ -137,54 +137,65 @@
                          TextTrimming="WordEllipsis"
                          Text="{Binding SelectedGame.Description, Converter={StaticResource FallbackConverter}}" />
 
-              <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                <Button Classes="play play-lg"
-                        controls:Interaction.PulseOnClick="True"
-                        Command="{Binding PlayGameCommand}"
-                        IsEnabled="{Binding CanPlaySelectedGame}"
-                        ToolTip.Tip="{Binding PlayButtonToolTip}">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <LucideIcon Kind="Play" Size="14" StrokeWidth="2" />
-                    <TextBlock Text="{Binding PlayButtonText}"
-                               FontFamily="{StaticResource CodecDisplayFontFamily}"
-                               FontWeight="700"
-                               FontSize="14.5" />
-                  </StackPanel>
-                </Button>
-                <Button x:Name="GameSettingsButton"
-                        Classes="icon-ghost"
-                        Command="{Binding ToggleGameSettingsCommand}"
-                        ToolTip.Tip="Game settings">
-                  <LucideIcon Kind="Settings" Size="17" StrokeWidth="1.75" />
-                </Button>
-                <TextBlock Classes="quiet-note shadow-meta"
-                           VerticalAlignment="Center"
-                           IsVisible="{Binding SelectedGame.IsInstalled, Converter={StaticResource NotConverter}}"
-                           Text="Not installed" />
+              <!--
+                The launch hairline hangs 16px under the row, where the stack's spacing would
+                have put it, but outside the row's measure: the copy is anchored to the bottom,
+                so a line that took up room would lift all of it the moment Play is pressed.
+              -->
+              <Grid>
+                <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                  <Button Classes="play play-lg"
+                          controls:Interaction.PulseOnClick="True"
+                          Command="{Binding PlayGameCommand}"
+                          IsEnabled="{Binding CanPlaySelectedGame}"
+                          ToolTip.Tip="{Binding PlayButtonToolTip}">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <LucideIcon Kind="Play" Size="14" StrokeWidth="2" />
+                      <TextBlock Text="{Binding PlayButtonText}"
+                                 FontFamily="{StaticResource CodecDisplayFontFamily}"
+                                 FontWeight="700"
+                                 FontSize="14.5" />
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="GameSettingsButton"
+                          Classes="icon-ghost"
+                          Command="{Binding ToggleGameSettingsCommand}"
+                          ToolTip.Tip="Game settings">
+                    <LucideIcon Kind="Settings" Size="17" StrokeWidth="1.75" />
+                  </Button>
+                  <TextBlock Classes="quiet-note shadow-meta"
+                             VerticalAlignment="Center"
+                             IsVisible="{Binding SelectedGame.IsInstalled, Converter={StaticResource NotConverter}}"
+                             Text="Not installed" />
 
-                <!-- The same game, already in the Steam library: worth knowing before buying twice. -->
-                <Border Classes="own-badge"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding SelectedGame.IsAlsoOwnedOnSteam}">
-                  <StackPanel Orientation="Horizontal" Spacing="7">
-                    <LucideIcon VerticalAlignment="Center"
-                                Kind="Library"
-                                Size="12"
-                                StrokeWidth="1.75"
-                                Foreground="{DynamicResource CodecAccentBrush}" />
-                    <TextBlock VerticalAlignment="Center"
-                               FontSize="11.5"
-                               FontWeight="600"
-                               Foreground="{DynamicResource CodecTextBrush}"
-                               Text="You also own this on Steam" />
-                  </StackPanel>
-                </Border>
-              </StackPanel>
+                  <!-- The same game, already in the Steam library: worth knowing before buying twice. -->
+                  <Border Classes="own-badge"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding SelectedGame.IsAlsoOwnedOnSteam}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                      <LucideIcon VerticalAlignment="Center"
+                                  Kind="Library"
+                                  Size="12"
+                                  StrokeWidth="1.75"
+                                  Foreground="{DynamicResource CodecAccentBrush}" />
+                      <TextBlock VerticalAlignment="Center"
+                                 FontSize="11.5"
+                                 FontWeight="600"
+                                 Foreground="{DynamicResource CodecTextBrush}"
+                                 Text="You also own this on Steam" />
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
 
-              <controls:Hairline Width="120"
-                                 HorizontalAlignment="Left"
-                                 IsIndeterminate="True"
-                                 IsVisible="{Binding IsLaunchSpinnerVisible}" />
+                <controls:Hairline Classes="reveal-soft"
+                                   Width="120"
+                                   Margin="0,0,0,-17"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Bottom"
+                                   IsIndeterminate="True"
+                                   IsVisible="False"
+                                   controls:Reveal.IsOpen="{Binding IsLaunchSpinnerVisible}" />
+              </Grid>
             </StackPanel>
 
             <StackPanel Classes="hero-meta"
@@ -234,9 +245,15 @@
                       Foreground="{DynamicResource CodecTextMutedBrush}"
                       Command="{Binding ToggleDetailMoreCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="7">
-                  <TextBlock Classes="shadow-meta" FontSize="12.5" Text="{Binding DetailMoreLabel}" />
+                  <!-- Both labels sit unseen under the live one, so the chevron stays put when it flips. -->
+                  <Grid>
+                    <TextBlock Classes="shadow-meta" FontSize="12.5" Text="{Binding DetailMoreLabel}" />
+                    <TextBlock FontSize="12.5" Text="More" Opacity="0" IsHitTestVisible="False" />
+                    <TextBlock FontSize="12.5" Text="Less" Opacity="0" IsHitTestVisible="False" />
+                  </Grid>
                   <LucideIcon Kind="ChevronDown" Size="11" StrokeWidth="1.75" />
                 </StackPanel>
+
               </Button>
 
               <StackPanel Classes="reveal"
@@ -522,13 +539,14 @@
           </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="2" Spacing="12" Margin="0,22,0,0">
-          <Button HorizontalAlignment="Stretch" Click="ShowRemoveConfirmation_Click" Content="Remove from library" />
-          <StackPanel x:Name="RemoveConfirmation" Spacing="12" IsVisible="False">
+          <Button HorizontalAlignment="Stretch" Click="ShowHideConfirmation_Click" Content="Hide and ignore" />
+          <StackPanel x:Name="HideConfirmation" Classes="reveal" Spacing="12" IsVisible="False">
+
             <TextBlock Classes="meta-value" Text="Are you sure?" />
-            <TextBlock Classes="caption" Text="This removes the game from your library. Files stay on disk." TextWrapping="Wrap" />
+            <TextBlock Classes="caption" Text="Hidden from your library and ignored by scans. Undo it in Settings." TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="14">
-              <Button Classes="play" Click="ConfirmRemove_Click" Content="Remove" />
-              <Button Classes="text-btn" Click="HideRemoveConfirmation_Click" Content="Cancel" />
+              <Button Classes="play" Click="ConfirmHide_Click" Content="Hide" />
+              <Button Classes="text-btn" Click="CancelHideConfirmation_Click" Content="Cancel" />
             </StackPanel>
           </StackPanel>
         </StackPanel>

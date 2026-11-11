@@ -3,6 +3,7 @@ using Codec.Services.Importing;
 using Codec.Services.Resolving;
 using Codec.Services.Storage;
 using Codec.Services.Scanning;
+using Codec.Services.Scanning.Scanners;
 using Codec.Services.Steam;
 
 namespace Codec.Services
@@ -34,6 +35,7 @@ namespace Codec.Services
         public GameAssetService GameAssets { get; }
         public GridDbService GridDb { get; }
         public DisplayedAssetService DisplayedAssets { get; }
+        public GameIconService GameIcons { get; }
         public GameImportPipeline GameImportPipeline { get; }
         public UpdateService Updates { get; }
         public ScanConcurrencyOptions ScanConcurrency { get; }
@@ -63,7 +65,8 @@ namespace Codec.Services
             GameAssets = new GameAssetService(SteamKit, ScanResources);
             GridDb = new GridDbService(GameAssets, ScanResources);
             DisplayedAssets = new DisplayedAssetService(GameAssets, GridDb, RawgDetails);
-            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets, ScanResources);
+            GameIcons = new GameIconService(GameAssets, SteamKit, Igdb, GridDb, SteamScanner.FindSteamRoot);
+            GameImportPipeline = new GameImportPipeline(GameName, GameDetails, SteamDetails, RawgDetails, Igdb, Hltb, DisplayedAssets, ScanResources, GameIcons);
             Updates = new UpdateService();
         }
     }

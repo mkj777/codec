@@ -1,9 +1,6 @@
 using Codec.Models;
-using Codec.Services.Fetching;
 using Codec.Services.Importing;
-using Codec.Services.Resolving;
 using Codec.Services.Scanning;
-using Codec.Services.Storage;
 using Xunit;
 
 namespace Codec.Tests
@@ -11,14 +8,14 @@ namespace Codec.Tests
     public sealed class LibraryImportCoordinatorTests
     {
         [Fact]
-        public async Task EnqueueManualExecutableAsync_ReturnsInvalid_ForMissingFile()
+        public async Task EnqueueManualExecutableAsync_ReturnsMissing_ForMissingFile()
         {
             var pipeline = new FakePipeline(_ => GameImportResult.Invalid("invalid"));
             using var coordinator = CreateCoordinator(pipeline);
 
             var result = await coordinator.EnqueueManualExecutableAsync(Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.exe"));
 
-            Assert.Equal(ImportEnqueueResultStatus.Invalid, result.Status);
+            Assert.Equal(ImportEnqueueResultStatus.Missing, result.Status);
             Assert.Equal(0, pipeline.CallCount);
         }
 
@@ -159,14 +156,14 @@ namespace Codec.Tests
             string secondExe = CreateTempExe();
             string[] assetPaths = Array.Empty<string>();
             var commitSeen = new TaskCompletionSource<Game>(TaskCreationOptions.RunContinuationsAsynchronously);
-            int callCount = 0;
 
             try
             {
+                // Keyed on the file, not on call order: two workers may take the items in
+                // either order, and a shared counter raced between them.
                 var pipeline = new FakePipeline(request =>
                 {
-                    callCount++;
-                    if (callCount == 1)
+                    if (string.Equals(request.ExecutablePath, firstExe, StringComparison.OrdinalIgnoreCase))
                     {
                         return GameImportResult.Failed("boom");
                     }
@@ -186,6 +183,7 @@ namespace Codec.Tests
                 await coordinator.EnqueueManualExecutableAsync(firstExe);
                 await coordinator.EnqueueManualExecutableAsync(secondExe);
                 var committedGame = await commitSeen.Task.WaitAsync(TimeSpan.FromSeconds(3));
+                await coordinator.WaitForIdleAsync().WaitAsync(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
 
                 Assert.Equal(secondExe, committedGame.Executable);
                 Assert.Equal(2, pipeline.CallCount);
@@ -355,14 +353,11 @@ namespace Codec.Tests
             Func<Game, Task>? commitImportedGameAsync = null,
             ScanConcurrencyOptions? concurrency = null)
         {
-            var cache = new MetadataCache();
-            var gameDetails = new GameDetailsService(cache);
-            var gameName = new GameNameService(gameDetails);
-            var scanner = new GameScanner(gameName, new IgdbService());
-
+            // None of these tests start a scan, and a fake keeps the real scanner's disk and
+            // network out of reach.
             return new LibraryImportCoordinator(
                 pipeline,
-                scanner,
+                FakeScanSource.Empty,
                 librarySnapshotProvider ?? (() => Task.FromResult<IReadOnlyCollection<Game>>(Array.Empty<Game>())),
                 commitImportedGameAsync ?? (_ => Task.CompletedTask),
                 postScanMaintenanceAsync: null,
@@ -420,27 +415,30 @@ namespace Codec.Tests
             }
         }
 
-        private sealed class FakePipeline : IGameImportPipeline
+    }
+
+    internal sealed class FakePipeline : IGameImportPipeline
+    {
+        private readonly Func<GameImportRequest, Task<GameImportResult>> _handler;
+        private int _callCount;
+
+        public FakePipeline(Func<GameImportRequest, GameImportResult> handler)
+            : this(request => Task.FromResult(handler(request)))
         {
-            private readonly Func<GameImportRequest, Task<GameImportResult>> _handler;
+        }
 
-            public FakePipeline(Func<GameImportRequest, GameImportResult> handler)
-                : this(request => Task.FromResult(handler(request)))
-            {
-            }
+        public FakePipeline(Func<GameImportRequest, Task<GameImportResult>> handler)
+        {
+            _handler = handler;
+        }
 
-            public FakePipeline(Func<GameImportRequest, Task<GameImportResult>> handler)
-            {
-                _handler = handler;
-            }
+        public int CallCount => Volatile.Read(ref _callCount);
 
-            public int CallCount { get; private set; }
-
-            public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
-            {
-                CallCount++;
-                return await _handler(request);
-            }
+        public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
+        {
+            // Import workers run in parallel; a plain ++ lost counts between them.
+            Interlocked.Increment(ref _callCount);
+            return await _handler(request);
         }
     }
 }

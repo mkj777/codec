@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Codec.Services.Storage;
 
@@ -19,7 +19,6 @@ namespace Codec.Services.Resolving
         private static readonly Regex TrademarkRegex = new(@"\(TM\)|\(R\)|™|®|©", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly MetadataCache _cache;
-        private readonly HttpClient _httpClient = new();
         private const string RawgSearchUrl = "https://codec-api-proxy.vercel.app/api/rawg/search";
         private const int DefaultPageSize = 5;
         private const double StrictScoreThreshold = 0.88;
@@ -34,7 +33,7 @@ namespace Codec.Services.Resolving
         /// <summary>
         /// Validates if a game name exists in RAWG database with strict filtering and scoring.
         /// </summary>
-        public async Task<int?> ValidateGameAsync(string gameName)
+        public async Task<int?> ValidateGameAsync(string gameName, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(gameName))
             {
@@ -53,7 +52,7 @@ namespace Codec.Services.Resolving
             try
             {
                 string url = BuildSearchUrl(searchName, settings.PageSize);
-                var response = await _cache.GetOrFetchAsync("rawg-validation", url, TimeSpan.FromDays(7));
+                var response = await _cache.GetOrFetchAsync("rawg-validation", url, TimeSpan.FromDays(7), cancellationToken).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("results", out var resultsElement) || resultsElement.ValueKind != JsonValueKind.Array)
@@ -84,6 +83,10 @@ namespace Codec.Services.Resolving
 
                 Debug.WriteLine($"  ✓ RAWG validated '{searchName}' -> '{best.Name}' ({best.Score:F2}) ID {best.RawgId}");
                 return best.RawgId;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {

@@ -20,7 +20,9 @@ namespace Codec.ViewModels
 
         private async Task CompleteMissingGameMetadataAsync(CancellationToken cancellationToken)
         {
+            // Hidden games wait for their metadata until they are restored.
             var candidates = await RunOnUiThreadAsync(() => Games
+                .Where(game => !game.IsHidden)
                 .Where(game => !game.IsIgdbTaxonomyChecked ||
                                (game.SteamID.HasValue && game.ControllerSupport == ControllerSupportLevel.Unknown))
                 .Select(game => (Target: game, Snapshot: game.CreateHydrationSnapshot()))
@@ -47,55 +49,74 @@ namespace Codec.ViewModels
                 bool metadataIdentityUpdated = false;
                 bool igdbIdUpdated = false;
 
-                if (snapshot.SteamID.HasValue && snapshot.UsesAlternateMetadataLookupName && !snapshot.SteamMetadataAppId.HasValue)
+                // Each game stands alone: one that throws keeps what it already found, and the
+                // rest of the batch is still applied below.
+                try
                 {
-                    var resolved = await _services.GameName
-                        .FindGameIdsByNameAsync(snapshot.EffectiveMetadataLookupName, ct)
-                        .ConfigureAwait(false);
-                    if (resolved.steamId.HasValue && resolved.steamId.Value != snapshot.SteamID.Value)
+                    if (snapshot.SteamID.HasValue && snapshot.UsesAlternateMetadataLookupName && !snapshot.SteamMetadataAppId.HasValue)
                     {
-                        snapshot.SteamMetadataAppId = resolved.steamId.Value;
-                        if (!string.IsNullOrWhiteSpace(resolved.steamName))
+                        var resolved = await _services.GameName
+                            .FindGameIdsByNameAsync(snapshot.EffectiveMetadataLookupName, ct)
+                            .ConfigureAwait(false);
+                        if (resolved.steamId.HasValue && resolved.steamId.Value != snapshot.SteamID.Value)
                         {
-                            snapshot.MetadataLookupName = resolved.steamName;
+                            snapshot.SteamMetadataAppId = resolved.steamId.Value;
+                            if (!string.IsNullOrWhiteSpace(resolved.steamName))
+                            {
+                                snapshot.MetadataLookupName = resolved.steamName;
+                            }
+                            metadataIdentityUpdated = true;
                         }
-                        metadataIdentityUpdated = true;
+                    }
+
+                    if (!snapshot.IsIgdbTaxonomyChecked)
+                    {
+                        bool steamLookupFailed = false;
+                        if (!snapshot.IgdbId.HasValue && snapshot.EffectiveSteamMetadataAppId.HasValue)
+                        {
+                            var lookup = await _services.Igdb
+                                .LookupIgdbIdBySteamIdAsync(snapshot.EffectiveSteamMetadataAppId.Value)
+                                .ConfigureAwait(false);
+                            steamLookupFailed = lookup.LookupFailed;
+                            snapshot.IgdbId = lookup.IgdbId;
+                            igdbIdUpdated = snapshot.IgdbId.HasValue;
+                        }
+
+                        // A name match is only a stand-in for a Steam mapping IGDB does not have.
+                        // When IGDB could not be asked, guessing by name would store a weaker id
+                        // that the next pass never revisits.
+                        if (!snapshot.IgdbId.HasValue && !steamLookupFailed)
+                        {
+                            var match = await _services.Igdb
+                                .FindIgdbMatchByNameAsync(snapshot.EffectiveMetadataLookupName)
+                                .ConfigureAwait(false);
+                            snapshot.IgdbId = match.Id;
+                            igdbIdUpdated = snapshot.IgdbId.HasValue;
+                        }
+
+                        if (snapshot.IgdbId.HasValue)
+                        {
+                            taxonomyUpdated = await _services.Igdb
+                                .PopulateTaxonomyFromIgdbAsync(snapshot)
+                                .ConfigureAwait(false);
+                        }
+                    }
+
+                    if (snapshot.EffectiveSteamMetadataAppId.HasValue &&
+                        snapshot.ControllerSupport == ControllerSupportLevel.Unknown)
+                    {
+                        controllerUpdated = await _services.SteamDetails
+                            .PopulateControllerMetadataAsync(snapshot)
+                            .ConfigureAwait(false);
                     }
                 }
-
-                if (!snapshot.IsIgdbTaxonomyChecked)
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
-                    if (!snapshot.IgdbId.HasValue && snapshot.EffectiveSteamMetadataAppId.HasValue)
-                    {
-                        snapshot.IgdbId = await _services.Igdb
-                            .FindIgdbIdBySteamIdAsync(snapshot.EffectiveSteamMetadataAppId.Value)
-                            .ConfigureAwait(false);
-                        igdbIdUpdated = snapshot.IgdbId.HasValue;
-                    }
-
-                    if (!snapshot.IgdbId.HasValue)
-                    {
-                        var match = await _services.Igdb
-                            .FindIgdbMatchByNameAsync(snapshot.EffectiveMetadataLookupName)
-                            .ConfigureAwait(false);
-                        snapshot.IgdbId = match.Id;
-                        igdbIdUpdated = snapshot.IgdbId.HasValue;
-                    }
-
-                    if (snapshot.IgdbId.HasValue)
-                    {
-                        taxonomyUpdated = await _services.Igdb
-                            .PopulateTaxonomyFromIgdbAsync(snapshot)
-                            .ConfigureAwait(false);
-                    }
+                    throw;
                 }
-
-                if (snapshot.EffectiveSteamMetadataAppId.HasValue &&
-                    snapshot.ControllerSupport == ControllerSupportLevel.Unknown)
+                catch (Exception ex)
                 {
-                    controllerUpdated = await _services.SteamDetails
-                        .PopulateControllerMetadataAsync(snapshot)
-                        .ConfigureAwait(false);
+                    Debug.WriteLine($"[Metadata] Completing {snapshot.Name} failed: {ex.Message}");
                 }
 
                 if (taxonomyUpdated || controllerUpdated || metadataIdentityUpdated || igdbIdUpdated)
@@ -155,43 +176,72 @@ namespace Codec.ViewModels
         [CommunityToolkit.Mvvm.Input.RelayCommand]
         public Task RefreshCoversAsync() => RunExclusiveAsync(RefreshCoversCoreAsync);
 
+        // Runs on the UI thread. It walks a copy of the list because scans, Steam sync and
+        // removals keep changing Games across the awaits; every write happens back on the UI
+        // thread, so a game removed mid-walk is only updated as a detached object.
         private async Task RefreshCoversCoreAsync()
         {
-            ShowScanProgress("Loading covers", Games.Count == 0);
-            PrepareCoverProgress(Games.Count, "Update Cover", "No Games to update.");
+            List<Game> games = Games.Where(game => !game.IsHidden).ToList();
+            ShowScanProgress("Loading covers", games.Count == 0);
+            PrepareCoverProgress(games.Count, "Update Cover", "No Games to update.");
 
-            int processed = 0;
-            foreach (var g in Games)
+            try
             {
-                if (g.SteamID.HasValue)
+                int processed = 0;
+                foreach (var g in games)
                 {
-                    var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
-                    if (!string.IsNullOrEmpty(cover))
-                        SetLibraryCoverPath(g, cover);
-                    await Task.Delay(75);
-                }
-                else
-                {
-                    string? previousCoverPath = g.LibraryCapsuleCache;
-                    await _services.GridDb.TryPopulateGridAssetsAsync(g, forceCoverDownload: true);
-                    NotifySamePathCoverRefresh(g, previousCoverPath);
-                    await Task.Delay(75);
+                    if (g.SteamID.HasValue)
+                    {
+                        var cover = await _services.GameAssets.DownloadSteamLibraryCoverAsync(g.SteamID.Value, force: true);
+                        if (!string.IsNullOrEmpty(cover))
+                            SetLibraryCoverPath(g, cover);
+                        await Task.Delay(75);
+                    }
+                    else
+                    {
+                        string? previousCoverPath = g.LibraryCapsuleCache;
+                        var resolution = await _services.GridDb.ResolveGridAssetsAsync(
+                            g.EffectiveMetadataLookupName,
+                            g.GridDbId,
+                            g.LibraryCapsuleCache,
+                            forceCoverDownload: true);
+                        if (resolution.GridDbId.HasValue && !string.IsNullOrWhiteSpace(resolution.CoverCachePath))
+                        {
+                            g.GridDbId = resolution.GridDbId;
+                            g.LibraryCapsuleCache = resolution.CoverCachePath;
+                        }
+                        NotifySamePathCoverRefresh(g, previousCoverPath);
+                        await Task.Delay(75);
+                    }
+
+                    processed++;
+                    UpdateCoverProgress(processed, games.Count, "Updating Cover");
                 }
 
-                processed++;
-                UpdateCoverProgress(processed, Games.Count, "Updating Cover");
+                await _services.LibraryStorage.SaveAsync(Games.ToList());
             }
-
-            await _services.LibraryStorage.SaveAsync(Games.ToList());
-            HideScanProgress();
+            finally
+            {
+                HideScanProgress();
+            }
         }
 
         private async Task SilentUpdateImagesAsync(IEnumerable<Game> gamesToUpdate)
         {
             await _importCoordinator.WaitForIdleAsync().ConfigureAwait(false);
 
+            // The workers only read copies taken on the UI thread, and compare with or write to
+            // the bound game back on it. These copies only pick what is stale; the one a worker
+            // downloads from is taken after the pause, which can outlast a whole Steam sync.
+            var candidates = await RunOnUiThreadAsync(() => gamesToUpdate
+                .Select(game => (Target: game, Snapshot: game.CreateHydrationSnapshot()))
+                .ToList()).ConfigureAwait(false);
+
             DateTime staleBefore = DateTime.UtcNow.AddDays(-7);
-            var games = gamesToUpdate.Where(game => NeedsImageRefresh(game, staleBefore)).ToList();
+            var games = candidates
+                .Where(candidate => NeedsImageRefresh(candidate.Snapshot, staleBefore))
+                .Select(candidate => candidate.Target)
+                .ToList();
             int anyChanged = 0;
             var options = new ParallelOptions
             {
@@ -202,33 +252,36 @@ namespace Codec.ViewModels
             {
                 await WaitForSilentImageUpdateResumeAsync().ConfigureAwait(false);
 
+                string gameName = string.Empty;
                 try
                 {
-                    var snapshot = game.CreateHydrationSnapshot();
+                    Game snapshot = await RunOnUiThreadAsync(() => game.CreateHydrationSnapshot()).ConfigureAwait(false);
+                    gameName = snapshot.Name;
                     var displayedAssets = await _services.DisplayedAssets
                         .EnsureDisplayedAssetsAsync(snapshot, force: true).ConfigureAwait(false);
-                    bool changed = snapshot.GridDbId != game.GridDbId ||
-                                   snapshot.LibraryCapsuleCache != game.LibraryCapsuleCache ||
-                                   snapshot.HasHeroAssetSource != game.HasHeroAssetSource ||
-                                   snapshot.LibraryHeroUrl != game.LibraryHeroUrl ||
-                                   snapshot.LibraryHeroCache != game.LibraryHeroCache ||
-                                   snapshot.HasLogoAssetSource != game.HasLogoAssetSource ||
-                                   snapshot.LibraryLogoUrl != game.LibraryLogoUrl ||
-                                   snapshot.LibraryLogoCache != game.LibraryLogoCache ||
-                                   displayedAssets.GridDbId != game.GridDbId ||
-                                   displayedAssets.CapsuleCachePath != game.LibraryCapsuleCache ||
-                                   displayedAssets.HasHeroSource != game.HasHeroAssetSource ||
-                                   displayedAssets.HeroUrl != game.LibraryHeroUrl ||
-                                   displayedAssets.HeroCachePath != game.LibraryHeroCache ||
-                                   displayedAssets.HasLogoSource != game.HasLogoAssetSource ||
-                                   displayedAssets.LogoUrl != game.LibraryLogoUrl ||
-                                   displayedAssets.LogoCachePath != game.LibraryLogoCache;
-
-                    if (changed)
-                        Interlocked.Exchange(ref anyChanged, 1);
 
                     await RunOnUiThreadAsync(() =>
                     {
+                        bool changed = snapshot.GridDbId != game.GridDbId ||
+                                       snapshot.LibraryCapsuleCache != game.LibraryCapsuleCache ||
+                                       snapshot.HasHeroAssetSource != game.HasHeroAssetSource ||
+                                       snapshot.LibraryHeroUrl != game.LibraryHeroUrl ||
+                                       snapshot.LibraryHeroCache != game.LibraryHeroCache ||
+                                       snapshot.HasLogoAssetSource != game.HasLogoAssetSource ||
+                                       snapshot.LibraryLogoUrl != game.LibraryLogoUrl ||
+                                       snapshot.LibraryLogoCache != game.LibraryLogoCache ||
+                                       displayedAssets.GridDbId != game.GridDbId ||
+                                       displayedAssets.CapsuleCachePath != game.LibraryCapsuleCache ||
+                                       displayedAssets.HasHeroSource != game.HasHeroAssetSource ||
+                                       displayedAssets.HeroUrl != game.LibraryHeroUrl ||
+                                       displayedAssets.HeroCachePath != game.LibraryHeroCache ||
+                                       displayedAssets.HasLogoSource != game.HasLogoAssetSource ||
+                                       displayedAssets.LogoUrl != game.LibraryLogoUrl ||
+                                       displayedAssets.LogoCachePath != game.LibraryLogoCache;
+
+                        if (changed)
+                            Interlocked.Exchange(ref anyChanged, 1);
+
                         string? previousCoverPath = game.LibraryCapsuleCache;
                         if (changed)
                         {
@@ -241,7 +294,7 @@ namespace Codec.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[SilentUpdate] Failed to update assets for {game.Name}: {ex.Message}");
+                    Debug.WriteLine($"[SilentUpdate] Failed to update assets for {gameName}: {ex.Message}");
                 }
 
             }).ConfigureAwait(false);
@@ -261,15 +314,52 @@ namespace Codec.ViewModels
             }
         }
 
-        private async Task PopulateGridDbDataAsync(IEnumerable<Game> games)
+        // ---------------------------------------------------------------------------------
+        // Icons
+        // ---------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Gives visible games without an icon, or with a Steam icon Steam has since replaced,
+        /// one. The search runs on copies; the bound games only change back on the UI thread.
+        /// </summary>
+        private async Task BackfillGameIconsAsync(CancellationToken cancellationToken)
         {
-            foreach (var game in games)
+            await _importCoordinator.WaitForIdleAsync().ConfigureAwait(false);
+
+            var candidates = await RunOnUiThreadAsync(() => Games
+                .Where(game => !game.IsHidden)
+                .Select(game => game.CreateHydrationSnapshot())
+                .ToList()).ConfigureAwait(false);
+
+            var updates = await _services.GameIcons.BackfillAsync(
+                candidates,
+                _services.ScanConcurrency.BackgroundWorkers,
+                WaitForSilentImageUpdateResumeAsync,
+                cancellationToken).ConfigureAwait(false);
+            if (updates.Count == 0)
             {
-                if (game.SteamID.HasValue)
-                    continue;
-                await _services.GridDb.TryPopulateGridAssetsAsync(game);
-                await Task.Delay(75);
+                return;
             }
+
+            List<Game> library = await RunOnUiThreadAsync(() =>
+            {
+                foreach (var update in updates)
+                {
+                    Game? game = Games.FirstOrDefault(item => item.Id == update.GameId);
+                    if (game == null)
+                        continue;
+
+                    string? previousPath = game.LibraryIconCache;
+                    game.LibraryIconCache = update.Path;
+                    // A file that came back under the path the game already had changes no value.
+                    if (string.Equals(previousPath, update.Path, StringComparison.OrdinalIgnoreCase))
+                        game.NotifyLibraryIconChanged();
+                }
+
+                return Games.ToList();
+            }).ConfigureAwait(false);
+
+            await _services.LibraryStorage.SaveAsync(library).ConfigureAwait(false);
         }
 
         // ---------------------------------------------------------------------------------

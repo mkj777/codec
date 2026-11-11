@@ -14,6 +14,8 @@ public enum UpdateStatus
     Ready,
     NoUpdateFound,
     Error,
+    /// <summary>Not a Velopack install, so there is nothing to check against.</summary>
+    DevelopmentMode,
 }
 
 public sealed class UpdateService
@@ -47,16 +49,16 @@ public sealed class UpdateService
 
         try
         {
-            SetStatus(UpdateStatus.Checking);
-
             if (!_manager.IsInstalled)
             {
-                ErrorMessage = "The app seems to be in development mode. If not, please contact the developer on GitHub.";
+                // A build run from the IDE or a build folder cannot be updated, and that is
+                // not a failure worth announcing as one.
                 Debug.WriteLine("[UpdateService] Development-mode install detected - skipping check");
-                await Task.Delay(1500);
-                SetStatus(UpdateStatus.Error);
+                SetStatus(UpdateStatus.DevelopmentMode);
                 return;
             }
+
+            SetStatus(UpdateStatus.Checking);
 
             // Hold checking visible at least briefly so UI can show it
             var checkTask = _manager.CheckForUpdatesAsync();

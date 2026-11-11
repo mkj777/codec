@@ -26,6 +26,7 @@ namespace Codec.Services.Importing
         private readonly HltbService _hltb;
         private readonly DisplayedAssetService _displayedAssets;
         private readonly ScanResourceLimiter? _resourceLimiter;
+        private readonly GameIconService? _icons;
 
         public GameImportPipeline(
             GameNameService gameName,
@@ -35,7 +36,8 @@ namespace Codec.Services.Importing
             IgdbService igdb,
             HltbService hltb,
             DisplayedAssetService displayedAssets,
-            ScanResourceLimiter? resourceLimiter = null)
+            ScanResourceLimiter? resourceLimiter = null,
+            GameIconService? icons = null)
         {
             _gameName = gameName;
             _gameDetails = gameDetails;
@@ -45,6 +47,7 @@ namespace Codec.Services.Importing
             _hltb = hltb;
             _displayedAssets = displayedAssets;
             _resourceLimiter = resourceLimiter;
+            _icons = icons;
         }
 
         public async Task<GameImportResult> ImportAsync(GameImportRequest request, IReadOnlyCollection<Game> librarySnapshot, CancellationToken cancellationToken = default)
@@ -195,6 +198,10 @@ namespace Codec.Services.Importing
                             batch.Log($"PIPELINE FRIEND-PASS metadata steam unresolved for '{metadataValidationName}'");
                         }
                     }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
                     catch (Exception ex)
                     {
                         batch.Log($"PIPELINE FRIEND-PASS steam metadata lookup failed: {ex.Message}");
@@ -253,23 +260,30 @@ namespace Codec.Services.Importing
 
                     if (!igdbId.HasValue && executableCopyrightYears.Count == 0)
                     {
-                        rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName).ConfigureAwait(false);
+                        rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName, cancellationToken).ConfigureAwait(false);
                     }
                 }
 
                 if (!steamId.HasValue && igdbId.HasValue && !isRiotSource)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     steamId = await _igdb.FindSteamIdByIgdbIdAsync(igdbId.Value).ConfigureAwait(false);
                     if (steamId.HasValue)
                     {
                         batch.Log($"PIPELINE IGDB-STEAM igdb={igdbId} -> steam={steamId}");
-                        var (steamNameMatches, igdbDerivedSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
-                        if (!steamNameMatches)
+                        var igdbSteamCheck = await _gameName.TrySteamAppMatchLocalGameAsync(steamId.Value, detectedName, normalizedExePath, cancellationToken).ConfigureAwait(false);
+                        if (igdbSteamCheck.Outcome == GameNameService.SteamAppMatchOutcome.Mismatched)
                         {
-                            batch.Log($"PIPELINE DROP-IGDB-STEAM-ID igdb={igdbId} steam={steamId} reason=name-mismatch local='{detectedName}' steamName='{igdbDerivedSteamName ?? "(not found)"}'");
+                            batch.Log($"PIPELINE DROP-IGDB-STEAM-ID igdb={igdbId} steam={steamId} reason=name-mismatch local='{detectedName}' steamName='{igdbSteamCheck.SteamName ?? "(not found)"}'");
                             steamId = null;
                         }
-                        else if (librarySnapshot.Any(g => g.SteamID == steamId.Value))
+                        else if (igdbSteamCheck.LookupFailed)
+                        {
+                            // Steam could not be asked; that is no evidence against the IGDB mapping.
+                            batch.Log($"PIPELINE STEAM-NAME-CHECK FAILED igdb={igdbId} steam={steamId} (kept)");
+                        }
+
+                        if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
                         {
                             batch.Flush("⤼ DUPLICATE", $"igdb-derived steam id {steamId} already in library");
                             return GameImportResult.Duplicate($"A game with Steam ID {steamId.Value} already exists in your library.");
@@ -281,7 +295,7 @@ namespace Codec.Services.Importing
                 // year exists to validate against IGDB.
                 if (!steamId.HasValue && !isRiotSource && !rawgId.HasValue && !igdbId.HasValue && executableCopyrightYears.Count == 0)
                 {
-                    var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath, nameHint: metadataValidationName).ConfigureAwait(false);
+                    var resolvedIds = await _gameName.FindGameIdsAsync(normalizedExePath, nameHint: metadataValidationName, cancellationToken: cancellationToken).ConfigureAwait(false);
                     steamId ??= resolvedIds.steamId;
                     if (!string.IsNullOrWhiteSpace(resolvedIds.steamName))
                         detectedName = resolvedIds.steamName;
@@ -289,19 +303,24 @@ namespace Codec.Services.Importing
 
                 if (steamId.HasValue && !isSteamLauncherSource)
                 {
-                    var (steamNameMatches, droppedSteamName) = await _gameName.TrySteamAppMatchLocalGameAsync(steamId.Value, detectedName, normalizedExePath).ConfigureAwait(false);
-                    if (!steamNameMatches)
+                    var steamCheck = await _gameName.TrySteamAppMatchLocalGameAsync(steamId.Value, detectedName, normalizedExePath, cancellationToken).ConfigureAwait(false);
+                    if (steamCheck.Outcome == GameNameService.SteamAppMatchOutcome.Mismatched)
                     {
-                        batch.Log($"PIPELINE DROP-STEAM-ID source='{request.ImportSource}' steam={steamId} reason=name-mismatch local='{detectedName}' steamName='{droppedSteamName ?? "(not found)"}'");
+                        batch.Log($"PIPELINE DROP-STEAM-ID source='{request.ImportSource}' steam={steamId} reason=name-mismatch local='{detectedName}' steamName='{steamCheck.SteamName ?? "(not found)"}'");
                         steamId = null;
                         rawgId = null;
                         igdbId = null;
+                    }
+                    else if (steamCheck.LookupFailed)
+                    {
+                        // Only a definite mismatch drops ids; a failed check keeps them.
+                        batch.Log($"PIPELINE STEAM-NAME-CHECK FAILED source='{request.ImportSource}' steam={steamId} (kept ids)");
                     }
                 }
 
                 if (!steamId.HasValue && !igdbId.HasValue && !rawgId.HasValue && !isRiotSource && executableCopyrightYears.Count == 0)
                 {
-                    rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName).ConfigureAwait(false);
+                    rawgId = await _gameDetails.ValidateGameAsync(metadataValidationName, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (steamId.HasValue && librarySnapshot.Any(g => g.SteamID == steamId.Value))
@@ -353,8 +372,11 @@ namespace Codec.Services.Importing
                 int? steamMetadataId = game.EffectiveSteamMetadataAppId;
                 if (steamMetadataId.HasValue)
                 {
-                    // Steam first (assets, release date), then HLTB (preferred TTB source), then IGDB (fills gaps)
+                    // Steam first (assets, release date), then HLTB (preferred TTB source), then IGDB (fills gaps).
+                    // These providers take no token yet, so cancellation is checked between them.
+                    cancellationToken.ThrowIfCancellationRequested();
                     await _steamDetails.PopulateFromSteamAsync(game).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
                     var hltbTask = _hltb.PopulateAsync(game);
                     var igdbIdTask = game.IgdbId.HasValue
                         ? Task.FromResult<int?>(game.IgdbId.Value)
@@ -362,6 +384,7 @@ namespace Codec.Services.Importing
                     await Task.WhenAll(hltbTask, igdbIdTask).ConfigureAwait(false);
 
                     game.IgdbId = igdbIdTask.Result;
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (game.IgdbId.HasValue)
                     {
@@ -371,7 +394,9 @@ namespace Codec.Services.Importing
                 else
                 {
                     // Non-Steam: HLTB first, then IGDB. RAWG is only a metadata fallback.
+                    cancellationToken.ThrowIfCancellationRequested();
                     await _hltb.PopulateAsync(game).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
 
                     if (game.IgdbId.HasValue)
                     {
@@ -401,7 +426,8 @@ namespace Codec.Services.Importing
 
                 FinalizeFallbackLinks(game);
 
-                var displayedAssets = await _displayedAssets.EnsureDisplayedAssetsAsync(game).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                var displayedAssets = await _displayedAssets.EnsureDisplayedAssetsAsync(game, cancellationToken: cancellationToken).ConfigureAwait(false);
                 ApplyDisplayedAssetHydration(game, displayedAssets);
                 FinalizeFallbackLinks(game);
 
@@ -413,6 +439,8 @@ namespace Codec.Services.Importing
                     batch.Flush("✗ FAILED", $"assets not ready (cover={displayedAssets.IsCoverCached} hero={displayedAssets.IsHeroCached}/{displayedAssets.HasHeroSource} logo={displayedAssets.IsLogoCached}/{displayedAssets.HasLogoSource})");
                     return GameImportResult.Failed($"Codec could not finish downloading the required artwork for {game.Name}.");
                 }
+
+                await ResolveIconAsync(game, batch, cancellationToken).ConfigureAwait(false);
 
                 game.IsFullyImported = true;
                 batch.Flush("✓ ADDED", $"steam={game.SteamID} epic={game.EpicAppId} igdb={game.IgdbId} rawg={game.RawgID} lnk={game.LaunchScript}");
@@ -429,6 +457,32 @@ namespace Codec.Services.Importing
                 batch.Log(ex.StackTrace ?? string.Empty);
                 batch.Flush("✗ FAILED", $"exception: {ex.GetType().Name}: {ex.Message}");
                 return GameImportResult.Failed("Codec could not finish importing this game.");
+            }
+        }
+
+        // An icon is a nicety: a game without one is still added, and the backfill tries again.
+        private async Task ResolveIconAsync(Game game, ScanLogBatch batch, CancellationToken cancellationToken)
+        {
+            if (_icons == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var icon = await _icons.ResolveAsync(game, cancellationToken).ConfigureAwait(false);
+                if (icon.Outcome == GameIconService.IconOutcome.Found)
+                {
+                    game.LibraryIconCache = icon.Path;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                batch.Log($"PIPELINE icon lookup failed: {ex.Message}");
             }
         }
 

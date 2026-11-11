@@ -40,7 +40,9 @@
       says nothing about the order they came in.
     -->
     <ScrollViewer Grid.Row="1"
+                  Classes="overlay-bar"
                   HorizontalScrollBarVisibility="Auto"
+
                   VerticalScrollBarVisibility="Disabled">
       <Grid MinHeight="520" RowDefinitions="*,Auto,*">
         <Border Grid.Row="1"

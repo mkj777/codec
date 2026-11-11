@@ -2,6 +2,7 @@ using Codec.Services.Storage;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,63 +16,119 @@ namespace Codec.Services.Fetching
 {
     public class GameAssetService
     {
-        private readonly HttpClient _http = new();
+        private readonly HttpClient _http;
         private readonly SteamKitService? _steamKit;
         private readonly ScanResourceLimiter? _resourceLimiter;
+        private readonly string _assetsRoot;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _assetGates = new(StringComparer.OrdinalIgnoreCase);
 
-        public GameAssetService(SteamKitService? steamKit = null, ScanResourceLimiter? resourceLimiter = null)
+        public enum AssetFetchOutcome
+        {
+            Cached,
+            NotAvailable,
+            Failed
+        }
+
+        /// <summary>
+        /// NotAvailable means the source answered that the image does not exist. Failed means the
+        /// source could not be asked; Path then still points at the previous file when there is one.
+        /// </summary>
+        public sealed record AssetFetchResult(AssetFetchOutcome Outcome, string? Path);
+
+        public GameAssetService(
+            SteamKitService? steamKit = null,
+            ScanResourceLimiter? resourceLimiter = null,
+            HttpMessageHandler? httpHandler = null,
+            string? assetsRootDirectory = null)
         {
             _steamKit = steamKit;
             _resourceLimiter = resourceLimiter;
+            _http = httpHandler is null ? new HttpClient() : new HttpClient(httpHandler);
+            _http.Timeout = TimeSpan.FromSeconds(30);
+            _assetsRoot = assetsRootDirectory ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                LibraryStorageService.AppDataFolderName,
+                "Assets");
         }
 
-        private Task<HttpResponseMessage> GetAsync(string url, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead) =>
+        private Task<HttpResponseMessage> GetAsync(string url, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead, CancellationToken cancellationToken = default) =>
             _resourceLimiter is null
-                ? _http.GetAsync(url, completionOption)
-                : _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, completionOption, ct));
+                ? _http.GetAsync(url, completionOption, cancellationToken)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, completionOption, ct), cancellationToken);
 
-        private Task<HttpResponseMessage> GetAsync(Uri url, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead) =>
+        private Task<HttpResponseMessage> GetAsync(Uri url, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead, CancellationToken cancellationToken = default) =>
             _resourceLimiter is null
-                ? _http.GetAsync(url, completionOption)
-                : _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, completionOption, ct));
+                ? _http.GetAsync(url, completionOption, cancellationToken)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.GetAsync(url, completionOption, ct), cancellationToken);
 
-        private Task<string> GetStringAsync(string url) =>
+        private Task<string> GetStringAsync(string url, CancellationToken cancellationToken = default) =>
             _resourceLimiter is null
-                ? _http.GetStringAsync(url)
-                : _resourceLimiter.RunNetworkAsync(ct => _http.GetStringAsync(url, ct));
+                ? _http.GetStringAsync(url, cancellationToken)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.GetStringAsync(url, ct), cancellationToken);
 
-        private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption) =>
+        private Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken = default) =>
             _resourceLimiter is null
-                ? _http.SendAsync(request, completionOption)
-                : _resourceLimiter.RunNetworkAsync(ct => _http.SendAsync(request, completionOption, ct));
+                ? _http.SendAsync(request, completionOption, cancellationToken)
+                : _resourceLimiter.RunNetworkAsync(ct => _http.SendAsync(request, completionOption, ct), cancellationToken);
 
-        private string GetCapsulesDir()
+        private string GetAssetDir(string name)
         {
-            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "Capsules");
+            string baseDir = Path.Combine(_assetsRoot, name);
             Directory.CreateDirectory(baseDir);
             return baseDir;
         }
 
-        private string GetGridDbDir()
+        private string GetCapsulesDir() => GetAssetDir("Capsules");
+
+        private string GetGridDbDir() => GetAssetDir("GridDb");
+
+        private string GetHeroesDir() => GetAssetDir("Heroes");
+
+        private string GetLogosDir() => GetAssetDir("Logos");
+
+        private string GetIconsDir() => GetAssetDir("Icons");
+
+        /// <summary>
+        /// Writes an icon that did not come from a download (a local copy or one taken out of an
+        /// exe) into the icon cache. A file already there under that name is kept as it is.
+        /// </summary>
+        public async Task<string?> StoreIconAsync(string fileName, byte[] content, CancellationToken cancellationToken = default)
         {
-            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "GridDb");
-            Directory.CreateDirectory(baseDir);
-            return baseDir;
+            if (string.IsNullOrWhiteSpace(fileName) || content.Length == 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                string filePath = Path.Combine(GetIconsDir(), SanitizeFileName(fileName));
+                if (File.Exists(filePath))
+                {
+                    return filePath;
+                }
+
+                using var source = new MemoryStream(content, writable: false);
+                await WriteStreamAtomicallyAsync(source, filePath, cancellationToken).ConfigureAwait(false);
+                return filePath;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Icon store failed for '{fileName}': {ex.Message}");
+                return null;
+            }
         }
 
-        private string GetHeroesDir()
+        // A missing image is a 4xx answer; throttling, timeouts and server errors say nothing about it.
+        private static bool IsDefinitelyUnavailable(HttpStatusCode statusCode)
         {
-            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "Heroes");
-            Directory.CreateDirectory(baseDir);
-            return baseDir;
-        }
-
-        private string GetLogosDir()
-        {
-            string baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), LibraryStorageService.AppDataFolderName, "Assets", "Logos");
-            Directory.CreateDirectory(baseDir);
-            return baseDir;
+            int code = (int)statusCode;
+            return code >= 400 && code < 500
+                && statusCode != HttpStatusCode.RequestTimeout
+                && statusCode != HttpStatusCode.TooManyRequests;
         }
 
         /// <summary>
@@ -79,10 +136,10 @@ namespace Codec.Services.Fetching
         /// Attempts several known variants and returns the first successful local file path.
         /// If force is true, existing local files are overwritten.
         /// </summary>
-        public async Task<string?> DownloadSteamLibraryCoverAsync(int steamId, bool force = false)
+        public async Task<string?> DownloadSteamLibraryCoverAsync(int steamId, bool force = false, CancellationToken cancellationToken = default)
         {
             var assetGate = _assetGates.GetOrAdd($"steam-cover:{steamId}", _ => new SemaphoreSlim(1, 1));
-            await assetGate.WaitAsync().ConfigureAwait(false);
+            await assetGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 try
@@ -106,18 +163,30 @@ namespace Codec.Services.Fetching
 
                         try
                         {
-                            using var picsResponse = await GetAsync(assets.CapsuleUrl, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                            using var picsResponse = await GetAsync(assets.CapsuleUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                             if (picsResponse.IsSuccessStatusCode)
                             {
-                                if (File.Exists(filePath)) { try { File.Delete(filePath); } catch { } }
-                                await using var remote = await picsResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                                await WriteStreamAtomicallyAsync(remote, filePath).ConfigureAwait(false);
+                                await using var remote = await picsResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                                await WriteStreamAtomicallyAsync(remote, filePath, cancellationToken).ConfigureAwait(false);
                                 return filePath;
                             }
+
+                            if (!IsDefinitelyUnavailable(picsResponse.StatusCode) && File.Exists(filePath))
+                            {
+                                return filePath;
+                            }
+                        }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
                         }
                         catch (Exception picsEx)
                         {
                             Debug.WriteLine($"PICS capsule download failed for {steamId}: {picsEx.Message}");
+                            if (File.Exists(filePath))
+                            {
+                                return filePath;
+                            }
                         }
                     }
                 }
@@ -133,33 +202,51 @@ namespace Codec.Services.Fetching
                 foreach (var (url, fileName) in variants)
                 {
                     string filePath = Path.Combine(dir, fileName);
+                    bool hadFile = File.Exists(filePath);
 
-                    if (File.Exists(filePath))
+                    if (hadFile && !force)
                     {
-                        if (!force)
+                        return filePath;
+                    }
+
+                    // The old file stays in place until a replacement has fully arrived, so a
+                    // failed refresh keeps the cover the game already shows.
+                    try
+                    {
+                        using var response = await GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            Debug.WriteLine($"Cover variant not available for {steamId}: {url} -> {(int)response.StatusCode}");
+                            if (hadFile && !IsDefinitelyUnavailable(response.StatusCode))
+                            {
+                                return filePath;
+                            }
+                            continue;
+                        }
+
+                        await using var remoteStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                        await WriteStreamAtomicallyAsync(remoteStream, filePath, cancellationToken).ConfigureAwait(false);
+
+                        return filePath;
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception variantEx)
+                    {
+                        Debug.WriteLine($"Cover variant download failed for {steamId}: {url} -> {variantEx.Message}");
+                        if (hadFile)
                         {
                             return filePath;
                         }
-                        try { File.Delete(filePath); } catch (Exception delEx) { Debug.WriteLine($"Failed to delete old cover: {delEx.Message}"); }
                     }
-
-                    using var response = await GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Debug.WriteLine($"Cover variant not available for {steamId}: {url} -> {(int)response.StatusCode}");
-                        continue;
-                    }
-
-                    await using var remoteStream = await response.Content.ReadAsStreamAsync();
-                    await WriteStreamAtomicallyAsync(remoteStream, filePath).ConfigureAwait(false);
-
-                    return filePath;
                 }
 
-                string? headerImageUrl = await FetchSteamHeaderImageUrlAsync(steamId).ConfigureAwait(false);
+                string? headerImageUrl = await FetchSteamHeaderImageUrlAsync(steamId, cancellationToken).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(headerImageUrl))
                 {
-                    string? fallbackPath = await CacheImageAsync("Capsules", $"steam_{steamId}_header_image", headerImageUrl, force).ConfigureAwait(false);
+                    string? fallbackPath = await CacheImageAsync("Capsules", $"steam_{steamId}_header_image", headerImageUrl, force, cancellationToken).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(fallbackPath))
                     {
                         return fallbackPath;
@@ -168,6 +255,10 @@ namespace Codec.Services.Fetching
 
                 Debug.WriteLine($"No Steam cover found for {steamId} across known variants.");
                 return null;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -184,16 +275,16 @@ namespace Codec.Services.Fetching
         /// <summary>
         /// Downloads the first available SteamGridDB grid for the given entry.
         /// </summary>
-        public async Task<string?> DownloadGridDbCoverAsync(int gridDbId, bool force = false)
+        public async Task<string?> DownloadGridDbCoverAsync(int gridDbId, bool force = false, CancellationToken cancellationToken = default)
         {
             var assetGate = _assetGates.GetOrAdd($"grid-cover:{gridDbId}", _ => new SemaphoreSlim(1, 1));
-            await assetGate.WaitAsync().ConfigureAwait(false);
+            await assetGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 try
                 {
                     string gridsUrl = $"https://codec-api-proxy.vercel.app/api/griddb/grids?id={gridDbId}";
-                var response = await GetStringAsync(gridsUrl);
+                var response = await GetStringAsync(gridsUrl, cancellationToken).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(response);
 
                 if (!doc.RootElement.TryGetProperty("data", out var dataArray) || dataArray.GetArrayLength() == 0)
@@ -234,17 +325,21 @@ namespace Codec.Services.Fetching
                     return filePath;
                 }
 
-                using var downloadResponse = await GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead);
+                using var downloadResponse = await GetAsync(gridUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (!downloadResponse.IsSuccessStatusCode)
                 {
                     Debug.WriteLine($"GridDB cover variant not available for {gridDbId}: {gridUrl} -> {(int)downloadResponse.StatusCode}");
-                    return null;
+                    return !IsDefinitelyUnavailable(downloadResponse.StatusCode) && File.Exists(filePath) ? filePath : null;
                 }
 
-                await using var remoteStream = await downloadResponse.Content.ReadAsStreamAsync();
-                await WriteStreamAtomicallyAsync(remoteStream, filePath).ConfigureAwait(false);
+                await using var remoteStream = await downloadResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                await WriteStreamAtomicallyAsync(remoteStream, filePath, cancellationToken).ConfigureAwait(false);
 
                 return filePath;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -258,11 +353,11 @@ namespace Codec.Services.Fetching
             }
         }
 
-        public async Task<string?> FetchSteamHeaderImageUrlAsync(int steamId)
+        public async Task<string?> FetchSteamHeaderImageUrlAsync(int steamId, CancellationToken cancellationToken = default)
         {
             try
             {
-                string json = await GetStringAsync($"https://store.steampowered.com/api/appdetails?appids={steamId}").ConfigureAwait(false);
+                string json = await GetStringAsync($"https://store.steampowered.com/api/appdetails?appids={steamId}", cancellationToken).ConfigureAwait(false);
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement.GetProperty(steamId.ToString());
                 if (!root.TryGetProperty("success", out var success) || !success.GetBoolean())
@@ -273,6 +368,10 @@ namespace Codec.Services.Fetching
                     return null;
                 return headerProp.GetString();
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Steam appdetails fetch failed for {steamId}: {ex.Message}");
@@ -280,7 +379,7 @@ namespace Codec.Services.Fetching
             }
         }
 
-        public async Task<string?> ResolveSteamHeaderFallbackUrlAsync(int steamId)
+        public async Task<string?> ResolveSteamHeaderFallbackUrlAsync(int steamId, CancellationToken cancellationToken = default)
         {
             var variants = new[]
             {
@@ -290,7 +389,7 @@ namespace Codec.Services.Fetching
 
             foreach (string url in variants)
             {
-                if (await IsReachableImageAsync(url).ConfigureAwait(false))
+                if (await IsReachableImageAsync(url, cancellationToken).ConfigureAwait(false))
                 {
                     return url;
                 }
@@ -299,33 +398,41 @@ namespace Codec.Services.Fetching
             return null;
         }
 
-        public async Task<string?> CacheImageAsync(string assetType, string stableKey, string sourceUrl, bool force = false)
+        public async Task<string?> CacheImageAsync(string assetType, string stableKey, string sourceUrl, bool force = false, CancellationToken cancellationToken = default)
+        {
+            var result = await CacheImageWithOutcomeAsync(assetType, stableKey, sourceUrl, force, cancellationToken).ConfigureAwait(false);
+            return result.Path;
+        }
+
+        public async Task<AssetFetchResult> CacheImageWithOutcomeAsync(string assetType, string stableKey, string sourceUrl, bool force = false, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(sourceUrl))
             {
-                return null;
+                return new AssetFetchResult(AssetFetchOutcome.NotAvailable, null);
             }
 
             if (TryResolveLocalAsset(sourceUrl, out var localAssetPath))
             {
-                return localAssetPath;
+                return new AssetFetchResult(AssetFetchOutcome.Cached, localAssetPath);
             }
 
             var assetGate = _assetGates.GetOrAdd($"cache:{assetType}:{stableKey}:{sourceUrl}", _ => new SemaphoreSlim(1, 1));
-            await assetGate.WaitAsync().ConfigureAwait(false);
+            await assetGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            string? filePath = null;
             try
             {
                 try
                 {
                     if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var parsedUri))
                     {
-                        return null;
+                        return new AssetFetchResult(AssetFetchOutcome.NotAvailable, null);
                     }
 
                 string dir = assetType switch
                 {
                     "Heroes" => GetHeroesDir(),
                     "Logos" => GetLogosDir(),
+                    "Icons" => GetIconsDir(),
                     _ => GetCapsulesDir()
                 };
 
@@ -337,27 +444,33 @@ namespace Codec.Services.Fetching
 
                 string safeKey = SanitizeFileName(stableKey);
                 string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(sourceUrl)))[..12].ToLowerInvariant();
-                string filePath = Path.Combine(dir, $"{safeKey}_{hash}{extension}");
+                filePath = Path.Combine(dir, $"{safeKey}_{hash}{extension}");
 
                 if (File.Exists(filePath) && !force)
                 {
-                    return filePath;
+                    return new AssetFetchResult(AssetFetchOutcome.Cached, filePath);
                 }
 
-                using var response = await GetAsync(parsedUri, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var response = await GetAsync(parsedUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
-                    return null;
+                    return IsDefinitelyUnavailable(response.StatusCode)
+                        ? new AssetFetchResult(AssetFetchOutcome.NotAvailable, null)
+                        : new AssetFetchResult(AssetFetchOutcome.Failed, File.Exists(filePath) ? filePath : null);
                 }
 
-                await using var remoteStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                await WriteStreamAtomicallyAsync(remoteStream, filePath).ConfigureAwait(false);
-                return filePath;
+                await using var remoteStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                await WriteStreamAtomicallyAsync(remoteStream, filePath, cancellationToken).ConfigureAwait(false);
+                return new AssetFetchResult(AssetFetchOutcome.Cached, filePath);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Asset cache download failed for '{sourceUrl}': {ex.Message}");
-                    return null;
+                    return new AssetFetchResult(AssetFetchOutcome.Failed, filePath != null && File.Exists(filePath) ? filePath : null);
                 }
             }
             finally
@@ -366,14 +479,14 @@ namespace Codec.Services.Fetching
             }
         }
 
-        private static async Task WriteStreamAtomicallyAsync(Stream source, string destinationPath)
+        private static async Task WriteStreamAtomicallyAsync(Stream source, string destinationPath, CancellationToken cancellationToken = default)
         {
             string tempPath = destinationPath + $".{Guid.NewGuid():N}.tmp";
             try
             {
                 await using (var destination = File.Create(tempPath))
                 {
-                    await source.CopyToAsync(destination).ConfigureAwait(false);
+                    await source.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
                 }
 
                 File.Move(tempPath, destinationPath, overwrite: true);
@@ -415,12 +528,12 @@ namespace Codec.Services.Fetching
             return false;
         }
 
-        private async Task<bool> IsReachableImageAsync(string url)
+        private async Task<bool> IsReachableImageAsync(string url, CancellationToken cancellationToken)
         {
             try
             {
                 using var headRequest = new HttpRequestMessage(HttpMethod.Head, url);
-                using var headResponse = await SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var headResponse = await SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (headResponse.IsSuccessStatusCode && headResponse.Content.Headers.ContentType?.MediaType?.Contains("image", StringComparison.OrdinalIgnoreCase) == true)
                 {
                     return true;
@@ -431,7 +544,7 @@ namespace Codec.Services.Fetching
                     return false;
                 }
 
-                using var getResponse = await GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var getResponse = await GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
                 if (!getResponse.IsSuccessStatusCode)
                 {
                     return false;
@@ -439,6 +552,10 @@ namespace Codec.Services.Fetching
 
                 string? mediaType = getResponse.Content.Headers.ContentType?.MediaType;
                 return mediaType?.Contains("image", StringComparison.OrdinalIgnoreCase) == true;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch
             {

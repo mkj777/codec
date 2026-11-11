@@ -8,6 +8,8 @@ namespace Codec.Services.Importing
         Accepted,
         Duplicate,
         Invalid,
+        /// <summary>The path was fine but the file is no longer there.</summary>
+        Missing,
         Error
     }
 
@@ -54,13 +56,29 @@ namespace Codec.Services.Importing
         Error
     }
 
+    /// <summary>
+    /// ResultStatus carries why a manual import ended, so the view can tell a file that is not
+    /// a game from an import that failed on the network or on artwork.
+    /// </summary>
     public sealed record ImportNotification(
         string Title,
         string Message,
         ImportNotificationSeverity Severity,
         bool AutoHide = true,
         bool IsManual = false,
-        bool IsAlreadyAdded = false);
+        GameImportResultStatus? ResultStatus = null);
+
+    /// <summary>How the last scan of an import session ended. None while running or when no scan ran.</summary>
+    public enum ScanOutcome
+    {
+        None,
+        Completed,
+        /// <summary>Ran to the end, but a source could not be checked or some games could not be added.</summary>
+        Incomplete,
+        /// <summary>Stopped on an error before it reached the end.</summary>
+        Stopped,
+        Cancelled
+    }
 
     public sealed record GameImportStatusSnapshot(
         bool IsActive,
@@ -70,5 +88,6 @@ namespace Codec.Services.Importing
         int ProcessingCount,
         int AddedCount,
         int SkippedCount,
-        int FailedCount);
+        int FailedCount,
+        ScanOutcome Outcome = ScanOutcome.None);
 }

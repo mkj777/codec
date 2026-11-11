@@ -1,16 +1,53 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using Codec.Models;
 using Codec.Helpers;
 using Codec.Services.Importing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Codec.Services.Storage;
 
 namespace Codec.ViewModels
 {
     public partial class MainViewModel
     {
+        internal const string ScanCompleteText = "Scan complete";
+        internal const string ScanIncompleteText = "Scan incomplete";
+        internal const string ScanFailedText = "Scan failed";
+        internal const string GameAddFailedText = "Could not add that game";
+
+        private const int ImportNoticeDismissDelayMs = 4000;
+
         private bool _wasImportActive;
+        private int _scanResultVersion;
+
+        /// <summary>The line the pill shows once a scan has ended.</summary>
+        [ObservableProperty] private string _scanResultText = ScanCompleteText;
+
+        /// <summary>A manual add that failed for a reason other than the file.</summary>
+        [ObservableProperty] private bool _isGameAddFailedToastVisible;
+
+        private ScanOutcome _lastScanOutcome;
+
+        /// <summary>
+        /// How the most recent scan ended, so a view can tell a finished scan from a stopped one.
+        /// A session that only imported by hand leaves it as it was.
+        /// </summary>
+        public ScanOutcome LastScanOutcome
+        {
+            get => _lastScanOutcome;
+            private set
+            {
+                // The onboarding title reads this, and the result can land after the scan
+                // step has already marked itself complete.
+                if (SetProperty(ref _lastScanOutcome, value))
+                    OnPropertyChanged(nameof(ScanScreenTitle));
+            }
+        }
 
         private Task<IReadOnlyCollection<Game>> GetLibrarySnapshotAsync()
             => RunOnUiThreadAsync<IReadOnlyCollection<Game>>(() => Games.ToList());
@@ -84,10 +121,15 @@ namespace Codec.ViewModels
 
         private void ImportCoordinator_StatusChanged(object? sender, GameImportStatusSnapshot snapshot)
         {
-            _ = RunOnUiThreadAsync(() =>
+            ObserveFault(RunOnUiThreadAsync(() =>
             {
                 bool wasActive = _wasImportActive;
                 _wasImportActive = snapshot.IsActive;
+
+                // A new session retires the last one's result, including a "Scan failed" that
+                // waits to be dismissed.
+                if (snapshot.IsActive && !wasActive)
+                    IsScanCompleteVisible = false;
 
                 IsScanning = snapshot.IsScanning;
                 IsImportActive = snapshot.IsActive;
@@ -98,7 +140,7 @@ namespace Codec.ViewModels
                 {
                     IsOnboardingVisible = Games.Count == 0
                         && !snapshot.IsActive
-                        && !_appSettings.OnboardingCompleted;
+                        && CanOfferOnboarding;
                 }
 
                 ImportStatusMessage = DescribeImport(snapshot);
@@ -123,23 +165,64 @@ namespace Codec.ViewModels
 
                     if (settingsChanged)
                     {
-                        _ = _services.AppSettings.SaveAsync(_appSettings);
+                        ObserveFault(_services.AppSettings.SaveAsync(_appSettings), "Saving detected launcher paths");
                     }
 
-                    if (wasActive && (!wasBackgroundStartupScan || snapshot.AddedCount > 0))
+                    if (wasActive)
                     {
-                        ScanCompleteAddedCount = snapshot.AddedCount;
-                        IsScanCompleteVisible = true;
-                        _ = DismissScanCompleteAsync();
+                        ShowScanResult(snapshot, wasBackgroundStartupScan);
                     }
                 }
-            });
+            }), "Applying import status");
         }
 
-        private async Task DismissScanCompleteAsync()
+        /// <summary>
+        /// One line for how the scan ended. A clean or incomplete startup scan stays quiet unless
+        /// it added something, as before; a stopped one always speaks, because silence there
+        /// reads as "nothing to find" and the shelf may now be out of date.
+        /// </summary>
+        private void ShowScanResult(GameImportStatusSnapshot snapshot, bool wasBackgroundStartupScan)
         {
-            await Task.Delay(4000).ConfigureAwait(false);
-            _uiDispatcher.Post(() => IsScanCompleteVisible = false);
+            // Recorded before either quiet exit below: a cancelled or silent startup scan still ended.
+            if (snapshot.Outcome != ScanOutcome.None)
+                LastScanOutcome = snapshot.Outcome;
+
+            string? text = snapshot.Outcome switch
+            {
+                ScanOutcome.Cancelled => null,
+                ScanOutcome.Stopped => ScanFailedText,
+                ScanOutcome.Incomplete => ScanIncompleteText,
+                // Completed, and None for a session that only imported manually: today's line.
+                _ => ScanCompleteText,
+            };
+
+            if (text == null)
+                return;
+
+            bool isStopped = snapshot.Outcome == ScanOutcome.Stopped;
+            if (!isStopped && wasBackgroundStartupScan && snapshot.AddedCount <= 0)
+                return;
+
+            ScanCompleteAddedCount = snapshot.AddedCount;
+            ScanResultText = text;
+            IsScanCompleteVisible = true;
+
+            int version = ++_scanResultVersion;
+            // A stopped scan waits to be dismissed, as the coordinator's failure always asked
+            // (AutoHide: false). Everything else clears on its own.
+            if (!isStopped)
+                _ = DismissScanResultAsync(version);
+        }
+
+        private async Task DismissScanResultAsync(int version)
+        {
+            await Task.Delay(ImportNoticeDismissDelayMs).ConfigureAwait(false);
+            _uiDispatcher.Post(() =>
+            {
+                // A newer result owns the line now; this timer belonged to the old one.
+                if (version == _scanResultVersion)
+                    IsScanCompleteVisible = false;
+            });
         }
 
         private void ImportCoordinator_NotificationRaised(object? sender, ImportNotification notification)
@@ -147,19 +230,66 @@ namespace Codec.ViewModels
             if (!notification.IsManual || notification.Severity == ImportNotificationSeverity.Success)
                 return;
 
-            _ = RunOnUiThreadAsync(() =>
+            ObserveFault(RunOnUiThreadAsync(() =>
             {
-                if (notification.IsAlreadyAdded)
+                switch (notification.ResultStatus)
                 {
-                    IsGameAlreadyAddedToastVisible = true;
-                    _ = DismissGameAlreadyAddedToastAsync();
+                    case GameImportResultStatus.Duplicate:
+                        IsGameAlreadyAddedToastVisible = true;
+                        _ = DismissGameAlreadyAddedToastAsync();
+                        break;
+                    case GameImportResultStatus.Invalid:
+                        IsGameNotAddedToastVisible = true;
+                        _ = DismissGameNotAddedToastAsync();
+                        break;
+                    default:
+                        // Network, artwork or commit trouble: the file was fine, so do not
+                        // say it is not a game.
+                        IsGameAddFailedToastVisible = true;
+                        _ = DismissGameAddFailedToastAsync();
+                        break;
                 }
-                else
-                {
-                    IsGameNotAddedToastVisible = true;
-                    _ = DismissGameNotAddedToastAsync();
-                }
-            });
+            }), "Showing an import notice");
+        }
+
+        private async Task DismissGameAddFailedToastAsync()
+        {
+            await Task.Delay(ImportNoticeDismissDelayMs).ConfigureAwait(false);
+            _uiDispatcher.Post(() => IsGameAddFailedToastVisible = false);
+        }
+
+        /// <summary>
+        /// For a task nobody awaits. Left alone, its fault only reaches the crash log if the
+        /// finalizer happens to see it before the app exits; this writes it down when it happens.
+        /// </summary>
+        private static void ObserveFault(Task task, string context)
+        {
+            task.ContinueWith(
+                static (faulted, state) => LogBackgroundFault((string)state!, faulted.Exception!),
+                context,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        private static void LogBackgroundFault(string context, Exception error)
+        {
+            Debug.WriteLine($"[Background] {context} failed: {error}");
+            try
+            {
+                // Same file and shape as the crash log Program keeps for unobserved tasks.
+                string dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    LibraryStorageService.AppDataFolderName);
+                Directory.CreateDirectory(dir);
+                File.AppendAllText(
+                    Path.Combine(dir, "crash.log"),
+                    $"{DateTime.Now:u} [background: {context}] {error}{Environment.NewLine}{Environment.NewLine}");
+            }
+            catch (Exception writeFailure)
+            {
+                Debug.WriteLine($"Could not write the crash log: {writeFailure.Message}");
+            }
         }
 
         private Task RunOnUiThreadAsync(Action action)

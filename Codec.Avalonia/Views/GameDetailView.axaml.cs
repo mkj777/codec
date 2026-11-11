@@ -2,8 +2,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Codec.Controls;
 using Codec.Media;
+using Codec.Models;
 using Codec.ViewModels;
 using System.ComponentModel;
 
@@ -21,7 +24,13 @@ public sealed partial class GameDetailView : UserControl
     private const double MetricMinWidth = 740d;
     private const double MetricMaxWidth = 1600d;
 
+    // The band's floor, and the shape of a library hero: Steam's 3840x1240 and SteamGridDB's
+    // 1920x620 are the same 96:31.
+    private const double HeroBandMinHeight = 470d;
+    private const double HeroAspect = 96d / 31d;
+
     private MainViewModel? _viewModel;
+    private Game? _game;
 
     public static readonly StyledProperty<double> DetailsValueFontSizeProperty =
         AvaloniaProperty.Register<GameDetailView, double>(nameof(DetailsValueFontSize), 13d);
@@ -48,6 +57,11 @@ public sealed partial class GameDetailView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => StopAllVideos();
+        DetailScroller.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == BoundsProperty)
+                UpdateHeroBand();
+        };
 
         // Tunnelling, because the drawer has to answer a click on the page before whatever
         // sits under the pointer gets to.
@@ -60,9 +74,10 @@ public sealed partial class GameDetailView : UserControl
     /// </summary>
     public bool TryCloseTransientLayer()
     {
-        if (RemoveConfirmation.IsVisible)
+        // Asked of the open state, not of IsVisible, which stays true through the exit.
+        if (Reveal.GetIsOpen(HideConfirmation))
         {
-            RemoveConfirmation.IsVisible = false;
+            Reveal.SetIsOpen(HideConfirmation, false);
             return true;
         }
 
@@ -112,6 +127,24 @@ public sealed partial class GameDetailView : UserControl
         DetailsPlatformIconSize = Scale(width, 16d, 22d);
     }
 
+    /// <summary>
+    /// A hero is laid out from its bitmap, which only exists once it has decoded, so the band
+    /// would sit at its floor until then and drop the lower third when the picture arrived.
+    /// Every library hero has the same shape, so the band can take its height up front. Art
+    /// of any other shape is taller than a hero, and still grows the band when it decodes.
+    /// </summary>
+    private void UpdateHeroBand()
+    {
+        double width = DetailScroller.Bounds.Width;
+        double viewport = DetailScroller.Bounds.Height;
+        double height = HeroBandMinHeight;
+
+        if (width > 0 && viewport > 0 && !string.IsNullOrWhiteSpace(_game?.LibraryHero))
+            height = Math.Max(HeroBandMinHeight, Math.Min(width / HeroAspect, viewport));
+
+        HeroBand.MinHeight = height;
+    }
+
     private static double Scale(double width, double min, double max)
     {
         double progress = (Math.Clamp(width, MetricMinWidth, MetricMaxWidth) - MetricMinWidth)
@@ -137,7 +170,7 @@ public sealed partial class GameDetailView : UserControl
         if (IsWithin(e.Source as Visual, SettingsDrawer) || IsWithin(e.Source as Visual, GameSettingsButton))
             return;
 
-        RemoveConfirmation.IsVisible = false;
+        Reveal.SetIsOpen(HideConfirmation, false);
         _viewModel.CloseGameSettingsCommand.Execute(null);
     }
 
@@ -160,12 +193,43 @@ public sealed partial class GameDetailView : UserControl
         _viewModel = DataContext as MainViewModel;
         if (_viewModel != null)
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+
+        WatchGame(_viewModel?.SelectedGame);
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.IsMediaOverlayOpen) && _viewModel?.IsMediaOverlayOpen != true)
             StopAllVideos();
+
+        if (e.PropertyName == nameof(MainViewModel.SelectedGame))
+            WatchGame(_viewModel?.SelectedGame);
+    }
+
+    /// <summary>The hero can arrive after the page opens, and the band has to follow it.</summary>
+    private void WatchGame(Game? game)
+    {
+        if (_game != null)
+            _game.PropertyChanged -= Game_PropertyChanged;
+
+        _game = game;
+        if (_game != null)
+            _game.PropertyChanged += Game_PropertyChanged;
+
+        UpdateHeroBand();
+    }
+
+    private void Game_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is not (null or nameof(Game.LibraryHero)))
+            return;
+
+        // Asset work can raise this from a background thread.
+        if (Dispatcher.UIThread.CheckAccess())
+            UpdateHeroBand();
+        else
+            Dispatcher.UIThread.Post(UpdateHeroBand);
+
     }
 
     private void CloseMediaOverlay_Click(object? sender, RoutedEventArgs e) => CloseMediaOverlay();
@@ -203,7 +267,11 @@ public sealed partial class GameDetailView : UserControl
             MediaCarousel.Previous();
     }
 
-    private void CloseMediaOverlay()
+    /// <summary>
+    /// Stops the players before the overlay goes, so a trailer never keeps playing behind a
+    /// closed overlay. The window routes Escape, Back and right-click through here too.
+    /// </summary>
+    public void CloseMediaOverlay()
     {
         StopAllVideos();
         _viewModel?.CloseMediaOverlayCommand.Execute(null);
@@ -215,17 +283,18 @@ public sealed partial class GameDetailView : UserControl
             video.Stop();
     }
 
-    private void ShowRemoveConfirmation_Click(object? sender, RoutedEventArgs e)
-        => RemoveConfirmation.IsVisible = true;
+    private void ShowHideConfirmation_Click(object? sender, RoutedEventArgs e)
+        => Reveal.SetIsOpen(HideConfirmation, true);
 
-    private void HideRemoveConfirmation_Click(object? sender, RoutedEventArgs e)
-        => RemoveConfirmation.IsVisible = false;
+    private void CancelHideConfirmation_Click(object? sender, RoutedEventArgs e)
+        => Reveal.SetIsOpen(HideConfirmation, false);
 
-    private async void ConfirmRemove_Click(object? sender, RoutedEventArgs e)
+    private async void ConfirmHide_Click(object? sender, RoutedEventArgs e)
     {
-        if (_viewModel?.DeleteSelectedGameCommand.CanExecute(null) == true)
-            await _viewModel.DeleteSelectedGameCommand.ExecuteAsync(null);
+        if (_viewModel?.HideSelectedGameCommand.CanExecute(null) == true)
+            await _viewModel.HideSelectedGameCommand.ExecuteAsync(null);
 
-        RemoveConfirmation.IsVisible = false;
+        Reveal.SetIsOpen(HideConfirmation, false);
+
     }
 }

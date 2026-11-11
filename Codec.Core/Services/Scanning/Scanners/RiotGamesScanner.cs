@@ -99,9 +99,14 @@ namespace Codec.Services.Scanning.Scanners
             foreach (var root in riotRoots)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                // A root that vanished is not installed; one that exists but cannot be listed
+                // propagates so the scan reports Riot as unchecked instead of empty.
+                if (!Directory.Exists(root))
+                    continue;
+
                 _knownLibraryPaths.Add(root);
 
-                foreach (var dir in SafeGetDirectories(root))
+                foreach (var dir in Directory.GetDirectories(root))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var folderName = Path.GetFileName(dir);
@@ -161,12 +166,6 @@ namespace Codec.Services.Scanning.Scanners
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-        }
-
-        private static string[] SafeGetDirectories(string path)
-        {
-            try { return Directory.GetDirectories(path); }
-            catch { return Array.Empty<string>(); }
         }
 
         private static Dictionary<string, string> FindStartMenuShortcuts(IEnumerable<string> startMenuPaths)

@@ -48,7 +48,7 @@ namespace Codec.Services.Scanning.Scanners
         {
         }
 
-        private EpicGamesScanner(
+        internal EpicGamesScanner(
             Func<string?> manifestsPathProvider,
             Func<string?> launcherPathProvider,
             IEnumerable<string> launcherInstallDirs)
@@ -81,49 +81,80 @@ namespace Codec.Services.Scanning.Scanners
                 return candidates;
             }
 
-            try
-            {
-                var manifestFiles = Directory.GetFiles(manifestsPath, "*.item");
+            // Epic is installed from here on: a folder that cannot be listed propagates so the scan
+            // reports Epic as unchecked, while one bad manifest only skips that game.
+            var manifestFiles = Directory.GetFiles(manifestsPath, "*.item");
 
-                foreach (var manifestFile in manifestFiles)
+            foreach (var manifestFile in manifestFiles)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    try
+                    EpicManifestInfo? manifest = await ReadManifestAsync(manifestFile, cancellationToken).ConfigureAwait(false);
+                    if (manifest == null || !ShouldImportManifest(manifest))
                     {
-                        EpicManifestInfo? manifest = await ReadManifestAsync(manifestFile).ConfigureAwait(false);
-                        if (manifest == null || !ShouldImportManifest(manifest))
-                        {
-                            continue;
-                        }
-
-                        string installPath = NormalizePath(manifest.InstallLocation!);
-                        string? executableHint = ResolveLaunchExecutable(installPath, manifest.LaunchExecutable);
-
-                        candidates.Add(new GameCandidate(
-                            manifest.DisplayName!.Trim(),
-                            installPath,
-                            PlatformName,
-                            EpicAppId: manifest.AppName!.Trim(),
-                            ExecutableHintPath: executableHint));
-                        AddKnownPath(installPath);
+                        continue;
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"? Error parsing Epic manifest {Path.GetFileName(manifestFile)}: {ex.Message}");
-                    }
+
+                    string installPath = NormalizePath(manifest.InstallLocation!);
+                    string? executableHint = ResolveLaunchExecutable(installPath, manifest.LaunchExecutable);
+
+                    candidates.Add(new GameCandidate(
+                        manifest.DisplayName!.Trim(),
+                        installPath,
+                        PlatformName,
+                        EpicAppId: manifest.AppName!.Trim(),
+                        ExecutableHintPath: executableHint));
+                    AddKnownPath(installPath);
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"? Error scanning Epic Games: {ex.Message}");
+                catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+                {
+                    Debug.WriteLine($"? Error parsing Epic manifest {Path.GetFileName(manifestFile)}: {ex.Message}");
+                }
             }
 
             return candidates;
         }
 
-        private static async Task<EpicManifestInfo?> ReadManifestAsync(string manifestFile)
+        /// <summary>
+        /// The exe Epic launches for an installed app, read from its manifest: LaunchExecutable
+        /// under InstallLocation. Null when there is no manifest for it or the file is gone.
+        /// </summary>
+        public static async Task<string?> FindLaunchExecutableAsync(string epicAppId, string? manifestsPath = null, CancellationToken cancellationToken = default)
         {
-            string jsonContent = await File.ReadAllTextAsync(manifestFile).ConfigureAwait(false);
+            manifestsPath ??= DiscoverManifestsPath();
+            if (string.IsNullOrWhiteSpace(epicAppId) || string.IsNullOrWhiteSpace(manifestsPath) || !Directory.Exists(manifestsPath))
+            {
+                return null;
+            }
+
+            foreach (string manifestFile in Directory.EnumerateFiles(manifestsPath, "*.item"))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    EpicManifestInfo? manifest = await ReadManifestAsync(manifestFile, cancellationToken).ConfigureAwait(false);
+                    if (manifest == null ||
+                        string.IsNullOrWhiteSpace(manifest.InstallLocation) ||
+                        !string.Equals(manifest.AppName?.Trim(), epicAppId.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    return ResolveLaunchExecutable(NormalizePath(manifest.InstallLocation), manifest.LaunchExecutable);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+                {
+                    Debug.WriteLine($"[EpicGamesScanner] Reading {Path.GetFileName(manifestFile)} failed: {ex.Message}");
+                }
+            }
+
+            return null;
+        }
+
+        private static async Task<EpicManifestInfo?> ReadManifestAsync(string manifestFile, CancellationToken cancellationToken)
+        {
+            string jsonContent = await File.ReadAllTextAsync(manifestFile, cancellationToken).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(jsonContent);
             var root = doc.RootElement;
 

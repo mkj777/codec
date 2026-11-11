@@ -28,39 +28,40 @@ namespace Codec.Services.Scanning
 
         private readonly ConcurrentDictionary<string, CachedScanResult> _entries;
 
-        private ScanCache(Dictionary<string, CachedScanResult> entries)
+        private ScanCache(Dictionary<string, CachedScanResult> entries, JsonFileStore store)
         {
             _entries = new ConcurrentDictionary<string, CachedScanResult>(entries, StringComparer.OrdinalIgnoreCase);
+            _store = store;
         }
 
-        public static async Task<ScanCache> LoadAsync()
+        private readonly JsonFileStore _store;
+
+        public static Task<ScanCache> LoadAsync() => LoadAsync(GetCachePath());
+
+        internal static Task<ScanCache> LoadAsync(string path) => Task.Run(() => Load(path));
+
+        private static ScanCache Load(string path)
         {
+            var store = new JsonFileStore(path);
             try
             {
-                string path = GetCachePath();
-                if (!File.Exists(path))
-                {
-                    return new ScanCache(new Dictionary<string, CachedScanResult>(StringComparer.OrdinalIgnoreCase));
-                }
-
-                await using var fs = File.OpenRead(path);
-                var payload = await JsonSerializer.DeserializeAsync<List<CachedScanResult>>(fs, JsonOptions)
-                               ?? new List<CachedScanResult>();
+                // A missing or unreadable cache only costs a slower scan, so either way start empty.
+                var payload = store.Load<List<CachedScanResult>>(JsonOptions) ?? new List<CachedScanResult>();
 
                 var deduped = payload
-                    .Where(entry => !string.IsNullOrWhiteSpace(entry.FolderPath))
+                    .Where(entry => entry is not null && !string.IsNullOrWhiteSpace(entry.FolderPath))
                     .GroupBy(entry => entry.FolderPath, StringComparer.OrdinalIgnoreCase)
                     .Select(group => group.OrderByDescending(e => e.CachedAtUtc).First())
                     .Select(NormalizeCachedSource)
                     .ToDictionary(entry => entry.FolderPath, StringComparer.OrdinalIgnoreCase);
 
-                Debug.WriteLine($"Loaded scan cache with {deduped.Count} entries");
-                return new ScanCache(deduped);
+                Debug.WriteLine($"Loaded scan cache with {deduped.Count} entries ({store.LastLoadOutcome})");
+                return new ScanCache(deduped, store);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Scan cache load failed: {ex.Message}");
-                return new ScanCache(new Dictionary<string, CachedScanResult>(StringComparer.OrdinalIgnoreCase));
+                return new ScanCache(new Dictionary<string, CachedScanResult>(StringComparer.OrdinalIgnoreCase), store);
             }
         }
 
@@ -174,11 +175,11 @@ namespace Codec.Services.Scanning
         {
             try
             {
-                string path = GetCachePath();
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                await using var fs = File.Create(path);
-                await JsonSerializer.SerializeAsync(fs, _entries.Values, JsonOptions);
-                Debug.WriteLine($"Persisted scan cache with {_entries.Count} entries");
+                byte[] content = JsonSerializer.SerializeToUtf8Bytes(_entries.Values, JsonOptions);
+                if (await _store.WriteAsync(content).ConfigureAwait(false))
+                    Debug.WriteLine($"Persisted scan cache with {_entries.Count} entries");
+                else
+                    Debug.WriteLine($"Scan cache save failed: {_store.LastSaveError?.Message}");
             }
             catch (Exception ex)
             {

@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Codec.Models;
+using Codec.Services.Importing;
 
 namespace Codec.ViewModels;
 
@@ -137,7 +138,9 @@ public partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(IsScanScreenBusy))]
     private bool _isScanScreenComplete;
 
-    public string ScanScreenTitle => IsScanScreenComplete ? "Your shelf is ready." : "Finding your games";
+    public string ScanScreenTitle => !IsScanScreenComplete
+        ? "Finding your games"
+        : LastScanOutcome == ScanOutcome.Stopped ? "The scan failed." : "Your shelf is ready.";
 
     public bool IsScanScreenBusy => !IsScanScreenComplete;
 
@@ -145,8 +148,49 @@ public partial class MainViewModel
     // Loading
     // -----------------------------------------------------------------------------
 
-    [ObservableProperty] private bool _isLoadingIndeterminate = true;
+    private bool _isLoadingIndeterminateRequested = true;
+
+    /// <summary>
+    /// The cold-start hairline only sweeps while the loading panel is up. Cover passes
+    /// later in the session still set it, and without the gate the hidden hairline kept
+    /// animating after the initial load ended.
+    /// </summary>
+    public bool IsLoadingIndeterminate
+    {
+        get => _isLoadingIndeterminateRequested && IsInitialLoading;
+        set
+        {
+            if (_isLoadingIndeterminateRequested == value)
+                return;
+
+            _isLoadingIndeterminateRequested = value;
+            OnPropertyChanged();
+        }
+    }
+
     [ObservableProperty] private double _loadingProgress;
+
+    partial void OnIsInitialLoadingChanged(bool value)
+    {
+        if (value)
+            return;
+
+        _isLoadingIndeterminateRequested = true;
+        LoadingProgress = 0;
+        OnPropertyChanged(nameof(IsLoadingIndeterminate));
+    }
+
+    // -----------------------------------------------------------------------------
+    // Startup storage
+    // -----------------------------------------------------------------------------
+
+    [ObservableProperty] private bool _isLibraryRestoredVisible;
+    [ObservableProperty] private bool _isLibraryUnreadableVisible;
+    [ObservableProperty] private bool _isSteamSignInNeededVisible;
+
+    private const string LibraryRestoredText = "Library restored from backup";
+    private const string LibraryUnreadableText = "Library could not be read";
+    private const string SteamSignInNeededText = "Steam needs a new sign-in";
 
     // -----------------------------------------------------------------------------
     // One-off results
@@ -197,16 +241,28 @@ public partial class MainViewModel
                 return ScanProgressMessage;
             if (IsResetErrorVisible)
                 return ResetErrorMessage;
+            if (IsLibraryUnreadableVisible)
+                return LibraryUnreadableText;
+            if (IsSteamSignInNeededVisible)
+                return SteamSignInNeededText;
+            if (IsLibraryRestoredVisible)
+                return LibraryRestoredText;
             if (IsActionResultVisible)
                 return ActionResultTitle;
+            if (IsGameMissingToastVisible)
+                return "That file no longer exists";
             if (IsGameNotAddedToastVisible)
                 return "That file is not a game";
+            if (IsGameAddFailedToastVisible)
+                return GameAddFailedText;
             if (IsGameAlreadyAddedToastVisible)
                 return "Already in your library";
             if (IsScanCompleteEffectiveVisible)
-                return "Scan complete";
+                return ScanResultText;
             if (IsUpdateNoUpdateVisible)
                 return "Codec is up to date";
+            if (IsUpdateDevModeVisible)
+                return "Dev mode";
             if (IsAdminWarningVisible)
                 return AdminWarningTitle;
 
@@ -222,7 +278,8 @@ public partial class MainViewModel
     {
         get
         {
-            if (IsActionResultVisible && !IsResetErrorVisible)
+            // Only under its own title: a line that outranks it must not borrow its detail.
+            if (IsActionResultVisible && NoticeText == ActionResultTitle)
                 return ActionResultDetail;
             if (IsAdminWarningVisible && NoticeText == AdminWarningTitle)
                 return "Some features may not work correctly.";
@@ -288,10 +345,16 @@ public partial class MainViewModel
         IsAdminWarningVisible = false;
         IsUpdateErrorVisible = false;
         IsUpdateNoUpdateVisible = false;
+        IsUpdateDevModeVisible = false;
+        IsGameMissingToastVisible = false;
         IsScanCompleteVisible = false;
         IsGameNotAddedToastVisible = false;
+        IsGameAddFailedToastVisible = false;
         IsGameAlreadyAddedToastVisible = false;
         IsActionResultVisible = false;
+        IsLibraryRestoredVisible = false;
+        IsLibraryUnreadableVisible = false;
+        IsSteamSignInNeededVisible = false;
         NotifyNoticeChanged();
     }
 
@@ -312,6 +375,8 @@ public partial class MainViewModel
         nameof(UpdateDownloadProgress),
         nameof(IsUpdateCheckingVisible),
         nameof(IsUpdateNoUpdateVisible),
+        nameof(IsUpdateDevModeVisible),
+        nameof(IsGameMissingToastVisible),
         nameof(IsSteamSyncProgressVisible),
         nameof(IsSteamSyncProgressIndeterminate),
         nameof(SteamSyncProgressTitle),
@@ -327,12 +392,17 @@ public partial class MainViewModel
         nameof(ScanProgressMinimum),
         nameof(IsResetErrorVisible),
         nameof(ResetErrorMessage),
+        nameof(IsLibraryUnreadableVisible),
+        nameof(IsSteamSignInNeededVisible),
+        nameof(IsLibraryRestoredVisible),
         nameof(IsActionResultVisible),
         nameof(ActionResultTitle),
         nameof(ActionResultDetail),
         nameof(IsGameNotAddedToastVisible),
+        nameof(IsGameAddFailedToastVisible),
         nameof(IsGameAlreadyAddedToastVisible),
         nameof(IsScanCompleteVisible),
+        nameof(ScanResultText),
         nameof(IsAdminWarningVisible),
     ];
 

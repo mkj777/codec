@@ -21,6 +21,10 @@ namespace Codec.Services.Storage
         public ulong? SteamId64 { get; set; }
         public DateTime? SteamAchievementsRetryAfterUtc { get; set; }
 
+        // Persisted so a sign-in that keeps failing across restarts still adds up; three in a
+        // row sign Steam out. Any successful sync sets it back to zero.
+        public int SteamBackgroundSyncFailures { get; set; }
+
         // Window placement. Position is in physical pixels because that is what the platform
         // reports; size stays in device-independent units so moving between monitors of
         // different scaling keeps the window the same apparent size.
@@ -33,67 +37,66 @@ namespace Codec.Services.Storage
 
     public class AppSettingsService
     {
-        private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+        private const string SettingsFileName = "settings.json";
 
-        private string GetPath()
+        private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+        private readonly JsonFileStore _store;
+
+        /// <param name="baseDirectory">Where settings.json lives. Defaults to the per-user app data folder.</param>
+        public AppSettingsService(string? baseDirectory = null)
         {
-            string dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                LibraryStorageService.AppDataFolderName);
-            Directory.CreateDirectory(dir);
-            return Path.Combine(dir, "settings.json");
+            _store = new JsonFileStore(Path.Combine(
+                baseDirectory ?? LibraryStorageService.GetDefaultBaseDirectory(),
+                SettingsFileName));
+        }
+
+        /// <summary>What the most recent load found on disk.</summary>
+        public StorageLoadOutcome LastLoadOutcome => _store.LastLoadOutcome;
+
+        /// <summary>The error of the most recent write, or null when it succeeded.</summary>
+        public Exception? LastSaveError => _store.LastSaveError;
+
+        /// <summary>Raised on a background thread when a settings write fails.</summary>
+        public event EventHandler<Exception>? SaveFailed
+        {
+            add => _store.SaveFailed += value;
+            remove => _store.SaveFailed -= value;
         }
 
         /// <summary>
         /// Synchronous load, for the one caller that needs settings before the first frame:
         /// window placement has to be applied before the window is shown or it visibly jumps.
         /// </summary>
-        public AppSettings Load()
-        {
-            try
-            {
-                string path = GetPath();
-                if (!File.Exists(path))
-                    return new AppSettings();
-                using var fs = File.OpenRead(path);
-                return JsonSerializer.Deserialize<AppSettings>(fs, _jsonOptions) ?? new AppSettings();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to load app settings: {ex.Message}");
-                return new AppSettings();
-            }
-        }
+        public AppSettings Load() => _store.Load<AppSettings>(_jsonOptions) ?? new AppSettings();
 
         public async Task<AppSettings> LoadAsync()
+            => await Task.Run(Load).ConfigureAwait(false);
+
+        /// <summary>
+        /// Saves the settings. They are serialized before this returns, so the caller may keep
+        /// changing the same instance; the disk write runs in the background and saves requested
+        /// later always win. Never throws; false means this state did not reach disk.
+        /// </summary>
+        public Task<bool> SaveAsync(AppSettings settings)
         {
+            byte[] content;
             try
             {
-                string path = GetPath();
-                if (!File.Exists(path))
-                    return new AppSettings();
-                await using var fs = File.OpenRead(path);
-                return await JsonSerializer.DeserializeAsync<AppSettings>(fs, _jsonOptions) ?? new AppSettings();
+                content = JsonSerializer.SerializeToUtf8Bytes(settings, _jsonOptions);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to load app settings: {ex.Message}");
-                return new AppSettings();
+                Debug.WriteLine($"Failed to serialize app settings: {ex.Message}");
+                return Task.FromResult(false);
             }
+
+            return _store.WriteAsync(content);
         }
 
-        public async Task SaveAsync(AppSettings settings)
-        {
-            try
-            {
-                string path = GetPath();
-                await using var fs = File.Create(path);
-                await JsonSerializer.SerializeAsync(fs, settings, _jsonOptions);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to save app settings: {ex.Message}");
-            }
-        }
+        /// <summary>Completes once every save requested so far has finished.</summary>
+        public Task FlushAsync() => _store.FlushAsync();
+
+        /// <summary>Blocks until pending saves finish or the timeout passes.</summary>
+        public bool Flush(TimeSpan timeout) => _store.Flush(timeout);
     }
 }

@@ -63,6 +63,11 @@ public sealed partial class StartupOverlay : UserControl
         }
 
         IsVisible = false;
+
+        // The sequence never plays twice, and hidden is not gone: the nine covers would stay
+        // decoded and bound to the library for the rest of the session. Detaching the tree
+        // releases them.
+        Content = null;
     }
 
     private static bool AreAnimationsEnabled()

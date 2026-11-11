@@ -68,7 +68,16 @@
              VerticalOffset="6"
              IsLightDismissEnabled="True"
              IsOpen="{Binding #SortToggle.IsChecked, Mode=TwoWay}">
-        <Border Classes="dropdown-popup" MinWidth="160">
+        <!--
+          The popup itself opens and closes at once; the surface in it fades in. Fade only: a
+          rise would be cut off at the popup's own edge.
+        -->
+        <Border Classes="dropdown-popup reveal-soft"
+
+                MinWidth="160"
+                IsVisible="False"
+                controls:Reveal.IsOpen="{Binding #SortToggle.IsChecked}">
+
           <ListBox x:Name="SortList"
                    Classes="dropdown-list"
                    SelectedIndex="{Binding SelectedSortIndex, Mode=TwoWay}"

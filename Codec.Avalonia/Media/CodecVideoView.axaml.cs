@@ -19,6 +19,21 @@ public sealed partial class CodecVideoView : UserControl
 {
     private const long SliderSteps = 1000;
 
+    /// <summary>
+    /// One engine for the process. Creating it loads and scans the plugin folder, which is too
+    /// slow to repeat each time a trailer comes into view; the players stay one per view.
+    /// </summary>
+    private static readonly Lazy<LibVLC> SharedLibVlc = new(() =>
+    {
+        Core.Initialize();
+        // Steam serves newer trailers as DASH, and the adaptive demuxer starts low and steps up
+        // a couple of seconds in. Each step is a new decoder asking for a new video output
+        // while the old one still holds the embedded window, and libvlc answers that by
+        // opening a window of its own. Taking the best representation from the start keeps
+        // it to one output for the whole clip.
+        return new LibVLC("--no-video-title-show", "--adaptive-logic=highest");
+    }, LazyThreadSafetyMode.ExecutionAndPublication);
+
     private LibVLC? _libVlc;
     private MediaPlayer? _mediaPlayer;
     private LibVLCSharp.Shared.Media? _media;
@@ -55,13 +70,7 @@ public sealed partial class CodecVideoView : UserControl
     public CodecVideoView()
     {
         InitializeComponent();
-        Core.Initialize();
-        // Steam serves newer trailers as DASH, and the adaptive demuxer starts low and steps up
-        // a couple of seconds in. Each step is a new decoder asking for a new video output
-        // while the old one still holds the embedded window, and libvlc answers that by
-        // opening a window of its own. Taking the best representation from the start keeps
-        // it to one output for the whole clip.
-        _libVlc = new LibVLC("--no-video-title-show", "--adaptive-logic=highest");
+        _libVlc = SharedLibVlc.Value;
         _mediaPlayer = new MediaPlayer(_libVlc);
 
         // The surface hands the player its window handle when the player is assigned, but only
@@ -272,7 +281,7 @@ public sealed partial class CodecVideoView : UserControl
         _mediaPlayer?.Stop();
         _mediaPlayer?.Dispose();
         ReleaseMedia();
-        _libVlc?.Dispose();
+        // The engine is shared and lives as long as the process.
         _mediaPlayer = null;
         _libVlc = null;
     }

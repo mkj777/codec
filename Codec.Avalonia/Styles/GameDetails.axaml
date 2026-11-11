@@ -21,14 +21,6 @@
     </Setter>
   </Style>
 
-  <!-- the factline separator -->
-  <Style Selector="Ellipse.fact-dot">
-    <Setter Property="Width" Value="3" />
-    <Setter Property="Height" Value="3" />
-    <Setter Property="Fill" Value="{DynamicResource CodecTextMutedBrush}" />
-    <Setter Property="Opacity" Value="0.5" />
-    <Setter Property="VerticalAlignment" Value="Center" />
-  </Style>
 
   <!-- disclosure -->
   <Style Selector="Button.disclosure">
@@ -39,7 +31,7 @@
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
     <Setter Property="FontSize" Value="12" />
-    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="FontWeight" Value="500" />
   </Style>
   <Style Selector="Button.disclosure:pointerover">
     <Setter Property="Background" Value="Transparent" />
@@ -72,7 +64,7 @@
     <Setter Property="BorderThickness" Value="0,1,0,0" />
     <Setter Property="Foreground" Value="{DynamicResource CodecTextMutedBrush}" />
     <Setter Property="FontSize" Value="13" />
-    <Setter Property="FontWeight" Value="400" />
+    <Setter Property="FontWeight" Value="500" />
   </Style>
   <Style Selector="Button.link-row:pointerover">
     <Setter Property="Background" Value="Transparent" />

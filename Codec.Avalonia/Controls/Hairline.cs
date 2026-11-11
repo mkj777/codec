@@ -17,9 +17,25 @@ public sealed class Hairline : TemplatedControl
 {
     private const double SweepFraction = 0.4;
 
+    private const string SweepingClass = "sweeping";
+
     private Control? _sweep;
-    private CancellationTokenSource? _sweepCancellation;
     private double _runningSweepWidth = double.NaN;
+
+    public static readonly StyledProperty<double> SweepProgressProperty =
+        AvaloniaProperty.Register<Hairline, double>(nameof(SweepProgress));
+
+    public Hairline()
+    {
+        Styles.Add(CreateSweepStyle());
+    }
+
+    /// <summary>Where the sweep is on its way across, 0 to 1. Driven by the sweep animation.</summary>
+    public double SweepProgress
+    {
+        get => GetValue(SweepProgressProperty);
+        set => SetValue(SweepProgressProperty, value);
+    }
 
     public static readonly StyledProperty<double> ValueProperty =
         AvaloniaProperty.Register<Hairline, double>(nameof(Value));
@@ -119,12 +135,19 @@ public sealed class Hairline : TemplatedControl
     {
         base.OnPropertyChanged(change);
 
+        if (change.Property == SweepProgressProperty)
+        {
+            PositionSweep(change.GetNewValue<double>());
+            return;
+        }
+
         if (change.Property == ValueProperty ||
             change.Property == MinimumProperty ||
             change.Property == MaximumProperty ||
             change.Property == IsIndeterminateProperty ||
             change.Property == IsCompleteProperty ||
-            change.Property == BoundsProperty)
+            change.Property == BoundsProperty ||
+            change.Property == OpacityProperty)
         {
             Refresh();
         }
@@ -141,14 +164,19 @@ public sealed class Hairline : TemplatedControl
         double width = Bounds.Width;
         bool sweeping = IsIndeterminate && !IsComplete;
 
+        // A line held in place at no opacity is laid out and therefore "visible" to the
+        // animation, which would tick for nobody. It starts again as the fade begins.
+        bool running = sweeping && Opacity > 0;
+
         ShowSweep = sweeping;
         ShowFill = !sweeping;
         SweepWidth = Math.Max(0, width * SweepFraction);
         FillWidth = IsComplete ? width : width * Fraction();
 
-        if (sweeping)
+        if (running)
             EnsureSweep(width);
         else
+
             StopSweep();
     }
 
@@ -158,7 +186,7 @@ public sealed class Hairline : TemplatedControl
     /// </summary>
     private void EnsureSweep(double width)
     {
-        if (_sweepCancellation != null && Math.Abs(_runningSweepWidth - width) < 0.5)
+        if (Classes.Contains(SweepingClass) && Math.Abs(_runningSweepWidth - width) < 0.5)
             return;
 
         StartSweep(width);
@@ -173,6 +201,32 @@ public sealed class Hairline : TemplatedControl
         return Math.Clamp((Value - Minimum) / span, 0, 1);
     }
 
+    /// <summary>
+    /// The sweep is a style animation on a normalized progress, switched on by a class, the
+    /// same way Motion.axaml's "breathe" runs. Avalonia only allows an endless animation that
+    /// way: RunAsync refuses them, and because that task was discarded the sweep silently
+    /// never moved while the refusal filled crash.log.
+    /// </summary>
+    private static Style CreateSweepStyle()
+    {
+        Animation animation = new()
+        {
+            Duration = TimeSpan.FromSeconds(1.7),
+            IterationCount = IterationCount.Infinite,
+            // Reveal collapses the panel around the line, not the line itself, and an endless
+            // sweep nobody sees would otherwise tick and commit every frame for the session.
+            PlaybackBehavior = PlaybackBehavior.OnlyIfVisible,
+            Easing = new SplineEasing(0.5, 0, 0.5, 1),
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0d), Setters = { new Setter(SweepProgressProperty, 0d) } },
+                new KeyFrame { Cue = new Cue(1d), Setters = { new Setter(SweepProgressProperty, 1d) } },
+            },
+        };
+
+        return new Style(x => x.OfType<Hairline>().Class(SweepingClass)) { Animations = { animation } };
+    }
+
     private void StartSweep(double width)
     {
         StopSweep();
@@ -180,37 +234,25 @@ public sealed class Hairline : TemplatedControl
         if (_sweep == null || width <= 0)
             return;
 
-        double sweepWidth = width * SweepFraction;
-        Animation animation = new()
-        {
-            Duration = TimeSpan.FromSeconds(1.7),
-            IterationCount = IterationCount.Infinite,
-            Easing = new SplineEasing(0.5, 0, 0.5, 1),
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0d),
-                    Setters = { new Setter(TranslateTransform.XProperty, sweepWidth * -1.2) },
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1d),
-                    Setters = { new Setter(TranslateTransform.XProperty, sweepWidth * 3.2) },
-                },
-            },
-        };
-
-        _sweepCancellation = new CancellationTokenSource();
         _runningSweepWidth = width;
-        _ = animation.RunAsync(_sweep, _sweepCancellation.Token);
+        _sweep.RenderTransform = new TranslateTransform();
+        Classes.Add(SweepingClass);
+    }
+
+    private void PositionSweep(double progress)
+    {
+        if (_sweep?.RenderTransform is not TranslateTransform transform || double.IsNaN(_runningSweepWidth))
+            return;
+
+        // From fully off the left edge to fully past the right one, for a line that is
+        // SweepFraction of the track wide.
+        double sweepWidth = _runningSweepWidth * SweepFraction;
+        transform.X = sweepWidth * (-1.2 + progress * 4.4);
     }
 
     private void StopSweep()
     {
-        _sweepCancellation?.Cancel();
-        _sweepCancellation?.Dispose();
-        _sweepCancellation = null;
+        Classes.Remove(SweepingClass);
         _runningSweepWidth = double.NaN;
     }
 }

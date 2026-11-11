@@ -21,6 +21,9 @@ public static class ArtColorService
     private static readonly ConcurrentDictionary<string, Color> Cache = new();
     private static readonly ConcurrentDictionary<string, Task<Color>> Pending = new();
 
+    // One client for every remote sample; a client per request leaves a socket behind each time.
+    private static readonly HttpClient Http = new();
+
     /// <summary>Returns a cached tint immediately, or null when one has not been sampled yet.</summary>
     public static Color? Peek(string? source)
         => !string.IsNullOrWhiteSpace(source) && Cache.TryGetValue(source, out Color cached)
@@ -46,6 +49,12 @@ public static class ArtColorService
             Cache[source] = color;
             return color;
         }
+        catch (Exception ex) when (IsTransient(ex))
+        {
+            // Artwork that is still downloading, or a fetch that failed, gets sampled again
+            // next time instead of keeping the fallback for the rest of the session.
+            return Fallback;
+        }
         catch
         {
             Cache[source] = Fallback;
@@ -56,6 +65,10 @@ public static class ArtColorService
             Pending.TryRemove(source, out _);
         }
     }
+
+    // IOException covers a missing file or folder and a file the downloader still holds.
+    private static bool IsTransient(Exception ex)
+        => ex is OperationCanceledException or IOException or HttpRequestException;
 
     private static Color Sample(string source)
     {
@@ -155,8 +168,7 @@ public static class ArtColorService
         if (Uri.TryCreate(source, UriKind.Absolute, out Uri? uri) &&
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
         {
-            using HttpClient client = new();
-            byte[] bytes = client.GetByteArrayAsync(uri).GetAwaiter().GetResult();
+            byte[] bytes = Http.GetByteArrayAsync(uri).GetAwaiter().GetResult();
             return new MemoryStream(bytes, writable: false);
         }
 

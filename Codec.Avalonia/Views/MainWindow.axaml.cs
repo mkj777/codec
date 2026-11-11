@@ -13,6 +13,9 @@ namespace Codec.Views;
 
 public sealed partial class MainWindow : Window
 {
+    // Bounded so a stuck disk cannot keep a closed window's process alive indefinitely.
+    private static readonly TimeSpan SaveFlushTimeout = TimeSpan.FromSeconds(5);
+
     private bool _libraryLoaded;
     private AvaloniaWindowService? _windowService;
     private TrayService? _trayService;
@@ -225,7 +228,7 @@ public sealed partial class MainWindow : Window
             return true;
 
         if (viewModel.IsMediaOverlayOpen)
-            viewModel.CloseMediaOverlayCommand.Execute(null);
+            DetailsHost.CloseMediaOverlay();
         else if (viewModel.IsFranchiseOverlayOpen)
             viewModel.CloseFranchiseOverlayCommand.Execute(null);
         else if (viewModel.IsGameSettingsOpen)
@@ -298,6 +301,12 @@ public sealed partial class MainWindow : Window
     {
         _trayService?.Dispose();
         _trayService = null;
+
+        // The process ends right after the main window closes, which would cut off saves
+        // still queued in the background, including the placement save from OnClosing. The
+        // writers never need the UI thread, so blocking here cannot deadlock.
+        App.Services.AppSettings.Flush(SaveFlushTimeout);
+        App.Services.LibraryStorage.Flush(SaveFlushTimeout);
     }
 
     private async void KeepCodecOpen_Click(object? sender, RoutedEventArgs e)

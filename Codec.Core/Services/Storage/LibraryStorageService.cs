@@ -14,79 +14,98 @@ namespace Codec.Services.Storage
     public class LibraryStorageService
     {
         public const string AppDataFolderName = "Codec Game Library";
-        private readonly SemaphoreSlim _saveGate = new(1, 1);
+        private const string LibraryFileName = "library.json";
+
+        private readonly string _baseDirectory;
+        private readonly JsonFileStore _store;
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true
         };
 
-        private string GetBaseDirectory()
+        /// <param name="baseDirectory">Where library.json lives. Defaults to the per-user app data folder.</param>
+        public LibraryStorageService(string? baseDirectory = null)
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDataFolderName);
+            _baseDirectory = baseDirectory ?? GetDefaultBaseDirectory();
+            _store = new JsonFileStore(Path.Combine(_baseDirectory, LibraryFileName));
         }
 
-        private string GetLibraryPath()
+        public static string GetDefaultBaseDirectory()
+            => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDataFolderName);
+
+        /// <summary>What the most recent <see cref="LoadAsync"/> found on disk.</summary>
+        public StorageLoadOutcome LastLoadOutcome => _store.LastLoadOutcome;
+
+        /// <summary>The error of the most recent write, or null when it succeeded.</summary>
+        public Exception? LastSaveError => _store.LastSaveError;
+
+        /// <summary>Raised on a background thread when a library write fails.</summary>
+        public event EventHandler<Exception>? SaveFailed
         {
-            string dir = EnsureStorageInitialized();
-            return Path.Combine(dir, "library.json");
+            add => _store.SaveFailed += value;
+            remove => _store.SaveFailed -= value;
         }
 
         public string EnsureStorageInitialized()
         {
-            string dir = GetBaseDirectory();
-            Directory.CreateDirectory(dir);
-            return dir;
+            Directory.CreateDirectory(_baseDirectory);
+            return _baseDirectory;
         }
 
-        public string GetLibraryPathForDiagnostics() => GetLibraryPath();
-
-        public async Task SaveAsync(IEnumerable<Game> games)
+        public string GetLibraryPathForDiagnostics()
         {
-            var snapshot = RiotGameDuplicateHelper.DeduplicateByIdentity(games);
+            EnsureStorageInitialized();
+            return _store.Path;
+        }
+
+        /// <summary>
+        /// Saves the library. The games are serialized before this returns, so later changes to
+        /// them do not leak into this save; the disk write runs in the background. Saves requested
+        /// later always win. Never throws; false means this state did not reach disk.
+        /// </summary>
+        public Task<bool> SaveAsync(IEnumerable<Game> games)
+        {
+            byte[] content;
             try
             {
-                await _saveGate.WaitAsync();
-                string path = GetLibraryPath();
-                await using var fs = File.Create(path);
-                await JsonSerializer.SerializeAsync(fs, snapshot, _jsonOptions);
-                Debug.WriteLine($"Library saved to {path}");
+                var snapshot = RiotGameDuplicateHelper.DeduplicateByIdentity(games);
+                content = JsonSerializer.SerializeToUtf8Bytes(snapshot, _jsonOptions);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to save library: {ex.Message}");
+                Debug.WriteLine($"Failed to serialize library: {ex.Message}");
+                return Task.FromResult(false);
             }
-            finally
-            {
-                _saveGate.Release();
-            }
+
+            return _store.WriteAsync(content);
         }
 
+        /// <summary>Completes once every save requested so far has finished.</summary>
+        public Task FlushAsync() => _store.FlushAsync();
+
+        /// <summary>Blocks until pending saves finish or the timeout passes.</summary>
+        public bool Flush(TimeSpan timeout) => _store.Flush(timeout);
+
+        /// <summary>
+        /// Loads the library. Returns an empty list both for a fresh install and for an
+        /// unreadable file with no usable backup; <see cref="LastLoadOutcome"/> tells them apart.
+        /// An unreadable file is set aside under a ".corrupt-" name, never overwritten.
+        /// </summary>
         public async Task<List<Game>> LoadAsync()
         {
-            try
-            {
-                string path = GetLibraryPath();
-                Debug.WriteLine($"Library load path: {path}");
-                if (!File.Exists(path))
-                    return new List<Game>();
+            EnsureStorageInitialized();
+            Debug.WriteLine($"Library load path: {_store.Path}");
 
-                await using var fs = File.OpenRead(path);
-                var data = await JsonSerializer.DeserializeAsync<List<Game>>(fs, _jsonOptions).ConfigureAwait(false);
-                var games = data ?? new List<Game>();
-                foreach (var game in games)
-                {
-                    game.ImportedFrom = PlatformSourceNames.NormalizeImportSource(game.ImportedFrom);
-                }
-
-                return RiotGameDuplicateHelper.DeduplicateByIdentity(games);
-            }
-            catch (Exception ex)
+            var games = await Task.Run(() => _store.Load<List<Game>>(_jsonOptions)).ConfigureAwait(false)
+                ?? new List<Game>();
+            games.RemoveAll(game => game is null);
+            foreach (var game in games)
             {
-                Debug.WriteLine($"Failed to load library: {ex.Message}");
-                return new List<Game>();
+                game.ImportedFrom = PlatformSourceNames.NormalizeImportSource(game.ImportedFrom);
             }
+
+            return RiotGameDuplicateHelper.DeduplicateByIdentity(games);
         }
-
     }
 }
